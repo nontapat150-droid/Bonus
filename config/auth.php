@@ -26,7 +26,7 @@ function requireRole($roles) {
     requireLogin();
     if (!hasRole($roles)) {
         // Redirect to a safe page if unauthorized
-        header("Location: index.php?error=unauthorized");
+        header("Location: index.php?error=ไม่มีสิทธิ์เข้าถึง");
         exit;
     }
 }

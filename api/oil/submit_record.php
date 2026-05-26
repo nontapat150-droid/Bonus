@@ -8,7 +8,7 @@ requireLogin();
 $user_id = $_SESSION['user_id'];
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(['success' => false, 'error' => 'Invalid request method']);
+    echo json_encode(['success' => false, 'error' => 'วิธีการส่งข้อมูลไม่ถูกต้อง']);
     exit;
 }
 
@@ -55,7 +55,7 @@ try {
     if (isset($_FILES['oil_images'])) {
         $files = $_FILES['oil_images'];
         $count = count($files['name']);
-        
+
         if ($count > 10) {
             throw new Exception("อัปโหลดได้สูงสุด 10 รูปเท่านั้น");
         }

@@ -8,7 +8,7 @@ requireLogin();
 
 // Allow Admin and Super Admin
 if (!hasRole(['admin', 'super_admin'])) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
 }
 
@@ -26,31 +26,31 @@ if ($start_date && $end_date) {
 
 try {
     // 1. Fetch Aggregated Stats
-    $statsSql = "SELECT 
-                    COUNT(o.id) as total_records, 
-                    SUM(o.liters) as total_liters, 
-                    SUM(o.total_price) as total_cost 
-                 FROM oil_records o 
+    $statsSql = "SELECT
+                    COUNT(o.id) as total_records,
+                    SUM(o.liters) as total_liters,
+                    SUM(o.total_price) as total_cost
+                 FROM oil_records o
                  $whereClause";
     $stmtStats = $pdo->prepare($statsSql);
     $stmtStats->execute($params);
     $stats = $stmtStats->fetch();
 
     // 2. Fetch Chart Data (Grouped by Date)
-    $chartSql = "SELECT 
-                    DATE(o.date_recorded) as record_date, 
-                    SUM(o.total_price) as daily_cost, 
-                    SUM(o.liters) as daily_liters 
-                 FROM oil_records o 
-                 $whereClause 
-                 GROUP BY DATE(o.date_recorded) 
+    $chartSql = "SELECT
+                    DATE(o.date_recorded) as record_date,
+                    SUM(o.total_price) as daily_cost,
+                    SUM(o.liters) as daily_liters
+                 FROM oil_records o
+                 $whereClause
+                 GROUP BY DATE(o.date_recorded)
                  ORDER BY DATE(o.date_recorded) ASC";
     $stmtChart = $pdo->prepare($chartSql);
     $stmtChart->execute($params);
     $chartData = $stmtChart->fetchAll();
 
     // 3. Fetch Detailed Table Data with Images
-    $tableSql = "SELECT 
+    $tableSql = "SELECT
                     o.id, o.license_plate, o.liters, o.mileage, o.price_per_liter, o.total_price, o.date_recorded,
                     u.full_name as tech_name,
                     GROUP_CONCAT(i.image_path SEPARATOR ',') as images

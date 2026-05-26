@@ -1,76 +1,95 @@
 <?php
 // views/layouts/sidebar.php
 ?>
-<aside class="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col h-full sticky top-0" style="height: 100vh;">
-    <div class="p-6 border-b border-gray-200">
-        <h2 class="text-2xl font-bold text-indigo-600">SmartSuite</h2>
-        <p class="text-xs text-gray-500 mt-1"><?php echo htmlspecialchars($user['full_name'] ?? 'User'); ?></p>
-        <span class="inline-block mt-2 px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-semibold rounded-full">
-            <?php echo htmlspecialchars(ucfirst($user['role'] ?? 'Guest')); ?>
-        </span>
+<aside class="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col h-full sticky top-0 shadow-sm" style="height: 100vh;">
+    <div class="p-8 border-b border-slate-50">
+        <h2 class="text-2xl font-black text-indigo-600 tracking-tighter">สมาร์ทสูท</h2>
+        <div class="mt-4 flex items-center">
+            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold mr-3">
+                <?php echo strtoupper(substr($user['full_name'] ?? 'U', 0, 1)); ?>
+            </div>
+            <div>
+                <p class="text-sm font-bold text-slate-800 leading-none"><?php echo htmlspecialchars($user['full_name'] ?? 'ผู้ใช้งาน'); ?></p>
+                <span class="inline-block mt-1.5 px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded uppercase tracking-wider">
+                    <?php 
+                        $role_map = [
+                            'super_admin' => 'ผู้ดูแลระบบสูงสุด',
+                            'admin' => 'ผู้ดูแลระบบ',
+                            'technician' => 'ช่างเทคนิค',
+                            'user' => 'ผู้ใช้งานทั่วไป'
+                        ];
+                        $role = $user['role'] ?? 'Guest';
+                        echo htmlspecialchars($role_map[$role] ?? ucfirst($role)); 
+                    ?>
+                </span>
+            </div>
+        </div>
     </div>
-    
-    <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-        <a href="index.php?page=home" class="flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-colors <?php echo ($page === 'home') ? 'bg-indigo-50 text-indigo-600 font-semibold' : ''; ?>">
-            <span class="mr-3 text-xl">🏠</span> Home
+
+    <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        <a href="index.php?page=home" class="flex items-center px-4 py-3 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition-all <?php echo ($page === 'home') ? 'bg-indigo-50 text-indigo-600 font-bold' : ''; ?>">
+            <span class="mr-3 text-xl opacity-70">🏠</span> หน้าแรก
         </a>
 
+        <div class="pt-4 pb-2 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">โมดูลหลัก</div>
+
         <!-- Module: Oil & Vehicles -->
-        <a href="index.php?page=oil" class="flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors <?php echo ($page === 'oil') ? 'bg-blue-50 text-blue-600 font-semibold' : ''; ?>">
-            <span class="mr-3 text-xl">⛽</span> Oil & Vehicles
+        <a href="index.php?page=oil" class="flex items-center px-4 py-3 text-slate-600 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all <?php echo ($page === 'oil') ? 'bg-blue-50 text-blue-600 font-bold' : ''; ?>">
+            <span class="mr-3 text-xl opacity-70">⛽</span> น้ำมันและยานพาหนะ
         </a>
 
         <!-- Module: Smart Dispatch -->
-        <a href="index.php?page=dispatch" class="flex items-center px-4 py-3 text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-lg transition-colors <?php echo ($page === 'dispatch') ? 'bg-green-50 text-green-600 font-semibold' : ''; ?>">
-            <span class="mr-3 text-xl">🗺️</span> Smart Dispatch
+        <a href="index.php?page=dispatch" class="flex items-center px-4 py-3 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl transition-all <?php echo ($page === 'dispatch') ? 'bg-emerald-50 text-emerald-600 font-bold' : ''; ?>">
+            <span class="mr-3 text-xl opacity-70">🗺️</span> ระบบจัดส่งอัจฉริยะ
         </a>
 
         <!-- Module: Inventory (Admin & Super Admin ONLY) -->
         <?php if (hasRole(['admin', 'super_admin'])): ?>
-        <a href="index.php?page=inventory" class="flex items-center px-4 py-3 text-gray-700 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition-colors <?php echo ($page === 'inventory') ? 'bg-purple-50 text-purple-600 font-semibold' : ''; ?>">
-            <span class="mr-3 text-xl">📦</span> Inventory
+        <a href="index.php?page=inventory" class="flex items-center px-4 py-3 text-slate-600 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all <?php echo ($page === 'inventory') ? 'bg-purple-50 text-purple-600 font-bold' : ''; ?>">
+            <span class="mr-3 text-xl opacity-70">📦</span> ระบบคลังสินค้า
         </a>
         <?php endif; ?>
 
         <!-- Module: User Management (Super Admin ONLY) -->
         <?php if (hasRole('super_admin')): ?>
-        <a href="index.php?page=users" class="flex items-center px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors <?php echo ($page === 'users') ? 'bg-red-50 text-red-600 font-semibold' : ''; ?>">
-            <span class="mr-3 text-xl">👥</span> Users
+        <div class="pt-4 pb-2 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">ตั้งค่าระบบ</div>
+        <a href="index.php?page=users" class="flex items-center px-4 py-3 text-slate-600 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all <?php echo ($page === 'users') ? 'bg-rose-50 text-rose-600 font-bold' : ''; ?>">
+            <span class="mr-3 text-xl opacity-70">👥</span> จัดการผู้ใช้
         </a>
         <?php endif; ?>
     </nav>
 
-    <div class="p-4 border-t border-gray-200">
-        <a href="logout.php" class="flex items-center justify-center w-full px-4 py-2 bg-gray-100 text-gray-700 hover:bg-red-500 hover:text-white rounded-lg transition-colors font-medium">
-            Logout
+    <div class="p-4 border-t border-slate-50">
+        <a href="logout.php" class="flex items-center justify-center w-full px-4 py-2.5 bg-slate-50 text-slate-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all font-bold text-sm">
+            🚪 ออกจากระบบ
         </a>
     </div>
 </aside>
 
-<!-- Mobile Menu Button (Visible on small screens) -->
-<div class="md:hidden bg-white border-b border-gray-200 p-4 flex justify-between items-center sticky top-0 z-40">
-    <h2 class="text-xl font-bold text-indigo-600">SmartSuite</h2>
-    <button id="mobileMenuBtn" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+<!-- Mobile Menu Button -->
+<div class="md:hidden bg-white border-b border-slate-100 p-4 flex justify-between items-center sticky top-0 z-40 shadow-sm">
+    <h2 class="text-xl font-black text-indigo-600 tracking-tighter">สมาร์ทสูท</h2>
+    <button id="mobileMenuBtn" class="p-2 text-slate-400 hover:text-indigo-600 focus:outline-none transition-colors">
         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/> 
         </svg>
     </button>
 </div>
 
 <!-- Mobile Menu Dropdown -->
-<div id="mobileMenu" class="md:hidden hidden bg-white border-b border-gray-200 absolute w-full z-30 shadow-lg">
-    <nav class="flex flex-col p-4 space-y-2">
-        <a href="index.php?page=home" class="px-4 py-2 text-gray-700 hover:bg-indigo-50 rounded-lg">🏠 Home</a>
-        <a href="index.php?page=oil" class="px-4 py-2 text-gray-700 hover:bg-blue-50 rounded-lg">⛽ Oil & Vehicles</a>
-        <a href="index.php?page=dispatch" class="px-4 py-2 text-gray-700 hover:bg-green-50 rounded-lg">🗺️ Smart Dispatch</a>
+<div id="mobileMenu" class="md:hidden hidden bg-white border-b border-slate-100 absolute w-full z-30 shadow-xl animate__animated animate__fadeInDown"> 
+    <nav class="flex flex-col p-6 space-y-1">
+        <a href="index.php?page=home" class="px-4 py-3 text-slate-600 hover:bg-indigo-50 rounded-xl font-bold">🏠 หน้าแรก</a>
+        <a href="index.php?page=oil" class="px-4 py-3 text-slate-600 hover:bg-blue-50 rounded-xl font-bold">⛽ น้ำมันและยานพาหนะ</a>
+        <a href="index.php?page=dispatch" class="px-4 py-3 text-slate-600 hover:bg-emerald-50 rounded-xl font-bold">🗺️ ระบบจัดส่งอัจฉริยะ</a>
         <?php if (hasRole(['admin', 'super_admin'])): ?>
-            <a href="index.php?page=inventory" class="px-4 py-2 text-gray-700 hover:bg-purple-50 rounded-lg">📦 Inventory</a>
+            <a href="index.php?page=inventory" class="px-4 py-3 text-slate-600 hover:bg-purple-50 rounded-xl font-bold">📦 ระบบคลังสินค้า</a>
         <?php endif; ?>
         <?php if (hasRole('super_admin')): ?>
-            <a href="index.php?page=users" class="px-4 py-2 text-gray-700 hover:bg-red-50 rounded-lg">👥 Users</a>
+            <a href="index.php?page=users" class="px-4 py-3 text-slate-600 hover:bg-rose-50 rounded-xl font-bold">👥 จัดการผู้ใช้</a>
         <?php endif; ?>
-        <hr class="my-2 border-gray-200">
-        <a href="logout.php" class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg">Logout</a>
+        <hr class="my-4 border-slate-100">
+        <a href="logout.php" class="px-4 py-3 text-rose-600 hover:bg-rose-50 rounded-xl font-bold">🚪 ออกจากระบบ</a>
     </nav>
 </div>
 

@@ -1,6 +1,6 @@
 <?php
 // views/modules/oil_report.php
-if (!defined('PDO::ATTR_ERRMODE')) exit('Direct access not permitted.');
+if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรงไม่ได้');
 ?>
 
 <div class="space-y-6">
@@ -8,7 +8,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('Direct access not permitted.');
     <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div>
             <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                <span class="mr-2 text-3xl">📊</span> รายงานการใช้น้ำมัน
+                <span class="mr-2 text-3xl">📊</span> รายงานการใช้น้ำมัน   
             </h2>
             <p class="text-gray-500 text-sm mt-1">ตรวจสอบประวัติการเบิกค่าน้ำมันและดูสถิติ</p>
         </div>
@@ -35,13 +35,13 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('Direct access not permitted.');
             <h3 class="text-blue-100 text-sm font-medium">ค่าใช้จ่ายรวม</h3>
             <p class="text-3xl font-bold mt-2">฿ <span id="stat_total_cost">0.00</span></p>
         </div>
-        <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-md p-6 text-white">
-            <h3 class="text-emerald-100 text-sm font-medium">ปริมาณรวม (ลิตร)</h3>
-            <p class="text-3xl font-bold mt-2"><span id="stat_total_liters">0.00</span> L</p>
+        <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-md p-6 text-white">     
+            <h3 class="text-emerald-100 text-sm font-medium">ปริมาณรวม (ลิตร)</h3>    
+            <p class="text-3xl font-bold mt-2"><span id="stat_total_liters">0.00</span> ลิตร</p>
         </div>
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-md p-6 text-white">
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-md p-6 text-white">       
             <h3 class="text-purple-100 text-sm font-medium">รายการเบิกทั้งหมด</h3>
-            <p class="text-3xl font-bold mt-2"><span id="stat_total_records">0</span> รายการ</p>
+            <p class="text-3xl font-bold mt-2"><span id="stat_total_records">0</span> รายการ</p>     
         </div>
     </div>
 
@@ -78,7 +78,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('Direct access not permitted.');
                         <th class="px-6 py-3 text-right">เลขไมล์</th>
                         <th class="px-6 py-3 text-right">จำนวนลิตร</th>
                         <th class="px-6 py-3 text-right">ราคา/ลิตร</th>
-                        <th class="px-6 py-3 text-right text-gray-800">ยอดรวม (บาท)</th>
+                        <th class="px-6 py-3 text-right text-gray-800">ยอดรวม (บาท)</th>      
                         <th class="px-6 py-3 text-center">หลักฐาน</th>
                     </tr>
                 </thead>

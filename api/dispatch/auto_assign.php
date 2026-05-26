@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 requireLogin();
 
 if (!hasRole(['admin', 'super_admin'])) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
 }
 
@@ -15,7 +15,7 @@ $input = json_decode(file_get_contents('php://input'), true);
 $quotas = $input['quotas'] ?? []; // format: [{ team_name: "tech1", limit: 5 }, ...]
 
 if (empty($quotas)) {
-    echo json_encode(['success' => false, 'error' => 'No quotas provided']);
+    echo json_encode(['success' => false, 'error' => 'กรุณาระบุโควตา']);
     exit;
 }
 
@@ -59,7 +59,7 @@ try {
 
     if (empty($unassignedJobs)) {
         $pdo->rollBack();
-        echo json_encode(['success' => false, 'error' => 'No unassigned jobs found']);
+        echo json_encode(['success' => false, 'error' => 'ไม่พบงานที่ยังไม่ได้มอบหมาย']);
         exit;
     }
 
@@ -75,7 +75,7 @@ try {
 
     // Calculate distance to centroid for each job
     foreach ($unassignedJobs as &$job) {
-        $job['distance'] = haversineDistance($centerLat, $centerLng, (float)$job['lat'], (float)$job['lng']);
+        $job['distance'] = haversineDistance($centerLat, $centerLng, (float)$job['lat'], (float)$job['lng']);   
     }
     unset($job);
 

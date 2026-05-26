@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 requireLogin();
 
 if (!hasRole(['admin', 'super_admin'])) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
 }
 
@@ -42,7 +42,7 @@ try {
 
         $unvisited = $jobs;
         $route = [];
-        
+
         // Start from the first job (could be replaced by technician's current location if known)
         $current = array_shift($unvisited);
         $route[] = $current;
@@ -59,16 +59,20 @@ try {
                 }
             }
 
-            $current = $unvisited[$nextIndex];
-            $route[] = $current;
-            array_splice($unvisited, $nextIndex, 1);
+            if ($nextIndex !== -1) {
+                $current = $unvisited[$nextIndex];
+                $route[] = $current;
+                array_splice($unvisited, $nextIndex, 1);
+            } else {
+                break;
+            }
         }
 
         // Generate Map Link
         $origin = $route[0]['lat'] . ',' . $route[0]['lng'];
         $destination = $route[count($route)-1]['lat'] . ',' . $route[count($route)-1]['lng'];
         $waypoints = [];
-        
+
         for ($i = 1; $i < count($route) - 1; $i++) {
             $waypoints[] = $route[$i]['lat'] . ',' . $route[$i]['lng'];
         }

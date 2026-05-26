@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 requireLogin();
 
 if (!hasRole(['admin', 'super_admin'])) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
 }
 
@@ -15,7 +15,7 @@ $input = json_decode(file_get_contents('php://input'), true);
 $items = $input['items'] ?? [];
 
 if (empty($items)) {
-    echo json_encode(['success' => false, 'error' => 'No items provided']);
+    echo json_encode(['success' => false, 'error' => 'ไม่มีข้อมูลสินค้า']);
     exit;
 }
 
@@ -26,16 +26,15 @@ $errors = [];
 try {
     $pdo->beginTransaction();
 
-    // Prepare statements for reuse
     $stmtFindProd = $pdo->prepare("SELECT id FROM products WHERE name = ?");
     $stmtInstProd = $pdo->prepare("INSERT INTO products (product_code, name) VALUES (?, ?)");
-    
-    $stmtFindModel = $pdo->prepare("SELECT id FROM product_models WHERE product_id = ? AND model_name = ?");
-    $stmtInstModel = $pdo->prepare("INSERT INTO product_models (product_id, model_name) VALUES (?, ?)");
+
+    $stmtFindModel = $pdo->prepare("SELECT id FROM product_models WHERE product_id = ? AND model_name = ?");    
+    $stmtInstModel = $pdo->prepare("INSERT INTO product_models (product_id, model_name) VALUES (?, ?)");        
 
     $stmtCheckSN = $pdo->prepare("SELECT id FROM inventory_items WHERE sn = ?");
     $stmtInstItem = $pdo->prepare("INSERT INTO inventory_items (model_id, sn, status) VALUES (?, ?, 'in_stock')");
-    $stmtLog = $pdo->prepare("INSERT INTO inventory_logs (item_id, action, admin_id) VALUES (?, 'in', ?)");
+    $stmtLog = $pdo->prepare("INSERT INTO inventory_logs (item_id, action, admin_id) VALUES (?, 'in', ?)");     
 
     foreach ($items as $index => $item) {
         $pName = trim($item['product_name'] ?? '');
@@ -43,33 +42,29 @@ try {
         $sn = trim($item['sn'] ?? '');
 
         if (empty($pName) || empty($mName)) {
-            $errors[] = "Row " . ($index + 1) . ": Product and Model name required.";
+            $errors[] = "แถวที่ " . ($index + 1) . ": จำเป็นต้องระบุชื่อสินค้าและรุ่น";
             continue;
         }
 
-        // Generate SN if empty
         if (empty($sn)) {
             $sn = 'SYS-' . strtoupper(uniqid());
         }
 
-        // Check SN uniqueness globally
         $stmtCheckSN->execute([$sn]);
         if ($stmtCheckSN->fetch()) {
-            $errors[] = "Row " . ($index + 1) . ": SN '$sn' already exists in system.";
+            $errors[] = "แถวที่ " . ($index + 1) . ": หมายเลขซีเรียล '$sn' มีอยู่ในระบบแล้ว";
             continue;
         }
 
-        // 1. Get or Create Product
         $stmtFindProd->execute([$pName]);
         $prodId = $stmtFindProd->fetchColumn();
-        
+
         if (!$prodId) {
             $pCode = 'P-' . strtoupper(substr(md5($pName . time()), 0, 6));
             $stmtInstProd->execute([$pCode, $pName]);
             $prodId = $pdo->lastInsertId();
         }
 
-        // 2. Get or Create Model
         $stmtFindModel->execute([$prodId, $mName]);
         $modelId = $stmtFindModel->fetchColumn();
 
@@ -78,11 +73,9 @@ try {
             $modelId = $pdo->lastInsertId();
         }
 
-        // 3. Insert Item
         $stmtInstItem->execute([$modelId, $sn]);
         $itemId = $pdo->lastInsertId();
 
-        // 4. Log Action
         $stmtLog->execute([$itemId, $admin_id]);
 
         $successCount++;
@@ -90,8 +83,8 @@ try {
 
     $pdo->commit();
     echo json_encode([
-        'success' => true, 
-        'imported' => $successCount, 
+        'success' => true,
+        'imported' => $successCount,
         'errors' => $errors
     ]);
 

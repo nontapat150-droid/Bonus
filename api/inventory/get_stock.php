@@ -8,16 +8,16 @@ requireLogin();
 
 // Protect
 if (!hasRole(['admin', 'super_admin'])) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
 }
 
 try {
     // We group by model to show quantity
-    $sql = "SELECT 
-                p.product_code, 
-                p.name as product_name, 
-                pm.id as model_id, 
+    $sql = "SELECT
+                p.product_code,
+                p.name as product_name,
+                pm.id as model_id,
                 pm.model_name,
                 COUNT(i.id) as qty
             FROM products p

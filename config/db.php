@@ -15,10 +15,10 @@ $options = [
 ];
 
 try {
-    // We try to connect. If database doesn't exist, we might need a setup script or manual creation first.
+    // We try to connect. If database doesn't exist, we might need a setup script or manual creation first.     
     // For local XAMPP, you might need to create the database `smart_business_suite` via phpMyAdmin.
     $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (\PDOException $e) {
     // For initial setup, if DB doesn't exist, we just fail gracefully with a message
-    die("Database connection failed. Please ensure database '$db' exists. Error: " . $e->getMessage());
+    die("เชื่อมต่อฐานข้อมูลล้มเหลว กรุณาตรวจสอบว่ามีฐานข้อมูล '$db' อยู่จริง ข้อผิดพลาด: " . $e->getMessage());
 }

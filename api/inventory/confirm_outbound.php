@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 requireLogin();
 
 if (!hasRole(['admin', 'super_admin'])) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
 }
 
@@ -15,7 +15,7 @@ $input = json_decode(file_get_contents('php://input'), true);
 $sns = $input['sns'] ?? [];
 
 if (empty($sns)) {
-    echo json_encode(['success' => false, 'error' => 'No items selected for outbound']);
+    echo json_encode(['success' => false, 'error' => 'ไม่มีรายการสินค้าที่เลือกสำหรับการเบิกออก']);
     exit;
 }
 
@@ -26,7 +26,7 @@ try {
 
     $stmtUpdate = $pdo->prepare("UPDATE inventory_items SET status = 'outbound' WHERE sn = ? AND status = 'in_stock'");
     $stmtGetId = $pdo->prepare("SELECT id FROM inventory_items WHERE sn = ?");
-    $stmtLog = $pdo->prepare("INSERT INTO inventory_logs (item_id, action, admin_id) VALUES (?, 'out', ?)");
+    $stmtLog = $pdo->prepare("INSERT INTO inventory_logs (item_id, action, admin_id) VALUES (?, 'out', ?)");    
 
     $processed = 0;
 
@@ -35,7 +35,7 @@ try {
         if ($stmtUpdate->rowCount() > 0) {
             $stmtGetId->execute([$sn]);
             $itemId = $stmtGetId->fetchColumn();
-            
+
             if ($itemId) {
                 $stmtLog->execute([$itemId, $admin_id]);
                 $processed++;

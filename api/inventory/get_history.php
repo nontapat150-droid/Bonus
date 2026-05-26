@@ -7,12 +7,12 @@ header('Content-Type: application/json');
 requireLogin();
 
 if (!hasRole(['admin', 'super_admin'])) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
 }
 
 try {
-    $sql = "SELECT 
+    $sql = "SELECT
                 l.timestamp,
                 l.action,
                 i.sn,
