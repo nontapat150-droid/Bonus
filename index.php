@@ -103,6 +103,7 @@ $page = $_GET['page'] ?? 'home';
             // Router mapping
             $routes = [
                 'oil' => hasRole(['technician']) ? 'views/modules/oil_form.php' : 'views/modules/oil_report.php',
+                'oil_test_form' => 'views/modules/oil_form.php', // For admin testing
                 'dispatch' => 'views/modules/dispatch_map.php',
                 'inventory' => 'views/modules/inventory_app.php',
                 'users' => 'views/modules/user_settings.php'
