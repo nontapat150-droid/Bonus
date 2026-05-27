@@ -17,6 +17,7 @@ if (!hasRole(['admin', 'super_admin'])) {
 
 $data = json_decode(file_get_contents('php://input'), true);
 $id = $data['id'] ?? null;
+$log_type = $data['log_type'] ?? 'sn';
 
 if (!$id) {
     echo json_encode(['success' => false, 'error' => 'ไม่ได้ระบุ ID']);
@@ -24,7 +25,8 @@ if (!$id) {
 }
 
 try {
-    $stmt = $pdo->prepare("DELETE FROM inventory_logs WHERE id = ?");
+    $table = ($log_type === 'consumable') ? 'inventory_consumable_logs' : 'inventory_logs';
+    $stmt = $pdo->prepare("DELETE FROM {$table} WHERE id = ?");
     $stmt->execute([$id]);
 
     if ($stmt->rowCount() > 0) {

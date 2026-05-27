@@ -2,16 +2,21 @@
 // views/modules/inventory_app.php
 if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรงไม่ได้');
 
-// Protection: Only Admin and Super Admin
-if (!hasRole(['admin', 'super_admin'])) {
+// Protection: Admin, Super Admin and Technician
+if (!hasRole(['admin', 'super_admin', 'technician'])) {
     echo "<div class='p-8 text-center text-red-600 font-bold text-xl'>ไม่มีสิทธิ์เข้าถึงหน้านี้</div>";
     exit;
 }
+
+$isAdmin = hasRole(['admin', 'super_admin']);
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    window.IS_ADMIN = <?php echo $isAdmin ? 'true' : 'false'; ?>;
+</script>
 
 <style>
     /* SweetAlert Custom Styles */
@@ -32,6 +37,7 @@ if (!hasRole(['admin', 'super_admin'])) {
     </div>
 
     <div class="flex overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2 space-x-2">       
+        <?php if ($isAdmin): ?>
         <button onclick="invTab('overview')" id="tab-overview" class="inv-tab active px-6 py-2 rounded-lg text-sm font-bold bg-purple-100 text-purple-700 transition-colors whitespace-nowrap">
             📊 คลังสินค้า
         </button>
@@ -42,11 +48,17 @@ if (!hasRole(['admin', 'super_admin'])) {
             📤 เบิกออก
             <span id="outboundBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
         </button>
+        <?php endif; ?>
+        <button onclick="invTab('transfer')" id="tab-transfer" class="inv-tab <?php echo !$isAdmin ? 'active px-6 py-2 rounded-lg text-sm font-bold bg-purple-100 text-purple-700' : 'px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50'; ?> transition-colors whitespace-nowrap relative">
+            🔄 โอนย้าย (ยืมของ)
+            <span id="transferBadge" class="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+        </button>
         <button onclick="invTab('history')" id="tab-history" class="inv-tab px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors whitespace-nowrap">
             🕒 ประวัติ
         </button>
     </div>
 
+    <?php if ($isAdmin): ?>
     <div id="view-overview" class="inv-view block space-y-4">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -74,12 +86,13 @@ if (!hasRole(['admin', 'super_admin'])) {
                         </tr>
                     </thead>
                     <tbody id="stockTableBody" class="divide-y divide-gray-100">
-                        <tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
+                        <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
     <div id="view-inbound" class="inv-view hidden space-y-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-t-4 border-t-emerald-500">
@@ -96,16 +109,16 @@ if (!hasRole(['admin', 'super_admin'])) {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                <div>
+                <div class="relative">
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">ชื่อสินค้า</label>
-                    <input list="productList" id="mainProductInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700" placeholder="พิมพ์เพื่อค้นหา หรือเพิ่มชื่อสินค้าใหม่..." autocomplete="off">
-                    <datalist id="productList"></datalist>
+                    <input type="text" id="mainProductInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700" placeholder="คลิกเพื่อเลือก หรือพิมพ์ชื่อสินค้าใหม่..." autocomplete="off">
+                    <div id="productDropdown" class="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
                 </div>
 
-                <div id="areaModelSelect">
+                <div id="areaModelSelect" class="relative">
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">รุ่น (Model)</label>
-                    <input list="modelList" id="mainModelInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700" placeholder="พิมพ์เพื่อค้นหา หรือเพิ่มรุ่นใหม่..." autocomplete="off">
-                    <datalist id="modelList"></datalist>
+                    <input type="text" id="mainModelInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700" placeholder="คลิกเพื่อเลือก หรือพิมพ์รุ่นใหม่..." autocomplete="off">
+                    <div id="modelDropdown" class="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
                 </div>
 
                 <div id="areaInputSn" class="md:col-span-2 mt-4">
@@ -140,23 +153,43 @@ if (!hasRole(['admin', 'super_admin'])) {
 
     <div id="view-outbound" class="inv-view hidden space-y-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">สแกนเบิกสินค้าออก</h3>
-            <div class="flex gap-4 mb-6">
-                <input type="text" id="out_sn" placeholder="ยิงบาร์โค้ด SN ตรงนี้ แล้วกด Enter..." class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-red-500 font-mono">
-                <button id="addOutboundBtn" class="bg-gray-800 text-white px-6 rounded-lg font-bold hover:bg-gray-900 transition-colors">เพิ่มลงคิว</button>
+            <h3 class="font-bold text-gray-700 mb-4 border-b pb-2 flex items-center"><span class="text-red-500 mr-2 text-xl">📤</span> สแกนเบิกสินค้าออก</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- ฝั่งสแกน SN -->
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">เบิกสินค้ามี SN (ทีละชิ้น)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="out_sn" placeholder="ยิงบาร์โค้ด SN ตรงนี้..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 font-mono">
+                        <button id="addOutboundBtn" class="bg-gray-800 text-white px-4 rounded-lg font-bold hover:bg-gray-900 transition-colors text-sm">เพิ่มลงคิว</button>
+                    </div>
+                </div>
+
+                <!-- ฝั่งเบิกวัสดุสิ้นเปลือง -->
+                <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+                    <label class="block text-sm font-bold text-yellow-800 mb-2">เบิกวัสดุสิ้นเปลือง (นับจำนวน)</label>
+                    <div class="flex gap-2">
+                        <select id="outboundConsumableSelect" class="flex-1 px-3 py-2 border border-yellow-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 font-bold text-slate-700 shadow-sm cursor-pointer">
+                            <option value="">-- เลือกวัสดุ --</option>
+                        </select>
+                        <input type="number" id="outboundConsumableQty" placeholder="จำนวน" min="0.1" step="0.1" class="w-24 px-3 py-2 border border-yellow-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 font-bold text-center">
+                        <button id="addOutboundConsumableBtn" class="bg-yellow-600 text-white px-4 rounded-lg font-bold hover:bg-yellow-700 transition-colors text-sm">เพิ่ม</button>
+                    </div>
+                </div>
             </div>
 
             <div class="border rounded-lg overflow-hidden">
                 <table class="w-full text-sm text-left text-gray-500">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                         <tr>
-                            <th class="px-6 py-3">SN</th>
+                            <th class="px-6 py-3">SN / รหัส</th>
                             <th class="px-6 py-3">ชื่อสินค้า - รุ่น</th>
+                            <th class="px-6 py-3 text-center">จำนวน (หน่วย)</th>
                             <th class="px-6 py-3 text-center">นำออก</th>
                         </tr>
                     </thead>
                     <tbody id="stagingTableBody" class="divide-y divide-gray-100">
-                        <tr id="emptyStaging"><td colspan="3" class="px-6 py-8 text-center text-gray-400">ยังไม่มีรายการสแกน รอการเบิก</td></tr>
+                        <tr id="emptyStaging"><td colspan="4" class="px-6 py-8 text-center text-gray-400">ยังไม่มีรายการสแกน รอการเบิก</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -169,13 +202,92 @@ if (!hasRole(['admin', 'super_admin'])) {
         </div>
     </div>
 
-    <div id="view-history" class="inv-view hidden space-y-4">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">       
-                <h3 class="font-bold text-gray-700">ประวัติการรับเข้า - เบิกออก</h3>
-                <button id="exportHistoryBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center">
-                    <span class="mr-2">📊</span> ส่งออก Excel
+    <div id="view-transfer" class="inv-view hidden space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-t-4 border-t-blue-500">
+            <h3 class="font-bold text-gray-700 mb-4 border-b pb-2 flex items-center"><span class="text-blue-500 mr-2 text-xl">🔄</span> โอนย้าย / ยืมของระหว่างช่าง</h3>
+            
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <p class="text-sm text-gray-500">เลือกสินค้าหรือระบุจำนวนวัสดุ เพื่อทำการโอนย้ายไปยังช่างคนอื่น</p>
+                <button onclick="loadMyTodayItems()" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center border border-blue-200">
+                    <span class="mr-1">🔄</span> รีเฟรชรายการ
                 </button>
+            </div>
+
+            <!-- หมวดหมู่: อุปกรณ์แบบมี SN -->
+            <div class="mb-6">
+                <h4 class="font-bold text-slate-700 mb-2">1. อุปกรณ์แบบมีหมายเลขซีเรียล (รับมาวันนี้)</h4>
+                <div class="border rounded-lg overflow-hidden">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <tr>
+                                <th class="px-6 py-3 w-10 text-center">
+                                    <input type="checkbox" id="selectAllTransfer" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer">
+                                </th>
+                                <th class="px-6 py-3">SN</th>
+                                <th class="px-6 py-3">ชื่อสินค้า - รุ่น</th>
+                                <th class="px-6 py-3">เวลาที่รับของ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transferItemsTableBody" class="divide-y divide-gray-100">
+                            <tr><td colspan="4" class="px-6 py-8 text-center text-gray-400"><div class="loader-spinner w-6 h-6 mx-auto mb-2"></div>กำลังโหลดรายการ...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- หมวดหมู่: วัสดุสิ้นเปลือง -->
+            <div class="mb-6">
+                <h4 class="font-bold text-slate-700 mb-2">2. วัสดุสิ้นเปลือง (ของในคลังส่วนตัว)</h4>
+                <div class="border rounded-lg overflow-hidden">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <tr>
+                                <th class="px-6 py-3">ชื่อวัสดุ</th>
+                                <th class="px-6 py-3 text-center">คงเหลือที่ตัวคุณ</th>
+                                <th class="px-6 py-3 text-center w-48">จำนวนที่ต้องการโอนยืม</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transferConsumablesTableBody" class="divide-y divide-gray-100">
+                            <tr><td colspan="3" class="px-6 py-8 text-center text-gray-400">ไม่มีสต็อกวัสดุสิ้นเปลือง</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-6 flex flex-col md:flex-row items-center gap-4 justify-between bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <div class="w-full md:w-1/2">
+                    <label class="block text-sm font-bold text-blue-800 mb-2">👤 เลือกช่างผู้รับของ (ยืมไป)</label>
+                    <select id="transferTargetSelect" class="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-slate-700 shadow-sm cursor-pointer">
+                        <option value="">-- โหลดรายชื่อ... --</option>
+                    </select>
+                </div>
+                <button id="confirmTransferBtn" class="w-full md:w-auto h-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    ยืนยันการโอนย้าย (0 รายการ)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-history" class="inv-view <?php echo !$isAdmin ? 'block' : 'hidden'; ?> space-y-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center flex-wrap gap-4">       
+                <h3 class="font-bold text-gray-700">ประวัติการรับเข้า - เบิกออก</h3>
+                
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <?php if ($isAdmin): ?>
+                    <!-- ตัวกรองสำหรับ Admin -->
+                    <select id="filterHistoryTeam" class="text-sm border-gray-300 rounded-lg py-2 pl-3 pr-8 focus:ring-purple-500 focus:border-purple-500">
+                        <option value="">ทุกทีม</option>
+                    </select>
+                    <select id="filterHistoryUser" class="text-sm border-gray-300 rounded-lg py-2 pl-3 pr-8 focus:ring-purple-500 focus:border-purple-500">
+                        <option value="">ทุกคน</option>
+                    </select>
+                    <?php endif; ?>
+                    
+                    <button id="exportHistoryBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center whitespace-nowrap">
+                        <span class="mr-2">📊</span> ส่งออก Excel
+                    </button>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left text-gray-500">

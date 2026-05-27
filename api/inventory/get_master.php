@@ -15,9 +15,14 @@ try {
     }
 
     // ดึงสินค้าแบบนับจำนวน (วัสดุสิ้นเปลือง)
-    $stmtCon = $pdo->query("SELECT product_name, unit FROM inventory_consumable ORDER BY product_name");
+    $stmtCon = $pdo->query("SELECT id, product_name, qty, unit FROM inventory_consumable ORDER BY product_name");
     while ($row = $stmtCon->fetch()) {
-        $data['consumables'][] = ['name' => $row['product_name'], 'unit' => $row['unit']];
+        $data['consumables'][] = [
+            'consumable_id' => $row['id'], 
+            'name' => $row['product_name'], 
+            'qty' => $row['qty'],
+            'unit' => $row['unit']
+        ];
     }
 
     echo json_encode(['success' => true, 'data' => $data]);

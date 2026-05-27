@@ -62,7 +62,37 @@ CREATE TABLE IF NOT EXISTS `product_models` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `product_id` INT NOT NULL,
   `model_name` VARCHAR(100) NOT NULL,
-  FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
+  `FOREIGN KEY` (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS `inventory_consumable` (
+  `id` VARCHAR(50) PRIMARY KEY,
+  `product_name` VARCHAR(150) NOT NULL,
+  `qty` DECIMAL(10,2) DEFAULT 0,
+  `unit` VARCHAR(50) DEFAULT 'ชิ้น'
+);
+
+CREATE TABLE IF NOT EXISTS `user_consumables` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `consumable_id` VARCHAR(50) NOT NULL,
+  `qty` DECIMAL(10,2) DEFAULT 0,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`consumable_id`) REFERENCES `inventory_consumable`(`id`) ON DELETE CASCADE,
+  UNIQUE KEY `user_cons_unique` (`user_id`, `consumable_id`)
+);
+
+CREATE TABLE IF NOT EXISTS `inventory_consumable_logs` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `consumable_id` VARCHAR(50) NOT NULL,
+  `action` ENUM('in', 'out', 'transfer') NOT NULL,
+  `qty` DECIMAL(10,2) NOT NULL,
+  `admin_id` INT NOT NULL,
+  `target_user_id` INT DEFAULT NULL,
+  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`consumable_id`) REFERENCES `inventory_consumable`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`admin_id`) REFERENCES `users`(`id`),
+  FOREIGN KEY (`target_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS `inventory_items` (
@@ -77,7 +107,7 @@ CREATE TABLE IF NOT EXISTS `inventory_items` (
 CREATE TABLE IF NOT EXISTS `inventory_logs` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `item_id` INT NOT NULL,
-  `action` ENUM('in', 'out') NOT NULL,
+  `action` ENUM('in', 'out', 'transfer') NOT NULL,
   `admin_id` INT NOT NULL,
   `target_user_id` INT DEFAULT NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
