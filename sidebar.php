@@ -1,14 +1,68 @@
 <?php
 // views/layouts/sidebar.php
 ?>
-<aside class="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col h-full sticky top-0 shadow-sm" style="height: 100vh;">
-    <div class="p-8 border-b border-slate-50">
-        <h2 class="text-2xl font-black text-indigo-600 tracking-tighter">สมาร์ทสูท</h2>
-        <div class="mt-4 flex items-center">
-            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold mr-3">
+<style>
+    #desktopSidebar {
+        transition: width 0.3s ease-in-out;
+    }
+    .sidebar-collapsed {
+        width: 5.5rem !important; /* w-22 */
+    }
+    .sidebar-collapsed .sidebar-text,
+    .sidebar-collapsed .sidebar-brand-text,
+    .sidebar-collapsed .user-info {
+        display: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .sidebar-collapsed .user-avatar {
+        margin-right: 0 !important;
+    }
+    .sidebar-collapsed .sidebar-header-box {
+        padding: 1.5rem 0.5rem;
+        text-align: center;
+    }
+    .sidebar-collapsed .nav-item {
+        justify-content: center;
+        padding: 0.75rem;
+    }
+    .sidebar-collapsed .nav-icon {
+        margin-right: 0 !important;
+    }
+    .sidebar-collapsed .module-title {
+        text-align: center;
+        color: transparent;
+        height: 20px;
+        overflow: hidden;
+        position: relative;
+    }
+    .sidebar-collapsed .module-title::after {
+        content: '•••';
+        color: #94a3b8;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 14px;
+    }
+    .sidebar-collapsed #sidebarToggle {
+        transform: rotate(180deg);
+    }
+</style>
+
+<aside id="desktopSidebar" class="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col h-full sticky top-0 shadow-sm relative transition-all duration-300 ease-in-out" style="height: 100vh;">
+    <button id="sidebarToggle" class="absolute -right-3 top-8 bg-white border border-slate-200 rounded-full p-1.5 text-slate-400 hover:text-indigo-600 shadow-sm z-50 transition-transform duration-300 flex items-center justify-center">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+    </button>
+
+    <div class="sidebar-header-box p-8 border-b border-slate-50 transition-all duration-300">
+        <h2 class="sidebar-brand-text text-2xl font-black text-indigo-600 tracking-tighter whitespace-nowrap">สมาร์ทสูท</h2>
+        <div class="mt-4 flex items-center transition-all duration-300">
+            <div class="user-avatar w-10 h-10 rounded-full bg-indigo-100 flex-shrink-0 flex items-center justify-center text-indigo-700 font-bold mr-3 transition-all duration-300">
                 <?php echo strtoupper(substr($user['full_name'] ?? 'U', 0, 1)); ?>
             </div>
-            <div>
+            <div class="user-info whitespace-nowrap overflow-hidden">
                 <p class="text-sm font-bold text-slate-800 leading-none"><?php echo htmlspecialchars($user['full_name'] ?? 'ผู้ใช้งาน'); ?></p>
                 <span class="inline-block mt-1.5 px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-bold rounded uppercase tracking-wider">
                     <?php 
@@ -27,41 +81,42 @@
     </div>
 
     <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-        <a href="index.php?page=home" class="flex items-center px-4 py-3 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition-all <?php echo ($page === 'home') ? 'bg-indigo-50 text-indigo-600 font-bold' : ''; ?>">
-            <span class="mr-3 text-xl opacity-70">🏠</span> หน้าแรก
+        <a href="index.php?page=home" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition-all <?php echo ($page === 'home') ? 'bg-indigo-50 text-indigo-600 font-bold' : ''; ?>">
+            <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">🏠</span> <span class="sidebar-text whitespace-nowrap">หน้าแรก</span>
         </a>
 
-        <div class="pt-4 pb-2 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">โมดูลหลัก</div>
+        <div class="module-title pt-4 pb-2 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">โมดูลหลัก</div>
 
-        <a href="index.php?page=checkin" class="flex items-center px-4 py-3 text-slate-600 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-all <?php echo ($page === 'checkin') ? 'bg-orange-50 text-orange-600 font-bold' : ''; ?>">
-            <span class="mr-3 text-xl opacity-70">📸</span> ระบบเช็คอิน
+        <a href="index.php?page=checkin" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-orange-50 hover:text-orange-600 rounded-xl transition-all <?php echo ($page === 'checkin') ? 'bg-orange-50 text-orange-600 font-bold' : ''; ?>">
+            <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">📸</span> <span class="sidebar-text whitespace-nowrap">ระบบเช็คอิน</span>
         </a>
 
-        <a href="index.php?page=oil" class="flex items-center px-4 py-3 text-slate-600 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all <?php echo ($page === 'oil') ? 'bg-blue-50 text-blue-600 font-bold' : ''; ?>">
-            <span class="mr-3 text-xl opacity-70">⛽</span> น้ำมันและยานพาหนะ
+        <a href="index.php?page=oil" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all <?php echo ($page === 'oil') ? 'bg-blue-50 text-blue-600 font-bold' : ''; ?>">
+            <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">⛽</span> <span class="sidebar-text whitespace-nowrap">น้ำมันและยานพาหนะ</span>
         </a>
 
-        <a href="index.php?page=dispatch" class="flex items-center px-4 py-3 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl transition-all <?php echo ($page === 'dispatch') ? 'bg-emerald-50 text-emerald-600 font-bold' : ''; ?>">
-            <span class="mr-3 text-xl opacity-70">🗺️</span> ระบบจัดส่งอัจฉริยะ
+        <a href="index.php?page=dispatch" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl transition-all <?php echo ($page === 'dispatch') ? 'bg-emerald-50 text-emerald-600 font-bold' : ''; ?>">
+            <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">🗺️</span> <span class="sidebar-text whitespace-nowrap">ระบบจัดส่งอัจฉริยะ</span>
         </a>
 
         <?php if (hasRole(['admin', 'super_admin'])): ?>
-        <a href="index.php?page=inventory" class="flex items-center px-4 py-3 text-slate-600 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all <?php echo ($page === 'inventory') ? 'bg-purple-50 text-purple-600 font-bold' : ''; ?>">
-            <span class="mr-3 text-xl opacity-70">📦</span> ระบบคลังสินค้า
+        <a href="index.php?page=inventory" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all <?php echo ($page === 'inventory') ? 'bg-purple-50 text-purple-600 font-bold' : ''; ?>">
+            <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">📦</span> <span class="sidebar-text whitespace-nowrap">ระบบคลังสินค้า</span>
         </a>
         <?php endif; ?>
 
         <?php if (hasRole('super_admin')): ?>
-        <div class="pt-4 pb-2 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">ตั้งค่าระบบ</div>
-        <a href="index.php?page=users" class="flex items-center px-4 py-3 text-slate-600 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all <?php echo ($page === 'users') ? 'bg-rose-50 text-rose-600 font-bold' : ''; ?>">
-            <span class="mr-3 text-xl opacity-70">👥</span> จัดการผู้ใช้
+        <div class="module-title pt-4 pb-2 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">ตั้งค่าระบบ</div>
+        <a href="index.php?page=users" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all <?php echo ($page === 'users') ? 'bg-rose-50 text-rose-600 font-bold' : ''; ?>">
+            <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">👥</span> <span class="sidebar-text whitespace-nowrap">จัดการผู้ใช้</span>
         </a>
         <?php endif; ?>
     </nav>
 
     <div class="p-4 border-t border-slate-50">
-        <a href="logout.php" class="flex items-center justify-center w-full px-4 py-2.5 bg-slate-50 text-slate-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all font-bold text-sm">
-            🚪 ออกจากระบบ
+        <a href="logout.php" class="nav-item flex items-center justify-center w-full px-4 py-2.5 bg-slate-50 text-slate-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all font-bold text-sm">
+            <span class="nav-icon text-xl transition-all duration-300">🚪</span>
+            <span class="sidebar-text ml-2 whitespace-nowrap">ออกจากระบบ</span>
         </a>
     </div>
 </aside>
@@ -98,7 +153,26 @@
 </div>
 
 <script>
-    document.getElementById('mobileMenuBtn').addEventListener('click', function() {
-        document.getElementById('mobileMenu').classList.toggle('hidden');
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', function() {
+                document.getElementById('mobileMenu').classList.toggle('hidden');
+            });
+        }
+
+        // Desktop Sidebar Toggle
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const desktopSidebar = document.getElementById('desktopSidebar');
+
+        if (sidebarToggle && desktopSidebar) {
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                desktopSidebar.classList.add('sidebar-collapsed');
+            }
+            sidebarToggle.addEventListener('click', function() {
+                desktopSidebar.classList.toggle('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', desktopSidebar.classList.contains('sidebar-collapsed'));
+            });
+        }
     });
 </script>
