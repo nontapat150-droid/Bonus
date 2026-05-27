@@ -13,6 +13,7 @@ if (!hasRole(['admin', 'super_admin'])) {
 
 $input = json_decode(file_get_contents('php://input'), true);
 $sns = $input['sns'] ?? [];
+$receiver_id = $input['receiver_id'] ?? $_SESSION['user_id'];
 
 if (empty($sns)) {
     echo json_encode(['success' => false, 'error' => 'ไม่มีรายการสินค้าที่เลือกสำหรับการเบิกออก']);
@@ -26,7 +27,7 @@ try {
 
     $stmtUpdate = $pdo->prepare("UPDATE inventory_items SET status = 'outbound' WHERE sn = ? AND status = 'in_stock'");
     $stmtGetId = $pdo->prepare("SELECT id FROM inventory_items WHERE sn = ?");
-    $stmtLog = $pdo->prepare("INSERT INTO inventory_logs (item_id, action, admin_id) VALUES (?, 'out', ?)");    
+    $stmtLog = $pdo->prepare("INSERT INTO inventory_logs (item_id, action, admin_id, receiver_id) VALUES (?, 'out', ?, ?)");    
 
     $processed = 0;
 
@@ -37,7 +38,7 @@ try {
             $itemId = $stmtGetId->fetchColumn();
 
             if ($itemId) {
-                $stmtLog->execute([$itemId, $admin_id]);
+                $stmtLog->execute([$itemId, $admin_id, $receiver_id]);
                 $processed++;
             }
         }

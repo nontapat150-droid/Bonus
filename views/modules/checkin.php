@@ -33,4 +33,24 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
     </div>
 </div>
 
-<script src="assets/js/checkin.js"></script>
+<?php if (hasRole(['super_admin', 'admin'])): ?>
+<div class="max-w-md mx-auto mt-6 bg-white rounded-[2rem] shadow-xl overflow-hidden animate__animated animate__fadeIn">
+    <div class="p-6 border-t border-slate-100 bg-slate-50">
+        <h3 class="text-lg font-black text-slate-800 mb-4 flex items-center">
+            <span class="mr-2">👑</span> สำหรับผู้ดูแลระบบ
+        </h3>
+        <div class="flex flex-col space-y-3">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-widest">เลือกวันที่ต้องการส่งออก</label>
+            <input type="date" id="exportCheckinDate" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700" value="<?php echo date('Y-m-d'); ?>">
+            <button id="exportCheckinBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-xl font-black shadow-md shadow-emerald-200 transition-transform active:scale-95 flex items-center justify-center">
+                <span class="mr-2">📊</span> ส่งออกข้อมูลลงเวลา (Excel)
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Load SheetJS for Excel Export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<?php endif; ?>
+
+<script src="assets/js/checkin.js?v=<?php echo time(); ?>"></script>

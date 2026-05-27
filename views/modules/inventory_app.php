@@ -79,20 +79,47 @@ if (!hasRole(['admin', 'super_admin'])) {
                 <form id="inboundForm" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อสินค้า <span class="text-red-500">*</span></label>
-                        <input type="text" id="in_product_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+                        <div class="flex gap-2">
+                            <input type="text" id="in_product_name" list="productList" required class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500" autocomplete="off" placeholder="เลือกหรือพิมพ์ชื่อใหม่">
+                            <datalist id="productList"></datalist>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">รุ่น (Model) <span class="text-red-500">*</span></label>
-                        <input type="text" id="in_model_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+                        <div class="flex gap-2">
+                            <input type="text" id="in_model_name" list="modelList" required class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500" autocomplete="off" placeholder="เลือกหรือพิมพ์รุ่นใหม่">
+                            <datalist id="modelList"></datalist>
+                            <button type="button" id="lockProductBtn" class="bg-gray-100 text-gray-600 hover:bg-gray-200 px-3 rounded-lg font-bold border border-gray-300 flex items-center justify-center transition-colors" title="ล็อคชื่อสินค้าและรุ่น">
+                                🔓
+                            </button>
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">หมายเลขซีเรียล (SN) <span class="text-gray-400 font-normal">(เว้นว่างไว้เพื่อสร้างอัตโนมัติ)</span></label>
-                        <input type="text" id="in_sn" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500" placeholder="ยิงบาร์โค้ด SN ตรงนี้">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">หมายเลขซีเรียล (SN) <span class="text-gray-400 font-normal">(พิมพ์/สแกนแล้วกด Enter, ขั้นต่ำ 12 หลัก)</span></label>
+                        <input type="text" id="in_sn" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 font-mono" placeholder="ยิงบาร์โค้ด SN ตรงนี้">
                     </div>
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg transition-colors">
-                        บันทึกรับเข้า
-                    </button>
                 </form>
+
+                <div class="mt-4 border rounded-lg overflow-hidden">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2">SN</th>
+                                <th class="px-4 py-2">ชื่อสินค้า - รุ่น</th>
+                                <th class="px-4 py-2 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inboundStagingBody" class="divide-y divide-gray-100">
+                            <tr id="emptyInboundStaging"><td colspan="3" class="px-4 py-6 text-center text-gray-400">รอการสแกนรับเข้า...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-4">
+                    <button id="submitInboundStagingBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        บันทึกรับเข้าคลัง (0 รายการ)
+                    </button>
+                </div>
             </div>
 
             <!-- Excel Import -->
@@ -115,9 +142,15 @@ if (!hasRole(['admin', 'super_admin'])) {
     <div id="view-outbound" class="inv-view hidden space-y-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">สแกนเบิกสินค้าออก</h3>
-            <div class="flex gap-4 mb-6">
-                <input type="text" id="out_sn" placeholder="ยิงบาร์โค้ด SN ตรงนี้ แล้วกด Enter..." class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-red-500 font-mono">
-                <button id="addOutboundBtn" class="bg-gray-800 text-white px-6 rounded-lg font-bold hover:bg-gray-900 transition-colors">เพิ่มลงคิว</button>
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <select id="out_receiver_id" class="w-full md:w-64 px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 bg-gray-50">
+                    <option value="<?php echo $_SESSION['user_id']; ?>">🙋‍♂️ เบิกให้ตัวเอง</option>
+                    <!-- Other users loaded via JS -->
+                </select>
+                <div class="flex-1 flex gap-2">
+                    <input type="text" id="out_sn" placeholder="ยิงบาร์โค้ด SN ตรงนี้ แล้วกด Enter..." class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-red-500 font-mono">
+                    <button id="addOutboundBtn" class="bg-gray-800 text-white px-6 rounded-lg font-bold hover:bg-gray-900 transition-colors">เพิ่มลงคิว</button>
+                </div>
             </div>
 
             <div class="border rounded-lg overflow-hidden">
@@ -161,7 +194,8 @@ if (!hasRole(['admin', 'super_admin'])) {
                             <th class="px-6 py-3">ประเภท</th>
                             <th class="px-6 py-3">SN</th>
                             <th class="px-6 py-3">สินค้า - รุ่น</th>
-                            <th class="px-6 py-3">เจ้าหน้าที่ผู้ทำรายการ</th>
+                            <th class="px-6 py-3">เจ้าหน้าที่/ผู้ทำรายการ</th>
+                            <th class="px-6 py-3">ผู้รับมอบ/ผู้เบิกใช้งาน</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="divide-y divide-gray-100">

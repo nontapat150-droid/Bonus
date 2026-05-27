@@ -1,9 +1,14 @@
--- Smart Business Suite & Dispatch System Schema
--- Create Database (Run this manually in phpMyAdmin or via a setup script)
--- CREATE DATABASE IF NOT EXISTS smart_business_suite CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
--- USE smart_business_suite;
+-- 1. สร้างฐานข้อมูลและเลือกใช้งาน
+CREATE DATABASE IF NOT EXISTS `smart_business_suite` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `smart_business_suite`;
 
--- 1. Role-Based Access Control (RBAC)
+-- 2. โมดูลจัดการทีม (ต้องสร้างก่อนผู้ใช้งานและงาน)
+CREATE TABLE IF NOT EXISTS `teams` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `team_name` VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- 3. โมดูลผู้ใช้งานและสิทธิ์ (RBAC)
 CREATE TABLE IF NOT EXISTS `users` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `username` VARCHAR(50) NOT NULL UNIQUE,
@@ -16,14 +21,13 @@ CREATE TABLE IF NOT EXISTS `users` (
   FOREIGN KEY (`team_id`) REFERENCES `teams`(`id`) ON DELETE SET NULL
 );
 
--- Default Super Admin (Password: password123)
--- Hash generated via password_hash('password123', PASSWORD_DEFAULT)
+-- เพิ่มบัญชี Super Admin เริ่มต้น (รหัสผ่าน: password123)
 INSERT IGNORE INTO `users` (`username`, `password_hash`, `role`, `full_name`) VALUES 
 ('superadmin', '$2y$10$77pZhvEFEBMZB/iXgLHAGO5sAZ506MRnmu7odUicNn0Wy4.pGfjqG', 'super_admin', 'System Administrator'),
 ('admin', '$2y$10$77pZhvEFEBMZB/iXgLHAGO5sAZ506MRnmu7odUicNn0Wy4.pGfjqG', 'admin', 'General Admin'),
 ('tech1', '$2y$10$77pZhvEFEBMZB/iXgLHAGO5sAZ506MRnmu7odUicNn0Wy4.pGfjqG', 'technician', 'John Technician');
 
--- 2. Oil & Vehicle Module
+-- 4. โมดูลน้ำมันและยานพาหนะ
 CREATE TABLE IF NOT EXISTS `vehicles` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `license_plate` VARCHAR(20) NOT NULL UNIQUE,
@@ -50,7 +54,7 @@ CREATE TABLE IF NOT EXISTS `oil_images` (
   FOREIGN KEY (`record_id`) REFERENCES `oil_records`(`id`) ON DELETE CASCADE
 );
 
--- 3. Inventory Module
+-- 5. โมดูลคลังสินค้า
 CREATE TABLE IF NOT EXISTS `products` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `product_code` VARCHAR(50) NOT NULL UNIQUE,
@@ -78,17 +82,14 @@ CREATE TABLE IF NOT EXISTS `inventory_logs` (
   `item_id` INT NOT NULL,
   `action` ENUM('in', 'out') NOT NULL,
   `admin_id` INT NOT NULL,
+  `receiver_id` INT DEFAULT NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`item_id`) REFERENCES `inventory_items`(`id`),
-  FOREIGN KEY (`admin_id`) REFERENCES `users`(`id`)
+  FOREIGN KEY (`admin_id`) REFERENCES `users`(`id`),
+  FOREIGN KEY (`receiver_id`) REFERENCES `users`(`id`)
 );
 
--- 4. Smart Dispatch Module
-CREATE TABLE IF NOT EXISTS `teams` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `team_name` VARCHAR(100) NOT NULL UNIQUE
-);
-
+-- 6. โมดูลแจกจ่ายงาน
 CREATE TABLE IF NOT EXISTS `jobs` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `plan_arrival_date` DATE DEFAULT NULL,
@@ -110,4 +111,13 @@ CREATE TABLE IF NOT EXISTS `jobs` (
   `team_id` INT DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`team_id`) REFERENCES `teams`(`id`) ON DELETE SET NULL
+);
+
+-- 7. โมดูลระบบลงเวลาเข้างาน (Check-in)
+CREATE TABLE IF NOT EXISTS `checkins` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `image_path` VARCHAR(255) NOT NULL,
+  `checkin_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );

@@ -840,28 +840,22 @@ function exportDataToExcel(filterType) {
         });
     }
 
-    // Map data to Excel headers (REMOVED Sequence)
+    // Map data to Excel headers
     const exportData = filtered.map(j => ({
-        'รหัสงาน (Access No)': j.access_no || '',
-        'ชื่อลูกค้า (Customer)': j.customer || '',
-        'เบอร์โทร (Phone)': j.phone || '',
-        'แพ็กเกจ (Package)': j.package || '',
-        'ที่อยู่ (Address)': j.address || '',
-        'ละติจูด (Lat)': j.lat || '',
-        'ลองจิจูด (Lng)': j.lng || '',
-        'หมายเหตุ (Remark)': j.remark || '',
-        'วันที่ (Date)': j.plan_arrival_date || '',
-        'สถานะ (Status)': j.status || '',
-        'ทีมรับผิดชอบ (Team)': j.team_name || 'ยังไม่จ่ายงาน'
+        'วันที่-เวลา': j.plan_arrival_date || '',
+        'รหัส': j.access_no || '',
+        'ชื่อลูกค้า': j.customer || '',
+        'เบอร์โทร': j.phone || '',
+        'แพ็กเกจ': j.package || '',
+        'หมายเหตุ': j.remark || ''
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     
     // Auto-width columns slightly
     const wscols = [
-        {wch: 20}, {wch: 25}, {wch: 15}, {wch: 15}, 
-        {wch: 40}, {wch: 15}, {wch: 15}, {wch: 20}, 
-        {wch: 15}, {wch: 15}, {wch: 20}
+        {wch: 15}, {wch: 20}, {wch: 30}, {wch: 15}, 
+        {wch: 20}, {wch: 30}
     ];
     ws['!cols'] = wscols;
 

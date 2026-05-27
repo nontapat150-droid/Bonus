@@ -18,12 +18,16 @@ try {
                 i.sn,
                 p.name as product_name,
                 pm.model_name,
-                u.full_name as admin_name
+                u.full_name as admin_name,
+                r.full_name as receiver_name,
+                t.team_name as receiver_team
             FROM inventory_logs l
             JOIN inventory_items i ON l.item_id = i.id
             JOIN product_models pm ON i.model_id = pm.id
             JOIN products p ON pm.product_id = p.id
             JOIN users u ON l.admin_id = u.id
+            LEFT JOIN users r ON l.receiver_id = r.id
+            LEFT JOIN teams t ON r.team_id = t.id
             ORDER BY l.timestamp DESC
             LIMIT 500"; // Limit to recent 500 for performance
 

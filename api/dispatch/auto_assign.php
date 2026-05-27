@@ -55,7 +55,7 @@ try {
 
     // Get unassigned jobs with valid coordinates
     $stmtJobs = $pdo->query("SELECT id, lat, lng FROM jobs WHERE team_id IS NULL AND lat IS NOT NULL AND lng IS NOT NULL");
-    $unassignedJobs = $stmtJobs->fetchAll();
+    $unassignedJobs = $stmtJobs->fetchAll(PDO::FETCH_ASSOC);
 
     if (empty($unassignedJobs)) {
         $pdo->rollBack();
@@ -63,36 +63,39 @@ try {
         exit;
     }
 
-    // Calculate centroid
-    $sumLat = 0; $sumLng = 0; $count = 0;
-    foreach ($unassignedJobs as $job) {
-        $sumLat += (float)$job['lat'];
-        $sumLng += (float)$job['lng'];
-        $count++;
-    }
-    $centerLat = $sumLat / $count;
-    $centerLng = $sumLng / $count;
-
-    // Calculate distance to centroid for each job
-    foreach ($unassignedJobs as &$job) {
-        $job['distance'] = haversineDistance($centerLat, $centerLng, (float)$job['lat'], (float)$job['lng']);   
-    }
-    unset($job);
-
-    // Sort jobs by distance ascending
-    usort($unassignedJobs, function($a, $b) {
-        return $a['distance'] <=> $b['distance'];
-    });
-
     $stmtAssign = $pdo->prepare("UPDATE jobs SET team_id = ? WHERE id = ?");
     $assignedTotal = 0;
 
     foreach ($teamMap as $teamName => &$teamInfo) {
-        while ($teamInfo['assigned'] < $teamInfo['limit'] && !empty($unassignedJobs)) {
-            $job = array_shift($unassignedJobs);
-            $stmtAssign->execute([$teamInfo['id'], $job['id']]);
-            $teamInfo['assigned']++;
-            $assignedTotal++;
+        $limit = $teamInfo['limit'];
+        
+        if ($teamInfo['assigned'] < $limit && !empty($unassignedJobs)) {
+            // Re-index to ensure keys are sequential
+            $unassignedJobs = array_values($unassignedJobs);
+            
+            // Pick the first available unassigned job as the geographic center for this team
+            $seedJob = $unassignedJobs[0];
+            $seedLat = (float)$seedJob['lat'];
+            $seedLng = (float)$seedJob['lng'];
+            
+            // Calculate distance from the team's center to all remaining unassigned jobs
+            foreach ($unassignedJobs as &$job) {
+                $job['distance'] = haversineDistance($seedLat, $seedLng, (float)$job['lat'], (float)$job['lng']);   
+            }
+            unset($job);
+            
+            // Sort jobs by distance so the nearest jobs come first
+            usort($unassignedJobs, function($a, $b) {
+                return $a['distance'] <=> $b['distance'];
+            });
+            
+            // Assign the nearest jobs up to the team's limit
+            while ($teamInfo['assigned'] < $limit && !empty($unassignedJobs)) {
+                $jobToAssign = array_shift($unassignedJobs);
+                $stmtAssign->execute([$teamInfo['id'], $jobToAssign['id']]);
+                $teamInfo['assigned']++;
+                $assignedTotal++;
+            }
         }
     }
 

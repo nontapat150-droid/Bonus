@@ -90,33 +90,128 @@ document.getElementById('searchStock')?.addEventListener('input', (e) => {
 // ----------------------------------------------------
 // TAB 2: Inbound (Manual & Excel)
 // ----------------------------------------------------
+let stagedInbound = [];
+let allProducts = [];
+let isProductLocked = false;
 
-document.getElementById('inboundForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
+document.getElementById('in_product_name')?.addEventListener('change', (e) => {
+    const pName = e.target.value.trim();
+    const product = allProducts.find(p => p.name === pName);
+    const modelList = document.getElementById('modelList');
+    modelList.innerHTML = '';
+    if (product && product.models) {
+        product.models.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.name;
+            modelList.appendChild(opt);
+        });
+    }
+});
 
-    const pName = document.getElementById('in_product_name').value.trim();
-    const mName = document.getElementById('in_model_name').value.trim();
-    const sn = document.getElementById('in_sn').value.trim();
-    const btn = e.target.querySelector('button[type="submit"]');
+document.getElementById('lockProductBtn')?.addEventListener('click', () => {
+    const pInput = document.getElementById('in_product_name');
+    const mInput = document.getElementById('in_model_name');
+    const lockBtn = document.getElementById('lockProductBtn');
+    
+    isProductLocked = !isProductLocked;
+    pInput.readOnly = isProductLocked;
+    mInput.readOnly = isProductLocked;
+    
+    if (isProductLocked) {
+        pInput.classList.add('bg-gray-100');
+        mInput.classList.add('bg-gray-100');
+        lockBtn.innerHTML = '🔒';
+        lockBtn.classList.replace('bg-gray-100', 'bg-purple-100');
+        lockBtn.classList.replace('text-gray-600', 'text-purple-700');
+        document.getElementById('in_sn').focus();
+        Toast.info('ล็อคสินค้าเรียบร้อย สามารถสแกน SN ต่อเนื่องได้เลย');
+    } else {
+        pInput.classList.remove('bg-gray-100');
+        mInput.classList.remove('bg-gray-100');
+        lockBtn.innerHTML = '🔓';
+        lockBtn.classList.replace('bg-purple-100', 'bg-gray-100');
+        lockBtn.classList.replace('text-purple-700', 'text-gray-600');
+    }
+});
 
-    if (!pName || !mName) return Toast.error('กรุณากรอกชื่อสินค้าและรุ่นให้ครบถ้วน');
+document.getElementById('in_sn')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        
+        const pName = document.getElementById('in_product_name').value.trim();
+        const mName = document.getElementById('in_model_name').value.trim();
+        const snInput = document.getElementById('in_sn');
+        const sn = snInput.value.trim();
+
+        if (!pName || !mName) return Toast.error('กรุณาระบุชื่อสินค้าและรุ่นก่อนสแกน');
+        if (sn.length < 12) return Toast.error('หมายเลขซีเรียลต้องมีอย่างน้อย 12 หลัก');
+        
+        if (stagedInbound.some(item => item.sn === sn)) {
+            Toast.error('รายการนี้ถูกสแกนไว้ในคิวรับเข้าแล้ว');
+            snInput.value = '';
+            return;
+        }
+
+        stagedInbound.push({ product_name: pName, model_name: mName, sn: sn });
+        renderInboundStaging();
+        snInput.value = '';
+        snInput.focus();
+    }
+});
+
+function renderInboundStaging() {
+    const tbody = document.getElementById('inboundStagingBody');
+    const submitBtn = document.getElementById('submitInboundStagingBtn');
+
+    tbody.innerHTML = '';
+    if (stagedInbound.length === 0) {
+        tbody.innerHTML = '<tr id="emptyInboundStaging"><td colspan="3" class="px-4 py-6 text-center text-gray-400">รอการสแกนรับเข้า...</td></tr>';
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'บันทึกรับเข้าคลัง (0 รายการ)';
+        return;
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = `บันทึกรับเข้าคลัง (${stagedInbound.length} รายการ)`;
+
+    stagedInbound.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-50';
+        row.innerHTML = `
+            <td class="px-4 py-2 font-mono text-indigo-600">${item.sn}</td>
+            <td class="px-4 py-2">${item.product_name} - ${item.model_name}</td>
+            <td class="px-4 py-2 text-center">
+                <button type="button" onclick="removeInboundStaged(${index})" class="text-red-500 hover:text-red-700 font-bold">✕</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+window.removeInboundStaged = function(index) {
+    stagedInbound.splice(index, 1);
+    renderInboundStaging();
+};
+
+document.getElementById('submitInboundStagingBtn')?.addEventListener('click', async () => {
+    if (stagedInbound.length === 0) return;
 
     Loader.show();
+    const btn = document.getElementById('submitInboundStagingBtn');
     btn.disabled = true;
-
-    const payload = { items: [{ product_name: pName, model_name: mName, sn: sn }] };
 
     try {
         const res = await fetch('api/inventory/import_inbound.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ items: stagedInbound })
         });
         const data = await res.json();
 
         if (data.success && data.imported > 0) {
-            Toast.success(`บันทึกรับเข้าสำเร็จ! สินค้าพร้อมในคลังแล้ว`);
-            document.getElementById('inboundForm').reset();
+            Toast.success(`บันทึกรับเข้าสำเร็จ ${data.imported} รายการ!`);
+            stagedInbound = [];
+            renderInboundStaging();
             if (stockData.length > 0) loadStockOverview();
         } else {
             Toast.error('เกิดข้อผิดพลาด: ' + (data.errors ? data.errors.join('\n') : data.error));
@@ -335,12 +430,13 @@ document.getElementById('finalSubmitOutbound')?.addEventListener('click', async 
     btn.disabled = true;
 
     const sns = stagedOutbound.map(i => i.sn);
+    const receiver_id = document.getElementById('out_receiver_id').value;
 
     try {
         const res = await fetch('api/inventory/confirm_outbound.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sns })
+            body: JSON.stringify({ sns, receiver_id })
         });
         const data = await res.json();
 
@@ -399,6 +495,8 @@ function renderHistoryTable() {
             ? '<span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-full font-bold border border-emerald-100">📥 รับเข้า</span>'
             : '<span class="px-3 py-1 bg-rose-50 text-rose-700 text-xs rounded-full font-bold border border-rose-100">📤 เบิกออก</span>';
 
+        const receiverInfo = item.receiver_name ? `<br><span class="text-xs text-indigo-500">มอบให้: ${item.receiver_name} ${item.receiver_team ? `(${item.receiver_team})` : ''}</span>` : '';
+
         const row = document.createElement('tr');
         row.className = 'hover:bg-slate-50 transition-colors animate__animated animate__fadeIn';
         row.style.animationDelay = `${index * 0.02}s`;
@@ -408,6 +506,7 @@ function renderHistoryTable() {
             <td class="px-6 py-4 font-mono text-xs font-bold text-indigo-600">${item.sn}</td>
             <td class="px-6 py-4 font-medium text-slate-700">${item.product_name} <span class="text-slate-400 font-normal">(${item.model_name})</span></td>
             <td class="px-6 py-4 text-slate-600 text-sm">${item.admin_name}</td>
+            <td class="px-6 py-4 text-slate-600 text-sm">${item.receiver_name || '-'} ${item.receiver_team ? `<br><span class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">${item.receiver_team}</span>` : ''}</td>
         `;
         tbody.appendChild(row);
     });
@@ -433,6 +532,41 @@ document.getElementById('exportHistoryBtn')?.addEventListener('click', () => {
     Toast.success('ดาวน์โหลดไฟล์ประวัติเรียบร้อยแล้ว');
 });
 
+async function loadProductsAndUsers() {
+    try {
+        const [prodRes, userRes] = await Promise.all([
+            fetch('api/inventory/get_products.php').then(r => r.json()),
+            fetch('api/users/get_users.php').then(r => r.json())
+        ]);
+
+        if (prodRes.success) {
+            allProducts = prodRes.data;
+            const productList = document.getElementById('productList');
+            productList.innerHTML = '';
+            allProducts.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.name;
+                productList.appendChild(opt);
+            });
+        }
+
+        if (userRes.success) {
+            const receiverSelect = document.getElementById('out_receiver_id');
+            const currentUserId = receiverSelect.value;
+            receiverSelect.innerHTML = `<option value="${currentUserId}">🙋‍♂️ เบิกให้ตัวเอง</option>`;
+            
+            userRes.data.forEach(u => {
+                if (u.id != currentUserId) {
+                    receiverSelect.innerHTML += `<option value="${u.id}">👷‍♂️ ${u.full_name} ${u.team_name ? `(${u.team_name})` : ''}</option>`;
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Failed to load metadata", e);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadStockOverview();
+    loadProductsAndUsers();
 });

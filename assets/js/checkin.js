@@ -75,4 +75,57 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.innerHTML = '✅ ยืนยันการเช็คอิน';
         }
     });
+
+    // 4. ส่งออกข้อมูล (สำหรับ Admin)
+    const exportCheckinBtn = document.getElementById('exportCheckinBtn');
+    if (exportCheckinBtn) {
+        exportCheckinBtn.addEventListener('click', async () => {
+            const dateStr = document.getElementById('exportCheckinDate').value;
+            if (!dateStr) {
+                Toast.error('กรุณาเลือกวันที่');
+                return;
+            }
+            
+            Loader.show();
+            try {
+                const response = await fetch(`api/checkin/get_checkins.php?date=${dateStr}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    if (data.length === 0) {
+                        Toast.info('ไม่มีข้อมูลเช็คอินในวันที่เลือก');
+                        return;
+                    }
+                    
+                    const exportData = data.map((item, index) => ({
+                        'ลำดับ': index + 1,
+                        'ชื่อ-นามสกุล': item.full_name,
+                        'ชื่อผู้ใช้': item.username,
+                        'ทีม / ป้ายทะเบียน': item.team_name || '-',
+                        'เวลาเช็คอิน': item.checkin_time
+                    }));
+
+                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    const wscols = [
+                        {wch: 10}, {wch: 30}, {wch: 20}, {wch: 20}, {wch: 25}
+                    ];
+                    ws['!cols'] = wscols;
+
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Checkin_Data");
+                    XLSX.writeFile(wb, `Checkin_Report_${dateStr}.xlsx`);
+                    
+                    Toast.success(`ส่งออกข้อมูลเรียบร้อยแล้ว (${data.length} รายการ)`);
+                } else {
+                    Toast.error(result.error || 'เกิดข้อผิดพลาดในการดึงข้อมูล');
+                }
+            } catch (error) {
+                console.error('Export error:', error);
+                Toast.error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+            } finally {
+                Loader.hide();
+            }
+        });
+    }
 });
