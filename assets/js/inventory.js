@@ -61,16 +61,16 @@ function renderStockTable(data) {
         row.className = 'hover:bg-slate-50 transition-colors animate__animated animate__fadeIn';
         row.style.animationDelay = `${index * 0.03}s`;
         row.innerHTML = `
-            <td class="px-6 py-4 font-mono text-xs text-slate-400">${item.product_code}</td>
+            <td class="px-6 py-4 font-mono text-xs text-slate-400">${item.product_code || '-'}</td>
             <td class="px-6 py-4 font-bold text-slate-800">${item.product_name}</td>
-            <td class="px-6 py-4 text-slate-600">${item.model_name}</td>
+            <td class="px-6 py-4 text-slate-600">${item.model_name || 'วัสดุสิ้นเปลือง'}</td>
             <td class="px-6 py-4 text-center">
                 <span class="inline-flex items-center justify-center px-4 py-1.5 rounded-full text-sm font-bold ${item.qty > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}">
                     ${item.qty} ${item.qty > 0 ? 'ชิ้น' : 'หมด'}
                 </span>
             </td>
             <td class="px-6 py-4 text-center">
-                <button onclick="Toast.info('ฟีเจอร์ดูหมายเลขซีเรียลกำลังจะมาเร็วๆ นี้')" class="text-indigo-600 hover:text-indigo-800 text-sm font-bold transition-colors">🔍 ดู SN</button>    
+                <button onclick="Toast.info('ฟีเจอร์ดูรายละเอียด/หมายเลขซีเรียลกำลังจะมาเร็วๆ นี้')" class="text-indigo-600 hover:text-indigo-800 text-sm font-bold transition-colors">🔍 ดูรายละเอียด</button>    
             </td>
         `;
         tbody.appendChild(row);
@@ -81,55 +81,226 @@ document.getElementById('searchStock')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     const filtered = stockData.filter(item =>
         item.product_name.toLowerCase().includes(term) ||
-        item.model_name.toLowerCase().includes(term) ||
-        item.product_code.toLowerCase().includes(term)
+        (item.model_name && item.model_name.toLowerCase().includes(term)) ||
+        (item.product_code && item.product_code.toLowerCase().includes(term))
     );
     renderStockTable(filtered);
 });
 
 // ----------------------------------------------------
-// TAB 2: Inbound (Manual & Excel)
+// TAB 2: Inbound (FAST SCANNER & EXCEL)
 // ----------------------------------------------------
+let masterOptions = { sn_products: {}, consumables: [] };
+let currentInboundMode = 'SN';
+let typingTimerIn;
 
-document.getElementById('inboundForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const pName = document.getElementById('in_product_name').value.trim();
-    const mName = document.getElementById('in_model_name').value.trim();
-    const sn = document.getElementById('in_sn').value.trim();
-    const btn = e.target.querySelector('button[type="submit"]');
-
-    if (!pName || !mName) return Toast.error('กรุณากรอกชื่อสินค้าและรุ่นให้ครบถ้วน');
-
-    Loader.show();
-    btn.disabled = true;
-
-    const payload = { items: [{ product_name: pName, model_name: mName, sn: sn }] };
-
+async function loadMasterOptions(selectedProd = '', selectedModel = '') {
     try {
-        const res = await fetch('api/inventory/import_inbound.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const res = await fetch('api/inventory/get_master.php');
         const data = await res.json();
-
-        if (data.success && data.imported > 0) {
-            Toast.success(`บันทึกรับเข้าสำเร็จ! สินค้าพร้อมในคลังแล้ว`);
-            document.getElementById('inboundForm').reset();
-            if (stockData.length > 0) loadStockOverview();
-        } else {
-            Toast.error('เกิดข้อผิดพลาด: ' + (data.errors ? data.errors.join('\n') : data.error));
+        if (data.success) {
+            masterOptions = data.data;
+            buildMainDropdowns(selectedProd, selectedModel);
         }
-    } catch (err) {
-        Toast.error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
-    } finally {
-        Loader.hide();
-        btn.disabled = false;
+    } catch (e) { console.error('Failed to load master options', e); }
+}
+
+window.setInboundMode = function(mode) {
+    currentInboundMode = mode;
+    const btnSn = document.getElementById('btnModeSn');
+    const btnQty = document.getElementById('btnModeQty');
+    
+    // UI Update
+    if (mode === 'SN') {
+        btnSn.className = "px-4 py-2 rounded-full text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all flex items-center";
+        btnQty.className = "px-4 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-700 transition-all flex items-center";
+        document.getElementById('areaInputSn')?.classList.remove('hidden');
+        document.getElementById('areaModelSelect')?.classList.remove('hidden');
+        document.getElementById('areaInputQty')?.classList.add('hidden');
+    } else {
+        btnQty.className = "px-4 py-2 rounded-full text-sm font-bold bg-white text-yellow-600 shadow-sm transition-all flex items-center";
+        btnSn.className = "px-4 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-700 transition-all flex items-center";
+        document.getElementById('areaInputQty')?.classList.remove('hidden');
+        document.getElementById('areaModelSelect')?.classList.add('hidden');
+        document.getElementById('areaInputSn')?.classList.add('hidden');
+    }
+    buildMainDropdowns();
+};
+
+window.buildMainDropdowns = function(selectedProd = '', selectedModel = '') {
+    const pSelect = document.getElementById('mainProductSelect');
+    if (!pSelect) return;
+    
+    let html = `<option value="">-- เลือกสินค้า --</option>`;
+    
+    if (currentInboundMode === 'SN') {
+        Object.keys(masterOptions.sn_products).forEach(p => {
+            html += `<option value="${p}" ${p === selectedProd ? 'selected' : ''}>${p}</option>`;
+        });
+        html += `<option value="_NEW_" class="text-emerald-600 font-bold">+ เพิ่มชื่อสินค้าใหม่</option>`;
+    } else {
+        masterOptions.consumables.forEach(c => {
+            html += `<option value="${c.name}" data-unit="${c.unit}" ${c.name === selectedProd ? 'selected' : ''}>${c.name}</option>`;
+        });
+        html += `<option value="_NEW_" class="text-yellow-600 font-bold">+ เพิ่มวัสดุใหม่</option>`;
+    }
+    
+    pSelect.innerHTML = html;
+    handleMainProductChange();
+    
+    if (selectedModel && currentInboundMode === 'SN') {
+        setTimeout(() => { document.getElementById('mainModelSelect').value = selectedModel; checkScanReady(); }, 50);
+    }
+};
+
+window.handleMainProductChange = function() {
+    const val = document.getElementById('mainProductSelect').value;
+    const pInput = document.getElementById('mainProductInput');
+    const mSelect = document.getElementById('mainModelSelect');
+    const mInput = document.getElementById('mainModelInput');
+    
+    if (val === '_NEW_') {
+        pInput.classList.remove('hidden'); pInput.value = '';
+        if (currentInboundMode === 'SN') {
+            mSelect.innerHTML = `<option value="_NEW_">+ สร้างรุ่นใหม่</option>`;
+            mInput.classList.remove('hidden'); mInput.value = '';
+        }
+        document.getElementById('inboundUnit').value = 'ชิ้น';
+    } else {
+        pInput.classList.add('hidden');
+        if (currentInboundMode === 'SN' && val) {
+            let mHtml = `<option value="">-- เลือกรุ่น --</option>`;
+            masterOptions.sn_products[val].forEach(m => mHtml += `<option value="${m}">${m}</option>`);
+            mHtml += `<option value="_NEW_" class="text-emerald-600 font-bold">+ เพิ่มรุ่นใหม่</option>`;
+            mSelect.innerHTML = mHtml;
+        }
+        
+        // Auto-fill unit for consumables
+        if (currentInboundMode === 'QTY' && val) {
+            const opt = document.getElementById('mainProductSelect').options[document.getElementById('mainProductSelect').selectedIndex];
+            document.getElementById('inboundUnit').value = opt.getAttribute('data-unit') || 'ชิ้น';
+        }
+    }
+    handleMainModelChange();
+};
+
+window.handleMainModelChange = function() {
+    const val = document.getElementById('mainModelSelect').value;
+    const mInput = document.getElementById('mainModelInput');
+    if (val === '_NEW_') { mInput.classList.remove('hidden'); mInput.value = ''; } 
+    else { mInput.classList.add('hidden'); }
+    checkScanReady();
+};
+
+window.checkScanReady = function() {
+    const pVal = document.getElementById('mainProductSelect').value;
+    const pReady = pVal === '_NEW_' ? document.getElementById('mainProductInput').value.trim() !== '' : pVal !== '';
+    
+    let isReady = false;
+    if (currentInboundMode === 'SN') {
+        const mVal = document.getElementById('mainModelSelect').value;
+        const mReady = mVal === '_NEW_' ? document.getElementById('mainModelInput').value.trim() !== '' : mVal !== '';
+        isReady = pReady && mReady;
+    } else {
+        isReady = pReady;
+    }
+
+    const scanInput = document.getElementById('scanInput');
+    if (!scanInput) return;
+
+    if (isReady && currentInboundMode === 'SN') {
+        scanInput.disabled = false;
+        scanInput.classList.replace('border-gray-300', 'border-emerald-500');
+        scanInput.placeholder = 'พร้อมสแกนบาร์โค้ด...';
+        scanInput.focus();
+    } else {
+        scanInput.disabled = true;
+        scanInput.classList.replace('border-emerald-500', 'border-gray-300');
+        scanInput.placeholder = 'เลือกข้อมูลให้ครบก่อนสแกน';
+        scanInput.value = '';
+    }
+};
+
+document.getElementById('mainProductInput')?.addEventListener('input', checkScanReady);
+document.getElementById('mainModelInput')?.addEventListener('input', checkScanReady);
+
+// Fast Scan Trigger
+document.getElementById('scanInput')?.addEventListener('input', function(e) {
+    clearTimeout(typingTimerIn);
+    const sn = this.value.trim();
+    if (sn.length > 5) {
+        typingTimerIn = setTimeout(() => validateAndSaveSN(sn), 800);
     }
 });
 
-// Excel Inbound
+document.getElementById('scanInput')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault(); 
+        clearTimeout(typingTimerIn);
+        const sn = this.value.trim();
+        if (sn) validateAndSaveSN(sn);
+    }
+});
+
+async function validateAndSaveSN(sn) {
+    const scanInput = document.getElementById('scanInput');
+    scanInput.value = ''; // Clear instantly for next scan
+    
+    const pSel = document.getElementById('mainProductSelect').value;
+    const pName = pSel === '_NEW_' ? document.getElementById('mainProductInput').value.trim() : pSel;
+    const mSel = document.getElementById('mainModelSelect').value;
+    const mName = mSel === '_NEW_' ? document.getElementById('mainModelInput').value.trim() : mSel;
+
+    try {
+        const res = await fetch('api/inventory/add_sn_fast.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ product_name: pName, model_name: mName, sn: sn })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            Toast.success(`เพิ่ม SN: ${sn} สำเร็จ!`);
+            if (pSel === '_NEW_' || mSel === '_NEW_') loadMasterOptions(pName, mName);
+            loadStockOverview(); // Refresh background
+        } else if (data.status === 'duplicate') {
+            Toast.error(`SN: ${sn} ซ้ำในระบบ!`);
+        } else {
+            Toast.error('Error: ' + data.error);
+        }
+    } catch (e) { Toast.error('การเชื่อมต่อล้มเหลว'); }
+    
+    setTimeout(() => scanInput.focus(), 50); // Refocus
+}
+
+window.saveInboundQty = async function() {
+    const pSel = document.getElementById('mainProductSelect').value;
+    const pName = pSel === '_NEW_' ? document.getElementById('mainProductInput').value.trim() : pSel;
+    const qty = document.getElementById('inboundQty').value;
+    const unit = document.getElementById('inboundUnit').value || 'ชิ้น';
+
+    if (!pName || !qty || qty <= 0) return Toast.error('ระบุข้อมูลให้ครบถ้วน');
+
+    try {
+        const res = await fetch('api/inventory/add_qty.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name: pName, qty: qty, unit: unit })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            Toast.success(`เพิ่ม ${pName} จำนวน ${qty} ${unit} สำเร็จ!`);
+            document.getElementById('inboundQty').value = '';
+            if (pSel === '_NEW_') loadMasterOptions(pName);
+            loadStockOverview(); // Refresh background
+        } else { Toast.error(data.error); }
+    } catch (e) { Toast.error('การเชื่อมต่อล้มเหลว'); }
+};
+
+// ====================================================
+// Excel Inbound (Smart Detect)
+// ====================================================
 let excelDataPayload = [];
 
 document.getElementById('excelImport')?.addEventListener('change', (e) => {
@@ -148,14 +319,38 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
             excelDataPayload = [];
             let skipped = 0;
 
+            const headerRow = json[0] ? json[0].map(h => String(h).toLowerCase().replace(/\s/g, '')) : [];
+            
+            // ค้นหาตำแหน่งคอลัมน์จากชื่อ Header อัตโนมัติ (Smart Detect)
+            let cI = headerRow.findIndex(h => h.includes('code') || h.includes('รหัส'));
+            let nI = headerRow.findIndex(h => h.includes('name') || h.includes('ชื่อ'));
+            let mI = headerRow.findIndex(h => h.includes('model') || h.includes('รุ่น'));
+            let sI = headerRow.findIndex(h => h.includes('sn') || h.includes('ซีเรียล') || h.includes('serial'));
+
+            // ถ้าหา Header ไม่เจอเลย ให้เดาตำแหน่งตามลำดับ (Code, Name, Model, SN)
+            if (cI === -1 && nI === -1 && mI === -1) {
+                cI = 0; nI = 1; mI = 2; sI = 3;
+            }
+            
+            // สำรอง: รองรับไฟล์ Excel แบบเก่าที่มีแค่ 3 คอลัมน์ (Name, Model, SN)
+            if (cI === 0 && nI === -1 && json[0][0] && String(json[0][0]).toLowerCase().includes('name')) {
+                cI = -1; nI = 0; mI = 1; sI = 2;
+            }
+
             json.forEach((row, index) => {
-                if (index === 0) return; // Skip header
-                const pName = row[0], mName = row[1], sn = row[2];
+                if (index === 0) return; // ข้ามบรรทัดหัวตาราง
+
+                const pCode = cI !== -1 ? row[cI] : '';
+                const pName = nI !== -1 ? row[nI] : '';
+                const mName = mI !== -1 ? row[mI] : '';
+                const sn = sI !== -1 ? row[sI] : '';
+
                 if (pName && mName) {
                     excelDataPayload.push({
-                        product_name: String(pName),
-                        model_name: String(mName),
-                        sn: sn ? String(sn) : ''
+                        product_code: pCode ? String(pCode).trim() : '',
+                        product_name: String(pName).trim(),
+                        model_name: String(mName).trim(),
+                        sn: sn ? String(sn).trim() : ''
                     });
                 } else {
                     skipped++;
@@ -201,7 +396,7 @@ document.getElementById('confirmExcelBtn')?.addEventListener('click', async (e) 
             document.getElementById('excelPreview').classList.add('hidden');
             document.getElementById('excelImport').value = '';
             excelDataPayload = [];
-            loadStockOverview();
+            loadStockOverview(); // โหลดตารางใหม่
         } else {
             Toast.error('เกิดข้อผิดพลาด: ' + data.error);
         }
@@ -317,7 +512,7 @@ document.getElementById('confirmOutboundBtn')?.addEventListener('click', () => {
     modal.querySelector('div').classList.add('animate__animated', 'animate__fadeInUp');
 });
 
-function closeOutboundModal() {
+window.closeOutboundModal = function() {
     const modal = document.getElementById('outboundModal');
     modal.querySelector('div').classList.remove('animate__fadeInUp');
     modal.querySelector('div').classList.add('animate__fadeOutDown');
@@ -325,7 +520,7 @@ function closeOutboundModal() {
         modal.classList.add('hidden');
         modal.querySelector('div').classList.remove('animate__fadeOutDown');
     }, 300);
-}
+};
 
 document.getElementById('finalSubmitOutbound')?.addEventListener('click', async (e) => {
     if (stagedOutbound.length === 0) return;
@@ -405,9 +600,9 @@ function renderHistoryTable() {
         row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap text-slate-500 text-sm">${formattedDate}</td>
             <td class="px-6 py-4">${actionBadge}</td>
-            <td class="px-6 py-4 font-mono text-xs font-bold text-indigo-600">${item.sn}</td>
-            <td class="px-6 py-4 font-medium text-slate-700">${item.product_name} <span class="text-slate-400 font-normal">(${item.model_name})</span></td>
-            <td class="px-6 py-4 text-slate-600 text-sm">${item.admin_name}</td>
+            <td class="px-6 py-4 font-mono text-xs font-bold text-indigo-600">${item.sn || '-'}</td>
+            <td class="px-6 py-4 font-medium text-slate-700">${item.product_name} <span class="text-slate-400 font-normal">(${item.model_name || 'วัสดุสิ้นเปลือง'})</span></td>
+            <td class="px-6 py-4 text-slate-600 text-sm">${item.admin_name || 'System'}</td>
         `;
         tbody.appendChild(row);
     });
@@ -420,10 +615,10 @@ document.getElementById('exportHistoryBtn')?.addEventListener('click', () => {
     const exportData = historyData.map(item => ({
         "วันที่/เวลา": new Date(item.timestamp).toLocaleString('th-TH'),
         "ประเภท": item.action === 'in' ? 'รับเข้า' : 'เบิกออก',
-        "หมายเลขซีเรียล": item.sn,
+        "หมายเลขซีเรียล": item.sn || '-',
         "ชื่อสินค้า": item.product_name,
-        "รุ่น": item.model_name,
-        "ผู้ทำรายการ": item.admin_name
+        "รุ่น": item.model_name || 'วัสดุสิ้นเปลือง',
+        "ผู้ทำรายการ": item.admin_name || 'System'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -433,6 +628,8 @@ document.getElementById('exportHistoryBtn')?.addEventListener('click', () => {
     Toast.success('ดาวน์โหลดไฟล์ประวัติเรียบร้อยแล้ว');
 });
 
+// INIT
 document.addEventListener('DOMContentLoaded', () => {
     loadStockOverview();
+    loadMasterOptions(); // โหลด Dropdown ล่วงหน้าให้พร้อมใช้
 });

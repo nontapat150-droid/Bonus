@@ -9,11 +9,9 @@ if (!hasRole(['admin', 'super_admin'])) {
 }
 ?>
 
-<!-- Load SheetJS for Excel Import/Export -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <div class="space-y-6">
-    <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div>
             <h2 class="text-2xl font-bold text-gray-800 flex items-center">
@@ -23,7 +21,6 @@ if (!hasRole(['admin', 'super_admin'])) {
         </div>
     </div>
 
-    <!-- Tabs Navigation -->
     <div class="flex overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2 space-x-2">       
         <button onclick="invTab('overview')" id="tab-overview" class="inv-tab active px-6 py-2 rounded-lg text-sm font-bold bg-purple-100 text-purple-700 transition-colors whitespace-nowrap">
             📊 คลังสินค้า
@@ -40,7 +37,6 @@ if (!hasRole(['admin', 'super_admin'])) {
         </button>
     </div>
 
-    <!-- TAB 1: Stock Overview -->
     <div id="view-overview" class="inv-view block space-y-4">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -62,7 +58,6 @@ if (!hasRole(['admin', 'super_admin'])) {
                         </tr>
                     </thead>
                     <tbody id="stockTableBody" class="divide-y divide-gray-100">
-                        <!-- Data via JS -->
                         <tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
                     </tbody>
                 </table>
@@ -70,48 +65,65 @@ if (!hasRole(['admin', 'super_admin'])) {
         </div>
     </div>
 
-    <!-- TAB 2: Inbound -->
     <div id="view-inbound" class="inv-view hidden space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Manual Entry Form -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">สแกนรับเข้าทีละชิ้น</h3>
-                <form id="inboundForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อสินค้า <span class="text-red-500">*</span></label>
-                        <input type="text" id="in_product_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">รุ่น (Model) <span class="text-red-500">*</span></label>
-                        <input type="text" id="in_model_name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">หมายเลขซีเรียล (SN) <span class="text-gray-400 font-normal">(เว้นว่างไว้เพื่อสร้างอัตโนมัติ)</span></label>
-                        <input type="text" id="in_sn" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500" placeholder="ยิงบาร์โค้ด SN ตรงนี้">
-                    </div>
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg transition-colors">
-                        บันทึกรับเข้า
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-t-4 border-t-emerald-500">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 border-b pb-4">
+                <h3 class="font-bold text-gray-700 text-lg flex items-center"><span class="text-emerald-500 mr-2">📥</span> สแกนรับเข้าสต๊อก</h3>
+                <div class="inline-flex bg-gray-100 rounded-full p-1">
+                    <button id="btnModeSn" onclick="setInboundMode('SN')" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all flex items-center">
+                        🏷️ มี SN (สแกนทีละชิ้น)
                     </button>
-                </form>
+                    <button id="btnModeQty" onclick="setInboundMode('QTY')" class="px-4 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-700 transition-all flex items-center">
+                        📦 นับจำนวน (วัสดุสิ้นเปลือง)
+                    </button>
+                </div>
             </div>
 
-            <!-- Excel Import -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-center items-center text-center">
-                <h3 class="font-bold text-gray-700 mb-4">นำเข้าผ่านไฟล์ Excel</h3>  
-                <p class="text-sm text-gray-500 mb-4">ไฟล์ต้องมีคอลัมน์: Product Name, Model Name, SN</p>
-                <input type="file" id="excelImport" accept=".xlsx, .xls" class="hidden">
-                <button onclick="document.getElementById('excelImport').click()" class="bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-300 font-bold py-3 px-6 rounded-lg transition-colors flex items-center">
-                    <span class="mr-2 text-xl">📄</span> เลือกไฟล์ Excel
-                </button>
-                <div id="excelPreview" class="mt-4 w-full hidden">
-                    <p class="text-sm text-green-600 font-bold" id="excelCount">พบข้อมูล 0 รายการ</p>
-                    <button id="confirmExcelBtn" class="mt-2 w-full bg-emerald-600 text-white py-2 rounded-lg">ยืนยันนำเข้าทั้งหมด</button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">ชื่อสินค้า</label>
+                    <select id="mainProductSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700" onchange="handleMainProductChange()"></select>
+                    <input type="text" id="mainProductInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg mt-2 hidden focus:ring-2 focus:ring-emerald-500" placeholder="พิมพ์ชื่อสินค้าใหม่...">
+                </div>
+
+                <div id="areaModelSelect">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">รุ่น (Model)</label>
+                    <select id="mainModelSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700" onchange="handleMainModelChange()"></select>
+                    <input type="text" id="mainModelInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg mt-2 hidden focus:ring-2 focus:ring-emerald-500" placeholder="พิมพ์รุ่นใหม่...">
+                </div>
+
+                <div id="areaInputSn" class="md:col-span-2 mt-4">
+                    <label class="block text-xs font-bold text-emerald-600 uppercase tracking-widest mb-2">สแกนบาร์โค้ด SN</label>
+                    <input type="text" id="scanInput" class="w-full h-16 text-center text-2xl font-bold font-mono tracking-widest border-2 border-dashed border-gray-300 rounded-xl focus:border-emerald-500 focus:bg-emerald-50 focus:text-emerald-700 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed" placeholder="เลือกสินค้าก่อนสแกน..." autocomplete="off" disabled>
+                </div>
+
+                <div id="areaInputQty" class="md:col-span-2 mt-4 hidden">
+                    <label class="block text-xs font-bold text-yellow-600 uppercase tracking-widest mb-2">ระบุจำนวนที่รับเข้า</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="inboundQty" class="w-1/2 h-16 text-center text-2xl font-bold border-2 border-gray-300 rounded-xl focus:border-yellow-500 focus:ring-0" placeholder="จำนวน" min="1">
+                        <input type="text" id="inboundUnit" class="w-1/4 h-16 text-center font-bold border-2 border-gray-300 rounded-xl focus:border-yellow-500 focus:ring-0" placeholder="หน่วย (เช่น ชิ้น)">
+                        <button onclick="saveInboundQty()" class="w-1/4 h-16 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl shadow-md text-lg transition-colors">บันทึก</button>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center">
+            <h3 class="font-bold text-gray-700 mb-2">นำเข้าสินค้าทีละหลายรายการ (Excel)</h3>  
+            <p class="text-sm text-gray-500 mb-4">ไฟล์ต้องมีคอลัมน์เรียงตามลำดับ: <b>รหัสสินค้า (Code) | ชื่อสินค้า | รุ่น | ซีเรียล (SN)</b></p>
+            <input type="file" id="excelImport" accept=".xlsx, .xls" class="hidden">
+            <button onclick="document.getElementById('excelImport').click()" class="bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold py-2 px-6 rounded-lg text-sm transition-colors flex items-center">
+                <span class="mr-2 text-lg">📄</span> เลือกไฟล์ Excel
+            </button>
+            <div id="excelPreview" class="mt-4 w-full hidden max-w-md">
+                <p class="text-sm text-green-600 font-bold text-center mb-2" id="excelCount"></p>
+                <button id="confirmExcelBtn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors">ยืนยันนำเข้าข้อมูลทั้งหมด</button>
+            </div>
+        </div>
+
     </div>
 
-    <!-- TAB 3: Outbound -->
     <div id="view-outbound" class="inv-view hidden space-y-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">สแกนเบิกสินค้าออก</h3>
@@ -130,7 +142,6 @@ if (!hasRole(['admin', 'super_admin'])) {
                         </tr>
                     </thead>
                     <tbody id="stagingTableBody" class="divide-y divide-gray-100">
-                        <!-- Staged items -->
                         <tr id="emptyStaging"><td colspan="3" class="px-6 py-8 text-center text-gray-400">ยังไม่มีรายการสแกน รอการเบิก</td></tr>
                     </tbody>
                 </table>
@@ -144,7 +155,6 @@ if (!hasRole(['admin', 'super_admin'])) {
         </div>
     </div>
 
-    <!-- TAB 4: History -->
     <div id="view-history" class="inv-view hidden space-y-4">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">       
@@ -165,8 +175,7 @@ if (!hasRole(['admin', 'super_admin'])) {
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="divide-y divide-gray-100">
-                        <!-- Data via JS -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
@@ -174,7 +183,6 @@ if (!hasRole(['admin', 'super_admin'])) {
 
 </div>
 
-<!-- Floating Window (Modal) for Outbound Confirmation Summary -->
 <div id="outboundModal" class="fixed inset-0 z-[100] hidden bg-black bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
     <div class="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-2xl w-full flex flex-col max-h-[90vh] transform transition-all">
         <div class="bg-gray-800 p-4 border-b flex justify-between items-center text-white">
@@ -198,8 +206,7 @@ if (!hasRole(['admin', 'super_admin'])) {
                         </tr>
                     </thead>
                     <tbody id="billTableBody" class="divide-y divide-gray-200">
-                        <!-- Bill Items -->
-                    </tbody>
+                        </tbody>
                     <tfoot class="border-t-2 border-gray-800 font-bold">
                         <tr>
                             <td colspan="2" class="py-3 text-right">รวมทั้งสิ้น:</td>     
@@ -210,8 +217,8 @@ if (!hasRole(['admin', 'super_admin'])) {
             </div>
         </div>
         <div class="p-4 border-t bg-gray-50 flex justify-end space-x-3">
-            <button onclick="closeOutboundModal()" class="px-6 py-2 rounded-lg text-gray-600 bg-white border border-gray-300 hover:bg-gray-100 font-medium">ปิด</button>
-            <button id="finalSubmitOutbound" class="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-bold shadow-md flex items-center">
+            <button onclick="closeOutboundModal()" class="px-6 py-2 rounded-lg text-gray-600 bg-white border border-gray-300 hover:bg-gray-100 font-medium transition-colors">ปิด</button>
+            <button id="finalSubmitOutbound" class="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-bold shadow-md flex items-center transition-colors">
                 <span class="mr-2">✅</span> ยืนยันตัดสต็อกทันที
             </button>
         </div>
