@@ -1,0 +1,78 @@
+// assets/js/checkin.js
+
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('checkinForm');
+    const fileInput = document.getElementById('checkin_image');
+    const imagePreview = document.getElementById('imagePreview');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const timeDisplay = document.getElementById('currentTime');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // 1. นาฬิกา Real-time
+    setInterval(() => {
+        const now = new Date();
+        timeDisplay.textContent = now.toLocaleTimeString('th-TH');
+    }, 1000);
+
+    // 2. แสดงตัวอย่างรูปภาพก่อนอัปโหลด
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (!file.type.startsWith('image/')) {
+                Toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+                fileInput.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                imagePreview.classList.remove('hidden');
+                uploadPrompt.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // 3. ส่งข้อมูลไปที่ API
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (!fileInput.files[0]) {
+            Toast.error('กรุณาถ่ายรูปหรือเลือกรูปภาพก่อนเช็คอิน');
+            return;
+        }
+
+        Loader.show();
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'กำลังบันทึก...';
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch('api/checkin/submit.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                Toast.success(result.message);
+                // ล้างฟอร์มหลังจากสำเร็จ
+                form.reset();
+                imagePreview.src = '';
+                imagePreview.classList.add('hidden');
+                uploadPrompt.classList.remove('hidden');
+            } else {
+                Toast.error(result.error || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            }
+        } catch (error) {
+            console.error('Submit error:', error);
+            Toast.error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+        } finally {
+            Loader.hide();
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '✅ ยืนยันการเช็คอิน';
+        }
+    });
+});
