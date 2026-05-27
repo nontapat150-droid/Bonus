@@ -41,7 +41,7 @@ try {
         }
 
         $stmt->execute([
-            $job['plan_arrival'] ?? null,
+            $job['plan_arrival_date'] ?? null, // Fixed: sync with JS key
             $job['access_no'],
             $job['customer'] ?? null,
             $job['phone'] ?? null,
@@ -63,6 +63,6 @@ try {
     echo json_encode(['success' => true, 'imported' => $imported]);
 
 } catch (Exception $e) {
-    $pdo->rollBack();
+    if ($pdo->inTransaction()) $pdo->rollBack();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
