@@ -20,11 +20,14 @@ if (empty($jobs)) {
 }
 
 try {
-    $pdo->beginTransaction();
-
+    // 1. ย้าย TRUNCATE มาไว้ก่อนเริ่ม Transaction
+    // เพราะ TRUNCATE จะทำให้เกิด Implicit Commit อัตโนมัติใน MySQL
     $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
     $pdo->exec("TRUNCATE TABLE jobs");
     $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+
+    // 2. เริ่ม Transaction สำหรับการ Insert ข้อมูลรวดเดียว
+    $pdo->beginTransaction();
 
     $stmt = $pdo->prepare("
         INSERT INTO jobs (
@@ -41,7 +44,7 @@ try {
         }
 
         $stmt->execute([
-            $job['plan_arrival_date'] ?? null, // Fixed: sync with JS key
+            $job['plan_arrival_date'] ?? null, 
             $job['access_no'],
             $job['customer'] ?? null,
             $job['phone'] ?? null,
@@ -59,10 +62,14 @@ try {
         $imported++;
     }
 
+    // 3. ยืนยันการบันทึกข้อมูล (Commit)
     $pdo->commit();
     echo json_encode(['success' => true, 'imported' => $imported]);
 
 } catch (Exception $e) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
+    // 4. หากเกิด error ในระหว่าง insert ให้ย้อนกลับข้อมูล (Rollback)
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
