@@ -78,15 +78,20 @@
 <div id="mobileMenu" class="md:hidden hidden bg-white border-b border-slate-100 absolute w-full z-30 shadow-xl animate__animated animate__fadeInDown"> 
     <nav class="flex flex-col p-6 space-y-1">
         <a href="index.php?page=home" class="px-4 py-3 text-slate-600 hover:bg-indigo-50 rounded-xl font-bold">🏠 หน้าแรก</a>
+        
         <a href="index.php?page=checkin" class="px-4 py-3 text-slate-600 hover:bg-orange-50 rounded-xl font-bold">📸 ระบบเช็คอิน</a>
+        
         <a href="index.php?page=oil" class="px-4 py-3 text-slate-600 hover:bg-blue-50 rounded-xl font-bold">⛽ น้ำมันและยานพาหนะ</a>
         <a href="index.php?page=dispatch" class="px-4 py-3 text-slate-600 hover:bg-emerald-50 rounded-xl font-bold">🗺️ ระบบจัดส่งอัจฉริยะ</a>
+        
         <?php if (hasRole(['admin', 'super_admin'])): ?>
             <a href="index.php?page=inventory" class="px-4 py-3 text-slate-600 hover:bg-purple-50 rounded-xl font-bold">📦 ระบบคลังสินค้า</a>
         <?php endif; ?>
+        
         <?php if (hasRole('super_admin')): ?>
             <a href="index.php?page=users" class="px-4 py-3 text-slate-600 hover:bg-rose-50 rounded-xl font-bold">👥 จัดการผู้ใช้</a>
         <?php endif; ?>
+        
         <hr class="my-4 border-slate-100">
         <a href="logout.php" class="px-4 py-3 text-rose-600 hover:bg-rose-50 rounded-xl font-bold">🚪 ออกจากระบบ</a>
     </nav>
