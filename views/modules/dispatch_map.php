@@ -5,6 +5,53 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 $isAdmin = hasRole(['admin', 'super_admin']);
 ?>
 
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+    /* Table Custom Scrollbar */
+    .table-container::-webkit-scrollbar { width: 6px; height: 6px; }
+    .table-container::-webkit-scrollbar-track { background: #f8fafc; }
+    .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    /* Table Layout Fixes */
+    .job-table { border-collapse: separate; border-spacing: 0; min-width: 1000px; }
+    .job-table th { position: sticky; top: 0; z-index: 20; background: #f8fafc; border-bottom: 2px solid #e2e8f0; }
+    .job-table td { border-bottom: 1px solid #f1f5f9; padding: 12px 16px; }
+    
+    /* Column Widths */
+    .col-checkbox { width: 40px; }
+    .col-seq { width: 50px; }
+    .col-access { width: 100px; }
+    .col-customer { width: 150px; }
+    .col-phone { width: 120px; }
+    .col-address { min-width: 250px; }
+    .col-date { width: 90px; }
+    .col-team { width: 110px; }
+
+    /* SweetAlert Custom Styles */
+    .swal2-popup { border-radius: 2rem !important; font-family: 'Sarabun', sans-serif !important; padding: 2rem !important; }
+    .swal2-title { font-weight: 800 !important; color: #1e293b !important; }
+    .swal2-confirm { border-radius: 1rem !important; padding: 0.8rem 2rem !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; }
+    .swal2-cancel { border-radius: 1rem !important; padding: 0.8rem 2rem !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; }
+
+    /* Leaflet Popup Custom Styling */
+    .custom-leaflet-popup .leaflet-popup-content-wrapper {
+        border-radius: 1.5rem;
+        padding: 0;
+        overflow: hidden;
+        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+    .custom-leaflet-popup .leaflet-popup-content {
+        margin: 0;
+        width: 250px !important;
+    }
+    .custom-leaflet-popup .leaflet-popup-tip-container {
+        display: none;
+    }
+</style>
+
 <div class="h-[calc(100vh-120px)] flex flex-col space-y-4">
     
     <!-- Top Controls (Admin Only) -->
@@ -13,109 +60,138 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         <div class="flex items-center space-x-4">
             <div class="p-3 bg-indigo-100 text-indigo-600 rounded-2xl shadow-inner">🗺️</div>
             <div>
-                <h2 class="text-xl font-black text-slate-800 tracking-tight">ระบบจัดส่งอัจฉริยะ</h2>
+                <h2 class="text-lg font-black text-slate-800 tracking-tight">ระบบจัดส่งอัจฉริยะ</h2>
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">จัดการทีมและจ่ายงาน</p>
             </div>
         </div>
 
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2">
             <input type="file" id="jobExcelFile" accept=".xlsx, .xls" class="hidden">
-            <button onclick="document.getElementById('jobExcelFile').click()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-5 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center">
+            <button onclick="document.getElementById('jobExcelFile').click()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2.5 rounded-2xl text-[10px] font-black transition-all flex items-center shadow-sm">
                 📥 นำเข้า Excel
             </button>
 
-            <button id="dispatchModalBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-2xl text-xs font-black shadow-lg shadow-indigo-100 transition-all flex items-center">
+            <button id="exportExcelBtn" class="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2.5 rounded-2xl text-[10px] font-black shadow-lg shadow-sky-100 transition-all flex items-center">
+                📊 นำออก Excel
+            </button>
+
+            <button id="dispatchModalBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-2xl text-[10px] font-black shadow-lg shadow-indigo-100 transition-all flex items-center">
                 🤖 จ่ายงานอัตโนมัติ
             </button>
 
-            <button id="optimizeRouteBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-2xl text-xs font-black shadow-lg shadow-emerald-100 transition-all flex items-center">
+            <button id="optimizeRouteBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-2xl text-[10px] font-black shadow-lg shadow-emerald-100 transition-all flex items-center">
                 📍 เรียงคิวเส้นทาง
+            </button>
+
+            <div class="w-px h-8 bg-slate-200 mx-2"></div>
+
+            <button id="clearAssignmentsBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-2xl text-[10px] font-black shadow-lg shadow-amber-100 transition-all flex items-center">
+                🔄 ล้างการจ่ายงาน
+            </button>
+
+            <button id="deleteAllJobsBtn" class="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2.5 rounded-2xl text-[10px] font-black shadow-lg shadow-rose-100 transition-all flex items-center">
+                🗑️ ลบงานทั้งหมด
             </button>
         </div>
     </div>
-
-    <!-- Team Management Area (Simplified for adding/listing teams) -->
-    <div class="bg-white/50 backdrop-blur-sm p-4 rounded-[2rem] border border-white flex flex-col space-y-4">
-        <div class="flex justify-between items-center px-4">
-            <h3 class="text-sm font-black text-slate-600 uppercase tracking-widest flex items-center">
-                <span class="mr-2">👥</span> รายชื่อทีมทั้งหมด
-            </h3>
-            <div class="flex items-center space-x-2">
-                <input type="text" id="newTeamName" placeholder="ชื่อทีมใหม่..." class="px-4 py-2 rounded-xl border-transparent focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold shadow-sm">
-                <button id="addTeamBtn" class="bg-indigo-600 text-white w-8 h-8 rounded-xl font-black flex items-center justify-center hover:bg-indigo-700 transition-all">+</button>
-            </div>
-        </div>
-        
-        <div id="teamListContainer" class="flex flex-wrap gap-3 px-2 min-h-[50px]">
-            <!-- Team items -->
-        </div>
-    </div>
-
-    <!-- Dispatch Distribution Modal -->
-    <div id="dispatchModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-4">
-        <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden animate__animated animate__zoomIn">
-            <div class="p-8 bg-gradient-to-br from-indigo-600 to-violet-700 text-white">
-                <h3 class="text-xl font-black italic tracking-tight">ตั้งค่าการจ่ายงานอัตโนมัติ</h3>
-                <p class="text-indigo-100 text-xs mt-1 font-bold">ระบุจำนวนงานที่ต้องการให้แต่ละทีม (งานที่รอจ่าย: <span id="unassignedCount">0</span> งาน)</p>
-            </div>
-            
-            <div class="p-8 max-h-[60vh] overflow-y-auto" id="dispatchTeamList">
-                <!-- Teams for distribution will be injected here -->
-            </div>
-
-            <div class="p-8 bg-slate-50 flex space-x-3">
-                <button onclick="closeDispatchModal()" class="flex-1 py-4 bg-white text-slate-500 rounded-2xl font-bold text-sm border border-slate-200">ยกเลิก</button>
-                <button id="confirmDispatchBtn" class="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-100">🚀 เริ่มจ่ายงานทันที</button>
-            </div>
-        </div>
-    </div>
-
-    <?php else: ?>
-    <!-- Technician Header -->
-    <div class="bg-white/70 backdrop-blur-md p-5 rounded-[2rem] shadow-sm border border-white flex justify-between items-center">    
-        <div class="flex items-center space-x-4">
-            <div class="p-3 bg-emerald-100 text-emerald-600 rounded-2xl shadow-inner">🗺️</div>
-            <h2 class="text-xl font-black text-slate-800 tracking-tight">รายการคิวงานของฉัน</h2>
-        </div>
-        <a id="techMapLink" href="#" target="_blank" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-2xl text-xs font-black shadow-lg transition-all">
-            🚀 เริ่มนำทาง (Google Maps)
-        </a>
-    </div>
     <?php endif; ?>
 
-    <!-- Main Content: Map & List -->
+    <!-- Main Content: Horizontal Split -->
     <div class="flex flex-col lg:flex-row flex-1 gap-4 min-h-0">
 
-        <!-- Left: Job List -->
-        <div class="w-full lg:w-1/3 bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 flex flex-col overflow-hidden h-full">
-            <div class="p-5 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-                <h3 class="font-black text-slate-700 tracking-tight flex items-center">
-                    รายการงาน 
-                    <span id="jobCountBadge" class="ml-2 bg-indigo-100 text-indigo-600 px-3 py-0.5 rounded-full text-[10px] font-black">0</span>
-                </h3>
+        <!-- Left: Detailed Table Section (40%) -->
+        <div class="w-full lg:w-[40%] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 flex flex-col overflow-hidden h-full">
+            
+            <div class="p-5 border-b border-slate-50 bg-slate-50/50 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-black text-slate-700 tracking-tight flex items-center text-sm">
+                        📦 รายละเอียดงาน
+                        <span id="jobCountBadge" class="ml-2 bg-indigo-100 text-indigo-600 px-3 py-0.5 rounded-full text-[10px] font-black">0</span>
+                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="selectAllJobs" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        <label for="selectAllJobs" class="text-[9px] font-black text-slate-500 uppercase tracking-widest cursor-pointer">เลือกทั้งหมด</label>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                    <input type="date" id="dateFilter" class="flex-1 text-[10px] font-black border-slate-100 rounded-xl focus:ring-indigo-500/20 px-3 py-2 cursor-pointer text-indigo-600 shadow-sm bg-white">
+                    <select id="limitFilter" class="text-[10px] font-black border-slate-100 rounded-xl focus:ring-indigo-500/20 py-2 pl-3 pr-8 cursor-pointer bg-white text-indigo-600 shadow-sm">
+                        <option value="20">20 รายการ</option>
+                        <option value="50">50 รายการ</option>
+                        <option value="100">100 รายการ</option>
+                        <option value="all">ทั้งหมด</option>
+                    </select>
+                </div>
+
                 <?php if ($isAdmin): ?>
-                <select id="teamFilter" class="text-[10px] font-black uppercase tracking-wider border-none bg-white rounded-xl shadow-sm focus:ring-0 py-1.5 pl-3 pr-8 cursor-pointer">     
-                    <option value="all">📍 งานทั้งหมด</option>
-                    <option value="unassigned">⏳ ยังไม่จ่ายงาน</option>
-                </select>
+                <div class="flex gap-2">
+                    <select id="teamFilter" class="flex-1 text-[10px] font-black uppercase tracking-wider border-none bg-indigo-50 text-indigo-600 rounded-xl shadow-sm focus:ring-0 py-2 pl-4 pr-10 cursor-pointer">
+                        <option value="all">📍 งานทั้งหมด</option>
+                        <option value="unassigned">⏳ ยังไม่จ่ายงาน</option>
+                    </select>
+                    <div class="flex items-center space-x-1">
+                        <input type="text" id="newTeamName" placeholder="ชื่อทีม..." class="px-3 py-2 rounded-xl border-slate-100 focus:ring-2 focus:ring-indigo-500/20 text-[9px] font-bold shadow-sm w-20">       
+                        <button id="addTeamBtn" class="bg-indigo-600 text-white w-8 h-8 rounded-lg font-black flex items-center justify-center hover:bg-indigo-700 transition-all text-xs">+</button>
+                    </div>
+                </div>
                 <?php endif; ?>
             </div>
 
-            <div id="jobListContainer" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/30">
-                <!-- Job Cards injected via JS -->
+            <div id="selectionActions" class="px-5 py-2 bg-slate-900 text-white flex items-center justify-between hidden">
+                <p class="text-[9px] font-black uppercase tracking-widest">เลือกอยู่ <span id="selectedCount">0</span> รายการ</p>
+                <button id="bulkDeleteBtn" class="text-[9px] font-black bg-rose-500 hover:bg-rose-600 px-3 py-1 rounded-lg uppercase transition-all">ลบข้อมูล</button>
+            </div>
+
+            <div class="flex-1 overflow-hidden flex flex-col bg-slate-50/20">
+                <div class="table-container flex-1 overflow-auto">
+                    <table class="job-table w-full">
+                        <thead>
+                            <tr class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                <th class="col-checkbox px-4 py-3 text-center">#</th>
+                                <th class="col-seq px-4 py-3">ลำดับ</th>
+                                <th class="col-access px-4 py-3">รหัสงาน</th>
+                                <th class="col-customer px-4 py-3">ลูกค้า</th>
+                                <th class="col-phone px-4 py-3">เบอร์โทร</th>
+                                <th class="col-address px-4 py-3">ที่อยู่</th>
+                                <th class="col-date px-4 py-3">วันที่</th>
+                                <th class="col-team px-4 py-3 text-right">ทีมช่าง</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jobTableBody" class="text-[11px] font-bold text-slate-600">
+                            <!-- Job Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- Right: Map -->
-        <div class="w-full lg:w-2/3 bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 overflow-hidden relative min-h-[300px] lg:h-auto">
+        <!-- Right: Map Section (60%) -->
+        <div class="w-full lg:w-[60%] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 overflow-hidden relative h-full min-h-[400px]">
             <div id="map" class="w-full h-full z-0"></div>
-            <!-- Loading Overlay -->
             <div id="mapLoader" class="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 hidden">
                 <div class="loader-spinner mb-4 w-10 h-10 border-4"></div>
                 <p class="text-indigo-800 font-black text-xs uppercase tracking-widest animate-pulse">กำลังประมวลผลระบบแผนที่...</p>
             </div>
+            <div class="absolute bottom-4 left-4 z-[10] flex flex-wrap gap-2 max-w-[90%]">
+                 <div id="teamListContainer" class="flex flex-wrap gap-2"></div>
+            </div>
         </div>
+    </div>
+</div>
 
+<!-- Dispatch Distribution Modal -->
+<div id="dispatchModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-4">
+    <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden animate__animated animate__zoomIn">
+        <div class="p-8 bg-gradient-to-br from-indigo-600 to-violet-700 text-white">
+            <h3 class="text-xl font-black italic tracking-tight uppercase">Smart Auto-Dispatch</h3>
+            <p class="text-indigo-100 text-xs mt-1 font-bold">ระบุจำนวนงานที่ต้องการกระจายให้แต่ละทีม (งานที่รอจ่าย: <span id="unassignedCount">0</span>)</p>
+        </div>
+        <div class="p-8 max-h-[60vh] overflow-y-auto" id="dispatchTeamList"></div>
+        <div class="p-8 bg-slate-50 flex space-x-3">
+            <button onclick="closeDispatchModal()" class="flex-1 py-4 bg-white text-slate-500 rounded-2xl font-black text-xs uppercase tracking-widest border border-slate-200 hover:bg-slate-50 transition-all">ยกเลิก</button>
+            <button id="confirmDispatchBtn" class="flex-[2] py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">เริ่มจ่ายงานทันที 🚀</button>
+        </div>
     </div>
 </div>
 
