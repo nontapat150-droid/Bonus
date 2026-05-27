@@ -1,9 +1,8 @@
--- Smart Business Suite & Dispatch System Schema
--- Create Database (Run this manually in phpMyAdmin or via a setup script)
--- CREATE DATABASE IF NOT EXISTS smart_business_suite CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
--- USE smart_business_suite;
+-- 1. สร้างฐานข้อมูล
+CREATE DATABASE IF NOT EXISTS `smart_business_suite` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `smart_business_suite`;
 
--- 1. Role-Based Access Control (RBAC)
+-- 2. ตารางผู้ใช้งาน (Users)
 CREATE TABLE IF NOT EXISTS `users` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `username` VARCHAR(50) NOT NULL UNIQUE,
@@ -12,18 +11,19 @@ CREATE TABLE IF NOT EXISTS `users` (
   `full_name` VARCHAR(100) NOT NULL,
   `status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'approved',
   `team_id` INT DEFAULT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (`team_id`) REFERENCES `teams`(`id`) ON DELETE SET NULL
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Default Super Admin (Password: password123)
--- Hash generated via password_hash('password123', PASSWORD_DEFAULT)
-INSERT IGNORE INTO `users` (`username`, `password_hash`, `role`, `full_name`) VALUES 
-('superadmin', '$2y$10$77pZhvEFEBMZB/iXgLHAGO5sAZ506MRnmu7odUicNn0Wy4.pGfjqG', 'super_admin', 'System Administrator'),
-('admin', '$2y$10$77pZhvEFEBMZB/iXgLHAGO5sAZ506MRnmu7odUicNn0Wy4.pGfjqG', 'admin', 'General Admin'),
-('tech1', '$2y$10$77pZhvEFEBMZB/iXgLHAGO5sAZ506MRnmu7odUicNn0Wy4.pGfjqG', 'technician', 'John Technician');
+-- 3. ตารางทีม (Teams)
+CREATE TABLE IF NOT EXISTS `teams` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `team_name` VARCHAR(100) NOT NULL UNIQUE
+);
 
--- 2. Oil & Vehicle Module
+-- (เพิ่ม Foreign Key หลังจากสร้างตาราง team แล้ว)
+ALTER TABLE `users` ADD CONSTRAINT `fk_user_team` FOREIGN KEY (`team_id`) REFERENCES `teams`(`id`) ON DELETE SET NULL;
+
+-- 4. ตารางยานพาหนะ (Vehicles)
 CREATE TABLE IF NOT EXISTS `vehicles` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `license_plate` VARCHAR(20) NOT NULL UNIQUE,
@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS `vehicles` (
   FOREIGN KEY (`last_tech_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
 
+-- 5. ตารางน้ำมัน (Oil Module)
 CREATE TABLE IF NOT EXISTS `oil_records` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `tech_id` INT NOT NULL,
@@ -50,7 +51,7 @@ CREATE TABLE IF NOT EXISTS `oil_images` (
   FOREIGN KEY (`record_id`) REFERENCES `oil_records`(`id`) ON DELETE CASCADE
 );
 
--- 3. Inventory Module
+-- 6. ตารางสินค้าและคลังสินค้า (Inventory Module)
 CREATE TABLE IF NOT EXISTS `products` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `product_code` VARCHAR(50) NOT NULL UNIQUE,
@@ -78,17 +79,14 @@ CREATE TABLE IF NOT EXISTS `inventory_logs` (
   `item_id` INT NOT NULL,
   `action` ENUM('in', 'out') NOT NULL,
   `admin_id` INT NOT NULL,
+  `target_user_id` INT DEFAULT NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`item_id`) REFERENCES `inventory_items`(`id`),
-  FOREIGN KEY (`admin_id`) REFERENCES `users`(`id`)
+  FOREIGN KEY (`admin_id`) REFERENCES `users`(`id`),
+  FOREIGN KEY (`target_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
 
--- 4. Smart Dispatch Module
-CREATE TABLE IF NOT EXISTS `teams` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `team_name` VARCHAR(100) NOT NULL UNIQUE
-);
-
+-- 7. ตารางงานและการจัดส่ง (Smart Dispatch Module)
 CREATE TABLE IF NOT EXISTS `jobs` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `plan_arrival_date` DATE DEFAULT NULL,
@@ -111,3 +109,25 @@ CREATE TABLE IF NOT EXISTS `jobs` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`team_id`) REFERENCES `teams`(`id`) ON DELETE SET NULL
 );
+
+-- 8. ตารางเช็คอิน (Check-in Module)
+CREATE TABLE IF NOT EXISTS `checkins` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `image_path` VARCHAR(255) NOT NULL,
+  `checkin_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+);
+
+-- 9. ตารางตั้งค่าระบบ (System Settings - เพิ่มเติมสำหรับฟีเจอร์เวลาสาย)
+CREATE TABLE IF NOT EXISTS `system_settings` (
+  `setting_key` VARCHAR(50) PRIMARY KEY,
+  `setting_value` VARCHAR(255) NOT NULL
+);
+
+INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`) VALUES ('late_time', '08:30:00');
+
+-- 10. ข้อมูลเริ่มต้น (Default Admin)
+INSERT IGNORE INTO `users` (`username`, `password_hash`, `role`, `full_name`) VALUES 
+('superadmin', '$2y$10$77pZhvEFEBMZB/iXgLHAGO5sAZ506MRnmu7odUicNn0Wy4.pGfjqG', 'super_admin', 'System Administrator'),
+('admin', '$2y$10$77pZhvEFEBMZB/iXgLHAGO5sAZ506MRnmu7odUicNn0Wy4.pGfjqG', 'admin', 'General Admin');
