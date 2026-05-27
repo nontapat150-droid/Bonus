@@ -49,13 +49,16 @@ try {
     $stmtChart->execute($params);
     $chartData = $stmtChart->fetchAll();
 
-    // 3. Fetch Detailed Table Data with Images
+    // 3. Fetch Detailed Table Data with Images + ข้อมูลทีม + เคสงาน
     $tableSql = "SELECT
                     o.id, o.license_plate, o.liters, o.mileage, o.price_per_liter, o.total_price, o.date_recorded,
                     u.full_name as tech_name,
+                    t.team_name,
+                    (SELECT COUNT(*) FROM jobs j WHERE j.team_id = u.team_id) as team_job_count,
                     GROUP_CONCAT(i.image_path SEPARATOR ',') as images
                  FROM oil_records o
                  JOIN users u ON o.tech_id = u.id
+                 LEFT JOIN teams t ON u.team_id = t.id
                  LEFT JOIN oil_images i ON o.id = i.record_id
                  $whereClause
                  GROUP BY o.id
@@ -64,12 +67,17 @@ try {
     $stmtTable->execute($params);
     $tableData = $stmtTable->fetchAll();
 
+    // 4. นับจำนวนเคสงานทั้งหมดของทุกทีม
+    $stmtJobs = $pdo->query("SELECT COUNT(*) as total_jobs FROM jobs");
+    $jobsData = $stmtJobs->fetch();
+
     echo json_encode([
         'success' => true,
         'stats' => [
             'total_records' => (int)($stats['total_records'] ?? 0),
             'total_liters' => (float)($stats['total_liters'] ?? 0),
-            'total_cost' => (float)($stats['total_cost'] ?? 0)
+            'total_cost' => (float)($stats['total_cost'] ?? 0),
+            'total_jobs' => (int)($jobsData['total_jobs'] ?? 0)
         ],
         'chart' => $chartData,
         'records' => $tableData

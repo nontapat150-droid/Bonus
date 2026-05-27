@@ -87,6 +87,15 @@ if (!hasRole('super_admin')) {
             </div>
 
             <div>
+                <label class="block text-[10px] font-black uppercase tracking-widest text-amber-500 mb-2 ml-1">🚗 ทีม / ป้ายทะเบียนรถ</label>
+                <select id="team_id" name="team_id" class="w-full px-5 py-3.5 rounded-2xl bg-amber-50 border-transparent focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold transition-all">
+                    <option value="">-- ไม่มีทีม --</option>
+                    <!-- ตัวเลือกจะถูกโหลดจาก JS -->
+                </select>
+                <p class="text-[10px] text-slate-400 mt-2 ml-1 italic">* เลือกป้ายทะเบียนที่เคยลงทะเบียนในระบบ เพื่อย้ายทีม</p>
+            </div>
+
+            <div>
                 <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">รหัสผ่าน</label>
                 <input type="password" id="password" name="password" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-bold transition-all" placeholder="เว้นว่างไว้หากไม่ต้องการเปลี่ยน">
                 <p id="passwordHelp" class="text-[10px] text-slate-400 mt-2 ml-1 hidden italic">* หากแก้ไขข้อมูล ไม่ต้องกรอกหากไม่ต้องการเปลี่ยนรหัสผ่าน</p>

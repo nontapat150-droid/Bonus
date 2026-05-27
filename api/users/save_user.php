@@ -17,6 +17,14 @@ $username = trim($input['username'] ?? '');
 $full_name = trim($input['full_name'] ?? '');
 $role = $input['role'] ?? 'technician';
 $password = $input['password'] ?? '';
+$team_id = $input['team_id'] ?? null;
+
+// แปลง team_id เป็น null ถ้าค่าว่างหรือ "none"
+if (empty($team_id) || $team_id === 'none' || $team_id === '') {
+    $team_id = null;
+} else {
+    $team_id = (int)$team_id;
+}
 
 if (empty($username) || empty($full_name)) {
     echo json_encode(['success' => false, 'error' => 'กรุณากรอกข้อมูลให้ครบถ้วน']);
@@ -28,11 +36,11 @@ try {
         // Update
         if (!empty($password)) {
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("UPDATE users SET username = ?, full_name = ?, role = ?, password_hash = ? WHERE id = ?");
-            $stmt->execute([$username, $full_name, $role, $hash, $id]);
+            $stmt = $pdo->prepare("UPDATE users SET username = ?, full_name = ?, role = ?, password_hash = ?, team_id = ? WHERE id = ?");
+            $stmt->execute([$username, $full_name, $role, $hash, $team_id, $id]);
         } else {
-            $stmt = $pdo->prepare("UPDATE users SET username = ?, full_name = ?, role = ? WHERE id = ?");
-            $stmt->execute([$username, $full_name, $role, $id]);
+            $stmt = $pdo->prepare("UPDATE users SET username = ?, full_name = ?, role = ?, team_id = ? WHERE id = ?");
+            $stmt->execute([$username, $full_name, $role, $team_id, $id]);
         }
         echo json_encode(['success' => true, 'message' => 'ปรับปรุงข้อมูลผู้ใช้สำเร็จ']);
     } else {
@@ -43,8 +51,8 @@ try {
         }
         
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("INSERT INTO users (username, full_name, role, password_hash) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$username, $full_name, $role, $hash]);
+        $stmt = $pdo->prepare("INSERT INTO users (username, full_name, role, password_hash, team_id) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$username, $full_name, $role, $hash, $team_id]);
         echo json_encode(['success' => true, 'message' => 'เพิ่มผู้ใช้ใหม่สำเร็จ']);
     }
 } catch (PDOException $e) {

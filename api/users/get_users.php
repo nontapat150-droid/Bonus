@@ -12,7 +12,12 @@ if (!hasRole('super_admin')) {
 }
 
 try {
-    $stmt = $pdo->query("SELECT id, username, role, full_name, created_at FROM users ORDER BY id DESC");
+    $stmt = $pdo->query("
+        SELECT u.id, u.username, u.role, u.full_name, u.created_at, u.team_id, t.team_name 
+        FROM users u 
+        LEFT JOIN teams t ON u.team_id = t.id 
+        ORDER BY u.id DESC
+    ");
     $users = $stmt->fetchAll();
     echo json_encode(['success' => true, 'data' => $users]);
 } catch (PDOException $e) {
