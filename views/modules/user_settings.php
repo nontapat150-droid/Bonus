@@ -18,6 +18,9 @@ if (!hasRole('super_admin')) {
             </h2>
             <p class="text-slate-500 text-sm mt-1 font-medium">เพิ่ม แก้ไข และกำหนดสิทธิ์การใช้งานของพนักงาน</p>
         </div>
+        <button onclick="loadPendingUsers()" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-lg shadow-amber-100 flex items-center justify-center">
+                <span class="mr-2">⏳</span> รออนุมัติ
+            </button>
         <button onclick="openUserModal()" class="mt-4 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-lg shadow-indigo-100 flex items-center justify-center">
             <span class="mr-2 text-lg">+</span> เพิ่มพนักงานใหม่
         </button>
@@ -97,5 +100,81 @@ if (!hasRole('super_admin')) {
         </form>
     </div>
 </div>
+<div id="pendingModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-4">
+    <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-3xl overflow-hidden animate__animated animate__zoomIn">
+        <div class="p-8 bg-gradient-to-br from-amber-500 to-orange-600 text-white flex justify-between items-center">
+            <h3 class="text-xl font-black tracking-tight">รายการรออนุมัติเข้าใช้งาน</h3>
+            <button onclick="document.getElementById('pendingModal').classList.add('hidden')" class="text-white/50 hover:text-white text-3xl font-light">&times;</button>
+        </div>
+        <div class="p-8 max-h-[60vh] overflow-y-auto">
+            <table class="w-full text-sm text-left text-slate-500">
+                <thead class="text-[10px] text-slate-400 uppercase font-black bg-slate-50">
+                    <tr>
+                        <th class="px-4 py-3">ชื่อ-นามสกุล</th>
+                        <th class="px-4 py-3">Username</th>
+                        <th class="px-4 py-3">ทะเบียนรถ/ทีม</th>
+                        <th class="px-4 py-3 text-center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingTableBody" class="divide-y divide-slate-100">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
+<script>
+async function loadPendingUsers() {
+    document.getElementById('pendingModal').classList.remove('hidden');
+    const tbody = document.getElementById('pendingTableBody');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-10">กำลังโหลด...</td></tr>';
+    
+    try {
+        const res = await fetch('api/users/get_pending.php');
+        const data = await res.json();
+        
+        if (data.success) {
+            if(data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-10 text-slate-400 font-bold">ไม่มีรายการรออนุมัติ</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.data.map(user => `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3 font-bold text-slate-700">${user.full_name}</td>
+                    <td class="px-4 py-3">${user.username}</td>
+                    <td class="px-4 py-3"><span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-[10px] font-black">${user.team_name || '-'}</span></td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="approveUser(${user.id}, 'approved')" class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-600">อนุมัติ</button>
+                        <button onclick="approveUser(${user.id}, 'rejected')" class="bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-600 ml-1">ปฏิเสธ</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-10 text-rose-500">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+    }
+}
+
+async function approveUser(id, status) {
+    if(!confirm(status === 'approved' ? 'ยืนยันการอนุมัติผู้ใช้นี้?' : 'ยืนยันการปฏิเสธผู้ใช้นี้?')) return;
+    
+    try {
+        const res = await fetch('api/users/approve.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id, status })
+        });
+        const data = await res.json();
+        if(data.success) {
+            loadPendingUsers(); // โหลดข้อมูลรออนุมัติใหม่
+            if (typeof loadUsers === "function") loadUsers(); // รีเฟรชตารางหลัก (อิงจาก users.js)
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch(e) {
+        alert('เกิดข้อผิดพลาด');
+    }
+}
+</script>
 <script src="assets/js/users.js"></script>
