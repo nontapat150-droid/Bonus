@@ -54,7 +54,7 @@ function renderStockTable(data) {
     tbody.innerHTML = '';
 
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 italic">ไม่พบข้อมูลสินค้าในคลัง</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-400 italic">ไม่พบข้อมูลสินค้าในคลัง</td></tr>';
         return;
     }
 
@@ -62,10 +62,10 @@ function renderStockTable(data) {
         const row = document.createElement('tr');
         row.className = 'hover:bg-slate-50 transition-colors animate__animated animate__fadeIn';
         row.style.animationDelay = `${index * 0.03}s`;
-        
+
         let actionContent = '<span class="text-xs text-slate-300 italic">วัสดุสิ้นเปลือง / ไม่มี SN</span>';
         if (item.sn_list) {
-            const snsCount = item.sn_list.split(',').length;
+            const snsCount = item.sn_list.split('|').length;
             actionContent = `<button onclick="openSnModal(this)" data-pname="${item.product_name}" data-mname="${item.model_name}" data-sns="${item.sn_list}" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-2 rounded-lg text-xs font-bold transition-colors">🔍 กดดู SN ทั้งหมด (${snsCount})</button>`;
         }
 
@@ -80,6 +80,11 @@ function renderStockTable(data) {
             </td>
             <td class="px-6 py-4 text-center">
                 ${actionContent}
+            </td>
+            <td class="px-6 py-4 text-center">
+                <button onclick="deleteModel(${item.model_id}, '${item.product_name} - ${item.model_name}')" class="p-2 text-rose-400 hover:bg-rose-50 rounded-xl transition-all" title="ลบรายการนี้">
+                    🗑️
+                </button>
             </td>
         `;
         tbody.appendChild(row);
@@ -109,9 +114,13 @@ window.openSnModal = function(btnElement) {
 
     document.getElementById('snModalProductName').textContent = pName;
     document.getElementById('snModalModelName').textContent = `รุ่น (Model): ${mName || '-'}`;
-    
-    currentModalSns = snString.split(',').map(sn => sn.trim()).filter(sn => sn !== '');
-    
+
+    // snString is "id:sn|id:sn"
+    currentModalSns = snString.split('|').map(pair => {
+        const [id, sn] = pair.split(':');
+        return { id, sn };
+    }).filter(item => item.sn);
+
     document.getElementById('searchSnInModal').value = ''; 
     renderSnModalList(currentModalSns); 
 
@@ -127,7 +136,7 @@ window.closeSnModal = function() {
 window.renderSnModalList = function(snArray) {
     const container = document.getElementById('snModalListContainer');
     const countLabel = document.getElementById('snModalCount');
-    
+
     container.innerHTML = '';
     countLabel.textContent = `รวม ${snArray.length} รายการ`;
 
@@ -136,20 +145,94 @@ window.renderSnModalList = function(snArray) {
         return;
     }
 
-    snArray.forEach(sn => {
+    snArray.forEach(item => {
         const div = document.createElement('div');
-        div.className = 'bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-lg text-sm font-mono text-indigo-700 font-bold text-center flex items-center justify-center hover:bg-indigo-50 transition-colors shadow-sm';
-        div.textContent = sn;
+        div.className = 'bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-lg text-sm font-mono text-indigo-700 font-bold flex items-center justify-between hover:bg-indigo-50 transition-colors shadow-sm';
+        div.innerHTML = `
+            <span>${item.sn}</span>
+            <button onclick="deleteSnItem(${item.id}, '${item.sn}')" class="text-rose-400 hover:text-rose-600 transition-colors" title="ลบ SN นี้">✕</button>
+        `;
         container.appendChild(div);
     });
 };
 
 document.getElementById('searchSnInModal')?.addEventListener('input', function(e) {
     const term = e.target.value.toLowerCase().trim();
-    const filteredSns = currentModalSns.filter(sn => sn.toLowerCase().includes(term));
+    const filteredSns = currentModalSns.filter(item => item.sn.toLowerCase().includes(term));
     renderSnModalList(filteredSns);
 });
 
+window.deleteSnItem = async function(id, sn) {
+    const result = await Swal.fire({
+        title: 'ยืนยันการลบ SN?',
+        text: `คุณต้องการลบหมายเลขซีเรียล "${sn}" ใช่หรือไม่?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'ใช่, ลบเลย',
+        cancelButtonText: 'ยกเลิก'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch('api/inventory/delete_item.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+            const data = await res.json();
+            if (data.success) {
+                Toast.success(data.message);
+                // นำออกจากลิสต์ใน Modal
+                currentModalSns = currentModalSns.filter(item => item.id != id);
+                renderSnModalList(currentModalSns);
+                // โหลดตารางหลักใหม่
+                loadStockOverview();
+            } else {
+                Swal.fire('ข้อผิดพลาด', data.error, 'error');
+            }
+        } catch (e) {
+            Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
+        }
+    }
+};
+
+window.deleteModel = async function(id, name) {
+    const result = await Swal.fire({
+        title: 'ลบรุ่นสินค้า?',
+        text: `ยืนยันการลบ "${name}"? ข้อมูลหมายเลขซีเรียลทั้งหมดภายใต้รุ่นนี้จะถูกลบถาวร!`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'ใช่, ลบทั้งหมด',
+        cancelButtonText: 'ยกเลิก'
+    });
+
+    if (result.isConfirmed) {
+        Loader.show();
+        try {
+            const res = await fetch('api/inventory/delete_model.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+            const data = await res.json();
+            if (data.success) {
+                Swal.fire('สำเร็จ', data.message, 'success');
+                loadStockOverview();
+                loadMasterOptions();
+            } else {
+                Swal.fire('ข้อผิดพลาด', data.error, 'error');
+            }
+        } catch (e) {
+            Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
+        } finally {
+            Loader.hide();
+        }
+    }
+};
 // ====================================================
 // TAB 2: Inbound (SN, QTY, EXCEL)
 // ====================================================
@@ -199,77 +282,64 @@ window.setInboundMode = function(mode) {
 };
 
 window.buildMainDropdowns = function(selectedProd = '', selectedModel = '') {
-    const pSelect = document.getElementById('mainProductSelect');
-    if (!pSelect) return;
+    const pDataList = document.getElementById('productList');
+    const pInput = document.getElementById('mainProductInput');
+    if (!pDataList || !pInput) return;
     
-    let html = `<option value="">-- เลือกสินค้า --</option>`;
-    
+    let html = '';
     if (currentInboundMode === 'SN') {
         Object.keys(masterOptions.sn_products).forEach(p => {
-            html += `<option value="${p}" ${p === selectedProd ? 'selected' : ''}>${p}</option>`;
+            html += `<option value="${p}">`;
         });
-        html += `<option value="_NEW_" class="text-emerald-600 font-bold">+ เพิ่มชื่อสินค้าใหม่</option>`;
     } else {
         masterOptions.consumables.forEach(c => {
-            html += `<option value="${c.name}" data-unit="${c.unit}" ${c.name === selectedProd ? 'selected' : ''}>${c.name}</option>`;
+            html += `<option value="${c.name}">`;
         });
-        html += `<option value="_NEW_" class="text-yellow-600 font-bold">+ เพิ่มวัสดุใหม่</option>`;
     }
+    pDataList.innerHTML = html;
     
-    pSelect.innerHTML = html;
+    if (selectedProd) pInput.value = selectedProd;
     handleMainProductChange();
     
     if (selectedModel && currentInboundMode === 'SN') {
-        setTimeout(() => { document.getElementById('mainModelSelect').value = selectedModel; checkScanReady(); }, 50);
+        setTimeout(() => { document.getElementById('mainModelInput').value = selectedModel; checkScanReady(); }, 50);
     }
 };
 
 window.handleMainProductChange = function() {
-    const val = document.getElementById('mainProductSelect').value;
-    const pInput = document.getElementById('mainProductInput');
-    const mSelect = document.getElementById('mainModelSelect');
+    const val = document.getElementById('mainProductInput').value.trim();
+    const mDataList = document.getElementById('modelList');
     const mInput = document.getElementById('mainModelInput');
     
-    if (val === '_NEW_') {
-        pInput.classList.remove('hidden'); pInput.value = '';
-        if (currentInboundMode === 'SN') {
-            mSelect.innerHTML = `<option value="_NEW_">+ สร้างรุ่นใหม่</option>`;
-            mInput.classList.remove('hidden'); mInput.value = '';
-        }
-        document.getElementById('inboundUnit').value = 'ชิ้น';
+    if (currentInboundMode === 'SN' && val && masterOptions.sn_products[val]) {
+        let mHtml = '';
+        masterOptions.sn_products[val].forEach(m => {
+            mHtml += `<option value="${m}">`;
+        });
+        if (mDataList) mDataList.innerHTML = mHtml;
     } else {
-        pInput.classList.add('hidden');
-        if (currentInboundMode === 'SN' && val) {
-            let mHtml = `<option value="">-- เลือกรุ่น --</option>`;
-            masterOptions.sn_products[val].forEach(m => mHtml += `<option value="${m}">${m}</option>`);
-            mHtml += `<option value="_NEW_" class="text-emerald-600 font-bold">+ เพิ่มรุ่นใหม่</option>`;
-            mSelect.innerHTML = mHtml;
-        }
-        
-        if (currentInboundMode === 'QTY' && val) {
-            const opt = document.getElementById('mainProductSelect').options[document.getElementById('mainProductSelect').selectedIndex];
-            document.getElementById('inboundUnit').value = opt.getAttribute('data-unit') || 'ชิ้น';
+        if (mDataList) mDataList.innerHTML = '';
+    }
+    
+    if (currentInboundMode === 'QTY' && val) {
+        const consumable = masterOptions.consumables.find(c => c.name === val);
+        if (consumable) {
+            document.getElementById('inboundUnit').value = consumable.unit;
+        } else {
+            document.getElementById('inboundUnit').value = 'ชิ้น';
         }
     }
-    handleMainModelChange();
-};
-
-window.handleMainModelChange = function() {
-    const val = document.getElementById('mainModelSelect').value;
-    const mInput = document.getElementById('mainModelInput');
-    if (val === '_NEW_') { mInput.classList.remove('hidden'); mInput.value = ''; } 
-    else { mInput.classList.add('hidden'); }
     checkScanReady();
 };
 
 window.checkScanReady = function() {
-    const pVal = document.getElementById('mainProductSelect').value;
-    const pReady = pVal === '_NEW_' ? document.getElementById('mainProductInput').value.trim() !== '' : pVal !== '';
+    const pVal = document.getElementById('mainProductInput').value.trim();
+    const pReady = pVal !== '';
     
     let isReady = false;
     if (currentInboundMode === 'SN') {
-        const mVal = document.getElementById('mainModelSelect').value;
-        const mReady = mVal === '_NEW_' ? document.getElementById('mainModelInput').value.trim() !== '' : mVal !== '';
+        const mVal = document.getElementById('mainModelInput').value.trim();
+        const mReady = mVal !== '';
         isReady = pReady && mReady;
     } else {
         isReady = pReady;
@@ -291,7 +361,7 @@ window.checkScanReady = function() {
     }
 };
 
-document.getElementById('mainProductInput')?.addEventListener('input', checkScanReady);
+document.getElementById('mainProductInput')?.addEventListener('input', handleMainProductChange);
 document.getElementById('mainModelInput')?.addEventListener('input', checkScanReady);
 
 document.getElementById('scanInput')?.addEventListener('input', function(e) {
@@ -315,10 +385,8 @@ async function validateAndSaveSN(sn) {
     const scanInput = document.getElementById('scanInput');
     scanInput.value = '';
     
-    const pSel = document.getElementById('mainProductSelect').value;
-    const pName = pSel === '_NEW_' ? document.getElementById('mainProductInput').value.trim() : pSel;
-    const mSel = document.getElementById('mainModelSelect').value;
-    const mName = mSel === '_NEW_' ? document.getElementById('mainModelInput').value.trim() : mSel;
+    const pName = document.getElementById('mainProductInput').value.trim();
+    const mName = document.getElementById('mainModelInput').value.trim();
 
     try {
         const res = await fetch('api/inventory/add_sn_fast.php', {
@@ -330,7 +398,14 @@ async function validateAndSaveSN(sn) {
         
         if (data.success) {
             Toast.success(`เพิ่ม SN: ${sn} สำเร็จ!`);
-            if (pSel === '_NEW_' || mSel === '_NEW_') loadMasterOptions(pName, mName);
+            
+            // Check if it was a new product or model by looking at current masterOptions
+            const isNewProd = !masterOptions.sn_products[pName];
+            const isNewModel = isNewProd || !masterOptions.sn_products[pName].includes(mName);
+            
+            if (isNewProd || isNewModel) {
+                loadMasterOptions(pName, mName);
+            }
             loadStockOverview();
         } else if (data.status === 'duplicate') {
             Toast.error(`SN: ${sn} ซ้ำในระบบ!`);
@@ -343,8 +418,7 @@ async function validateAndSaveSN(sn) {
 }
 
 window.saveInboundQty = async function() {
-    const pSel = document.getElementById('mainProductSelect').value;
-    const pName = pSel === '_NEW_' ? document.getElementById('mainProductInput').value.trim() : pSel;
+    const pName = document.getElementById('mainProductInput').value.trim();
     const qty = document.getElementById('inboundQty').value;
     const unit = document.getElementById('inboundUnit').value || 'ชิ้น';
 
@@ -361,7 +435,10 @@ window.saveInboundQty = async function() {
         if (data.success) {
             Toast.success(`เพิ่ม ${pName} จำนวน ${qty} ${unit} สำเร็จ!`);
             document.getElementById('inboundQty').value = '';
-            if (pSel === '_NEW_') loadMasterOptions(pName);
+            
+            const isNewProd = !masterOptions.consumables.some(c => c.name === pName);
+            if (isNewProd) loadMasterOptions(pName);
+            
             loadStockOverview();
         } else { Toast.error(data.error); }
     } catch (e) { Toast.error('การเชื่อมต่อล้มเหลว'); }
@@ -397,14 +474,13 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
             json.forEach((row, index) => {
                 if (index === 0) return;
 
-                const pCode = cI !== -1 ? row[cI] : '';
-                const pName = nI !== -1 ? row[nI] : '';
-                const mName = mI !== -1 ? row[mI] : '';
-                const sn = sI !== -1 ? row[sI] : '';
+                const pName = row[0];
+                const mName = row[1];
+                const sn = row[2];
 
                 if (pName && mName) {
                     excelDataPayload.push({
-                        product_code: pCode ? String(pCode).trim() : '',
+                        product_code: '', // ไม่ต้องใช้รหัสสินค้าตามเงื่อนไขใหม่
                         product_name: String(pName).trim(),
                         model_name: String(mName).trim(),
                         sn: sn ? String(sn).trim() : ''
@@ -449,16 +525,66 @@ document.getElementById('confirmExcelBtn')?.addEventListener('click', async (e) 
         const data = await res.json();
 
         if (data.success) {
-            Toast.success(`นำเข้าสินค้าสำเร็จทั้งหมด ${data.imported} รายการ`);
+            const stats = data.stats;
+            
+            let html = `
+                <div class="text-left text-sm space-y-3 mt-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <span class="text-slate-500">รวมแถวที่ประมวลผล:</span> 
+                        <span class="font-bold text-indigo-600 text-lg">${excelDataPayload.length} แถว</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <span class="text-slate-500">พบสินค้าที่แตกต่างกัน:</span> 
+                        <span class="font-bold text-slate-700">${stats.products_count} สินค้า</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <span class="text-slate-500">พบรุ่นที่แตกต่างกัน:</span> 
+                        <span class="font-bold text-slate-700">${stats.models_count} รุ่น</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <span class="text-slate-500">ซีเรียล (SN) ที่นำเข้าสำเร็จ:</span> 
+                        <span class="font-bold text-emerald-600 text-lg">${stats.imported_sns} ชิ้น</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-1">
+                        <span class="text-slate-500">ซีเรียล (SN) ที่ซ้ำ/ข้ามไป:</span> 
+                        <span class="font-bold ${stats.duplicate_sns > 0 ? 'text-rose-500' : 'text-slate-400'} text-lg">${stats.duplicate_sns} ชิ้น</span>
+                    </div>
+                </div>
+            `;
+
+            if (data.errors && data.errors.length > 0) {
+                html += `
+                <div class="mt-4 p-4 bg-rose-50 text-rose-600 text-xs rounded-xl max-h-40 overflow-y-auto custom-scrollbar text-left border border-rose-100">
+                    <p class="font-bold mb-2 text-sm flex items-center"><span class="mr-1">⚠️</span> รายการที่พบปัญหา:</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        ${data.errors.slice(0, 10).map(e => `<li>${e}</li>`).join('')}
+                        ${data.errors.length > 10 ? `<li class="italic font-bold mt-2 text-rose-800">... และอีก ${data.errors.length - 10} รายการที่พบปัญหา</li>` : ''}
+                    </ul>
+                </div>`;
+            }
+
+            Swal.fire({
+                title: 'สรุปผลการนำเข้า',
+                html: html,
+                icon: data.errors && data.errors.length > 0 && stats.imported_sns > 0 ? 'warning' : 'success',
+                confirmButtonColor: '#10b981',
+                confirmButtonText: 'รับทราบ',
+                customClass: {
+                    popup: 'rounded-2xl',
+                    confirmButton: 'px-8 py-3 rounded-xl font-bold uppercase tracking-wider'
+                }
+            });
+
             document.getElementById('excelPreview').classList.add('hidden');
             document.getElementById('excelImport').value = '';
             excelDataPayload = [];
             loadStockOverview();
+            loadMasterOptions(); // Reload options in case new products/models were added
         } else {
-            Toast.error('เกิดข้อผิดพลาด: ' + data.error);
+            Swal.fire('เกิดข้อผิดพลาด', data.error || 'ไม่สามารถนำเข้าข้อมูลได้', 'error');
         }
     } catch (err) {
-        Toast.error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้', 'error');
     } finally {
         Loader.hide();
         btn.disabled = false;
@@ -672,7 +798,7 @@ function renderHistoryTable() {
     tbody.innerHTML = '';
 
     if (historyData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 italic">ยังไม่มีประวัติการทำรายการ</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-400 italic">ยังไม่มีประวัติการทำรายการ</td></tr>';
         return;
     }
 
@@ -701,10 +827,45 @@ function renderHistoryTable() {
             <td class="px-6 py-4 font-mono text-xs font-bold text-indigo-600">${item.sn || '-'}</td>
             <td class="px-6 py-4 font-medium text-slate-700">${item.product_name} <br><span class="text-slate-400 font-normal text-xs">รุ่น: ${item.model_name || 'วัสดุสิ้นเปลือง'}</span></td>
             <td class="px-6 py-4">${personHtml}</td>
+            <td class="px-6 py-4 text-center">
+                <button onclick="deleteHistory(${item.id})" class="text-rose-400 hover:text-rose-600 font-bold" title="ลบประวัตินี้">🗑️</button>
+            </td>
         `;
         tbody.appendChild(row);
     });
 }
+
+window.deleteHistory = async function(id) {
+    const result = await Swal.fire({
+        title: 'ลบรายการประวัติ?',
+        text: 'การลบประวัติจะไม่ส่งผลกระทบต่อจำนวนสินค้าในสต็อก ยืนยันการลบหรือไม่?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'ใช่, ลบเลย',
+        cancelButtonText: 'ยกเลิก'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch('api/inventory/delete_history.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+            const data = await res.json();
+            if (data.success) {
+                Toast.success(data.message);
+                loadHistory();
+            } else {
+                Swal.fire('ข้อผิดพลาด', data.error, 'error');
+            }
+        } catch (e) {
+            Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
+        }
+    }
+};
 
 document.getElementById('exportHistoryBtn')?.addEventListener('click', () => {
     if (historyData.length === 0) return Toast.error('ไม่มีข้อมูลสำหรับส่งออก');   
@@ -742,37 +903,57 @@ document.getElementById('exportHistoryBtn')?.addEventListener('click', () => {
 // ฟังก์ชันล้างข้อมูลคลังสินค้าทั้งหมด (Danger Zone)
 // ====================================================
 window.deleteAllInventory = async function() {
-    if (!confirm('⚠️ คำเตือนร้ายแรง!\n\nคุณแน่ใจหรือไม่ที่จะ "ล้างข้อมูลคลังสินค้าและประวัติทั้งหมด"?\nการกระทำนี้เมื่อทำแล้วจะไม่สามารถกู้คืนข้อมูลกลับมาได้อีก!')) {
-        return;
-    }
-
-    const pass = prompt('เพื่อยืนยันการลบ โปรดพิมพ์คำว่า "DELETE" เป็นภาษาอังกฤษตัวพิมพ์ใหญ่:');
-    if (pass !== 'DELETE') {
-        Toast.error('ยกเลิกการลบข้อมูล (พิมพ์คำยืนยันไม่ถูกต้อง)');
-        return;
-    }
-
-    Loader.show();
-    try {
-        const res = await fetch('api/inventory/delete_all.php', {
-            method: 'POST'
-        });
-        const data = await res.json();
-        
-        if (data.success) {
-            Toast.success(data.message);
-            loadStockOverview();
-            loadMasterOptions();
-            if (!document.getElementById('view-history').classList.contains('hidden')) {
-                loadHistory();
+    const result = await Swal.fire({
+        title: '⚠️ คำเตือนร้ายแรง!',
+        html: 'คุณแน่ใจหรือไม่ที่จะ "ล้างข้อมูลคลังสินค้าและประวัติทั้งหมด"?<br><b class="text-red-600">การกระทำนี้เมื่อทำแล้วจะไม่สามารถกู้คืนข้อมูลกลับมาได้อีก!</b>',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'ใช่, ฉันต้องการล้างข้อมูลทั้งหมด',
+        cancelButtonText: 'ยกเลิก',
+        input: 'text',
+        inputLabel: 'เพื่อยืนยันการลบ โปรดพิมพ์คำว่า "DELETE" เป็นภาษาอังกฤษตัวพิมพ์ใหญ่:',
+        inputPlaceholder: 'พิมพ์ DELETE ตรงนี้...',
+        inputValidator: (value) => {
+            if (value !== 'DELETE') {
+                return 'คำยืนยันไม่ถูกต้อง (ต้องเป็นตัวพิมพ์ใหญ่)';
             }
-        } else {
-            Toast.error('เกิดข้อผิดพลาด: ' + data.error);
         }
-    } catch (e) {
-        Toast.error('ไม่สามารถติดต่อเซิร์ฟเวอร์ได้');
-    } finally {
-        Loader.hide();
+    });
+
+    if (result.isConfirmed) {
+        Loader.show();
+        try {
+            const res = await fetch('api/inventory/delete_all.php', {
+                method: 'POST'
+            });
+            
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Server response was not JSON:', text);
+                throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (ไม่ใช่ JSON)');
+            }
+            
+            if (data.success) {
+                Swal.fire('สำเร็จ', data.message, 'success');
+                loadStockOverview();
+                loadMasterOptions();
+                if (!document.getElementById('view-history').classList.contains('hidden')) {
+                    loadHistory();
+                }
+            } else {
+                Swal.fire('เกิดข้อผิดพลาด', data.error || 'ไม่ทราบสาเหตุ', 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            Swal.fire('ข้อผิดพลาด', e.message || 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้', 'error');
+        } finally {
+            Loader.hide();
+        }
     }
 };
 

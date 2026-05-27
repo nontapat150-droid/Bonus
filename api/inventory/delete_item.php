@@ -1,0 +1,48 @@
+<?php
+// api/inventory/delete_item.php
+require_once '../../config/db.php';
+require_once '../../config/auth.php';
+
+header('Content-Type: application/json');
+
+if (!isLoggedIn()) {
+    echo json_encode(['success' => false, 'error' => 'กรุณาเข้าสู่ระบบ']);
+    exit;
+}
+
+if (!hasRole(['admin', 'super_admin'])) {
+    echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
+    exit;
+}
+
+$data = json_decode(file_get_contents('php://input'), true);
+$id = $data['id'] ?? null;
+
+if (!$id) {
+    echo json_encode(['success' => false, 'error' => 'ไม่ได้ระบุ ID']);
+    exit;
+}
+
+try {
+    $pdo->beginTransaction();
+
+    // ลบ Logs ก่อน
+    $stmt = $pdo->prepare("DELETE FROM inventory_logs WHERE item_id = ?");
+    $stmt->execute([$id]);
+
+    // ลบ Item
+    $stmt = $pdo->prepare("DELETE FROM inventory_items WHERE id = ?");
+    $stmt->execute([$id]);
+
+    $count = $stmt->rowCount();
+    $pdo->commit();
+
+    if ($count > 0) {
+        echo json_encode(['success' => true, 'message' => 'ลบรายการสำเร็จ']);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'ไม่พบรายการที่ต้องการลบ']);
+    }
+} catch (PDOException $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+}

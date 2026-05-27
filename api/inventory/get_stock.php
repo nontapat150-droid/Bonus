@@ -18,7 +18,7 @@ try {
                 pm.id as model_id,
                 pm.model_name,
                 COUNT(i.id) as qty,
-                GROUP_CONCAT(i.sn SEPARATOR ',') as sn_list
+                GROUP_CONCAT(CONCAT(i.id, ':', i.sn) SEPARATOR '|') as sn_list
             FROM products p
             JOIN product_models pm ON p.id = pm.product_id
             LEFT JOIN inventory_items i ON pm.id = i.model_id AND i.status = 'in_stock'
