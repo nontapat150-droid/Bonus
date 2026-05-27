@@ -1,6 +1,5 @@
 // assets/js/inventory.js
 
-// View switching logic
 function invTab(tabName) {
     document.querySelectorAll('.inv-view').forEach(el => {
         el.classList.add('hidden');
@@ -24,9 +23,6 @@ function invTab(tabName) {
     if (tabName === 'history') loadHistory();
 }
 
-// ----------------------------------------------------
-// TAB 1: Stock Overview
-// ----------------------------------------------------
 let stockData = [];
 
 async function loadStockOverview() {
@@ -47,6 +43,9 @@ async function loadStockOverview() {
     }
 }
 
+// -----------------------------------------
+// แสดงตารางและปุ่มเปิดดู SN Modal
+// -----------------------------------------
 function renderStockTable(data) {
     const tbody = document.getElementById('stockTableBody');
     tbody.innerHTML = '';
@@ -60,6 +59,14 @@ function renderStockTable(data) {
         const row = document.createElement('tr');
         row.className = 'hover:bg-slate-50 transition-colors animate__animated animate__fadeIn';
         row.style.animationDelay = `${index * 0.03}s`;
+        
+        let actionContent = '<span class="text-xs text-slate-300 italic">วัสดุสิ้นเปลือง / ไม่มี SN</span>';
+        if (item.sn_list) {
+            const snsCount = item.sn_list.split(',').length;
+            // ซ่อนข้อมูล sn_list เอาไว้ใน data-attribute ของปุ่ม เพื่อความแม่นยำเวลาคลิก
+            actionContent = `<button onclick="openSnModal(this)" data-pname="${item.product_name}" data-mname="${item.model_name}" data-sns="${item.sn_list}" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-2 rounded-lg text-xs font-bold transition-colors">🔍 กดดู SN ทั้งหมด (${snsCount})</button>`;
+        }
+
         row.innerHTML = `
             <td class="px-6 py-4 font-mono text-xs text-slate-400">${item.product_code || '-'}</td>
             <td class="px-6 py-4 font-bold text-slate-800">${item.product_name}</td>
@@ -70,7 +77,7 @@ function renderStockTable(data) {
                 </span>
             </td>
             <td class="px-6 py-4 text-center">
-                <button onclick="Toast.info('ฟีเจอร์ดูรายละเอียด/หมายเลขซีเรียลกำลังจะมาเร็วๆ นี้')" class="text-indigo-600 hover:text-indigo-800 text-sm font-bold transition-colors">🔍 ดูรายละเอียด</button>    
+                ${actionContent}
             </td>
         `;
         tbody.appendChild(row);
@@ -82,14 +89,71 @@ document.getElementById('searchStock')?.addEventListener('input', (e) => {
     const filtered = stockData.filter(item =>
         item.product_name.toLowerCase().includes(term) ||
         (item.model_name && item.model_name.toLowerCase().includes(term)) ||
-        (item.product_code && item.product_code.toLowerCase().includes(term))
+        (item.product_code && item.product_code.toLowerCase().includes(term)) ||
+        (item.sn_list && item.sn_list.toLowerCase().includes(term))
     );
     renderStockTable(filtered);
 });
 
-// ----------------------------------------------------
+// -----------------------------------------
+// ระบบ SN Modal
+// -----------------------------------------
+let currentModalSns = []; // เก็บตัวแปรของ SN ที่ถูกเปิดใน Modal เผื่อใช้สำหรับระบบค้นหา
+
+window.openSnModal = function(btnElement) {
+    const pName = btnElement.getAttribute('data-pname');
+    const mName = btnElement.getAttribute('data-mname');
+    const snString = btnElement.getAttribute('data-sns');
+
+    document.getElementById('snModalProductName').textContent = pName;
+    document.getElementById('snModalModelName').textContent = `รุ่น (Model): ${mName || '-'}`;
+    
+    // แปลง Text ของ SN เป็น Array
+    currentModalSns = snString.split(',').map(sn => sn.trim()).filter(sn => sn !== '');
+    
+    document.getElementById('searchSnInModal').value = ''; // เคลียร์ช่องค้นหา
+    renderSnModalList(currentModalSns); // วาดรายการ
+
+    const modal = document.getElementById('snListModal');
+    modal.classList.remove('hidden');
+};
+
+window.closeSnModal = function() {
+    const modal = document.getElementById('snListModal');
+    modal.classList.add('hidden');
+};
+
+// วาดกล่อง SN ตาม Array ที่รับมา
+window.renderSnModalList = function(snArray) {
+    const container = document.getElementById('snModalListContainer');
+    const countLabel = document.getElementById('snModalCount');
+    
+    container.innerHTML = '';
+    countLabel.textContent = `รวม ${snArray.length} รายการ`;
+
+    if (snArray.length === 0) {
+        container.innerHTML = '<div class="col-span-2 text-center py-8 text-slate-400 italic">ไม่พบหมายเลข SN ที่ค้นหา</div>';
+        return;
+    }
+
+    snArray.forEach(sn => {
+        const div = document.createElement('div');
+        div.className = 'bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-lg text-sm font-mono text-indigo-700 font-bold text-center flex items-center justify-center hover:bg-indigo-50 transition-colors shadow-sm';
+        div.textContent = sn;
+        container.appendChild(div);
+    });
+};
+
+// ค้นหาเฉพาะใน Modal ของสินค้านั้น
+document.getElementById('searchSnInModal')?.addEventListener('input', function(e) {
+    const term = e.target.value.toLowerCase().trim();
+    const filteredSns = currentModalSns.filter(sn => sn.toLowerCase().includes(term));
+    renderSnModalList(filteredSns);
+});
+
+// ====================================================
 // TAB 2: Inbound (FAST SCANNER & EXCEL)
-// ----------------------------------------------------
+// ====================================================
 let masterOptions = { sn_products: {}, consumables: [] };
 let currentInboundMode = 'SN';
 let typingTimerIn;
@@ -110,7 +174,6 @@ window.setInboundMode = function(mode) {
     const btnSn = document.getElementById('btnModeSn');
     const btnQty = document.getElementById('btnModeQty');
     
-    // UI Update
     if (mode === 'SN') {
         btnSn.className = "px-4 py-2 rounded-full text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all flex items-center";
         btnQty.className = "px-4 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-700 transition-all flex items-center";
@@ -175,7 +238,6 @@ window.handleMainProductChange = function() {
             mSelect.innerHTML = mHtml;
         }
         
-        // Auto-fill unit for consumables
         if (currentInboundMode === 'QTY' && val) {
             const opt = document.getElementById('mainProductSelect').options[document.getElementById('mainProductSelect').selectedIndex];
             document.getElementById('inboundUnit').value = opt.getAttribute('data-unit') || 'ชิ้น';
@@ -224,7 +286,6 @@ window.checkScanReady = function() {
 document.getElementById('mainProductInput')?.addEventListener('input', checkScanReady);
 document.getElementById('mainModelInput')?.addEventListener('input', checkScanReady);
 
-// Fast Scan Trigger
 document.getElementById('scanInput')?.addEventListener('input', function(e) {
     clearTimeout(typingTimerIn);
     const sn = this.value.trim();
@@ -244,7 +305,7 @@ document.getElementById('scanInput')?.addEventListener('keypress', function(e) {
 
 async function validateAndSaveSN(sn) {
     const scanInput = document.getElementById('scanInput');
-    scanInput.value = ''; // Clear instantly for next scan
+    scanInput.value = '';
     
     const pSel = document.getElementById('mainProductSelect').value;
     const pName = pSel === '_NEW_' ? document.getElementById('mainProductInput').value.trim() : pSel;
@@ -262,7 +323,7 @@ async function validateAndSaveSN(sn) {
         if (data.success) {
             Toast.success(`เพิ่ม SN: ${sn} สำเร็จ!`);
             if (pSel === '_NEW_' || mSel === '_NEW_') loadMasterOptions(pName, mName);
-            loadStockOverview(); // Refresh background
+            loadStockOverview();
         } else if (data.status === 'duplicate') {
             Toast.error(`SN: ${sn} ซ้ำในระบบ!`);
         } else {
@@ -270,7 +331,7 @@ async function validateAndSaveSN(sn) {
         }
     } catch (e) { Toast.error('การเชื่อมต่อล้มเหลว'); }
     
-    setTimeout(() => scanInput.focus(), 50); // Refocus
+    setTimeout(() => scanInput.focus(), 50);
 }
 
 window.saveInboundQty = async function() {
@@ -293,14 +354,11 @@ window.saveInboundQty = async function() {
             Toast.success(`เพิ่ม ${pName} จำนวน ${qty} ${unit} สำเร็จ!`);
             document.getElementById('inboundQty').value = '';
             if (pSel === '_NEW_') loadMasterOptions(pName);
-            loadStockOverview(); // Refresh background
+            loadStockOverview();
         } else { Toast.error(data.error); }
     } catch (e) { Toast.error('การเชื่อมต่อล้มเหลว'); }
 };
 
-// ====================================================
-// Excel Inbound (Smart Detect)
-// ====================================================
 let excelDataPayload = [];
 
 document.getElementById('excelImport')?.addEventListener('change', (e) => {
@@ -320,25 +378,16 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
             let skipped = 0;
 
             const headerRow = json[0] ? json[0].map(h => String(h).toLowerCase().replace(/\s/g, '')) : [];
-            
-            // ค้นหาตำแหน่งคอลัมน์จากชื่อ Header อัตโนมัติ (Smart Detect)
             let cI = headerRow.findIndex(h => h.includes('code') || h.includes('รหัส'));
             let nI = headerRow.findIndex(h => h.includes('name') || h.includes('ชื่อ'));
             let mI = headerRow.findIndex(h => h.includes('model') || h.includes('รุ่น'));
             let sI = headerRow.findIndex(h => h.includes('sn') || h.includes('ซีเรียล') || h.includes('serial'));
 
-            // ถ้าหา Header ไม่เจอเลย ให้เดาตำแหน่งตามลำดับ (Code, Name, Model, SN)
-            if (cI === -1 && nI === -1 && mI === -1) {
-                cI = 0; nI = 1; mI = 2; sI = 3;
-            }
-            
-            // สำรอง: รองรับไฟล์ Excel แบบเก่าที่มีแค่ 3 คอลัมน์ (Name, Model, SN)
-            if (cI === 0 && nI === -1 && json[0][0] && String(json[0][0]).toLowerCase().includes('name')) {
-                cI = -1; nI = 0; mI = 1; sI = 2;
-            }
+            if (cI === -1 && nI === -1 && mI === -1) { cI = 0; nI = 1; mI = 2; sI = 3; }
+            if (cI === 0 && nI === -1 && json[0][0] && String(json[0][0]).toLowerCase().includes('name')) { cI = -1; nI = 0; mI = 1; sI = 2; }
 
             json.forEach((row, index) => {
-                if (index === 0) return; // ข้ามบรรทัดหัวตาราง
+                if (index === 0) return;
 
                 const pCode = cI !== -1 ? row[cI] : '';
                 const pName = nI !== -1 ? row[nI] : '';
@@ -396,7 +445,7 @@ document.getElementById('confirmExcelBtn')?.addEventListener('click', async (e) 
             document.getElementById('excelPreview').classList.add('hidden');
             document.getElementById('excelImport').value = '';
             excelDataPayload = [];
-            loadStockOverview(); // โหลดตารางใหม่
+            loadStockOverview();
         } else {
             Toast.error('เกิดข้อผิดพลาด: ' + data.error);
         }
@@ -408,9 +457,9 @@ document.getElementById('confirmExcelBtn')?.addEventListener('click', async (e) 
     }
 });
 
-// ----------------------------------------------------
+// ====================================================
 // TAB 3: Outbound
-// ----------------------------------------------------
+// ====================================================
 let stagedOutbound = [];
 
 document.getElementById('out_sn')?.addEventListener('keypress', (e) => {
@@ -556,9 +605,9 @@ document.getElementById('finalSubmitOutbound')?.addEventListener('click', async 
     }
 });
 
-// ----------------------------------------------------
+// ====================================================
 // TAB 4: History
-// ----------------------------------------------------
+// ====================================================
 let historyData = [];
 
 async function loadHistory() {
@@ -631,5 +680,5 @@ document.getElementById('exportHistoryBtn')?.addEventListener('click', () => {
 // INIT
 document.addEventListener('DOMContentLoaded', () => {
     loadStockOverview();
-    loadMasterOptions(); // โหลด Dropdown ล่วงหน้าให้พร้อมใช้
+    loadMasterOptions();
 });

@@ -53,8 +53,8 @@ if (!hasRole(['admin', 'super_admin'])) {
                             <th class="px-6 py-3">รหัสสินค้า</th>
                             <th class="px-6 py-3">ชื่อสินค้า</th>
                             <th class="px-6 py-3">รุ่น (Model)</th>
-                            <th class="px-6 py-3 text-center">คงเหลือ (ชิ้น/หน่วย)</th>
-                            <th class="px-6 py-3 text-center">จัดการ</th>
+                            <th class="px-6 py-3 text-center">คงเหลือ</th>
+                            <th class="px-6 py-3 text-center">หมายเลขซีเรียล</th>
                         </tr>
                     </thead>
                     <tbody id="stockTableBody" class="divide-y divide-gray-100">
@@ -66,7 +66,6 @@ if (!hasRole(['admin', 'super_admin'])) {
     </div>
 
     <div id="view-inbound" class="inv-view hidden space-y-6">
-        
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-t-4 border-t-emerald-500">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 border-b pb-4">
                 <h3 class="font-bold text-gray-700 text-lg flex items-center"><span class="text-emerald-500 mr-2">📥</span> สแกนรับเข้าสต๊อก</h3>
@@ -121,7 +120,6 @@ if (!hasRole(['admin', 'super_admin'])) {
                 <button id="confirmExcelBtn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors">ยืนยันนำเข้าข้อมูลทั้งหมด</button>
             </div>
         </div>
-
     </div>
 
     <div id="view-outbound" class="inv-view hidden space-y-6">
@@ -180,7 +178,6 @@ if (!hasRole(['admin', 'super_admin'])) {
             </div>
         </div>
     </div>
-
 </div>
 
 <div id="outboundModal" class="fixed inset-0 z-[100] hidden bg-black bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
@@ -224,5 +221,37 @@ if (!hasRole(['admin', 'super_admin'])) {
         </div>
     </div>
 </div>
+
+<div id="snListModal" class="fixed inset-0 z-[100] hidden bg-black bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-lg w-full flex flex-col max-h-[90vh] transform transition-all animate__animated animate__zoomIn">
+        <div class="bg-indigo-600 p-4 border-b flex justify-between items-center text-white">
+            <h3 class="font-bold text-lg flex items-center"><span class="mr-2">🏷️</span> รายการหมายเลขซีเรียล</h3>
+            <button onclick="closeSnModal()" class="text-indigo-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
+        </div>
+        <div class="p-5 border-b bg-slate-50">
+            <h4 id="snModalProductName" class="text-lg font-black text-slate-800">ชื่อสินค้า</h4>
+            <p id="snModalModelName" class="text-sm text-slate-500 mb-4">รุ่น: -</p>
+            <div class="relative w-full">
+                <input type="text" id="searchSnInModal" placeholder="ค้นหาหมายเลข SN ภายในรุ่นนี้..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 font-mono">
+                <span class="absolute left-3 top-2.5 text-slate-400">🔍</span>
+            </div>
+        </div>
+        <div class="p-5 overflow-y-auto bg-white flex-1 custom-scrollbar">
+            <div id="snModalListContainer" class="grid grid-cols-2 gap-3">
+                </div>
+        </div>
+        <div class="p-4 border-t bg-slate-50 flex justify-between items-center">
+            <span id="snModalCount" class="text-sm font-bold text-slate-500">รวม 0 รายการ</span>
+            <button onclick="closeSnModal()" class="px-6 py-2 rounded-lg text-slate-600 bg-white border border-slate-300 hover:bg-slate-100 font-medium transition-colors">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
 
 <script src="assets/js/inventory.js"></script>
