@@ -6,20 +6,19 @@ require_once '../../config/auth.php';
 header('Content-Type: application/json');
 requireLogin();
 
-// Protect
 if (!hasRole(['admin', 'super_admin'])) {
     echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
 }
 
 try {
-    // We group by model to show quantity
     $sql = "SELECT
                 p.product_code,
                 p.name as product_name,
                 pm.id as model_id,
                 pm.model_name,
-                COUNT(i.id) as qty
+                COUNT(i.id) as qty,
+                GROUP_CONCAT(i.sn SEPARATOR ',') as sn_list
             FROM products p
             JOIN product_models pm ON p.id = pm.product_id
             LEFT JOIN inventory_items i ON pm.id = i.model_id AND i.status = 'in_stock'
