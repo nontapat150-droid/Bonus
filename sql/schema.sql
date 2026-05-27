@@ -10,7 +10,10 @@ CREATE TABLE IF NOT EXISTS `users` (
   `password_hash` VARCHAR(255) NOT NULL,
   `role` ENUM('super_admin', 'admin', 'technician') NOT NULL DEFAULT 'technician',
   `full_name` VARCHAR(100) NOT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  `status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'approved',
+  `team_id` INT DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`team_id`) REFERENCES `teams`(`id`) ON DELETE SET NULL
 );
 
 -- Default Super Admin (Password: password123)

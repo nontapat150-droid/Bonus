@@ -1,9 +1,11 @@
 // assets/js/users.js
 
 let allUsers = [];
+let allTeams = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     loadUsers();
+    loadTeams();
 
     document.getElementById('searchUser')?.addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
@@ -33,6 +35,36 @@ async function loadUsers() {
     }
 }
 
+async function loadTeams() {
+    try {
+        const res = await fetch('api/users/get_teams.php');
+        const data = await res.json();
+        if (data.success) {
+            allTeams = data.data;
+            populateTeamDropdown();
+        }
+    } catch (e) {
+        console.error('ไม่สามารถโหลดรายการทีมได้', e);
+    }
+}
+
+function populateTeamDropdown(selectedId = '') {
+    const select = document.getElementById('team_id');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">-- ไม่มีทีม --</option>';
+    
+    allTeams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team.id;
+        option.textContent = `🚗 ${team.team_name}`;
+        if (String(team.id) === String(selectedId)) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+}
+
 function renderUserTable(users) {
     const tbody = document.getElementById('userTableBody');
     tbody.innerHTML = '';
@@ -54,6 +86,9 @@ function renderUserTable(users) {
         tr.style.animationDelay = `${index * 0.05}s`;
         
         const date = new Date(u.created_at).toLocaleDateString('th-TH');
+        const teamBadge = u.team_name 
+            ? `<span class="px-3 py-1 bg-amber-50 text-amber-600 rounded-full font-bold text-[10px] border border-amber-100">🚗 ${u.team_name}</span>` 
+            : '<span class="text-slate-300 text-[10px] italic">ไม่มีทีม</span>';
 
         tr.innerHTML = `
             <td class="px-8 py-5">
@@ -61,7 +96,10 @@ function renderUserTable(users) {
                     <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-bold mr-3 text-xs">
                         ${u.full_name.charAt(0)}
                     </div>
-                    <span class="font-bold text-slate-700">${u.full_name}</span>
+                    <div>
+                        <span class="font-bold text-slate-700">${u.full_name}</span>
+                        <div class="mt-1">${teamBadge}</div>
+                    </div>
                 </div>
             </td>
             <td class="px-8 py-5 font-mono text-xs text-slate-400">@${u.username}</td>
@@ -97,6 +135,7 @@ function openUserModal(isEdit = false) {
     } else {
         title.innerText = 'เพิ่มพนักงานใหม่';
         help.classList.add('hidden');
+        populateTeamDropdown(''); // รีเซ็ต dropdown ทีม
     }
 
     modal.classList.remove('hidden');
@@ -121,6 +160,9 @@ function editUser(index) {
     document.getElementById('full_name').value = u.full_name;
     document.getElementById('username_field').value = u.username;
     document.getElementById('role').value = u.role;
+    
+    // ตั้งค่าทีม/ป้ายทะเบียน
+    populateTeamDropdown(u.team_id || '');
 }
 
 async function handleSaveUser(e) {

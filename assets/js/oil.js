@@ -1,5 +1,7 @@
 // assets/js/oil.js
 
+let teamPlatesData = [];
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('oilForm');
     const litersInput = document.getElementById('liters');
@@ -8,6 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('oil_images');
     const previewContainer = document.getElementById('imagePreviewContainer');
     const imageCount = document.getElementById('imageCount');
+    const licensePlateSelect = document.getElementById('license_plate');
+
+    // โหลดป้ายทะเบียนจากระบบทีม
+    loadTeamPlates();
 
     // Auto-calculate total price
     const calculateTotal = () => {
@@ -18,6 +24,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     litersInput.addEventListener('input', calculateTotal);
     priceInput.addEventListener('input', calculateTotal);
+
+    // เมื่อเลือกป้ายทะเบียน → แสดงจำนวนเคสงานของทีม
+    licensePlateSelect.addEventListener('change', () => {
+        const selectedTeamId = licensePlateSelect.value;
+        const jobCountDiv = document.getElementById('teamJobCount');
+        const jobCountValue = document.getElementById('jobCountValue');
+
+        if (selectedTeamId) {
+            const team = teamPlatesData.find(t => String(t.id) === String(selectedTeamId));
+            if (team) {
+                jobCountValue.textContent = team.job_count || 0;
+                jobCountDiv.classList.remove('hidden');
+            }
+        } else {
+            jobCountDiv.classList.add('hidden');
+        }
+    });
 
     // Image Upload Preview (Max 10)
     let selectedFiles = [];
@@ -45,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const reader = new FileReader();
         reader.onload = (e) => {
             const div = document.createElement('div');
-            div.className = 'relative group rounded-lg overflow-hidden border border-gray-200 aspect-square animate__animated animate__zoomIn';   
+            div.className = 'relative group rounded-lg overflow-hidden border border-gray-200 aspect-square animate__animated animate__zoomIn';
             div.innerHTML = `
                 <img src="${e.target.result}" class="w-full h-full object-cover">
                 <button type="button" onclick="removeImage(${index})" class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 shadow-md">
@@ -77,7 +100,19 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // ส่ง team_name (ป้ายทะเบียน) แทน team_id
+        const selectedOption = licensePlateSelect.options[licensePlateSelect.selectedIndex];
+        const teamName = selectedOption ? selectedOption.getAttribute('data-plate') : '';
+
+        if (!teamName) {
+            Toast.error('กรุณาเลือกป้ายทะเบียนรถ');
+            return;
+        }
+
         const formData = new FormData(form);
+        // แทนที่ license_plate ด้วยชื่อทีม (ป้ายทะเบียน) จริง
+        formData.set('license_plate', teamName);
+
         formData.delete('oil_images[]');
         selectedFiles.forEach(file => {
             formData.append('oil_images[]', file);
@@ -103,7 +138,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedFiles = [];
                 previewContainer.innerHTML = '';
                 updateImageCount();
-                document.getElementById('vehicleLockMsg').classList.remove('hidden');
+                // รีโหลด dropdown
+                loadTeamPlates();
             } else {
                 Toast.error(result.error || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
             }
@@ -116,26 +152,64 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = false;
         }
     });
-
-    // License Plate Auto-check (Debounced)
-    let typingTimer;
-    const licenseInput = document.getElementById('license_plate');
-
-    licenseInput.addEventListener('input', () => {
-        clearTimeout(typingTimer);
-        document.getElementById('vehicleLockMsg').classList.add('hidden');
-
-        if (licenseInput.value.length > 2) {
-            typingTimer = setTimeout(async () => {
-                try {
-                    const res = await fetch(`api/oil/check_vehicle.php?plate=${encodeURIComponent(licenseInput.value)}`);
-                    const data = await res.json();
-                    if (data.success && data.locked_to_current_user) {
-                        document.getElementById('vehicleLockMsg').classList.remove('hidden');
-                        Toast.info('คุณเคยใช้รถคันนี้มาก่อน ระบบดึงข้อมูลเดิมให้');
-                    }
-                } catch(e) { /* ignore */ }
-            }, 500);
-        }
-    });
 });
+
+// โหลดรายการป้ายทะเบียน (ทีม) จาก API
+async function loadTeamPlates() {
+    const select = document.getElementById('license_plate');
+    const teamInfoEl = document.getElementById('displayUserTeam');
+
+    try {
+        const res = await fetch('api/oil/get_team_plates.php');
+        const data = await res.json();
+
+        if (data.success) {
+            teamPlatesData = data.data;
+            const myTeamId = data.my_team_id;
+
+            // สร้าง options
+            select.innerHTML = '<option value="">-- เลือกป้ายทะเบียนรถ --</option>';
+
+            let myTeamName = null;
+
+            teamPlatesData.forEach(team => {
+                const option = document.createElement('option');
+                option.value = team.id;
+                option.textContent = `🚗 ${team.team_name} (${team.job_count} งาน)`;
+                option.setAttribute('data-plate', team.team_name);
+                option.setAttribute('data-jobs', team.job_count);
+
+                // เลือกทีมตัวเองอัตโนมัติ
+                if (myTeamId && String(team.id) === String(myTeamId)) {
+                    option.selected = true;
+                    myTeamName = team.team_name;
+                }
+
+                select.appendChild(option);
+            });
+
+            // แสดงข้อมูลทีมของผู้ใช้
+            if (myTeamName) {
+                teamInfoEl.innerHTML = `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black">🚗 ทีม: ${myTeamName}</span>`;
+
+                // แสดงจำนวนเคสงานทันที
+                const myTeam = teamPlatesData.find(t => String(t.id) === String(myTeamId));
+                if (myTeam) {
+                    const jobCountDiv = document.getElementById('teamJobCount');
+                    const jobCountValue = document.getElementById('jobCountValue');
+                    jobCountValue.textContent = myTeam.job_count || 0;
+                    jobCountDiv.classList.remove('hidden');
+                }
+            } else {
+                teamInfoEl.innerHTML = '<span class="text-slate-400 text-xs">ยังไม่ได้ผูกทีม/ป้ายทะเบียน</span>';
+            }
+        } else {
+            select.innerHTML = '<option value="">-- ไม่สามารถโหลดข้อมูลได้ --</option>';
+            teamInfoEl.textContent = 'โหลดข้อมูลทีมไม่สำเร็จ';
+        }
+    } catch (e) {
+        console.error('Error loading team plates:', e);
+        select.innerHTML = '<option value="">-- เกิดข้อผิดพลาด --</option>';
+        teamInfoEl.textContent = 'เกิดข้อผิดพลาดในการโหลดข้อมูลทีม';
+    }
+}

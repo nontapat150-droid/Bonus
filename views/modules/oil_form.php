@@ -20,19 +20,39 @@ if (!defined('PDO::ATTR_ERRMODE')) {
             <!-- Alert Message Area -->
             <div id="alertBox" class="hidden rounded-lg p-4 mb-4 text-sm"></div>
 
+            <!-- ข้อมูลผู้เติมน้ำมัน (แสดงอัตโนมัติ) -->
+            <div class="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-2xl p-5 border border-indigo-100">
+                <p class="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-3">👤 ผู้บันทึกข้อมูล</p>
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 font-black text-lg" id="userAvatar">
+                        <?= mb_substr($_SESSION['full_name'] ?? 'U', 0, 1) ?>
+                    </div>
+                    <div>
+                        <p class="font-black text-slate-800 text-lg" id="displayUserName"><?= htmlspecialchars($_SESSION['full_name'] ?? '-') ?></p>
+                        <p class="text-xs text-slate-400" id="displayUserTeam">กำลังโหลดข้อมูลทีม...</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- License Plate -->
+                <!-- License Plate Dropdown -->
                 <div class="col-span-1 md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">ป้ายทะเบียนรถ <span class="text-red-500">*</span></label>
                     <div class="relative">
-                        <input type="text" id="license_plate" name="license_plate" required
-                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors uppercase"
-                            placeholder="เช่น 1กข 1234">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">      
+                        <select id="license_plate" name="license_plate" required
+                            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-bold appearance-none bg-white">
+                            <option value="">-- กำลังโหลดป้ายทะเบียน... --</option>
+                        </select>
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <span class="text-gray-400">🚗</span>
                         </div>
                     </div>
-                    <p id="vehicleLockMsg" class="text-xs text-green-600 mt-1 hidden">✓ ผูกมัดป้ายทะเบียนนี้กับคุณเรียบร้อยแล้ว</p>
+                    <p class="text-xs text-amber-600 mt-1 font-medium">* แสดงป้ายทะเบียนที่ลงทะเบียนในระบบแล้ว (จากทีมงาน)</p>
+                    <!-- จำนวนเคสงานของทีมที่เลือก -->
+                    <div id="teamJobCount" class="hidden mt-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 text-sm">
+                        <span class="font-bold text-emerald-700">📋 เคสงานของทีมนี้:</span>
+                        <span id="jobCountValue" class="font-black text-emerald-600 ml-1">0</span> <span class="text-emerald-600">งาน</span>
+                    </div>
                 </div>
 
                 <!-- Mileage -->

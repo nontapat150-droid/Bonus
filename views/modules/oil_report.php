@@ -30,18 +30,22 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md p-6 text-white">
             <h3 class="text-blue-100 text-sm font-medium">ค่าใช้จ่ายรวม</h3>
             <p class="text-3xl font-bold mt-2">฿ <span id="stat_total_cost">0.00</span></p>
         </div>
-        <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-md p-6 text-white">     
-            <h3 class="text-emerald-100 text-sm font-medium">ปริมาณรวม (ลิตร)</h3>    
+        <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-md p-6 text-white">
+            <h3 class="text-emerald-100 text-sm font-medium">ปริมาณรวม (ลิตร)</h3>
             <p class="text-3xl font-bold mt-2"><span id="stat_total_liters">0.00</span> ลิตร</p>
         </div>
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-md p-6 text-white">       
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-md p-6 text-white">
             <h3 class="text-purple-100 text-sm font-medium">รายการเบิกทั้งหมด</h3>
-            <p class="text-3xl font-bold mt-2"><span id="stat_total_records">0</span> รายการ</p>     
+            <p class="text-3xl font-bold mt-2"><span id="stat_total_records">0</span> รายการ</p>
+        </div>
+        <div class="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl shadow-md p-6 text-white">
+            <h3 class="text-amber-100 text-sm font-medium">📋 เคสงานทุกทีม</h3>
+            <p class="text-3xl font-bold mt-2"><span id="stat_total_jobs">0</span> งาน</p>
         </div>
     </div>
 
@@ -74,17 +78,18 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                     <tr>
                         <th class="px-6 py-3">วันที่/เวลา</th>
                         <th class="px-6 py-3">ช่าง (ผู้เบิก)</th>
-                        <th class="px-6 py-3">ทะเบียนรถ</th>
+                        <th class="px-6 py-3">ทีม/ป้ายทะเบียน</th>
+                        <th class="px-6 py-3 text-center">เคสงาน</th>
                         <th class="px-6 py-3 text-right">เลขไมล์</th>
                         <th class="px-6 py-3 text-right">จำนวนลิตร</th>
                         <th class="px-6 py-3 text-right">ราคา/ลิตร</th>
-                        <th class="px-6 py-3 text-right text-gray-800">ยอดรวม (บาท)</th>      
+                        <th class="px-6 py-3 text-right text-gray-800">ยอดรวม (บาท)</th>
                         <th class="px-6 py-3 text-center">หลักฐาน</th>
                     </tr>
                 </thead>
                 <tbody id="oilTableBody" class="divide-y divide-gray-100">
                     <!-- Data injected via JS -->
-                    <tr><td colspan="8" class="px-6 py-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
+                    <tr><td colspan="9" class="px-6 py-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
                 </tbody>
             </table>
         </div>

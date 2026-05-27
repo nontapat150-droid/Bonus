@@ -26,7 +26,7 @@ async function fetchData() {
     const startDate = document.getElementById('start_date').value;
     const endDate = document.getElementById('end_date').value;
 
-    document.getElementById('oilTableBody').innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดข้อมูลรายงาน...</div></td></tr>';
+    document.getElementById('oilTableBody').innerHTML = '<tr><td colspan="9" class="px-6 py-12 text-center text-slate-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดข้อมูลรายงาน...</div></td></tr>';
 
     try {
         const response = await fetch(`api/oil/get_records.php?start_date=${startDate}&end_date=${endDate}`);    
@@ -42,12 +42,12 @@ async function fetchData() {
             }
         } else {
             Toast.error(`เกิดข้อผิดพลาด: ${data.error}`);
-            document.getElementById('oilTableBody').innerHTML = `<tr><td colspan="8" class="px-6 py-4 text-center text-rose-500 font-bold">ไม่สามารถดึงข้อมูลได้: ${data.error}</td></tr>`;
+            document.getElementById('oilTableBody').innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-rose-500 font-bold">ไม่สามารถดึงข้อมูลได้: ${data.error}</td></tr>`;
         }
     } catch (error) {
         console.error("Error fetching data:", error);
         Toast.error('ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้');
-        document.getElementById('oilTableBody').innerHTML = `<tr><td colspan="8" class="px-6 py-4 text-center text-rose-500 font-bold">ไม่สามารถโหลดข้อมูลได้ กรุณาตรวจสอบคอนโซล</td></tr>`;
+        document.getElementById('oilTableBody').innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-rose-500 font-bold">ไม่สามารถโหลดข้อมูลได้ กรุณาตรวจสอบคอนโซล</td></tr>`;
     }
 }
 
@@ -55,7 +55,8 @@ function updateStats(stats) {
     // Animate numbers if possible, or just set text
     document.getElementById('stat_total_cost').textContent = stats.total_cost.toLocaleString('th-TH', {minimumFractionDigits: 2});
     document.getElementById('stat_total_liters').textContent = stats.total_liters.toLocaleString('th-TH', {minimumFractionDigits: 2});
-    document.getElementById('stat_total_records').textContent = stats.total_records.toLocaleString('th-TH');    
+    document.getElementById('stat_total_records').textContent = stats.total_records.toLocaleString('th-TH');
+    document.getElementById('stat_total_jobs').textContent = stats.total_jobs ? stats.total_jobs.toLocaleString('th-TH') : '0';
 }
 
 function renderCharts(chartData) {
@@ -122,7 +123,7 @@ function renderTable(records) {
     tbody.innerHTML = '';
 
     if (records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-slate-400">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-12 text-center text-slate-400">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>';
         return;
     }
 
@@ -131,6 +132,10 @@ function renderTable(records) {
         const formattedDate = dateObj.toLocaleDateString('th-TH') + ' ' + dateObj.toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'});
 
         const hasImages = row.images ? true : false;
+        const teamBadge = row.team_name 
+            ? `<span class="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-lg text-xs font-bold">🚗 ${row.team_name}</span>` 
+            : `<span class="bg-slate-100 text-slate-800 border border-slate-200 px-3 py-1 rounded-lg text-xs font-bold">${row.license_plate}</span>`;
+        const jobCount = row.team_job_count || 0;
 
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition-colors animate__animated animate__fadeIn';
@@ -138,7 +143,8 @@ function renderTable(records) {
         tr.innerHTML = `
             <td class="px-6 py-4">${formattedDate}</td>
             <td class="px-6 py-4 font-medium text-slate-800">${row.tech_name}</td>
-            <td class="px-6 py-4"><span class="bg-slate-100 text-slate-800 border border-slate-200 px-3 py-1 rounded-lg text-xs font-bold">${row.license_plate}</span></td>
+            <td class="px-6 py-4">${teamBadge}</td>
+            <td class="px-6 py-4 text-center"><span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-black">📋 ${jobCount}</span></td>
             <td class="px-6 py-4 text-right">${parseInt(row.mileage).toLocaleString('th-TH')}</td>
             <td class="px-6 py-4 text-right">${parseFloat(row.liters).toFixed(2)}</td>
             <td class="px-6 py-4 text-right font-mono">฿${parseFloat(row.price_per_liter).toFixed(2)}</td>
