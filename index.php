@@ -115,17 +115,13 @@ if ($page === 'home') {
 
     <div id="toast-container"></div>
 
-    <!-- Sidebar Layout -->
     <?php include 'views/layouts/sidebar.php'; ?>
 
-    <!-- Main Content Area -->
     <main class="flex-1 overflow-y-auto p-4 lg:p-10">
 
         <?php if ($page === 'home'): ?>
-            <!-- NEW HOME DESIGN -->
             <div class="max-w-6xl mx-auto space-y-10 animate__animated animate__fadeIn">
                 
-                <!-- Hero Section -->
                 <section class="hero-gradient rounded-[2.5rem] p-8 lg:p-12 text-white shadow-2xl shadow-indigo-200 relative overflow-hidden group">
                     <div class="relative z-10">
                         <span class="bg-white/20 backdrop-blur-md px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4 inline-block border border-white/10 animate__animated animate__fadeInDown">
@@ -139,12 +135,10 @@ if ($page === 'home') {
                             ยินดีที่ได้พบคุณอีกครั้ง! วันนี้เรามีงานที่รอให้คุณจัดการและสรุปข้อมูลที่น่าสนใจด้านล่างนี้
                         </p>
                     </div>
-                    <!-- Decorative Elements -->
                     <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
                     <div class="absolute right-10 top-10 text-8xl opacity-20 group-hover:scale-110 transition-transform duration-700">🚀</div>
                 </section>
 
-                <!-- Quick Stats (NOW WITH REAL DATA) -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                     <div class="stat-card bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all">
                         <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 text-2xl shadow-inner">⚡</div>
@@ -168,14 +162,26 @@ if ($page === 'home') {
                     </div>
                 </div>
 
-                <!-- Action Menu -->
                 <div class="space-y-6">
                     <h2 class="text-2xl font-black text-slate-800 tracking-tight flex items-center">
                         <span class="w-2 h-8 bg-indigo-600 rounded-full mr-3"></span>
                         เมนูการใช้งานหลัก
                     </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
                         
+                        <a href="index.php?page=checkin" class="glass-card group p-8 rounded-[2.5rem] relative overflow-hidden">
+                            <div class="relative z-10">
+                                <div class="w-16 h-16 bg-orange-500 text-white rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-lg shadow-orange-200 group-hover:rotate-12 transition-transform">📸</div>
+                                <h3 class="text-2xl font-black text-slate-800 mb-2">ระบบเช็คอิน</h3>
+                                <p class="text-slate-500 text-sm leading-relaxed">ถ่ายรูปเพื่อบันทึกเวลาเข้างานแบบเรียลไทม์</p>
+                                <div class="mt-6 flex items-center text-orange-600 font-black text-xs uppercase tracking-widest group-hover:translate-x-2 transition-transform">
+                                    เช็คอินเข้างาน <span class="ml-2">➜</span>
+                                </div>
+                            </div>
+                            <div class="absolute -right-4 -top-4 text-8xl opacity-[0.03] font-black group-hover:scale-125 transition-transform duration-700 uppercase">Time</div>
+                        </a>
+
                         <a href="index.php?page=oil" class="glass-card group p-8 rounded-[2.5rem] relative overflow-hidden">
                             <div class="relative z-10">
                                 <div class="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-lg shadow-blue-200 group-hover:rotate-12 transition-transform">⛽</div>
@@ -225,7 +231,8 @@ if ($page === 'home') {
                 'oil_test_form' => 'views/modules/oil_form.php',
                 'dispatch' => 'views/modules/dispatch_map.php',
                 'inventory' => 'views/modules/inventory_app.php',
-                'users' => 'views/modules/user_settings.php'
+                'users' => 'views/modules/user_settings.php',
+                'checkin' => 'views/modules/checkin.php' // <-- ลงทะเบียนเส้นทาง checkin ที่นี่
             ];
             if (array_key_exists($page, $routes) && file_exists($routes[$page])) {
                 include $routes[$page];
