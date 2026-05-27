@@ -1,0 +1,5 @@
+{
+    "message": "SQLSTATE[22007]: Invalid datetime format: 1292 Incorrect datetime value: '46082-12-31 17:00:00' for column `smart_business_suite`.`oil_records`.`date_recorded` at row 1",
+    "code": "22007",
+    "trace": "#0 C:\\xampp\\htdocs\\Github\\Bonus\\api\\oil\\import_excel.php(70): PDOStatement->execute(Array)\n#1 {main}"
+}
