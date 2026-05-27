@@ -41,7 +41,7 @@ function initMap() {
     map = L.map('map', { zoomControl: false }).setView([13.7563, 100.5018], 6);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
+        attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 }
 
@@ -404,7 +404,7 @@ async function runOptimizeRoute() {
 }
 
 function showJobPopup(job, color) {
-    const gmapsLink = `https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`;
+    const gmapsLink = `https://www.google.com/maps/dir/?api=1&destination=$${job.lat},${job.lng}`;
     
     Swal.fire({
         title: `<div class="text-indigo-600 font-black tracking-tight">${job.access_no}</div>`,
@@ -666,13 +666,18 @@ function processExcel(file) {
             });
 
             const accessIdx = findCol(['access', 'รหัสงาน']);
-            const latIdx = findCol(['lat', 'ละติจูด']);
-            const lngIdx = findCol(['lng', 'ลองจิจูด']);
-            const custIdx = findCol(['customer', 'ชื่อลูกค้า']);
-            const addrIdx = findCol(['address', 'ที่อยู่']);
-            const dateIdx = findCol(['date', 'วัน', 'arrival']);
-            const packageIdx = findCol(['package', 'แพ็กเกจ', 'แพคเกจ']);
-            const remarkIdx = findCol(['remark', 'หมายเหตุ']);
+const latIdx = findCol(['lat', 'latitude', 'ละติจูด']);
+const lngIdx = findCol(['lng', 'long', 'longitude', 'ลองจิจูด']); // <--- เพิ่มคำค้นหาตรงนี้
+const custIdx = findCol(['customer', 'ชื่อลูกค้า']);
+const addrIdx = findCol(['address', 'ที่อยู่']);
+const dateIdx = findCol(['date', 'วัน', 'arrival']);
+const packageIdx = findCol(['package', 'แพ็กเกจ', 'แพคเกจ']);
+const remarkIdx = findCol(['remark', 'หมายเหตุ']);
+
+// ดึงข้อมูลใหม่สำหรับ Order
+const orderIdx = findCol(['orderno', 'order']);
+const taskOrderIdx = findCol(['taskorderno', 'taskorder']);
+const taskTypeIdx = findCol(['tasktype']);
 
             if (accessIdx === -1 || latIdx === -1 || lngIdx === -1) {
                 throw new Error('ไม่พบหัวคอลัมน์ที่จำเป็น (Access No, Lat, Lng)');
@@ -687,9 +692,26 @@ function processExcel(file) {
                     let cleanPhone = phones.join(',').split(/[\/,|\s]+/).filter(p => p.length > 5).join(',');      
 
                     let planDate = row[dateIdx];
-                    if (planDate && !isNaN(planDate)) {
-                        const dateObj = new Date((planDate - 25569) * 86400 * 1000);
-                        planDate = dateObj.toISOString().split('T')[0];
+                    if (planDate) {
+                        // ถ้ารูปแบบเป็นตัวเลข (Serial Number จาก Excel)
+                        if (!isNaN(planDate) && String(planDate).indexOf('-') === -1 && String(planDate).indexOf('/') === -1) {
+                            const dateObj = new Date((planDate - 25569) * 86400 * 1000);
+                            planDate = dateObj.toISOString().split('T')[0];
+                        } else {
+                            // ถ้ารูปแบบเป็นข้อความ String (เช่น "2026-05-26 18:00:00" จาก CSV)
+                            planDate = String(planDate).trim();
+                            if (planDate.includes(' ')) {
+                                planDate = planDate.split(' ')[0]; // ตัดเอาแค่วันที่ก่อนเว้นวรรค
+                            }
+                            
+                            // กรณีเป็น DD/MM/YYYY เปลี่ยนเป็น YYYY-MM-DD
+                            if (planDate.includes('/')) {
+                                let parts = planDate.split('/');
+                                if (parts.length === 3 && parts[2].length === 4) {
+                                    planDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                                }
+                            }
+                        }
                     }
 
                     parsedJobs.push({
@@ -702,7 +724,10 @@ function processExcel(file) {
                         plan_arrival_date: planDate || null,
                         package: packageIdx !== -1 ? row[packageIdx] : null,
                         remark: remarkIdx !== -1 ? row[remarkIdx] : null,
-                        status: 'Pending'
+                        status: 'Pending',
+                        order_no: orderIdx !== -1 ? row[orderIdx] : null,
+                        task_order: taskOrderIdx !== -1 ? row[taskOrderIdx] : null,
+                        task_type: taskTypeIdx !== -1 ? row[taskTypeIdx] : null
                     });
                 }
             }
