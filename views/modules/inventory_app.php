@@ -40,7 +40,12 @@ if (!hasRole(['admin', 'super_admin'])) {
     <div id="view-overview" class="inv-view block space-y-4">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <h3 class="font-bold text-gray-700">รายการสินค้าคงเหลือ</h3>
+                <div class="flex items-center gap-3">
+                    <h3 class="font-bold text-gray-700">รายการสินค้าคงเหลือ</h3>
+                    <button onclick="deleteAllInventory()" class="text-xs bg-red-50 hover:bg-red-600 hover:text-white text-red-600 border border-red-200 font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center shadow-sm">
+                        <span class="mr-1">🗑️</span> ล้างคลังทั้งหมด
+                    </button>
+                </div>
                 <div class="relative w-full sm:w-64">
                     <input type="text" id="searchStock" placeholder="ค้นหาสินค้า หรือ รุ่น..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
                     <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
@@ -68,8 +73,8 @@ if (!hasRole(['admin', 'super_admin'])) {
     <div id="view-inbound" class="inv-view hidden space-y-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-t-4 border-t-emerald-500">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 border-b pb-4">
-                <h3 class="font-bold text-gray-700 text-lg flex items-center"><span class="text-emerald-500 mr-2">📥</span> สแกนรับเข้าสต๊อก</h3>
-                <div class="inline-flex bg-gray-100 rounded-full p-1">
+                <h3 class="font-bold text-gray-700 text-lg flex items-center"><span class="text-emerald-500 mr-2">📥</span> สแกนและรับเข้าสต็อก</h3>
+                <div class="inline-flex bg-gray-100 rounded-full p-1 flex-wrap justify-center gap-1">
                     <button id="btnModeSn" onclick="setInboundMode('SN')" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all flex items-center">
                         🏷️ มี SN (สแกนทีละชิ้น)
                     </button>
@@ -94,11 +99,11 @@ if (!hasRole(['admin', 'super_admin'])) {
 
                 <div id="areaInputSn" class="md:col-span-2 mt-4">
                     <label class="block text-xs font-bold text-emerald-600 uppercase tracking-widest mb-2">สแกนบาร์โค้ด SN</label>
-                    <input type="text" id="scanInput" class="w-full h-16 text-center text-2xl font-bold font-mono tracking-widest border-2 border-dashed border-gray-300 rounded-xl focus:border-emerald-500 focus:bg-emerald-50 focus:text-emerald-700 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed" placeholder="เลือกสินค้าก่อนสแกน..." autocomplete="off" disabled>
+                    <input type="text" id="scanInput" class="w-full h-16 text-center text-2xl font-bold font-mono tracking-widest border-2 border-dashed border-gray-300 rounded-xl focus:border-emerald-500 focus:bg-emerald-50 focus:text-emerald-700 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed" placeholder="เลือกสินค้าและรุ่นก่อนสแกน..." autocomplete="off" disabled>
                 </div>
 
                 <div id="areaInputQty" class="md:col-span-2 mt-4 hidden">
-                    <label class="block text-xs font-bold text-yellow-600 uppercase tracking-widest mb-2">ระบุจำนวนที่รับเข้า</label>
+                    <label class="block text-xs font-bold text-yellow-600 uppercase tracking-widest mb-2">ระบุจำนวนที่รับเข้า (รวมในสต็อกเดียว)</label>
                     <div class="flex gap-2">
                         <input type="number" id="inboundQty" class="w-1/2 h-16 text-center text-2xl font-bold border-2 border-gray-300 rounded-xl focus:border-yellow-500 focus:ring-0" placeholder="จำนวน" min="1">
                         <input type="text" id="inboundUnit" class="w-1/4 h-16 text-center font-bold border-2 border-gray-300 rounded-xl focus:border-yellow-500 focus:ring-0" placeholder="หน่วย (เช่น ชิ้น)">
@@ -169,7 +174,7 @@ if (!hasRole(['admin', 'super_admin'])) {
                             <th class="px-6 py-3">ประเภท</th>
                             <th class="px-6 py-3">SN</th>
                             <th class="px-6 py-3">สินค้า - รุ่น</th>
-                            <th class="px-6 py-3">เจ้าหน้าที่ผู้ทำรายการ</th>
+                            <th class="px-6 py-3">รายละเอียดผู้เบิก-ผู้รับ</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="divide-y divide-gray-100">
@@ -192,6 +197,13 @@ if (!hasRole(['admin', 'super_admin'])) {
                     <h2 class="text-xl font-bold uppercase text-gray-800">คลังสินค้า สมาร์ทสูท</h2>
                     <p class="text-gray-500 text-sm">ใบเบิกสินค้า (Outbound Slip)</p>    
                     <p class="text-gray-500 text-sm mt-1" id="billDate"></p>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
+                    <label class="block text-sm font-bold text-blue-800 mb-2">📦 ระบุผู้รับของ (เบิกให้ใคร / ทีมไหน?)</label>
+                    <select id="outboundTargetSelect" class="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-slate-700 shadow-sm cursor-pointer">
+                        <option value="">-- กำลังโหลดรายชื่อผู้รับ... --</option>
+                    </select>
                 </div>
 
                 <table class="w-full text-sm text-left">

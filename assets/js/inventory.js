@@ -1,5 +1,8 @@
 // assets/js/inventory.js
 
+let outboundTargetsList = [];
+let currentLoggedUserId = null;
+
 function invTab(tabName) {
     document.querySelectorAll('.inv-view').forEach(el => {
         el.classList.add('hidden');
@@ -63,7 +66,6 @@ function renderStockTable(data) {
         let actionContent = '<span class="text-xs text-slate-300 italic">วัสดุสิ้นเปลือง / ไม่มี SN</span>';
         if (item.sn_list) {
             const snsCount = item.sn_list.split(',').length;
-            // ซ่อนข้อมูล sn_list เอาไว้ใน data-attribute ของปุ่ม เพื่อความแม่นยำเวลาคลิก
             actionContent = `<button onclick="openSnModal(this)" data-pname="${item.product_name}" data-mname="${item.model_name}" data-sns="${item.sn_list}" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-2 rounded-lg text-xs font-bold transition-colors">🔍 กดดู SN ทั้งหมด (${snsCount})</button>`;
         }
 
@@ -98,7 +100,7 @@ document.getElementById('searchStock')?.addEventListener('input', (e) => {
 // -----------------------------------------
 // ระบบ SN Modal
 // -----------------------------------------
-let currentModalSns = []; // เก็บตัวแปรของ SN ที่ถูกเปิดใน Modal เผื่อใช้สำหรับระบบค้นหา
+let currentModalSns = []; 
 
 window.openSnModal = function(btnElement) {
     const pName = btnElement.getAttribute('data-pname');
@@ -108,11 +110,10 @@ window.openSnModal = function(btnElement) {
     document.getElementById('snModalProductName').textContent = pName;
     document.getElementById('snModalModelName').textContent = `รุ่น (Model): ${mName || '-'}`;
     
-    // แปลง Text ของ SN เป็น Array
     currentModalSns = snString.split(',').map(sn => sn.trim()).filter(sn => sn !== '');
     
-    document.getElementById('searchSnInModal').value = ''; // เคลียร์ช่องค้นหา
-    renderSnModalList(currentModalSns); // วาดรายการ
+    document.getElementById('searchSnInModal').value = ''; 
+    renderSnModalList(currentModalSns); 
 
     const modal = document.getElementById('snListModal');
     modal.classList.remove('hidden');
@@ -123,7 +124,6 @@ window.closeSnModal = function() {
     modal.classList.add('hidden');
 };
 
-// วาดกล่อง SN ตาม Array ที่รับมา
 window.renderSnModalList = function(snArray) {
     const container = document.getElementById('snModalListContainer');
     const countLabel = document.getElementById('snModalCount');
@@ -144,7 +144,6 @@ window.renderSnModalList = function(snArray) {
     });
 };
 
-// ค้นหาเฉพาะใน Modal ของสินค้านั้น
 document.getElementById('searchSnInModal')?.addEventListener('input', function(e) {
     const term = e.target.value.toLowerCase().trim();
     const filteredSns = currentModalSns.filter(sn => sn.toLowerCase().includes(term));
@@ -152,7 +151,7 @@ document.getElementById('searchSnInModal')?.addEventListener('input', function(e
 });
 
 // ====================================================
-// TAB 2: Inbound (FAST SCANNER & EXCEL)
+// TAB 2: Inbound (SN, QTY, EXCEL)
 // ====================================================
 let masterOptions = { sn_products: {}, consumables: [] };
 let currentInboundMode = 'SN';
@@ -174,19 +173,28 @@ window.setInboundMode = function(mode) {
     const btnSn = document.getElementById('btnModeSn');
     const btnQty = document.getElementById('btnModeQty');
     
+    const areaSn = document.getElementById('areaInputSn');
+    const areaQty = document.getElementById('areaInputQty');
+    const areaModel = document.getElementById('areaModelSelect');
+    
+    // Reset buttons
+    [btnSn, btnQty].forEach(btn => {
+        btn.className = "px-4 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-700 transition-all flex items-center";
+    });
+    
+    // Hide areas
+    [areaSn, areaQty].forEach(area => area?.classList.add('hidden'));
+
     if (mode === 'SN') {
         btnSn.className = "px-4 py-2 rounded-full text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all flex items-center";
-        btnQty.className = "px-4 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-700 transition-all flex items-center";
-        document.getElementById('areaInputSn')?.classList.remove('hidden');
-        document.getElementById('areaModelSelect')?.classList.remove('hidden');
-        document.getElementById('areaInputQty')?.classList.add('hidden');
-    } else {
+        areaSn?.classList.remove('hidden');
+        areaModel?.classList.remove('hidden');
+    } else if (mode === 'QTY') {
         btnQty.className = "px-4 py-2 rounded-full text-sm font-bold bg-white text-yellow-600 shadow-sm transition-all flex items-center";
-        btnSn.className = "px-4 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-700 transition-all flex items-center";
-        document.getElementById('areaInputQty')?.classList.remove('hidden');
-        document.getElementById('areaModelSelect')?.classList.add('hidden');
-        document.getElementById('areaInputSn')?.classList.add('hidden');
+        areaQty?.classList.remove('hidden');
+        areaModel?.classList.add('hidden');
     }
+    
     buildMainDropdowns();
 };
 
@@ -289,13 +297,13 @@ document.getElementById('mainModelInput')?.addEventListener('input', checkScanRe
 document.getElementById('scanInput')?.addEventListener('input', function(e) {
     clearTimeout(typingTimerIn);
     const sn = this.value.trim();
-    if (sn.length > 5) {
+    if (sn.length > 5 && currentInboundMode === 'SN') {
         typingTimerIn = setTimeout(() => validateAndSaveSN(sn), 800);
     }
 });
 
 document.getElementById('scanInput')?.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && currentInboundMode === 'SN') {
         e.preventDefault(); 
         clearTimeout(typingTimerIn);
         const sn = this.value.trim();
@@ -458,9 +466,23 @@ document.getElementById('confirmExcelBtn')?.addEventListener('click', async (e) 
 });
 
 // ====================================================
-// TAB 3: Outbound
+// TAB 3: Outbound (ค้นหาผู้รับ / ทีม)
 // ====================================================
 let stagedOutbound = [];
+
+// สร้างฟังก์ชันโหลดรายชื่อ
+async function fetchOutboundTargets() {
+    try {
+        const res = await fetch('api/inventory/get_outbound_targets.php');
+        const data = await res.json();
+        if (data.success) {
+            outboundTargetsList = data.users;
+            currentLoggedUserId = data.current_user_id;
+        }
+    } catch (e) {
+        console.error('Failed to load targets', e);
+    }
+}
 
 document.getElementById('out_sn')?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
@@ -542,6 +564,15 @@ window.removeStaged = function(index) {
 document.getElementById('confirmOutboundBtn')?.addEventListener('click', () => {
     const modal = document.getElementById('outboundModal');
     const billBody = document.getElementById('billTableBody');
+    const targetSelect = document.getElementById('outboundTargetSelect');
+
+    // วาด Dropdown
+    targetSelect.innerHTML = '<option value="">-- กรุณาเลือกผู้รับของ (คลิก) --</option>';
+    outboundTargetsList.forEach(u => {
+        const teamStr = u.team_name ? `[ทีม: ${u.team_name}]` : `[ไม่มีทีม]`;
+        const isSelf = u.id === currentLoggedUserId ? ' 👈 (เบิกให้ตัวเอง)' : '';
+        targetSelect.innerHTML += `<option value="${u.id}">${teamStr} ${u.full_name}${isSelf}</option>`;
+    });
 
     document.getElementById('billDate').textContent = new Date().toLocaleString('th-TH');
     document.getElementById('billTotal').textContent = `${stagedOutbound.length} รายการ`;
@@ -574,6 +605,14 @@ window.closeOutboundModal = function() {
 document.getElementById('finalSubmitOutbound')?.addEventListener('click', async (e) => {
     if (stagedOutbound.length === 0) return;
 
+    // ตรวจสอบว่าเลือกคนรับหรือยัง
+    const targetUserId = document.getElementById('outboundTargetSelect').value;
+    if (!targetUserId) {
+        Toast.error('กรุณาระบุว่ากำลังเบิกของให้ใคร หรือทีมไหน');
+        document.getElementById('outboundTargetSelect').focus();
+        return;
+    }
+
     Loader.show();
     const btn = e.target;
     btn.disabled = true;
@@ -584,16 +623,17 @@ document.getElementById('finalSubmitOutbound')?.addEventListener('click', async 
         const res = await fetch('api/inventory/confirm_outbound.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sns })
+            body: JSON.stringify({ sns: sns, target_user_id: targetUserId }) 
         });
         const data = await res.json();
 
         if (data.success) {
-            Toast.success(`ตัดสต็อกสำเร็จ ${data.processed} รายการ! ข้อมูลถูกบันทึกลงประวัติแล้ว`);
+            Toast.success(`เบิกของสำเร็จ ${data.processed} รายการ! ข้อมูลบันทึกลงประวัติแล้ว`);
             stagedOutbound = [];
             renderStaging();
             closeOutboundModal();
             loadStockOverview();
+            if(!document.getElementById('view-history').classList.contains('hidden')) loadHistory();
         } else {
             Toast.error('เกิดข้อผิดพลาด: ' + data.error);
         }
@@ -606,7 +646,7 @@ document.getElementById('finalSubmitOutbound')?.addEventListener('click', async 
 });
 
 // ====================================================
-// TAB 4: History
+// TAB 4: History (แสดงชื่อทีม / ผู้รับ)
 // ====================================================
 let historyData = [];
 
@@ -640,8 +680,17 @@ function renderHistoryTable() {
         const dateObj = new Date(item.timestamp);
         const formattedDate = dateObj.toLocaleDateString('th-TH') + ' ' + dateObj.toLocaleTimeString('th-TH');  
         const actionBadge = item.action === 'in'
-            ? '<span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-full font-bold border border-emerald-100">📥 รับเข้า</span>'
-            : '<span class="px-3 py-1 bg-rose-50 text-rose-700 text-xs rounded-full font-bold border border-rose-100">📤 เบิกออก</span>';
+            ? '<span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-full font-bold border border-emerald-100">📥 รับเข้าสต็อก</span>'
+            : '<span class="px-3 py-1 bg-rose-50 text-rose-700 text-xs rounded-full font-bold border border-rose-100">📤 จ่ายออกให้ทีม</span>';
+
+        // วาดส่วนของผู้เบิกและผู้รับ
+        const adminTeam = item.admin_team ? `(${item.admin_team})` : '';
+        let personHtml = `<div class="text-xs font-medium text-slate-500 mb-1">คนยิงจ่าย: <span class="text-slate-800 font-bold">${item.admin_name || 'System'}</span> ${adminTeam}</div>`;
+        
+        if (item.action === 'out' && item.target_name) {
+            const targetTeam = item.target_team ? `[ทีม: ${item.target_team}]` : '';
+            personHtml += `<div class="text-sm font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-md inline-block border border-blue-100 mt-1">🎯 ผู้รับ: ${item.target_name} <span class="text-xs font-normal text-blue-500">${targetTeam}</span></div>`;
+        }
 
         const row = document.createElement('tr');
         row.className = 'hover:bg-slate-50 transition-colors animate__animated animate__fadeIn';
@@ -650,8 +699,8 @@ function renderHistoryTable() {
             <td class="px-6 py-4 whitespace-nowrap text-slate-500 text-sm">${formattedDate}</td>
             <td class="px-6 py-4">${actionBadge}</td>
             <td class="px-6 py-4 font-mono text-xs font-bold text-indigo-600">${item.sn || '-'}</td>
-            <td class="px-6 py-4 font-medium text-slate-700">${item.product_name} <span class="text-slate-400 font-normal">(${item.model_name || 'วัสดุสิ้นเปลือง'})</span></td>
-            <td class="px-6 py-4 text-slate-600 text-sm">${item.admin_name || 'System'}</td>
+            <td class="px-6 py-4 font-medium text-slate-700">${item.product_name} <br><span class="text-slate-400 font-normal text-xs">รุ่น: ${item.model_name || 'วัสดุสิ้นเปลือง'}</span></td>
+            <td class="px-6 py-4">${personHtml}</td>
         `;
         tbody.appendChild(row);
     });
@@ -661,14 +710,26 @@ document.getElementById('exportHistoryBtn')?.addEventListener('click', () => {
     if (historyData.length === 0) return Toast.error('ไม่มีข้อมูลสำหรับส่งออก');   
 
     Toast.info('กำลังเตรียมไฟล์ Excel...');
-    const exportData = historyData.map(item => ({
-        "วันที่/เวลา": new Date(item.timestamp).toLocaleString('th-TH'),
-        "ประเภท": item.action === 'in' ? 'รับเข้า' : 'เบิกออก',
-        "หมายเลขซีเรียล": item.sn || '-',
-        "ชื่อสินค้า": item.product_name,
-        "รุ่น": item.model_name || 'วัสดุสิ้นเปลือง',
-        "ผู้ทำรายการ": item.admin_name || 'System'
-    }));
+    const exportData = historyData.map(item => {
+        let adminText = item.admin_name || 'System';
+        if (item.admin_team) adminText += ` (${item.admin_team})`;
+        
+        let targetText = '-';
+        if (item.action === 'out' && item.target_name) {
+            targetText = item.target_name;
+            if (item.target_team) targetText += ` (${item.target_team})`;
+        }
+
+        return {
+            "วันที่/เวลา": new Date(item.timestamp).toLocaleString('th-TH'),
+            "ประเภท": item.action === 'in' ? 'รับเข้าสต็อก' : 'จ่ายออกให้ทีม',
+            "หมายเลขซีเรียล": item.sn || '-',
+            "ชื่อสินค้า": item.product_name,
+            "รุ่น": item.model_name || 'วัสดุสิ้นเปลือง',
+            "ผู้ทำรายการ (คนยิง)": adminText,
+            "ผู้รับของ (ทีม)": targetText
+        };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
@@ -677,8 +738,47 @@ document.getElementById('exportHistoryBtn')?.addEventListener('click', () => {
     Toast.success('ดาวน์โหลดไฟล์ประวัติเรียบร้อยแล้ว');
 });
 
+// ====================================================
+// ฟังก์ชันล้างข้อมูลคลังสินค้าทั้งหมด (Danger Zone)
+// ====================================================
+window.deleteAllInventory = async function() {
+    if (!confirm('⚠️ คำเตือนร้ายแรง!\n\nคุณแน่ใจหรือไม่ที่จะ "ล้างข้อมูลคลังสินค้าและประวัติทั้งหมด"?\nการกระทำนี้เมื่อทำแล้วจะไม่สามารถกู้คืนข้อมูลกลับมาได้อีก!')) {
+        return;
+    }
+
+    const pass = prompt('เพื่อยืนยันการลบ โปรดพิมพ์คำว่า "DELETE" เป็นภาษาอังกฤษตัวพิมพ์ใหญ่:');
+    if (pass !== 'DELETE') {
+        Toast.error('ยกเลิกการลบข้อมูล (พิมพ์คำยืนยันไม่ถูกต้อง)');
+        return;
+    }
+
+    Loader.show();
+    try {
+        const res = await fetch('api/inventory/delete_all.php', {
+            method: 'POST'
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            Toast.success(data.message);
+            loadStockOverview();
+            loadMasterOptions();
+            if (!document.getElementById('view-history').classList.contains('hidden')) {
+                loadHistory();
+            }
+        } else {
+            Toast.error('เกิดข้อผิดพลาด: ' + data.error);
+        }
+    } catch (e) {
+        Toast.error('ไม่สามารถติดต่อเซิร์ฟเวอร์ได้');
+    } finally {
+        Loader.hide();
+    }
+};
+
 // INIT
 document.addEventListener('DOMContentLoaded', () => {
     loadStockOverview();
     loadMasterOptions();
+    fetchOutboundTargets(); // โหลดรายชื่อผู้รับตอนเข้าหน้าเว็บ
 });

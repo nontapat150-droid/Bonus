@@ -1,4 +1,5 @@
 <?php
+// api/inventory/add_sn_fast.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
 header('Content-Type: application/json');
@@ -11,18 +12,11 @@ $sn = trim($input['sn'] ?? '');
 $admin_id = $_SESSION['user_id'];
 
 if (!$pName || !$mName || !$sn) {
-    echo json_encode(['success' => false, 'error' => 'ข้อมูลไม่ครบ']); exit;
+    echo json_encode(['success' => false, 'error' => 'ข้อมูลไม่ครบถ้วน']); exit;
 }
 
 try {
     $pdo->beginTransaction();
-
-    // เช็ค SN ซ้ำ
-    $stmt = $pdo->prepare("SELECT id FROM inventory_items WHERE sn = ?");
-    $stmt->execute([$sn]);
-    if ($stmt->fetch()) {
-        echo json_encode(['success' => false, 'status' => 'duplicate']); exit;
-    }
 
     // หาหรือสร้าง Product
     $stmt = $pdo->prepare("SELECT id FROM products WHERE name = ?");
@@ -43,9 +37,18 @@ try {
         $modelId = $pdo->lastInsertId();
     }
 
-    // เพิ่ม Item และ Log
+    // เช็ค SN ซ้ำ
+    $stmt = $pdo->prepare("SELECT id FROM inventory_items WHERE sn = ?");
+    $stmt->execute([$sn]);
+    if ($stmt->fetch()) {
+        echo json_encode(['success' => false, 'status' => 'duplicate']); exit;
+    }
+
+    // บันทึกรับเข้าสต็อก
     $pdo->prepare("INSERT INTO inventory_items (model_id, sn, status) VALUES (?, ?, 'in_stock')")->execute([$modelId, $sn]);
     $itemId = $pdo->lastInsertId();
+    
+    // บันทึกประวัติ (Log)
     $pdo->prepare("INSERT INTO inventory_logs (item_id, action, admin_id) VALUES (?, 'in', ?)")->execute([$itemId, $admin_id]);
 
     $pdo->commit();
@@ -54,4 +57,3 @@ try {
     $pdo->rollBack();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
-?>
