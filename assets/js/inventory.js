@@ -24,18 +24,32 @@ function invTab(tabName) {
 
     if (tabName === 'overview') loadStockOverview();
     if (tabName === 'history') loadHistory();
+    if (tabName === 'transfer') loadMyTodayItems();
 }
 
 let stockData = [];
 
 async function loadStockOverview() {
     try {
-        document.getElementById('stockTableBody').innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดรายการสินค้า...</div></td></tr>';
+        document.getElementById('stockTableBody').innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดรายการสินค้า...</div></td></tr>';
         const res = await fetch('api/inventory/get_stock.php');
         const data = await res.json();
 
         if (data.success) {
-            stockData = data.data;
+            stockData = data.data || [];
+            if (data.consumables) {
+                const conData = data.consumables.map(c => ({
+                    product_code: c.consumable_id,
+                    product_name: c.product_name,
+                    model_id: c.consumable_id,
+                    model_name: 'วัสดุสิ้นเปลือง',
+                    qty: parseFloat(c.qty),
+                    sn_list: '',
+                    unit: c.unit,
+                    is_consumable: true
+                }));
+                stockData = stockData.concat(conData);
+            }
             renderStockTable(stockData);
         } else {
             Toast.error('เกิดข้อผิดพลาด: ' + data.error);
@@ -69,22 +83,24 @@ function renderStockTable(data) {
             actionContent = `<button onclick="openSnModal(this)" data-pname="${item.product_name}" data-mname="${item.model_name}" data-sns="${item.sn_list}" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-2 rounded-lg text-xs font-bold transition-colors">🔍 กดดู SN ทั้งหมด (${snsCount})</button>`;
         }
 
+        const deleteBtn = item.is_consumable ? 
+            `<button onclick="deleteConsumable('${item.consumable_id || item.product_code}', '${item.product_name}')" class="p-2 text-rose-400 hover:bg-rose-50 rounded-xl transition-all" title="ลบรายการนี้">🗑️</button>` : 
+            `<button onclick="deleteModel(${item.model_id}, '${item.product_name} - ${item.model_name}')" class="p-2 text-rose-400 hover:bg-rose-50 rounded-xl transition-all" title="ลบรายการนี้">🗑️</button>`;
+
         row.innerHTML = `
             <td class="px-6 py-4 font-mono text-xs text-slate-400">${item.product_code || '-'}</td>
             <td class="px-6 py-4 font-bold text-slate-800">${item.product_name}</td>
             <td class="px-6 py-4 text-slate-600">${item.model_name || 'วัสดุสิ้นเปลือง'}</td>
             <td class="px-6 py-4 text-center">
                 <span class="inline-flex items-center justify-center px-4 py-1.5 rounded-full text-sm font-bold ${item.qty > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}">
-                    ${item.qty} ${item.qty > 0 ? 'ชิ้น' : 'หมด'}
+                    ${item.qty} ${item.qty > 0 ? (item.unit || 'ชิ้น') : 'หมด'}
                 </span>
             </td>
             <td class="px-6 py-4 text-center">
                 ${actionContent}
             </td>
             <td class="px-6 py-4 text-center">
-                <button onclick="deleteModel(${item.model_id}, '${item.product_name} - ${item.model_name}')" class="p-2 text-rose-400 hover:bg-rose-50 rounded-xl transition-all" title="ลบรายการนี้">
-                    🗑️
-                </button>
+                ${deleteBtn}
             </td>
         `;
         tbody.appendChild(row);
@@ -247,6 +263,9 @@ async function loadMasterOptions(selectedProd = '', selectedModel = '') {
         if (data.success) {
             masterOptions = data.data;
             buildMainDropdowns(selectedProd, selectedModel);
+            if (typeof populateOutboundConsumableSelect === 'function') {
+                populateOutboundConsumableSelect();
+            }
         }
     } catch (e) { console.error('Failed to load master options', e); }
 }
@@ -282,54 +301,170 @@ window.setInboundMode = function(mode) {
 };
 
 window.buildMainDropdowns = function(selectedProd = '', selectedModel = '') {
-    const pDataList = document.getElementById('productList');
     const pInput = document.getElementById('mainProductInput');
-    if (!pDataList || !pInput) return;
+    const mInput = document.getElementById('mainModelInput');
+    if (!pInput || !mInput) return;
     
-    let html = '';
     if (currentInboundMode === 'SN') {
-        Object.keys(masterOptions.sn_products).forEach(p => {
-            html += `<option value="${p}">`;
-        });
+        const availableProds = Object.keys(masterOptions.sn_products || {});
+        
+        // Auto-fill Product if empty
+        if (selectedProd) {
+            pInput.value = selectedProd;
+        } else if (pInput.value.trim() === '' && availableProds.length > 0) {
+            pInput.value = availableProds[0];
+        }
+        
+        handleMainProductChange(false); // don't trigger checkScanReady yet
+        
+        // Auto-fill Model if empty
+        if (selectedModel) {
+            mInput.value = selectedModel;
+        } else if (mInput.value.trim() === '') {
+            const currentP = pInput.value.trim();
+            if (currentP && masterOptions.sn_products[currentP] && masterOptions.sn_products[currentP].length > 0) {
+                mInput.value = masterOptions.sn_products[currentP][0];
+            }
+        }
     } else {
-        masterOptions.consumables.forEach(c => {
-            html += `<option value="${c.name}">`;
-        });
+        const availableConsumables = masterOptions.consumables || [];
+        if (selectedProd) {
+            pInput.value = selectedProd;
+        } else if (pInput.value.trim() === '' && availableConsumables.length > 0) {
+            pInput.value = availableConsumables[0].name;
+        }
+        handleMainProductChange(false);
     }
-    pDataList.innerHTML = html;
     
-    if (selectedProd) pInput.value = selectedProd;
-    handleMainProductChange();
-    
-    if (selectedModel && currentInboundMode === 'SN') {
-        setTimeout(() => { document.getElementById('mainModelInput').value = selectedModel; checkScanReady(); }, 50);
-    }
+    checkScanReady();
 };
 
-window.handleMainProductChange = function() {
+// --- Custom Autocomplete Dropdown Logic ---
+function setupAutocomplete(inputId, dropdownId, getOptionsCallback, onSelectCallback, labelAddNew = 'เพิ่มรายการใหม่') {
+    const input = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    if (!input || !dropdown) return;
+
+    function renderDropdown(showAll = false) {
+        const options = getOptionsCallback();
+        const currentText = input.value.trim();
+        const filterText = showAll ? '' : currentText.toLowerCase();
+        
+        const filtered = options.filter(o => o.toLowerCase().includes(filterText));
+        
+        dropdown.innerHTML = '';
+        
+        // 1. แสดงรายการที่มีอยู่ในระบบ (ถ้ามี)
+        if (filtered.length > 0) {
+            filtered.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'px-4 py-3 hover:bg-emerald-50 cursor-pointer text-sm font-bold text-gray-700 transition-colors border-b border-gray-50';
+                div.textContent = opt;
+                div.onmousedown = (e) => {
+                    e.preventDefault(); // ป้องกัน Input เสีย Focus เวลากดเลือก
+                    input.value = opt;
+                    dropdown.classList.add('hidden');
+                    if (onSelectCallback) onSelectCallback();
+                };
+                dropdown.appendChild(div);
+            });
+        } else if (!showAll) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'px-4 py-3 text-sm text-gray-400 italic';
+            emptyDiv.textContent = 'ไม่พบข้อมูลที่ตรงกัน';
+            dropdown.appendChild(emptyDiv);
+        }
+
+        // 2. ปุ่มสำหรับ "เพิ่มรายการใหม่"
+        const exactMatch = options.find(o => o.toLowerCase() === currentText.toLowerCase());
+        const addDiv = document.createElement('div');
+        addDiv.className = 'px-4 py-3 bg-slate-50 hover:bg-emerald-100 text-emerald-700 cursor-pointer text-sm font-bold transition-colors shadow-inner sticky bottom-0 border-t border-emerald-100';
+        
+        if (currentText && !exactMatch) {
+            // ถ้าพิมพ์คำใหม่ที่ไม่มีในระบบ ให้ขึ้นปุ่มกดยืนยันคำนั้น
+            addDiv.innerHTML = `<span class="mr-2">➕</span> ใช้ชื่อใหม่: <b>"${currentText}"</b>`;
+            addDiv.onmousedown = (e) => {
+                e.preventDefault();
+                input.value = currentText;
+                dropdown.classList.add('hidden');
+                if (onSelectCallback) onSelectCallback();
+            };
+            dropdown.appendChild(addDiv);
+        } else {
+            // ถ้าช่องว่างเปล่า หรือคำตรงกันเป๊ะแล้ว ให้แสดงปุ่มบอกให้พิมพ์เพิ่ม
+             addDiv.innerHTML = `<span class="mr-2">➕</span> ${labelAddNew} <span class="text-xs font-normal text-slate-400 ml-1">(พิมพ์ลงในช่องได้เลย)</span>`;
+             addDiv.onmousedown = (e) => {
+                e.preventDefault();
+                input.focus();
+                input.select();
+             };
+             dropdown.appendChild(addDiv);
+        }
+        
+        dropdown.classList.remove('hidden');
+    }
+
+    // เมื่อคลิกหรือ Focus ให้แสดง "ทุกรายการที่มีในคลัง" (showAll = true)
+    input.addEventListener('focus', () => { 
+        input.select(); // คลุมดำข้อความเดิมให้พิมพ์ทับง่ายๆ
+        renderDropdown(true); 
+    });
+    input.addEventListener('click', () => { 
+        renderDropdown(true); 
+    });
+    
+    // เมื่อเริ่มพิมพ์ ให้ค้นหา (showAll = false)
+    input.addEventListener('input', () => {
+        renderDropdown(false);
+        if (onSelectCallback) onSelectCallback(); 
+    });
+    
+    input.addEventListener('blur', () => {
+        setTimeout(() => dropdown.classList.add('hidden'), 200);
+    });
+    
+    dropdown.addEventListener('mousedown', (e) => {
+        if (e.target === dropdown) e.preventDefault();
+    });
+}
+
+// Setup Product Autocomplete
+setupAutocomplete('mainProductInput', 'productDropdown', () => {
+    if (currentInboundMode === 'SN') return Object.keys(masterOptions.sn_products || {});
+    return (masterOptions.consumables || []).map(c => c.name);
+}, () => handleMainProductChange(true), 'ต้องการเพิ่มชื่อสินค้าใหม่?');
+
+// Setup Model Autocomplete
+setupAutocomplete('mainModelInput', 'modelDropdown', () => {
+    const pName = document.getElementById('mainProductInput').value.trim();
+    if (currentInboundMode === 'SN' && pName && masterOptions.sn_products && masterOptions.sn_products[pName]) {
+        return masterOptions.sn_products[pName];
+    }
+    return [];
+}, () => checkScanReady(), 'ต้องการสร้างรุ่นใหม่?');
+
+window.handleMainProductChange = function(triggerCheck = true) {
     const val = document.getElementById('mainProductInput').value.trim();
-    const mDataList = document.getElementById('modelList');
     const mInput = document.getElementById('mainModelInput');
     
-    if (currentInboundMode === 'SN' && val && masterOptions.sn_products[val]) {
-        let mHtml = '';
-        masterOptions.sn_products[val].forEach(m => {
-            mHtml += `<option value="${m}">`;
-        });
-        if (mDataList) mDataList.innerHTML = mHtml;
-    } else {
-        if (mDataList) mDataList.innerHTML = '';
+    if (currentInboundMode === 'SN' && val && masterOptions.sn_products && masterOptions.sn_products[val]) {
+        // ถ้าเปลี่ยน Product ให้ดึง Model ตัวแรกของ Product นั้นมาใส่ให้เลยอัตโนมัติ
+        const currentM = mInput.value.trim();
+        if (!masterOptions.sn_products[val].includes(currentM)) {
+            mInput.value = masterOptions.sn_products[val][0] || '';
+        }
     }
     
     if (currentInboundMode === 'QTY' && val) {
-        const consumable = masterOptions.consumables.find(c => c.name === val);
+        const consumable = (masterOptions.consumables || []).find(c => c.name === val);
         if (consumable) {
             document.getElementById('inboundUnit').value = consumable.unit;
         } else {
             document.getElementById('inboundUnit').value = 'ชิ้น';
         }
     }
-    checkScanReady();
+    
+    if (triggerCheck) checkScanReady();
 };
 
 window.checkScanReady = function() {
@@ -352,43 +487,42 @@ window.checkScanReady = function() {
         scanInput.disabled = false;
         scanInput.classList.replace('border-gray-300', 'border-emerald-500');
         scanInput.placeholder = 'พร้อมสแกนบาร์โค้ด...';
-        scanInput.focus();
+        // รักษา Focus ไว้ที่ช่องสแกนหากพร้อมแล้ว (แต่ไม่แย่ง focus ถ้าผู้ใช้อยู่ที่ช่องอื่น)
+        if (document.activeElement !== document.getElementById('mainProductInput') && 
+            document.activeElement !== document.getElementById('mainModelInput')) {
+            scanInput.focus();
+        }
     } else {
         scanInput.disabled = true;
         scanInput.classList.replace('border-emerald-500', 'border-gray-300');
         scanInput.placeholder = 'เลือกข้อมูลให้ครบก่อนสแกน';
-        scanInput.value = '';
+        // ไม่เคลียร์ค่า scanInput.value ตรงนี้เพื่อป้องกันการขัดจังหวะเวลายิงบาร์โค้ดรัวๆ
     }
 };
 
 document.getElementById('mainProductInput')?.addEventListener('input', handleMainProductChange);
 document.getElementById('mainModelInput')?.addEventListener('input', checkScanReady);
 
-document.getElementById('scanInput')?.addEventListener('input', function(e) {
-    clearTimeout(typingTimerIn);
-    const sn = this.value.trim();
-    if (sn.length > 5 && currentInboundMode === 'SN') {
-        typingTimerIn = setTimeout(() => validateAndSaveSN(sn), 800);
-    }
-});
-
+// ลบระบบหน่วงเวลา (Delay) ออก เพื่อให้เครื่องสแกนบาร์โค้ดยิงได้ทันทีไม่มีสะดุด
 document.getElementById('scanInput')?.addEventListener('keypress', function(e) {
     if (e.key === 'Enter' && currentInboundMode === 'SN') {
         e.preventDefault(); 
-        clearTimeout(typingTimerIn);
         const sn = this.value.trim();
-        if (sn) validateAndSaveSN(sn);
+        if (sn) {
+            this.value = ''; // เคลียร์ช่องทันทีที่กด Enter เพื่อรอรับชิ้นต่อไป
+            validateAndSaveSN(sn);
+        }
     }
 });
 
 async function validateAndSaveSN(sn) {
     const scanInput = document.getElementById('scanInput');
-    scanInput.value = '';
     
     const pName = document.getElementById('mainProductInput').value.trim();
     const mName = document.getElementById('mainModelInput').value.trim();
 
     try {
+        // ยิง Request ไปหลังบ้านแบบ Asynchronous (ไม่บล็อกหน้าจอ)
         const res = await fetch('api/inventory/add_sn_fast.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -399,11 +533,12 @@ async function validateAndSaveSN(sn) {
         if (data.success) {
             Toast.success(`เพิ่ม SN: ${sn} สำเร็จ!`);
             
-            // Check if it was a new product or model by looking at current masterOptions
+            // ตรวจสอบว่าเป็นสินค้า/รุ่นใหม่หรือไม่
             const isNewProd = !masterOptions.sn_products[pName];
             const isNewModel = isNewProd || !masterOptions.sn_products[pName].includes(mName);
             
             if (isNewProd || isNewModel) {
+                // ถ้าเป็นของใหม่ ให้ดึงข้อมูล Master ใหม่ (ชื่อสินค้าและรุ่นจะไม่หายไป)
                 loadMasterOptions(pName, mName);
             }
             loadStockOverview();
@@ -412,9 +547,10 @@ async function validateAndSaveSN(sn) {
         } else {
             Toast.error('Error: ' + data.error);
         }
-    } catch (e) { Toast.error('การเชื่อมต่อล้มเหลว'); }
+    } catch (e) { Toast.error(`การเชื่อมต่อล้มเหลว (SN: ${sn})`); }
     
-    setTimeout(() => scanInput.focus(), 50);
+    // โฟกัสกลับมาที่ช่องสแกนเพื่อให้ยิงชิ้นต่อไปได้เลย
+    scanInput.focus();
 }
 
 window.saveInboundQty = async function() {
@@ -604,167 +740,262 @@ async function fetchOutboundTargets() {
         if (data.success) {
             outboundTargetsList = data.users;
             currentLoggedUserId = data.current_user_id;
+            
+            // นำไปสร้างตัวเลือกให้ dropdown ในประวัติและโอนย้าย
+            const teamFilter = document.getElementById('filterHistoryTeam');
+            const userFilter = document.getElementById('filterHistoryUser');
+            const transferTargetSelect = document.getElementById('transferTargetSelect');
+            
+            if (teamFilter && userFilter) {
+                const teams = new Map();
+                outboundTargetsList.forEach(u => {
+                    if (u.team_id) teams.set(u.team_id, u.team_name);
+                });
+                
+                let teamHtml = '<option value="">ทุกทีม</option>';
+                teams.forEach((name, id) => {
+                    teamHtml += `<option value="${id}">${name}</option>`;
+                });
+                teamFilter.innerHTML = teamHtml;
+                
+                let userHtml = '<option value="">ทุกคน</option>';
+                outboundTargetsList.forEach(u => {
+                    const teamStr = u.team_name ? `[ทีม: ${u.team_name}]` : `[ไม่มีทีม]`;
+                    userHtml += `<option value="${u.id}">${teamStr} ${u.full_name}</option>`;
+                });
+                userFilter.innerHTML = userHtml;
+            }
+
+            if (transferTargetSelect) {
+                let transferHtml = '<option value="">-- กรุณาเลือกช่างรับของ (คลิก) --</option>';
+                outboundTargetsList.forEach(u => {
+                    if (u.id !== currentLoggedUserId) {
+                        const teamStr = u.team_name ? `[ทีม: ${u.team_name}]` : `[ไม่มีทีม]`;
+                        transferHtml += `<option value="${u.id}">${teamStr} ${u.full_name}</option>`;
+                    }
+                });
+                transferTargetSelect.innerHTML = transferHtml;
+            }
         }
     } catch (e) {
         console.error('Failed to load targets', e);
     }
 }
 
-document.getElementById('out_sn')?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('addOutboundBtn').click();
-    }
-});
+document.getElementById('filterHistoryTeam')?.addEventListener('change', loadHistory);
+document.getElementById('filterHistoryUser')?.addEventListener('change', loadHistory);
 
-document.getElementById('addOutboundBtn')?.addEventListener('click', async () => {
-    const snInput = document.getElementById('out_sn');
-    const sn = snInput.value.trim();
-    if (!sn) return;
+// ====================================================
+// TAB 3.5: Transfer (โอนย้ายระหว่างช่าง)
+// ====================================================
+let myTodayItems = [];
+let myConsumables = []; // เก็บสต็อกวัสดุของตัวเอง
 
-    if (stagedOutbound.some(item => item.sn === sn)) {
-        Toast.error('รายการนี้ถูกสแกนไว้ในคิวแล้ว');
-        snInput.value = '';
-        return;
+window.loadMyTodayItems = async function() {
+    const tbody = document.getElementById('transferItemsTableBody');
+    const conBody = document.getElementById('transferConsumablesTableBody');
+    const confirmBtn = document.getElementById('confirmTransferBtn');
+    
+    if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดรายการ...</div></td></tr>';
+    if (conBody) conBody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-400">กำลังโหลดสต็อกวัสดุ...</td></tr>';
+    
+    if(confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = 'ยืนยันการโอนย้าย (0 รายการ)';
     }
 
     try {
-        const res = await fetch(`api/inventory/check_outbound.php?sn=${encodeURIComponent(sn)}`);
+        const res = await fetch('api/inventory/get_my_today_items.php');
         const data = await res.json();
-
         if (data.success) {
-            stagedOutbound.push(data.data);
-            Toast.success(`เพิ่ม ${data.data.product_name} เข้าคิวเบิก`);
-            renderStaging();
-            snInput.value = '';
-            snInput.focus();
+            myTodayItems = data.data || [];
+            myConsumables = data.consumables || [];
+            renderTransferTable();
+            renderTransferConsumablesTable();
         } else {
-            Toast.error(data.error);
-            snInput.select();
+            Toast.error('โหลดข้อมูลผิดพลาด: ' + data.error);
         }
     } catch (e) {
-        Toast.error('เกิดข้อผิดพลาดในการตรวจสอบ');
+        console.error(e);
+        Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
     }
-});
+};
 
-function renderStaging() {
-    const tbody = document.getElementById('stagingTableBody');
-    const badge = document.getElementById('outboundBadge');
-    const confirmBtn = document.getElementById('confirmOutboundBtn');
-
+function renderTransferTable() {
+    const tbody = document.getElementById('transferItemsTableBody');
+    if (!tbody) return;
+    
+    document.getElementById('selectAllTransfer').checked = false;
     tbody.innerHTML = '';
 
-    if (stagedOutbound.length === 0) {
-        tbody.innerHTML = '<tr id="emptyStaging"><td colspan="3" class="px-6 py-12 text-center text-slate-400 italic">ยังไม่มีรายการสแกน รอการเบิกออก</td></tr>';
-        badge.classList.add('hidden');
-        confirmBtn.disabled = true;
-        confirmBtn.innerHTML = 'ยืนยันการเบิกออก (0 รายการ)';
+    if (myTodayItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-slate-400 italic">วันนี้คุณยังไม่ได้เบิกหรือรับโอนสินค้า (SN) ใดๆ</td></tr>';
+        updateTransferConfirmButton();
         return;
     }
 
-    badge.textContent = stagedOutbound.length;
-    badge.classList.remove('hidden');
-    confirmBtn.disabled = false;
-    confirmBtn.innerHTML = `<span class="mr-2">📑</span> เปิดบิลและยืนยันการเบิก (${stagedOutbound.length} รายการ)`;
+    myTodayItems.forEach((item, index) => {
+        const dateObj = new Date(item.timestamp);
+        const timeStr = dateObj.toLocaleTimeString('th-TH');
 
-    stagedOutbound.forEach((item, index) => {
         const row = document.createElement('tr');
-        row.className = 'animate__animated animate__fadeInRight';
+        row.className = 'hover:bg-blue-50 transition-colors cursor-pointer';
+        row.onclick = function(e) {
+            if(e.target.tagName !== 'INPUT') {
+                const cb = document.getElementById(`chk_transfer_${index}`);
+                cb.checked = !cb.checked;
+                updateTransferConfirmButton();
+            }
+        };
+
         row.innerHTML = `
-            <td class="px-6 py-3 font-mono font-bold text-indigo-600">${item.sn}</td>
-            <td class="px-6 py-3 font-medium text-slate-700">${item.product_name} - ${item.model_name}</td>
             <td class="px-6 py-3 text-center">
-                <button onclick="removeStaged(${index})" class="text-rose-500 hover:text-rose-700 font-bold transition-transform hover:scale-125">✕</button>
+                <input type="checkbox" id="chk_transfer_${index}" value="${item.sn}" class="transfer-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer" onchange="updateTransferConfirmButton()">
+            </td>
+            <td class="px-6 py-3 font-mono font-bold text-blue-600">${item.sn}</td>
+            <td class="px-6 py-3 font-medium text-slate-700">${item.product_name} <span class="text-xs text-slate-400">(${item.model_name})</span></td>
+            <td class="px-6 py-3 text-slate-500">${timeStr}</td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    updateTransferConfirmButton();
+}
+
+function renderTransferConsumablesTable() {
+    const tbody = document.getElementById('transferConsumablesTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+
+    if (myConsumables.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-slate-400 italic">คุณไม่มีสต็อกวัสดุสิ้นเปลืองในขณะนี้</td></tr>';
+        return;
+    }
+
+    myConsumables.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-blue-50 transition-colors';
+        row.innerHTML = `
+            <td class="px-6 py-3 font-medium text-slate-700">${item.product_name}</td>
+            <td class="px-6 py-3 text-center font-bold text-blue-600">${item.qty} ${item.unit}</td>
+            <td class="px-6 py-3 text-center">
+                <div class="flex items-center justify-center gap-2">
+                    <input type="number" id="transfer_qty_${item.consumable_id}" placeholder="0" min="0" max="${item.qty}" step="0.1" class="transfer-qty-input w-24 px-2 py-1 border border-blue-300 rounded text-center focus:ring-blue-500" oninput="updateTransferConfirmButton()">
+                    <span class="text-xs text-slate-500">${item.unit}</span>
+                </div>
             </td>
         `;
         tbody.appendChild(row);
     });
 }
 
-window.removeStaged = function(index) {
-    stagedOutbound.splice(index, 1);
-    Toast.info('ลบรายการออกจากคิวเรียบร้อย');
-    renderStaging();
+window.toggleAllTransfer = function(checkbox) {
+    const isChecked = checkbox.checked;
+    const checkboxes = document.querySelectorAll('.transfer-checkbox');
+    checkboxes.forEach(cb => cb.checked = isChecked);
+    updateTransferConfirmButton();
 };
 
-document.getElementById('confirmOutboundBtn')?.addEventListener('click', () => {
-    const modal = document.getElementById('outboundModal');
-    const billBody = document.getElementById('billTableBody');
-    const targetSelect = document.getElementById('outboundTargetSelect');
-
-    // วาด Dropdown
-    targetSelect.innerHTML = '<option value="">-- กรุณาเลือกผู้รับของ (คลิก) --</option>';
-    outboundTargetsList.forEach(u => {
-        const teamStr = u.team_name ? `[ทีม: ${u.team_name}]` : `[ไม่มีทีม]`;
-        const isSelf = u.id === currentLoggedUserId ? ' 👈 (เบิกให้ตัวเอง)' : '';
-        targetSelect.innerHTML += `<option value="${u.id}">${teamStr} ${u.full_name}${isSelf}</option>`;
+window.updateTransferConfirmButton = function() {
+    const checkboxes = document.querySelectorAll('.transfer-checkbox:checked');
+    const snCount = checkboxes.length;
+    
+    let conCount = 0;
+    const qtyInputs = document.querySelectorAll('.transfer-qty-input');
+    qtyInputs.forEach(input => {
+        const val = parseFloat(input.value);
+        if (val > 0) conCount++;
     });
-
-    document.getElementById('billDate').textContent = new Date().toLocaleString('th-TH');
-    document.getElementById('billTotal').textContent = `${stagedOutbound.length} รายการ`;
-
-    billBody.innerHTML = '';
-    stagedOutbound.forEach((item, i) => {
-        billBody.innerHTML += `
-            <tr class="border-b border-slate-100">
-                <td class="py-3 text-slate-400 text-xs">${i+1}</td>
-                <td class="py-3 font-medium text-slate-700">${item.product_name} <span class="text-slate-400 text-xs block">${item.model_name}</span></td>
-                <td class="py-3 text-right font-mono text-sm text-indigo-600">${item.sn}</td>
-            </tr>
-        `;
-    });
-
-    modal.classList.remove('hidden');
-    modal.querySelector('div').classList.add('animate__animated', 'animate__fadeInUp');
-});
-
-window.closeOutboundModal = function() {
-    const modal = document.getElementById('outboundModal');
-    modal.querySelector('div').classList.remove('animate__fadeInUp');
-    modal.querySelector('div').classList.add('animate__fadeOutDown');
-    setTimeout(() => {
-        modal.classList.add('hidden');
-        modal.querySelector('div').classList.remove('animate__fadeOutDown');
-    }, 300);
+    
+    const totalCount = snCount + conCount;
+    const confirmBtn = document.getElementById('confirmTransferBtn');
+    
+    const allCheckboxes = document.querySelectorAll('.transfer-checkbox');
+    const selectAllCb = document.getElementById('selectAllTransfer');
+    if (allCheckboxes.length > 0 && selectAllCb) {
+        selectAllCb.checked = (snCount === allCheckboxes.length);
+    }
+    
+    if (confirmBtn) {
+        if (totalCount > 0) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = `<span class="mr-2">🔄</span> ยืนยันการโอนย้าย (${totalCount} รายการ)`;
+        } else {
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = 'ยืนยันการโอนย้าย (0 รายการ)';
+        }
+    }
 };
 
-document.getElementById('finalSubmitOutbound')?.addEventListener('click', async (e) => {
-    if (stagedOutbound.length === 0) return;
-
-    // ตรวจสอบว่าเลือกคนรับหรือยัง
-    const targetUserId = document.getElementById('outboundTargetSelect').value;
+document.getElementById('confirmTransferBtn')?.addEventListener('click', async (e) => {
+    const targetUserId = document.getElementById('transferTargetSelect').value;
     if (!targetUserId) {
-        Toast.error('กรุณาระบุว่ากำลังเบิกของให้ใคร หรือทีมไหน');
-        document.getElementById('outboundTargetSelect').focus();
+        Toast.error('กรุณาระบุช่างที่จะรับโอนของ');
+        document.getElementById('transferTargetSelect').focus();
         return;
     }
+
+    const sns = Array.from(document.querySelectorAll('.transfer-checkbox:checked')).map(cb => cb.value);
+    
+    const cons = [];
+    document.querySelectorAll('.transfer-qty-input').forEach(input => {
+        const qty = parseFloat(input.value);
+        if (qty > 0) {
+            const consumable_id = input.id.replace('transfer_qty_', '');
+            cons.push({ consumable_id: consumable_id, qty: qty });
+        }
+    });
+
+    if (sns.length === 0 && cons.length === 0) return;
 
     Loader.show();
     const btn = e.target;
     btn.disabled = true;
 
-    const sns = stagedOutbound.map(i => i.sn);
-
     try {
-        const res = await fetch('api/inventory/confirm_outbound.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sns: sns, target_user_id: targetUserId }) 
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            Toast.success(`เบิกของสำเร็จ ${data.processed} รายการ! ข้อมูลบันทึกลงประวัติแล้ว`);
-            stagedOutbound = [];
-            renderStaging();
-            closeOutboundModal();
-            loadStockOverview();
-            if(!document.getElementById('view-history').classList.contains('hidden')) loadHistory();
-        } else {
-            Toast.error('เกิดข้อผิดพลาด: ' + data.error);
+        let totalProcessed = 0;
+        
+        // 1. โอน SN
+        if (sns.length > 0) {
+            const resSN = await fetch('api/inventory/submit_transfer.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sns: sns, target_user_id: targetUserId }) 
+            });
+            const dataSN = await resSN.json();
+            if (!dataSN.success) throw new Error(dataSN.error);
+            totalProcessed += dataSN.processed;
         }
+        
+        // 2. โอน Consumables
+        if (cons.length > 0) {
+            const resCon = await fetch('api/inventory/transfer_qty.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: cons, target_user_id: targetUserId }) 
+            });
+            const dataCon = await resCon.json();
+            if (!dataCon.success) throw new Error(dataCon.error);
+            totalProcessed += dataCon.processed;
+        }
+
+        Swal.fire({
+            title: 'โอนย้ายสำเร็จ!',
+            text: `ทำการโอนย้ายสินค้าและวัสดุรวม ${totalProcessed} รายการ บันทึกลงประวัติเรียบร้อยแล้ว`,
+            icon: 'success',
+            confirmButtonColor: '#3b82f6',
+            confirmButtonText: 'ตกลง',
+            customClass: { popup: 'rounded-2xl', confirmButton: 'px-8 py-2 rounded-xl font-bold' }
+        });
+        
+        document.getElementById('transferTargetSelect').value = '';
+        loadMyTodayItems(); // โหลดข้อมูลใหม่เพื่ออัปเดตสต็อกที่เหลือ
+        
+        if(!document.getElementById('view-history').classList.contains('hidden')) loadHistory();
+        
     } catch (err) {
-        Toast.error('ไม่สามารถติดต่อเซิร์ฟเวอร์ได้');
+        Toast.error(err.message || 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้');
     } finally {
         Loader.hide();
         btn.disabled = false;
@@ -778,8 +1009,20 @@ let historyData = [];
 
 async function loadHistory() {
     try {
-        document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดประวัติ...</div></td></tr>';
-        const res = await fetch('api/inventory/get_history.php');
+        const teamFilter = document.getElementById('filterHistoryTeam');
+        const userFilter = document.getElementById('filterHistoryUser');
+        
+        let url = 'api/inventory/get_history.php';
+        let queryParams = [];
+        if (teamFilter && teamFilter.value) queryParams.push(`team_id=${teamFilter.value}`);
+        if (userFilter && userFilter.value) queryParams.push(`user_id=${userFilter.value}`);
+        
+        if (queryParams.length > 0) {
+            url += '?' + queryParams.join('&');
+        }
+
+        document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดประวัติ...</div></td></tr>';
+        const res = await fetch(url);
         const data = await res.json();
 
         if (data.success) {
@@ -805,15 +1048,21 @@ function renderHistoryTable() {
     historyData.forEach((item, index) => {
         const dateObj = new Date(item.timestamp);
         const formattedDate = dateObj.toLocaleDateString('th-TH') + ' ' + dateObj.toLocaleTimeString('th-TH');  
-        const actionBadge = item.action === 'in'
-            ? '<span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-full font-bold border border-emerald-100">📥 รับเข้าสต็อก</span>'
-            : '<span class="px-3 py-1 bg-rose-50 text-rose-700 text-xs rounded-full font-bold border border-rose-100">📤 จ่ายออกให้ทีม</span>';
+        
+        let actionBadge = '';
+        if (item.action === 'in') {
+            actionBadge = '<span class="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-full font-bold border border-emerald-100">📥 รับเข้าสต็อก</span>';
+        } else if (item.action === 'out') {
+            actionBadge = '<span class="px-3 py-1 bg-rose-50 text-rose-700 text-xs rounded-full font-bold border border-rose-100">📤 จ่ายออกให้ทีม</span>';
+        } else if (item.action === 'transfer') {
+            actionBadge = '<span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full font-bold border border-blue-100">🔄 โอนย้าย (ยืมของ)</span>';
+        }
 
         // วาดส่วนของผู้เบิกและผู้รับ
         const adminTeam = item.admin_team ? `(${item.admin_team})` : '';
-        let personHtml = `<div class="text-xs font-medium text-slate-500 mb-1">คนยิงจ่าย: <span class="text-slate-800 font-bold">${item.admin_name || 'System'}</span> ${adminTeam}</div>`;
+        let personHtml = `<div class="text-xs font-medium text-slate-500 mb-1">ผู้ทำรายการ: <span class="text-slate-800 font-bold">${item.admin_name || 'System'}</span> ${adminTeam}</div>`;
         
-        if (item.action === 'out' && item.target_name) {
+        if ((item.action === 'out' || item.action === 'transfer') && item.target_name) {
             const targetTeam = item.target_team ? `[ทีม: ${item.target_team}]` : '';
             personHtml += `<div class="text-sm font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-md inline-block border border-blue-100 mt-1">🎯 ผู้รับ: ${item.target_name} <span class="text-xs font-normal text-blue-500">${targetTeam}</span></div>`;
         }
@@ -828,14 +1077,14 @@ function renderHistoryTable() {
             <td class="px-6 py-4 font-medium text-slate-700">${item.product_name} <br><span class="text-slate-400 font-normal text-xs">รุ่น: ${item.model_name || 'วัสดุสิ้นเปลือง'}</span></td>
             <td class="px-6 py-4">${personHtml}</td>
             <td class="px-6 py-4 text-center">
-                <button onclick="deleteHistory(${item.id})" class="text-rose-400 hover:text-rose-600 font-bold" title="ลบประวัตินี้">🗑️</button>
+                <button onclick="deleteHistory(${item.id}, '${item.log_type}')" class="text-rose-400 hover:text-rose-600 font-bold" title="ลบประวัตินี้">🗑️</button>
             </td>
         `;
         tbody.appendChild(row);
     });
 }
 
-window.deleteHistory = async function(id) {
+window.deleteHistory = async function(id, log_type) {
     const result = await Swal.fire({
         title: 'ลบรายการประวัติ?',
         text: 'การลบประวัติจะไม่ส่งผลกระทบต่อจำนวนสินค้าในสต็อก ยืนยันการลบหรือไม่?',
@@ -852,7 +1101,7 @@ window.deleteHistory = async function(id) {
             const res = await fetch('api/inventory/delete_history.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id })
+                body: JSON.stringify({ id: id, log_type: log_type })
             });
             const data = await res.json();
             if (data.success) {
@@ -876,18 +1125,23 @@ document.getElementById('exportHistoryBtn')?.addEventListener('click', () => {
         if (item.admin_team) adminText += ` (${item.admin_team})`;
         
         let targetText = '-';
-        if (item.action === 'out' && item.target_name) {
+        if ((item.action === 'out' || item.action === 'transfer') && item.target_name) {
             targetText = item.target_name;
             if (item.target_team) targetText += ` (${item.target_team})`;
         }
+        
+        let actionTypeStr = '';
+        if (item.action === 'in') actionTypeStr = 'รับเข้าสต็อก';
+        else if (item.action === 'out') actionTypeStr = 'จ่ายออกให้ทีม';
+        else if (item.action === 'transfer') actionTypeStr = 'โอนย้าย (ยืมของ)';
 
         return {
             "วันที่/เวลา": new Date(item.timestamp).toLocaleString('th-TH'),
-            "ประเภท": item.action === 'in' ? 'รับเข้าสต็อก' : 'จ่ายออกให้ทีม',
+            "ประเภท": actionTypeStr,
             "หมายเลขซีเรียล": item.sn || '-',
             "ชื่อสินค้า": item.product_name,
             "รุ่น": item.model_name || 'วัสดุสิ้นเปลือง',
-            "ผู้ทำรายการ (คนยิง)": adminText,
+            "ผู้ทำรายการ (คนยิง/คนโอน)": adminText,
             "ผู้รับของ (ทีม)": targetText
         };
     });
@@ -959,7 +1213,13 @@ window.deleteAllInventory = async function() {
 
 // INIT
 document.addEventListener('DOMContentLoaded', () => {
-    loadStockOverview();
-    loadMasterOptions();
-    fetchOutboundTargets(); // โหลดรายชื่อผู้รับตอนเข้าหน้าเว็บ
+    fetchOutboundTargets(); // โหลดรายชื่อผู้รับตอนเข้าหน้าเว็บ (ใช้ทั้งแอดมินและช่าง)
+    
+    if (window.IS_ADMIN) {
+        loadStockOverview();
+        loadMasterOptions();
+    } else {
+        // สำหรับช่าง ให้เข้าหน้าโอนย้ายเป็นหน้าแรก
+        invTab('transfer');
+    }
 });

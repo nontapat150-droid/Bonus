@@ -23,11 +23,16 @@ try {
     // ลบข้อมูลตามลำดับเพื่อไม่ให้ติด Foreign Key
     // 1. Logs
     $pdo->exec("DELETE FROM inventory_logs");
+    $pdo->exec("DELETE FROM inventory_consumable_logs");
     // 2. Items (has FK to Models)
     $pdo->exec("DELETE FROM inventory_items");
-    // 3. Models (has FK to Products)
+    // 3. User Consumables
+    $pdo->exec("DELETE FROM user_consumables");
+    // 4. Consumables
+    $pdo->exec("DELETE FROM inventory_consumable");
+    // 5. Models (has FK to Products)
     $pdo->exec("DELETE FROM product_models");
-    // 4. Products
+    // 6. Products
     $pdo->exec("DELETE FROM products");
 
     $pdo->commit();
@@ -42,7 +47,9 @@ try {
 // รีเซ็ตเลข Auto Increment ให้กลับไปเริ่มที่ 1 ใหม่ (อยู่นอก Transaction เพราะ ALTER TABLE จะทำ Implicit Commit)
 try {
     $pdo->exec("ALTER TABLE inventory_logs AUTO_INCREMENT = 1");
+    $pdo->exec("ALTER TABLE inventory_consumable_logs AUTO_INCREMENT = 1");
     $pdo->exec("ALTER TABLE inventory_items AUTO_INCREMENT = 1");
+    $pdo->exec("ALTER TABLE user_consumables AUTO_INCREMENT = 1");
     $pdo->exec("ALTER TABLE product_models AUTO_INCREMENT = 1");
     $pdo->exec("ALTER TABLE products AUTO_INCREMENT = 1");
 } catch (Exception $e) {
