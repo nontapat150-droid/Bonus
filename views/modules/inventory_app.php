@@ -10,6 +10,16 @@ if (!hasRole(['admin', 'super_admin'])) {
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+    /* SweetAlert Custom Styles */
+    .swal2-popup { border-radius: 2rem !important; font-family: 'Sarabun', sans-serif !important; padding: 2rem !important; }
+    .swal2-title { font-weight: 800 !important; color: #1e293b !important; }
+    .swal2-confirm { border-radius: 1rem !important; padding: 0.8rem 2rem !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; }
+    .swal2-cancel { border-radius: 1rem !important; padding: 0.8rem 2rem !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; }
+</style>
 
 <div class="space-y-6">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -60,6 +70,7 @@ if (!hasRole(['admin', 'super_admin'])) {
                             <th class="px-6 py-3">รุ่น (Model)</th>
                             <th class="px-6 py-3 text-center">คงเหลือ</th>
                             <th class="px-6 py-3 text-center">หมายเลขซีเรียล</th>
+                            <th class="px-6 py-3 text-center">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody id="stockTableBody" class="divide-y divide-gray-100">
@@ -87,14 +98,14 @@ if (!hasRole(['admin', 'super_admin'])) {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">ชื่อสินค้า</label>
-                    <select id="mainProductSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700" onchange="handleMainProductChange()"></select>
-                    <input type="text" id="mainProductInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg mt-2 hidden focus:ring-2 focus:ring-emerald-500" placeholder="พิมพ์ชื่อสินค้าใหม่...">
+                    <input list="productList" id="mainProductInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700" placeholder="พิมพ์เพื่อค้นหา หรือเพิ่มชื่อสินค้าใหม่..." autocomplete="off">
+                    <datalist id="productList"></datalist>
                 </div>
 
                 <div id="areaModelSelect">
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">รุ่น (Model)</label>
-                    <select id="mainModelSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700" onchange="handleMainModelChange()"></select>
-                    <input type="text" id="mainModelInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg mt-2 hidden focus:ring-2 focus:ring-emerald-500" placeholder="พิมพ์รุ่นใหม่...">
+                    <input list="modelList" id="mainModelInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700" placeholder="พิมพ์เพื่อค้นหา หรือเพิ่มรุ่นใหม่..." autocomplete="off">
+                    <datalist id="modelList"></datalist>
                 </div>
 
                 <div id="areaInputSn" class="md:col-span-2 mt-4">
@@ -115,7 +126,7 @@ if (!hasRole(['admin', 'super_admin'])) {
 
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center">
             <h3 class="font-bold text-gray-700 mb-2">นำเข้าสินค้าทีละหลายรายการ (Excel)</h3>  
-            <p class="text-sm text-gray-500 mb-4">ไฟล์ต้องมีคอลัมน์เรียงตามลำดับ: <b>รหัสสินค้า (Code) | ชื่อสินค้า | รุ่น | ซีเรียล (SN)</b></p>
+            <p class="text-sm text-gray-500 mb-4">ไฟล์ต้องมีคอลัมน์เรียงตามลำดับ: <b>ชื่อสินค้า | รุ่น (Model) | ซีเรียล (SN)</b></p>
             <input type="file" id="excelImport" accept=".xlsx, .xls" class="hidden">
             <button onclick="document.getElementById('excelImport').click()" class="bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold py-2 px-6 rounded-lg text-sm transition-colors flex items-center">
                 <span class="mr-2 text-lg">📄</span> เลือกไฟล์ Excel
@@ -175,6 +186,7 @@ if (!hasRole(['admin', 'super_admin'])) {
                             <th class="px-6 py-3">SN</th>
                             <th class="px-6 py-3">สินค้า - รุ่น</th>
                             <th class="px-6 py-3">รายละเอียดผู้เบิก-ผู้รับ</th>
+                            <th class="px-6 py-3 text-center">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="divide-y divide-gray-100">

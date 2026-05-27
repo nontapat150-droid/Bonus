@@ -23,6 +23,15 @@ $admin_id = $_SESSION['user_id'];
 $successCount = 0;
 $errors = [];
 
+$stats = [
+    'imported_sns' => 0,
+    'duplicate_sns' => 0,
+    'products_count' => 0,
+    'models_count' => 0
+];
+$uniqueProducts = [];
+$uniqueModels = [];
+
 try {
     $pdo->beginTransaction();
 
@@ -56,6 +65,7 @@ try {
 
         $stmtCheckSN->execute([$sn]);
         if ($stmtCheckSN->fetch()) {
+            $stats['duplicate_sns']++;
             $errors[] = "แถวที่ " . ($index + 1) . ": หมายเลขซีเรียล '$sn' มีอยู่ในระบบแล้ว";
             continue;
         }
@@ -118,13 +128,20 @@ try {
 
         $stmtLog->execute([$itemId, $admin_id]);
 
+        $uniqueProducts[$prodId] = true;
+        $uniqueModels[$modelId] = true;
+        $stats['imported_sns']++;
         $successCount++;
     }
+
+    $stats['products_count'] = count($uniqueProducts);
+    $stats['models_count'] = count($uniqueModels);
 
     $pdo->commit();
     echo json_encode([
         'success' => true,
         'imported' => $successCount,
+        'stats' => $stats,
         'errors' => $errors
     ]);
 
