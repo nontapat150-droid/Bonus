@@ -21,12 +21,32 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             <button id="filterBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
                 ค้นหา
             </button>
+            <?php if (hasRole(['admin', 'super_admin'])): ?>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <input type="file" id="oilExcelImport" accept=".xlsx,.xls" class="hidden">
+                <button type="button" id="oilImportBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                    📥 นำเข้า Excel
+                </button>
+                <button type="button" id="oilConfirmExcelBtn" class="bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm hidden">
+                    ยืนยันนำเข้า
+                </button>
+                <button type="button" id="oilDeleteAllBtn" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                    🗑️ ลบทั้งหมด
+                </button>
+            </div>
+            <?php endif; ?>
             <?php if (hasRole('super_admin')): ?>
             <a href="index.php?page=oil_test_form" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm text-center">
                 + บันทึก (ทดสอบ)
             </a>
             <?php endif; ?>
         </div>
+        <?php if (hasRole(['admin', 'super_admin'])): ?>
+        <div id="oilExcelPreview" class="hidden mt-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-sm text-emerald-700">
+            <p id="oilExcelCount" class="font-bold"></p>
+            <p class="mt-2 text-slate-600">ตรวจสอบข้อมูลใน Excel แล้วกดปุ่มยืนยันเพื่อนำเข้าข้อมูล</p>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Stats Cards -->
@@ -85,6 +105,9 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                         <th class="px-6 py-3 text-right">ราคา/ลิตร</th>
                         <th class="px-6 py-3 text-right text-gray-800">ยอดรวม (บาท)</th>
                         <th class="px-6 py-3 text-center">หลักฐาน</th>
+                        <?php if (hasRole(['admin', 'super_admin'])): ?>
+                        <th class="px-6 py-3 text-center">การจัดการ</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody id="oilTableBody" class="divide-y divide-gray-100">
@@ -111,5 +134,9 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 
 <!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<?php if (hasRole(['admin', 'super_admin'])): ?>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<?php endif; ?>
 <!-- Load Oil Report Logic -->
+<script>window.IS_ADMIN = <?php echo hasRole(['admin','super_admin']) ? 'true' : 'false'; ?>;</script>
 <script src="assets/js/oil_report.js"></script>

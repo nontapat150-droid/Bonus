@@ -7,6 +7,75 @@ header('Content-Type: application/json');
 requireLogin();
 $user_id = $_SESSION['user_id'];
 
+const MAX_OIL_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
+function createImageResource($path, $mimeType) {
+    switch ($mimeType) {
+        case 'image/jpeg':
+        case 'image/jpg':
+            return imagecreatefromjpeg($path);
+        case 'image/png':
+            return imagecreatefrompng($path);
+        case 'image/gif':
+            return imagecreatefromgif($path);
+        default:
+            return false;
+    }
+}
+
+function compressUploadedImage($sourcePath, $destinationPath, $mimeType, $maxSize) {
+    $imageInfo = getimagesize($sourcePath);
+    if (!$imageInfo) {
+        throw new Exception('ไม่สามารถอ่านข้อมูลรูปภาพได้');
+    }
+
+    list($width, $height) = $imageInfo;
+    $srcImage = createImageResource($sourcePath, $mimeType);
+    if (!$srcImage) {
+        throw new Exception('ไม่รองรับชนิดไฟล์รูปภาพนี้');
+    }
+
+    $quality = 90;
+    $scale = 1.0;
+
+    while (true) {
+        $newWidth = max(600, (int)round($width * $scale));
+        $newHeight = max(600, (int)round($height * $scale));
+        $canvas = imagecreatetruecolor($newWidth, $newHeight);
+
+        if ($mimeType === 'image/png') {
+            imagealphablending($canvas, false);
+            imagesavealpha($canvas, true);
+        }
+
+        imagecopyresampled($canvas, $srcImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        if ($mimeType === 'image/jpeg' || $mimeType === 'image/jpg') {
+            imagejpeg($canvas, $destinationPath, $quality);
+        } elseif ($mimeType === 'image/png') {
+            imagepng($canvas, $destinationPath, 9);
+        } elseif ($mimeType === 'image/gif') {
+            imagegif($canvas, $destinationPath);
+        }
+
+        imagedestroy($canvas);
+
+        if (filesize($destinationPath) <= $maxSize) {
+            imagedestroy($srcImage);
+            return true;
+        }
+
+        if ($quality > 40) {
+            $quality -= 10;
+        } elseif ($scale > 0.4) {
+            $scale -= 0.1;
+        } else {
+            imagedestroy($srcImage);
+            return false;
+        }
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'error' => 'วิธีการส่งข้อมูลไม่ถูกต้อง']);
     exit;
@@ -71,11 +140,19 @@ try {
 
                 $filename = uniqid('oil_', true) . '.' . $ext;
                 $target_file = $upload_dir . $filename;
+                $temp_path = $files['tmp_name'][$i];
 
-                if (move_uploaded_file($files['tmp_name'][$i], $target_file)) {
+                if (filesize($temp_path) > MAX_OIL_IMAGE_SIZE) {
+                    if (!compressUploadedImage($temp_path, $target_file, $files['type'][$i], MAX_OIL_IMAGE_SIZE)) {
+                        throw new Exception("ขนาดรูปภาพใหญ่เกินไปและไม่สามารถบีบอัดให้อยู่ภายใน 5MB ได้");
+                    }
                     $stmtImage->execute([$record_id, $filename]);
                 } else {
-                    throw new Exception("เกิดข้อผิดพลาดในการบันทึกไฟล์รูปภาพ");
+                    if (move_uploaded_file($temp_path, $target_file)) {
+                        $stmtImage->execute([$record_id, $filename]);
+                    } else {
+                        throw new Exception("เกิดข้อผิดพลาดในการบันทึกไฟล์รูปภาพ");
+                    }
                 }
             }
         }

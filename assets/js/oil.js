@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const previewContainer = document.getElementById('imagePreviewContainer');
     const imageCount = document.getElementById('imageCount');
     const licensePlateSelect = document.getElementById('license_plate');
+    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
     // โหลดป้ายทะเบียนจากระบบทีม
     loadTeamPlates();
@@ -45,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Image Upload Preview (Max 10)
     let selectedFiles = [];
 
-    fileInput.addEventListener('change', (e) => {
+    fileInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
 
         if (selectedFiles.length + files.length > 10) {
@@ -54,14 +55,27 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        files.forEach(file => {
-            if (file.type.startsWith('image/')) {
-                selectedFiles.push(file);
-                renderPreview(file, selectedFiles.length - 1);
+        for (const file of files) {
+            if (!file.type.startsWith('image/')) {
+                continue;
             }
-        });
+
+            let processedFile = file;
+            if (file.size > MAX_IMAGE_SIZE) {
+                try {
+                    processedFile = await compressImage(file, MAX_IMAGE_SIZE);
+                } catch (error) {
+                    Toast.error(error.message || 'ไม่สามารถบีบอัดรูปภาพได้');
+                    continue;
+                }
+            }
+
+            selectedFiles.push(processedFile);
+            renderPreview(processedFile, selectedFiles.length - 1);
+        }
 
         updateImageCount();
+        fileInput.value = '';
     });
 
     function renderPreview(file, index) {
@@ -89,6 +103,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateImageCount() {
         imageCount.textContent = `เลือกแล้ว: ${selectedFiles.length}/10 รูป`;
+    }
+
+    async function compressImage(file, maxSize) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = async () => {
+                    let canvas = document.createElement('canvas');
+                    let ctx = canvas.getContext('2d');
+                    const ratio = Math.min(1, 1920 / Math.max(img.width, img.height));
+                    let width = Math.round(img.width * ratio);
+                    let height = Math.round(img.height * ratio);
+                    let quality = 0.92;
+                    let blob = null;
+
+                    while (true) {
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.clearRect(0, 0, width, height);
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                            const mimeType = file.type === 'image/png' ? 'image/jpeg' : file.type;
+                        blob = await new Promise((res) => canvas.toBlob(res, mimeType, quality));
+
+                        if (!blob) {
+                            reject(new Error('เกิดข้อผิดพลาดขณะประมวลผลภาพ'));
+                            return;
+                        }
+
+                        if (blob.size <= maxSize) {
+                            const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+                            const name = file.name.replace(/\.[^/.]+$/, '') + `.${ext}`;
+                            resolve(new File([blob], name, { type: blob.type }));
+                            return;
+                        }
+
+                        if (quality > 0.5) {
+                            quality -= 0.08;
+                        } else if (width > 800 || height > 800) {
+                            width = Math.round(width * 0.9);
+                            height = Math.round(height * 0.9);
+                        } else {
+                            reject(new Error('ไม่สามารถลดขนาดรูปภาพให้อยู่ภายใน 5MB ได้'));
+                            return;
+                        }
+                    }
+                };
+                img.onerror = () => {
+                    reject(new Error('ไม่สามารถโหลดรูปภาพเพื่อบีบอัดได้'));
+                };
+                img.src = event.target.result;
+            };
+            reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์รูปภาพได้'));
+            reader.readAsDataURL(file);
+        });
     }
 
     // Form Submission Handler
