@@ -111,14 +111,19 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 </div>
 
                 <div class="flex flex-wrap gap-2">
-                    <input type="date" id="dateFilter" class="flex-1 text-[10px] font-black border-slate-100 rounded-xl focus:ring-indigo-500/20 px-3 py-2 cursor-pointer text-indigo-600 shadow-sm bg-white">
-                    <select id="limitFilter" class="text-[10px] font-black border-slate-100 rounded-xl focus:ring-indigo-500/20 py-2 pl-3 pr-8 cursor-pointer bg-white text-indigo-600 shadow-sm">
-                        <option value="20">20 รายการ</option>
-                        <option value="50">50 รายการ</option>
-                        <option value="100">100 รายการ</option>
-                        <option value="all">ทั้งหมด</option>
-                    </select>
-                </div>
+    <input type="date" id="dateFilter" class="flex-1 text-[10px] font-black border-slate-100 rounded-xl focus:ring-indigo-500/20 px-3 py-2 cursor-pointer text-indigo-600 shadow-sm bg-white">
+    
+    <button onclick="document.getElementById('dateFilter').value=''; renderUI();" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-2 rounded-xl text-[10px] font-black shadow-sm transition-colors cursor-pointer">
+        🔄 ดูทุกงาน
+    </button>
+    
+    <select id="limitFilter" class="text-[10px] font-black border-slate-100 rounded-xl focus:ring-indigo-500/20 py-2 pl-3 pr-8 cursor-pointer bg-white text-indigo-600 shadow-sm">
+        <option value="20">20 รายการ</option>
+        <option value="50">50 รายการ</option>
+        <option value="100">100 รายการ</option>
+        <option value="all">ทั้งหมด</option>
+    </select>
+</div>
 
                 <?php if ($isAdmin): ?>
                 <div class="flex gap-2">
