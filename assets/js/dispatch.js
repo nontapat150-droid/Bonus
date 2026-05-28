@@ -1,12 +1,8 @@
 // assets/js/dispatch.js
 
-let map;
-let markers = [];
-let polylines = [];
 let allJobs = [];
 let currentTeams = []; // [{id, team_name}]
 let selectedJobIds = new Set();
-let jobMarkers = {}; // Keep track of markers by job access_no
 
 const teamColors = [
     '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
@@ -15,12 +11,11 @@ const teamColors = [
 function getColor(index) { return teamColors[index % teamColors.length]; }
 
 document.addEventListener('DOMContentLoaded', () => {
-    initMap();
     loadJobs();
 
     if (IS_ADMIN) {
         document.getElementById('jobExcelFile')?.addEventListener('change', handleExcelUpload);
-        document.getElementById('exportExcelBtn')?.addEventListener('click', handleExportExcel); // NEW EXPORT BUTTON
+        document.getElementById('exportExcelBtn')?.addEventListener('click', handleExportExcel);
         document.getElementById('addTeamBtn')?.addEventListener('click', handleAddTeam);
         document.getElementById('dispatchModalBtn')?.addEventListener('click', openDispatchModal);
         document.getElementById('confirmDispatchBtn')?.addEventListener('click', runAutoDispatch);
@@ -37,16 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('selectAllJobs')?.addEventListener('change', handleSelectAll);
 });
 
-function initMap() {
-    map = L.map('map', { zoomControl: false }).setView([13.7563, 100.5018], 6);
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+function showLoader() { 
+    const loader = document.getElementById('mapLoader');
+    if(loader) loader.classList.remove('hidden'); 
 }
-
-function showLoader() { document.getElementById('mapLoader').classList.remove('hidden'); }
-function hideLoader() { document.getElementById('mapLoader').classList.add('hidden'); }
+function hideLoader() { 
+    const loader = document.getElementById('mapLoader');
+    if(loader) loader.classList.add('hidden'); 
+}
 
 async function loadJobs() {
     showLoader();
@@ -83,7 +76,7 @@ function renderTeamList() {
     container.innerHTML = '';
     currentTeams.forEach((t, i) => {
         const div = document.createElement('div');
-        div.className = 'flex items-center bg-white/90 backdrop-blur-sm border border-white px-3 py-1.5 rounded-xl shadow-sm space-x-2 animate__animated animate__fadeInUp';
+        div.className = 'flex items-center bg-white border border-slate-100 px-3 py-1.5 rounded-xl shadow-sm space-x-2 animate__animated animate__fadeInUp';
         div.innerHTML = `
             <div class="w-3 h-3 rounded-full shadow-inner" style="background-color: ${getColor(i)}"></div>
             <span class="text-[10px] font-black text-slate-700 uppercase tracking-tight">${t.team_name}</span>
@@ -377,12 +370,12 @@ async function handleClearAssignments() {
 
 async function runOptimizeRoute() {
     const result = await Swal.fire({
-        title: '📍 จัดคิวเส้นทางอัจฉริยะ?',
-        text: 'ระบบจะคำนวณเส้นทางใหม่ตามพิกัดสำหรับทุกทีมเพื่อให้ประหยัดเวลาที่สุด',
+        title: '📍 จัดคิวเรียงลำดับเส้นทาง?',
+        text: 'ระบบจะคำนวณลำดับการทำงานใหม่ตามความใกล้ของพิกัดเพื่อให้ประหยัดเวลาที่สุด',
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#10b981',
-        confirmButtonText: 'เริ่มคำนวณเส้นทาง',
+        confirmButtonText: 'เริ่มจัดลำดับใหม่',
         cancelButtonText: 'ยกเลิก'
     });
 
@@ -393,8 +386,8 @@ async function runOptimizeRoute() {
         const res = await fetch('api/dispatch/optimize_route.php');
         const data = await res.json();
         if (data.success) {
-            Swal.fire('สำเร็จ', 'จัดลำดับเส้นทางเรียบร้อยแล้ว!', 'success');
-            loadJobs();
+            Swal.fire('สำเร็จ', 'จัดลำดับงานที่ใกล้ที่สุดเรียบร้อยแล้ว!', 'success');
+            loadJobs(); 
         }
     } catch (e) {
         Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
@@ -403,84 +396,7 @@ async function runOptimizeRoute() {
     }
 }
 
-function showJobPopup(job, color) {
-    // ลิงก์สำหรับเปิดแอป Google Maps พร้อมเริ่มนำทางไปยังพิกัดเป้าหมาย
-    const gmapsLink = `https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`;
-    
-    // เพิ่มปุ่มกด จบงาน / ไม่สำเร็จ สำหรับช่าง
-    let actionButtons = '';
-    if (!IS_ADMIN) {
-        actionButtons = `
-            <div class="grid grid-cols-2 gap-3 mt-4">
-                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'completed')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-xl shadow-md transition-all text-xs uppercase tracking-wider">
-                    ✅ จบงาน
-                </button>
-                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'failed')" class="bg-rose-500 hover:bg-rose-600 text-white font-black py-3 rounded-xl shadow-md transition-all text-xs uppercase tracking-wider">
-                    ❌ ไม่สำเร็จ
-                </button>
-            </div>
-        `;
-    }
-
-    Swal.fire({
-        title: `<div class="text-indigo-600 font-black tracking-tight">${job.access_no}</div>`,
-        html: `
-            <div class="text-left mt-2 space-y-4 font-sans">
-                <div class="flex items-center space-x-4 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-100">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-md" style="background-color: ${color}">
-                        ${job.seq || '-'}
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">ทีมรับผิดชอบ</p>
-                        <p class="text-sm font-black text-slate-700">${job.team_name || '⏳ ยังไม่จ่ายงาน'}</p>
-                    </div>
-                </div>
-                
-                <div class="bg-white border border-slate-100 p-5 rounded-[1.5rem] shadow-sm space-y-3">
-                    <p class="text-lg font-black text-slate-800 leading-tight">${job.customer}</p>
-                    <div class="space-y-2">
-                        <p class="text-xs text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100"><span class="mr-2 opacity-60">📍</span>${job.address}</p>
-                        <p class="text-sm font-black text-emerald-600 flex items-center bg-emerald-50 p-3 rounded-xl border border-emerald-100">
-                            <span class="mr-2 opacity-80">📞</span> ${job.phone || 'ไม่ระบุเบอร์โทร'}
-                        </p>
-                        <div class="grid grid-cols-2 gap-2 mt-2">
-                            <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50">
-                                <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">แพ็กเกจ</p>
-                                <p class="text-xs font-bold text-indigo-700">${job.package || '-'}</p>
-                            </div>
-                            <div class="bg-rose-50/50 p-3 rounded-xl border border-rose-100/50">
-                                <p class="text-[9px] font-black text-rose-400 uppercase tracking-widest mb-1">หมายเหตุ</p>
-                                <p class="text-xs font-bold text-rose-700 line-clamp-2" title="${job.remark || '-'}">${job.remark || '-'}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                ${actionButtons}
-            </div>
-        `,
-        showCancelButton: true,
-        showCloseButton: true,
-        confirmButtonColor: '#4f46e5',
-        cancelButtonColor: '#f1f5f9',
-        confirmButtonText: '🚀 เริ่มนำทาง (Google Maps)',
-        cancelButtonText: '<span class="text-slate-500">ปิดหน้าต่าง</span>',
-        customClass: {
-            popup: 'rounded-[2rem] p-6 shadow-2xl z-[9999]',
-            title: 'text-left pb-4 border-b border-slate-100',
-            confirmButton: 'rounded-xl px-6 py-3.5 font-black tracking-widest w-full mt-2 shadow-lg shadow-indigo-200 transition-transform active:scale-95',
-            cancelButton: 'rounded-xl px-6 py-3.5 font-black w-full mt-3 hover:bg-slate-200 transition-colors',
-            actions: 'flex-col w-full px-2',
-            closeButton: 'text-slate-400 hover:text-rose-500 focus:outline-none'
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            window.open(gmapsLink, '_blank');
-        }
-    });
-}
-
 function renderUI() {
-    clearMap();
     const tbody = document.getElementById('jobTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
@@ -517,60 +433,10 @@ function renderUI() {
         return;
     }
 
-    const bounds = L.latLngBounds();
-    const jobsByTeam = {};
-
     filteredJobs.forEach((job, index) => {
         const row = createJobRow(job, index);
         tbody.appendChild(row);
-
-        if (job.team_id && job.lat && job.lng) {
-            if (!jobsByTeam[job.team_id]) jobsByTeam[job.team_id] = [];
-            jobsByTeam[job.team_id].push(job);
-        }
-
-        if (job.lat && job.lng) {
-            const latLng = [parseFloat(job.lat), parseFloat(job.lng)];
-            bounds.extend(latLng);
-
-            const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
-            const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#94a3b8';
-
-            const markerHtml = `
-                <div style="background-color: ${color}; width: 32px; height: 32px; border-radius: 12px; color: white; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px; border: 3px solid white; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); transform: translateY(-50%); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer;" 
-                    onmouseover="this.style.transform='translateY(-50%) scale(1.2)';" 
-                    onmouseout="this.style.transform='translateY(-50%) scale(1)';"
-                >
-                    ${job.seq || '-'}
-                </div>
-            `;
-            
-            const icon = L.divIcon({ html: markerHtml, className: '', iconSize: [32, 32], iconAnchor: [16, 16] });
-            const marker = L.marker(latLng, { icon }).addTo(map);
-            
-            // Save reference to marker
-            jobMarkers[job.access_no] = marker;
-
-            // Trigger SweetAlert popup when clicking the map marker
-            marker.on('click', () => {
-                showJobPopup(job, color);
-            });
-        }
     });
-
-    currentTeams.forEach((t, i) => {
-        if (jobsByTeam[t.id]) {
-            jobsByTeam[t.id].sort((a,b) => (a.seq || 999) - (b.seq || 999));
-            const latlngs = jobsByTeam[t.id].map(j => [parseFloat(j.lat), parseFloat(j.lng)]);
-            if (latlngs.length > 1) {
-                L.polyline(latlngs, { color: getColor(i), weight: 6, opacity: 0.4, dashArray: '12, 12' }).addTo(map);
-            }
-        }
-    });
-
-    if (filteredJobs.length > 0 && bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [60, 60] });
-    }
 }
 
 function createJobRow(job, index) {
@@ -613,14 +479,9 @@ function createJobRow(job, index) {
         </td>
     `;
 
-    // Click row -> fly to marker and open SweetAlert popup
+    // เมื่อกดที่ตาราง จะเป็นการเปิด Popup แบบเต็ม
     tr.onclick = () => {
-        if (job.lat && job.lng) {
-            map.flyTo([parseFloat(job.lat), parseFloat(job.lng)], 15);
-            setTimeout(() => {
-                showJobPopup(job, color);
-            }, 600); // slight delay to allow map to fly
-        }
+        showJobPopup(job, color);
     };
     return tr;
 }
@@ -632,12 +493,133 @@ function toggleJobSelection(id) {
     updateSelectionUI();
 }
 
-function clearMap() {
-    jobMarkers = {}; // reset markers object
-    map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
+function showJobPopup(job, color) {
+    // ลิงก์สำหรับเปิดแอป Google Maps แบบนำทางทันที 100% (รองรับทั้งมือถือและคอม)
+    const gmapsLink = `https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`;
+    
+    // ปุ่มบันทึกสถานะ จบงาน/ไม่สำเร็จ จะโชว์เฉพาะเมื่อช่างเป็นคนเปิด
+    let actionButtons = '';
+    if (!IS_ADMIN) {
+        actionButtons = `
+            <div class="grid grid-cols-2 gap-3 mt-4">
+                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'completed')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-xl shadow-md transition-all text-xs uppercase tracking-wider">
+                    ✅ จบงาน
+                </button>
+                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'failed')" class="bg-rose-500 hover:bg-rose-600 text-white font-black py-3 rounded-xl shadow-md transition-all text-xs uppercase tracking-wider">
+                    ❌ ไม่สำเร็จ
+                </button>
+            </div>
+        `;
+    }
+
+    Swal.fire({
+        title: `<div class="text-indigo-600 font-black tracking-tight">${job.access_no}</div>`,
+        html: `
+            <div class="text-left mt-2 space-y-4 font-sans">
+                <div class="flex items-center space-x-4 bg-slate-50 p-4 rounded-[1.5rem] border border-slate-100">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-md" style="background-color: ${color}">
+                        ${job.seq || '-'}
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">ทีมรับผิดชอบ</p>
+                        <p class="text-sm font-black text-slate-700">${job.team_name || '⏳ ยังไม่จ่ายงาน'}</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white border border-slate-100 p-5 rounded-[1.5rem] shadow-sm space-y-3">
+                    <p class="text-lg font-black text-slate-800 leading-tight">${job.customer}</p>
+                    <div class="space-y-2">
+                        <p class="text-xs text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100"><span class="mr-2 opacity-60">📍</span>${job.address}</p>
+                        <p class="text-sm font-black text-emerald-600 flex items-center bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                            <span class="mr-2 opacity-80">📞</span> ${job.phone || 'ไม่ระบุเบอร์โทร'}
+                        </p>
+                        
+                        ${job.package ? `
+                        <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50 mt-2">
+                            <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">แพ็กเกจ</p>
+                            <p class="text-xs font-bold text-indigo-700">${job.package}</p>
+                        </div>` : ''}
+                        
+                        ${job.remark ? `
+                        <div class="bg-rose-50/50 p-3 rounded-xl border border-rose-100/50 mt-2">
+                            <p class="text-[9px] font-black text-rose-400 uppercase tracking-widest mb-1">หมายเหตุ</p>
+                            <p class="text-xs font-bold text-rose-700">${job.remark}</p>
+                        </div>` : ''}
+                    </div>
+                </div>
+                ${actionButtons}
+            </div>
+        `,
+        showCancelButton: true,
+        showCloseButton: true,
+        confirmButtonColor: '#4f46e5',
+        cancelButtonColor: '#f1f5f9',
+        confirmButtonText: '🚀 เริ่มนำทางเส้นทางนี้',
+        cancelButtonText: '<span class="text-slate-500">ปิดหน้าต่าง</span>',
+        customClass: {
+            popup: 'rounded-[2rem] p-6 shadow-2xl z-[9999]',
+            title: 'text-left pb-4 border-b border-slate-100',
+            confirmButton: 'rounded-xl px-6 py-3.5 font-black tracking-widest w-full mt-2 shadow-lg shadow-indigo-200 hover:-translate-y-1 transition-all',
+            cancelButton: 'rounded-xl px-6 py-3.5 font-black w-full mt-3 hover:bg-slate-200 transition-all',
+            actions: 'flex-col w-full px-2'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.open(gmapsLink, '_blank'); // จะเปิดหน้าต่างใหม่ แล้วเด้งเข้าแอป Google Maps ทันที
+        }
+    });
 }
 
-// --- EXCEL IMPORT / EXPORT ---
+window.updateJobStatus = async function(jobId, status) {
+    let remark = '';
+
+    if (status === 'failed') {
+        const { value: text } = await Swal.fire({
+            title: 'ระบุสาเหตุที่ไม่สำเร็จ',
+            input: 'textarea',
+            inputPlaceholder: 'กรอกหมายเหตุที่นี่...',
+            showCancelButton: true,
+            confirmButtonText: 'ยืนยัน',
+            cancelButtonText: 'ยกเลิก'
+        });
+
+        if (!text) {
+            if(text !== undefined) Swal.fire('แจ้งเตือน', 'กรุณาระบุหมายเหตุ', 'warning');
+            return;
+        }
+        remark = text;
+    } else {
+        const confirm = await Swal.fire({
+            title: 'ยืนยันจบงาน?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'ใช่, จบงาน',
+            cancelButtonText: 'ยกเลิก'
+        });
+        if (!confirm.isConfirmed) return;
+    }
+
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        const res = await fetch('api/dispatch/update_job_status.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job_id: jobId, status: status, remark: remark })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            Swal.fire('สำเร็จ', 'อัปเดตสถานะเรียบร้อย', 'success');
+            loadJobs(); // รีเฟรชตาราง งานที่จบจะหายไป
+        } else {
+            Swal.fire('ข้อผิดพลาด', data.error, 'error');
+        }
+    } catch (e) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', 'error');
+    }
+};
 
 function handleExcelUpload(e) {
     const file = e.target.files[0];
@@ -683,18 +665,13 @@ function processExcel(file) {
             });
 
             const accessIdx = findCol(['access', 'รหัสงาน']);
-const latIdx = findCol(['lat', 'latitude', 'ละติจูด']);
-const lngIdx = findCol(['lng', 'long', 'longitude', 'ลองจิจูด']); // <--- เพิ่มคำค้นหาตรงนี้
-const custIdx = findCol(['customer', 'ชื่อลูกค้า']);
-const addrIdx = findCol(['address', 'ที่อยู่']);
-const dateIdx = findCol(['date', 'วัน', 'arrival']);
-const packageIdx = findCol(['package', 'แพ็กเกจ', 'แพคเกจ']);
-const remarkIdx = findCol(['remark', 'หมายเหตุ']);
-
-// ดึงข้อมูลใหม่สำหรับ Order
-const orderIdx = findCol(['orderno', 'order']);
-const taskOrderIdx = findCol(['taskorderno', 'taskorder']);
-const taskTypeIdx = findCol(['tasktype']);
+            const latIdx = findCol(['lat', 'latitude', 'ละติจูด']);
+            const lngIdx = findCol(['lng', 'long', 'longitude', 'ลองจิจูด']); 
+            const custIdx = findCol(['customer', 'ชื่อลูกค้า']);
+            const addrIdx = findCol(['address', 'ที่อยู่']);
+            const dateIdx = findCol(['date', 'วัน', 'arrival']);
+            const packageIdx = findCol(['package', 'แพ็กเกจ', 'แพคเกจ']);
+            const remarkIdx = findCol(['remark', 'หมายเหตุ']);
 
             if (accessIdx === -1 || latIdx === -1 || lngIdx === -1) {
                 throw new Error('ไม่พบหัวคอลัมน์ที่จำเป็น (Access No, Lat, Lng)');
@@ -709,24 +686,15 @@ const taskTypeIdx = findCol(['tasktype']);
                     let cleanPhone = phones.join(',').split(/[\/,|\s]+/).filter(p => p.length > 5).join(',');      
 
                     let planDate = row[dateIdx];
-                    if (planDate) {
-                        // ถ้ารูปแบบเป็นตัวเลข (Serial Number จาก Excel)
-                        if (!isNaN(planDate) && String(planDate).indexOf('-') === -1 && String(planDate).indexOf('/') === -1) {
-                            const dateObj = new Date((planDate - 25569) * 86400 * 1000);
-                            planDate = dateObj.toISOString().split('T')[0];
-                        } else {
-                            // ถ้ารูปแบบเป็นข้อความ String (เช่น "2026-05-26 18:00:00" จาก CSV)
-                            planDate = String(planDate).trim();
-                            if (planDate.includes(' ')) {
-                                planDate = planDate.split(' ')[0]; // ตัดเอาแค่วันที่ก่อนเว้นวรรค
-                            }
-                            
-                            // กรณีเป็น DD/MM/YYYY เปลี่ยนเป็น YYYY-MM-DD
-                            if (planDate.includes('/')) {
-                                let parts = planDate.split('/');
-                                if (parts.length === 3 && parts[2].length === 4) {
-                                    planDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                                }
+                    if (planDate && !isNaN(planDate) && String(planDate).indexOf('-') === -1 && String(planDate).indexOf('/') === -1) {
+                        const dateObj = new Date((planDate - 25569) * 86400 * 1000);
+                        planDate = dateObj.toISOString().split('T')[0];
+                    } else if (planDate && typeof planDate === 'string') {
+                        planDate = planDate.trim().split(' ')[0];
+                        if (planDate.includes('/')) {
+                            let parts = planDate.split('/');
+                            if (parts.length === 3 && parts[2].length === 4) {
+                                planDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
                             }
                         }
                     }
@@ -741,10 +709,7 @@ const taskTypeIdx = findCol(['tasktype']);
                         plan_arrival_date: planDate || null,
                         package: packageIdx !== -1 ? row[packageIdx] : null,
                         remark: remarkIdx !== -1 ? row[remarkIdx] : null,
-                        status: 'Pending',
-                        order_no: orderIdx !== -1 ? row[orderIdx] : null,
-                        task_order: taskOrderIdx !== -1 ? row[taskOrderIdx] : null,
-                        task_type: taskTypeIdx !== -1 ? row[taskTypeIdx] : null
+                        status: 'Pending'
                     });
                 }
             }
@@ -773,7 +738,6 @@ const taskTypeIdx = findCol(['tasktype']);
     reader.readAsArrayBuffer(file);
 }
 
-// EXPORT TO EXCEL
 async function handleExportExcel() {
     const today = new Date().toISOString().split('T')[0];
     const currentDate = document.getElementById('dateFilter')?.value || today;
@@ -857,7 +821,6 @@ function exportDataToExcel(filterType) {
         });
     }
 
-    // Map data to Excel headers (REMOVED Sequence)
     const exportData = filtered.map(j => ({
         'รหัสงาน (Access No)': j.access_no || '',
         'ชื่อลูกค้า (Customer)': j.customer || '',
@@ -874,7 +837,6 @@ function exportDataToExcel(filterType) {
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     
-    // Auto-width columns slightly
     const wscols = [
         {wch: 20}, {wch: 25}, {wch: 15}, {wch: 15}, 
         {wch: 40}, {wch: 15}, {wch: 15}, {wch: 20}, 
@@ -895,53 +857,3 @@ function exportDataToExcel(filterType) {
         customClass: { popup: 'rounded-[2rem]', confirmButton: 'rounded-xl px-6 py-3 font-black tracking-widest' }
     });
 }
-window.updateJobStatus = async function(jobId, status) {
-    let remark = '';
-
-    if (status === 'failed') {
-        const { value: text } = await Swal.fire({
-            title: 'ระบุสาเหตุที่ไม่สำเร็จ',
-            input: 'textarea',
-            inputPlaceholder: 'กรอกหมายเหตุที่นี่...',
-            showCancelButton: true,
-            confirmButtonText: 'ยืนยัน',
-            cancelButtonText: 'ยกเลิก'
-        });
-
-        if (!text) {
-            if(text !== undefined) Swal.fire('แจ้งเตือน', 'กรุณาระบุหมายเหตุ', 'warning');
-            return;
-        }
-        remark = text;
-    } else {
-        const confirm = await Swal.fire({
-            title: 'ยืนยันจบงาน?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#10b981',
-            confirmButtonText: 'ใช่, จบงาน',
-            cancelButtonText: 'ยกเลิก'
-        });
-        if (!confirm.isConfirmed) return;
-    }
-
-    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-
-    try {
-        const res = await fetch('api/dispatch/update_job_status.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ job_id: jobId, status: status, remark: remark })
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            Swal.fire('สำเร็จ', 'อัปเดตสถานะเรียบร้อย', 'success');
-            loadJobs(); // โหลดข้อมูลใหม่ (งานที่เสร็จแล้วจะหายไปจากจอ)
-        } else {
-            Swal.fire('ข้อผิดพลาด', data.error, 'error');
-        }
-    } catch (e) {
-        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', 'error');
-    }
-};
