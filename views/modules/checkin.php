@@ -72,34 +72,34 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         </div>
 
         <?php if($isAdmin): ?>
-        <div class="card flex items-center justify-between gap-4 flex-wrap z-[90]">
+        <div class="card flex items-center justify-between gap-4 flex-wrap">
             <div>
-                <h3 class="font-bold text-gray-800 flex items-center"><span class="mr-2"><i data-lucide="settings" class="w-5 h-5 inline-block"></i></span> ตั้งค่าระบบ (แอดมิน)</h3>
-                <p class="text-xs text-gray-500 mt-1">กำหนดเวลาที่ถือว่า "มาสาย"</p>
+                <h3 class="font-bold text-[var(--c-text-1)] flex items-center"><span class="mr-2"><i data-lucide="settings" class="w-5 h-5 inline-block"></i></span> ตั้งค่าระบบ (แอดมิน)</h3>
+                <p class="text-xs text-[var(--c-text-3)] mt-1">กำหนดเวลาที่ถือว่า "มาสาย"</p>
             </div>
             <div class="flex items-center gap-2 w-full sm:w-auto">
                 <input type="time" id="lateTimeInput" class="flex-1 sm:w-auto input">
-                <button onclick="saveSettings()" class="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold hover:bg-slate-900 transition-colors">บันทึก</button>
+                <button onclick="saveSettings()" class="bg-[var(--c-text-1)] text-white px-6 py-2 rounded-lg font-bold hover:opacity-80 transition-opacity">บันทึก</button>
             </div>
         </div>
         <?php endif; ?>
 
-        <div class="card flex-1 flex flex-col z-[90]">
+        <div class="card flex-1 flex flex-col">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                <h3 class="font-bold text-gray-800"><i data-lucide="clock" class="w-5 h-5 inline-block"></i> ประวัติเช็คอิน</h3>
+                <h3 class="font-bold text-[var(--c-text-1)]"><i data-lucide="clock" class="w-5 h-5 inline-block"></i> ประวัติเช็คอิน</h3>
                 <div class="flex items-center gap-2 flex-wrap">
                     <input type="date" id="filterDate" class="px-3 py-1.5 input">
-                    <span class="text-sm text-gray-400 hidden md:inline">หรือ</span>
+                    <span class="text-sm text-[var(--c-text-3)] hidden md:inline">หรือ</span>
                     <input type="month" id="filterMonth" class="px-3 py-1.5 input">
-                    <button onclick="loadCheckinHistory()" class="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-indigo-100">ค้นหา</button>
+                    <button onclick="loadCheckinHistory()" class="bg-[var(--c-primary-faint)] text-[var(--c-primary)] px-3 py-1.5 rounded-lg text-sm font-bold hover:opacity-80 transition-opacity">ค้นหา</button>
                     <?php if($isAdmin): ?>
-                    <button onclick="exportCheckin()" class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-emerald-100">Excel</button>
+                    <button onclick="exportCheckin()" class="bg-[var(--c-success-bg)] text-[var(--c-success-text)] border border-[var(--c-success-bg)] px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:opacity-80 transition-opacity">Excel</button>
                     <?php endif; ?>
                 </div>
             </div>
             <div class="w-full flex-1">
                 <table class="w-full text-sm text-left block md:table">
-                    <thead class="hidden md:table-header-group text-xs text-slate-500 uppercase bg-slate-50 rounded-lg">
+                    <thead class="hidden md:table-header-group text-xs text-[var(--c-text-2)] uppercase bg-[var(--c-surface-2)] rounded-lg">
                         <tr>
                             <th class="px-4 py-3 rounded-l-lg">วันที่ - เวลา</th>
                             <th class="px-4 py-3 text-center">รูปถ่าย</th>
@@ -108,7 +108,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                             <th class="px-4 py-3 text-center rounded-r-lg">จัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="historyTableBody" class="block md:table-row-group divide-y divide-gray-100">
+                    <tbody id="historyTableBody" class="block md:table-row-group divide-y divide-[var(--c-border)]">
                         </tbody>
                 </table>
             </div>
@@ -116,11 +116,11 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 </div>
 
-<div id="editCheckinModal" class="hidden fixed inset-0 bg-slate-900/60 z-[80] flex justify-center items-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl w-full max-w-[95%] md:max-w-sm overflow-hidden shadow-2xl animate__animated animate__zoomIn z-[90]">
-        <div class="bg-indigo-600 p-4 flex justify-between items-center text-white">
+<div id="editCheckinModal" class="hidden fixed inset-0 bg-[var(--c-overlay)] z-[80] flex justify-center items-center p-4 backdrop-blur-sm">
+    <div class="bg-[var(--c-surface)] rounded-2xl w-full max-w-[95%] md:max-w-sm overflow-hidden animate__animated animate__zoomIn z-[90]" style="box-shadow: var(--shadow-4);">
+        <div class="bg-[var(--c-primary)] p-4 flex justify-between items-center text-white">
             <h3 class="font-bold"><i data-lucide="edit-2" class="w-5 h-5 inline-block"></i> แก้ไขเวลาเช็คอิน</h3>
-            <button onclick="closeEditCheckinModal()" class="text-white hover:text-rose-300 font-black text-xl">&times;</button>
+            <button onclick="closeEditCheckinModal()" class="text-white/70 hover:text-white font-black text-xl">&times;</button>
         </div>
         <div class="p-6">
             <input type="hidden" id="edit_checkin_id">
