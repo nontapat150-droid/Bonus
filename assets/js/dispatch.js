@@ -13,6 +13,8 @@ function getColor(index) { return teamColors[index % teamColors.length]; }
 document.addEventListener('DOMContentLoaded', () => {
     loadJobs();
 
+    document.getElementById('navigateSelectedBtn')?.addEventListener('click', handleNavigateSelected);
+
     if (IS_ADMIN) {
         document.getElementById('jobExcelFile')?.addEventListener('change', handleExcelUpload);
         document.getElementById('exportExcelBtn')?.addEventListener('click', handleExportExcel);
@@ -31,6 +33,34 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('limitFilter')?.addEventListener('change', renderUI);
     document.getElementById('selectAllJobs')?.addEventListener('change', handleSelectAll);
 });
+
+function handleNavigateSelected() {
+    if (selectedJobIds.size === 0) return;
+    
+    const selectedIdsArray = Array.from(selectedJobIds);
+    let jobsToNav = allJobs.filter(j => selectedIdsArray.includes(String(j.id)));
+    
+    // เรียงตามลำดับคิว (seq) ถ้ามี
+    jobsToNav.sort((a, b) => (a.seq || 999) - (b.seq || 999));
+    
+    const validJobs = jobsToNav.filter(j => j.lat && j.lng);
+    
+    if (validJobs.length === 0) {
+        return Swal.fire('ไม่พบพิกัด', 'งานที่เลือกไม่มีข้อมูลพิกัดละติจูด/ลองจิจูด', 'warning');
+    }
+    
+    if (validJobs.length === 1) {
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${validJobs[0].lat},${validJobs[0].lng}`;
+        window.open(url, '_blank');
+        return;
+    }
+    
+    const destination = validJobs[validJobs.length - 1];
+    const waypoints = validJobs.slice(0, validJobs.length - 1).map(j => `${j.lat},${j.lng}`).join('|');
+    
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${destination.lat},${destination.lng}&waypoints=${waypoints}&travelmode=driving`;
+    window.open(url, '_blank');
+}
 
 function showLoader(message = 'กำลังโหลด...') { 
     const loader = document.getElementById('mapLoader');
@@ -233,6 +263,34 @@ function updateSelectionUI() {
             bar.classList.add('hidden');
         }
     }
+}
+
+function handleNavigateSelected() {
+    if (selectedJobIds.size === 0) return;
+    
+    const selectedIdsArray = Array.from(selectedJobIds);
+    let jobsToNav = allJobs.filter(j => selectedIdsArray.includes(String(j.id)));
+    
+    // Sort by sequence number (seq) if available, otherwise preserve order
+    jobsToNav.sort((a, b) => (a.seq || 999) - (b.seq || 999));
+    
+    const validJobs = jobsToNav.filter(j => j.lat && j.lng);
+    
+    if (validJobs.length === 0) {
+        return Swal.fire('ไม่พบพิกัด', 'งานที่เลือกไม่มีข้อมูลพิกัดละติจูด/ลองจิจูด', 'warning');
+    }
+    
+    if (validJobs.length === 1) {
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${validJobs[0].lat},${validJobs[0].lng}`;
+        window.open(url, '_blank');
+        return;
+    }
+    
+    const destination = validJobs[validJobs.length - 1];
+    const waypoints = validJobs.slice(0, validJobs.length - 1).map(j => `${j.lat},${j.lng}`).join('|');
+    
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${destination.lat},${destination.lng}&waypoints=${waypoints}&travelmode=driving`;
+    window.open(url, '_blank');
 }
 
 async function handleBulkDelete() {

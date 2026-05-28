@@ -388,7 +388,7 @@ if ($page === 'home') {
                                 <div class="icon-box-success group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-warning-bg)] !text-[var(--c-warning)]"><i data-lucide="fuel" class="w-5 h-5"></i></div>
                                 <span class="badge-danger flex items-center gap-1"><i data-lucide="trending-down" class="w-3 h-3"></i> 5%</span>
                             </div>
-                            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">Oil Cost Today</p>
+                            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">ค่าน้ำมันวันนี้</p>
                             <h3 class="text-kpi"><span class="text-2xl text-[var(--c-text-3)]">฿</span><?= number_format($stats['oil_cost_today']) ?></h3>
                         </div>
 
@@ -397,7 +397,7 @@ if ($page === 'home') {
                                 <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-info-bg)] !text-[var(--c-info)]"><i data-lucide="package" class="w-5 h-5"></i></div>
                                 <span class="text-[10px] text-[var(--c-text-3)] font-medium bg-[var(--c-surface-2)] px-2 py-1 rounded">Live</span>
                             </div>
-                            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">Total Stock</p>
+                            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">สินค้าทั้งหมด</p>
                             <h3 class="text-kpi"><?= number_format($stats['total_stock']) ?></h3>
                         </div>
 
@@ -406,13 +406,13 @@ if ($page === 'home') {
                                 <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[#FDF2F8] !text-[#EC4899]"><i data-lucide="users" class="w-5 h-5"></i></div>
                                 <span class="text-[10px] text-[var(--c-text-3)] font-medium bg-[var(--c-surface-2)] px-2 py-1 rounded">Active</span>
                             </div>
-                            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">Active Staff</p>
+                            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">พนักงานที่แอคทีฟ</p>
                             <h3 class="text-kpi"><?= number_format($stats['total_staff']) ?></h3>
                         </div>
                     </div>
 
                     <!-- Main Actions -->
-                    <h2 class="text-lg font-bold mt-8 mb-4">Quick Access</h2>
+                    <h2 class="text-lg font-bold mt-8 mb-4">เมนูด่วน</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <a href="index.php?page=dispatch" class="card flex flex-col justify-between hover:border-[var(--c-primary)] transition-colors group text-inherit no-underline">
                             <div class="flex items-start justify-between">
@@ -420,8 +420,8 @@ if ($page === 'home') {
                                 <i data-lucide="arrow-up-right" class="text-[var(--c-text-3)] group-hover:text-[var(--c-primary)] transition-colors"></i>
                             </div>
                             <div class="mt-6">
-                                <h3 class="text-base font-bold text-[var(--c-text-1)]">Dispatch & Map</h3>
-                                <p class="text-sm text-[var(--c-text-3)] mt-1">Track technician locations and optimize routing.</p>
+                                <h3 class="text-base font-bold text-[var(--c-text-1)]">ระบบจัดส่งอัจฉริยะ</h3>
+                                <p class="text-sm text-[var(--c-text-3)] mt-1">คำนวณเส้นทางอัตโนมัติและจัดคิวงานให้ทีมช่างเทคนิค</p>
                             </div>
                         </a>
 
@@ -431,8 +431,8 @@ if ($page === 'home') {
                                 <i data-lucide="arrow-up-right" class="text-[var(--c-text-3)] group-hover:text-[var(--c-success)] transition-colors"></i>
                             </div>
                             <div class="mt-6">
-                                <h3 class="text-base font-bold text-[var(--c-text-1)]">Inventory Management</h3>
-                                <p class="text-sm text-[var(--c-text-3)]">Check stock levels, scan inbound, and review history.</p>
+                                <h3 class="text-base font-bold text-[var(--c-text-1)]">ระบบคลังสินค้า</h3>
+                                <p class="text-sm text-[var(--c-text-3)]">ตรวจสอบระดับสต็อก สแกนรับเข้า และดูประวัติการเบิกจ่าย</p>
                             </div>
                         </a>
                     </div>
@@ -454,9 +454,9 @@ if ($page === 'home') {
                 } else {
                     echo '<div class="card text-center py-16">
                             <div class="w-20 h-20 bg-[var(--c-surface-2)] rounded-full flex items-center justify-center mx-auto mb-6"><i data-lucide="settings" class="w-10 h-10 text-[var(--c-text-3)] animate-spin-slow" style="animation-duration: 4s;"></i></div>
-                            <h2 class="text-xl font-bold text-[var(--c-text-1)] mb-2">Module Under Construction</h2>
-                            <p class="text-sm text-[var(--c-text-3)] max-w-sm mx-auto">This section is currently being updated to match the new design system.</p>
-                            <a href="index.php?page=home" class="btn-primary mt-8">Return Home</a>
+                            <h2 class="text-xl font-bold text-[var(--c-text-1)] mb-2">กำลังปรับปรุงระบบ</h2>
+                            <p class="text-sm text-[var(--c-text-3)] max-w-sm mx-auto">ส่วนนี้กำลังได้รับการอัปเดตให้เข้ากับรูปแบบดีไซน์ใหม่ กรุณากลับมาใช้งานในภายหลัง</p>
+                            <a href="index.php?page=home" class="btn-primary mt-8 inline-block w-auto">กลับสู่หน้าแรก</a>
                           </div>';
                 }
                 ?>
