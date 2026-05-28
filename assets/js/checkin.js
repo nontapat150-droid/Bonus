@@ -9,21 +9,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const timeDisplay = document.getElementById('currentTime');
     const submitBtn = document.getElementById('submitBtn');
 
-    // Default Filter to Current Month
     const now = new Date();
     const currMonth = now.toISOString().slice(0, 7);
     document.getElementById('filterMonth').value = currMonth;
 
-    // Load Data
     loadSettings();
     loadCheckinHistory();
 
-    // 1. นาฬิกา Real-time
     setInterval(() => {
         timeDisplay.textContent = new Date().toLocaleTimeString('th-TH');
     }, 1000);
 
-    // 2. แสดงตัวอย่างรูปภาพ
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -41,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 3. ส่งข้อมูลไปที่ API
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!fileInput.files[0]) return Toast.error('กรุณาถ่ายรูปเช็คอิน');
@@ -61,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 imagePreview.src = '';
                 imagePreview.classList.add('hidden');
                 uploadPrompt.classList.remove('hidden');
-                loadCheckinHistory(); // รีโหลดประวัติทันที
+                loadCheckinHistory();
             } else {
                 Toast.error(result.error);
             }
@@ -74,17 +69,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ล้างช่อง Date เมื่อเลือก Month และสลับกัน
     document.getElementById('filterDate').addEventListener('change', function() { document.getElementById('filterMonth').value = ''; });
     document.getElementById('filterMonth').addEventListener('change', function() { document.getElementById('filterDate').value = ''; });
 });
 
-// ดึงประวัติ + อัปเดต Dashboard
 async function loadCheckinHistory() {
     const fDate = document.getElementById('filterDate').value;
     const fMonth = document.getElementById('filterMonth').value;
     
-    // อัปเดต Label
     const dashLabel = document.getElementById('dashLabel');
     if(fDate) dashLabel.textContent = `วันที่ ${new Date(fDate).toLocaleDateString('th-TH')}`;
     else if(fMonth) {
@@ -92,7 +84,7 @@ async function loadCheckinHistory() {
         dashLabel.textContent = `เดือน ${d.toLocaleString('th-TH', {month:'long', year:'numeric'})}`;
     } else dashLabel.textContent = 'ทั้งหมด';
 
-    document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="4" class="text-center py-8">กำลังโหลดข้อมูล...</td></tr>';
+    document.getElementById('historyTableBody').innerHTML = '<tr class="block md:table-row"><td colspan="5" class="text-center py-8 block md:table-cell">กำลังโหลดข้อมูล...</td></tr>';
     
     try {
         const res = await fetch(`api/checkin/get_history.php?date=${fDate}&month=${fMonth}`);
@@ -102,7 +94,6 @@ async function loadCheckinHistory() {
             checkinData = data.records;
             renderTable(checkinData);
             
-            // Update Dashboard
             document.getElementById('dashTotal').textContent = data.dashboard.total;
             document.getElementById('dashOntime').textContent = data.dashboard.on_time;
             document.getElementById('dashLate').textContent = data.dashboard.late;
@@ -110,7 +101,7 @@ async function loadCheckinHistory() {
             Toast.error(data.error);
         }
     } catch(e) {
-        document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="4" class="text-center py-8 text-red-500">โหลดข้อมูลล้มเหลว</td></tr>';
+        document.getElementById('historyTableBody').innerHTML = '<tr class="block md:table-row"><td colspan="5" class="text-center py-8 text-red-500 block md:table-cell">โหลดข้อมูลล้มเหลว</td></tr>';
     }
 }
 
@@ -119,41 +110,156 @@ function renderTable(records) {
     tbody.innerHTML = '';
     
     if(records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-400 italic">ไม่พบประวัติการเข้างานในช่างเวลานี้</td></tr>';
+        tbody.innerHTML = '<tr class="block md:table-row"><td colspan="5" class="text-center py-8 text-gray-400 italic block md:table-cell">ไม่พบประวัติการเข้างานในช่วงเวลานี้</td></tr>';
         return;
     }
 
-    records.forEach(item => {
+    records.forEach((item, index) => {
         const dateObj = new Date(item.checkin_time);
         const tr = document.createElement('tr');
-        tr.className = 'border-b border-slate-50 hover:bg-slate-50 transition-colors';
         
-        // แจ้งเตือนสถานะ สีเขียว/สีส้ม
+        // สไตล์สำหรับการ์ดบนมือถือ
+        tr.className = 'block md:table-row bg-white border border-slate-100 md:border-b md:border-x-0 md:border-t-0 rounded-[1.5rem] md:rounded-none shadow-sm md:shadow-none mb-4 md:mb-0 hover:bg-slate-50 transition-all p-4 md:p-0';
+        
         const badge = item.status_code === 'late' 
-            ? `<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold border border-orange-200">มาสาย</span>`
-            : `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200">ตรงเวลา</span>`;
+            ? `<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-bold border border-orange-200">มาสาย</span>`
+            : `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">ตรงเวลา</span>`;
+
+        // สิทธิ์การมองเห็นปุ่ม (ตัวแปร USER_ROLE ถูกส่งมาจากไฟล์ checkin.php)
+        const canEdit = ['super_admin', 'admin', 'technician', 'sales'].includes(window.USER_ROLE);
+        const canDelete = window.USER_ROLE === 'super_admin';
+
+        let actionHtml = `<div class="flex justify-end md:justify-center gap-2">`;
+        if (canEdit) {
+            actionHtml += `<button onclick="openEditCheckin(${index})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">✏️ แก้ไข</button>`;
+        }
+        if (canDelete) {
+            actionHtml += `<button onclick="deleteCheckin(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบ</button>`;
+        }
+        if (!canEdit && !canDelete) {
+            actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
+        }
+        actionHtml += `</div>`;
 
         tr.innerHTML = `
-            <td class="px-4 py-3 text-slate-600 font-medium whitespace-nowrap">
-                ${dateObj.toLocaleDateString('th-TH')} <br>
-                <span class="text-xs text-slate-400 font-mono">${dateObj.toLocaleTimeString('th-TH')}</span>
+            <td class="flex justify-between items-center md:table-cell px-2 md:px-4 py-3 border-b border-dashed border-slate-100 md:border-none">
+                <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">วันที่/เวลา</span>
+                <div class="text-right md:text-left">
+                    <span class="text-slate-800 font-bold">${dateObj.toLocaleDateString('th-TH')}</span>
+                    <span class="text-xs text-indigo-600 font-mono bg-indigo-50 px-2 py-0.5 rounded-md md:ml-2 ml-1 font-bold">${dateObj.toLocaleTimeString('th-TH')}</span>
+                </div>
             </td>
-            <td class="px-4 py-3 text-center">
-                <a href="assets/uploads/checkins/${item.image_path}" target="_blank" class="inline-block hover:opacity-80 transition-opacity">
-                    <img src="assets/uploads/checkins/${item.image_path}" class="w-10 h-10 object-cover rounded-lg shadow-sm border border-slate-200" alt="Evidence">
+            <td class="flex justify-between items-center md:table-cell px-2 md:px-4 py-3 border-b border-dashed border-slate-100 md:border-none md:text-center">
+                <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">รูปถ่าย</span>
+                <a href="assets/uploads/checkins/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform">
+                    <img src="assets/uploads/checkins/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence">
                 </a>
             </td>
-            <td class="px-4 py-3">
-                <p class="font-bold text-slate-700">${item.full_name}</p>
-                <p class="text-xs text-slate-400">${item.team_name || '-'}</p>
+            <td class="flex justify-between items-center md:table-cell px-2 md:px-4 py-3 border-b border-dashed border-slate-100 md:border-none">
+                <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">พนักงาน</span>
+                <div class="text-right md:text-left">
+                    <p class="font-bold text-slate-800">${item.full_name}</p>
+                    <p class="text-[10px] font-bold text-slate-400 bg-slate-100 inline-block px-2 py-0.5 rounded mt-1">${item.team_name || 'ไม่มีทีม'}</p>
+                </div>
             </td>
-            <td class="px-4 py-3 text-center">${badge}</td>
+            <td class="flex justify-between items-center md:table-cell px-2 md:px-4 py-3 border-b border-dashed border-slate-100 md:border-none md:text-center">
+                <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">สถานะ</span>
+                ${badge}
+            </td>
+            <td class="flex justify-between items-center md:table-cell px-2 md:px-4 py-3 pt-4 md:text-center">
+                <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">จัดการ</span>
+                ${actionHtml}
+            </td>
         `;
         tbody.appendChild(tr);
     });
 }
 
-// ---------------- Settings (Admin) ----------------
+// ---------------- ระบบแก้ไข และ ลบ ----------------
+
+window.openEditCheckin = function(index) {
+    const item = checkinData[index];
+    if(!item) return;
+
+    document.getElementById('edit_checkin_id').value = item.id;
+    // แปลงเวลาให้เข้ากับ input type="datetime-local" (YYYY-MM-DDThh:mm)
+    const formattedTime = item.checkin_time.replace(' ', 'T').substring(0, 16);
+    document.getElementById('edit_checkin_time').value = formattedTime;
+
+    const modal = document.getElementById('editCheckinModal');
+    modal.classList.remove('hidden');
+};
+
+window.closeEditCheckinModal = function() {
+    document.getElementById('editCheckinModal').classList.add('hidden');
+};
+
+window.saveEditCheckin = async function() {
+    const id = document.getElementById('edit_checkin_id').value;
+    const newTime = document.getElementById('edit_checkin_time').value;
+
+    if(!newTime) return Toast.error('กรุณาระบุเวลาที่ต้องการแก้');
+
+    Loader.show();
+    try {
+        const res = await fetch('api/checkin/edit.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ id: id, checkin_time: newTime })
+        });
+        const data = await res.json();
+        
+        if(data.success) {
+            Toast.success('แก้ไขเวลาเช็คอินเรียบร้อยแล้ว');
+            closeEditCheckinModal();
+            loadCheckinHistory(); // รีโหลดตารางใหม่เพื่อคำนวณสถานะใหม่
+        } else {
+            Toast.error(data.error);
+        }
+    } catch(e) {
+        Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+    } finally {
+        Loader.hide();
+    }
+};
+
+window.deleteCheckin = async function(id) {
+    Swal.fire({
+        title: 'ยืนยันการลบข้อมูล?',
+        text: "ข้อมูลนี้และรูปภาพจะถูกลบออกจากระบบอย่างถาวร!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'ใช่, ลบเลย',
+        cancelButtonText: 'ยกเลิก'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Loader.show();
+            try {
+                const res = await fetch('api/checkin/delete.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ id: id })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    Toast.success('ลบข้อมูลเช็คอินเรียบร้อยแล้ว');
+                    loadCheckinHistory();
+                } else {
+                    Toast.error(data.error);
+                }
+            } catch(e) {
+                Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+            } finally {
+                Loader.hide();
+            }
+        }
+    });
+};
+
+// ---------------- Settings & Export (Admin) ----------------
 async function loadSettings() {
     const input = document.getElementById('lateTimeInput');
     if(!input) return;
@@ -177,12 +283,11 @@ window.saveSettings = async function() {
         const data = await res.json();
         if(data.success) {
             Toast.success('อัปเดตเวลาเข้างานสำเร็จ');
-            loadCheckinHistory(); // รีเฟรชเพื่อคำนวณสถานะสายใหม่
+            loadCheckinHistory(); 
         } else Toast.error(data.error);
     } catch(e) { Toast.error('ล้มเหลว'); } finally { Loader.hide(); }
 };
 
-// ---------------- Export (Admin) ----------------
 window.exportCheckin = function() {
     if(checkinData.length === 0) return Toast.error('ไม่มีข้อมูลให้ Export');
     Toast.info('กำลังสร้างไฟล์ Excel...');
