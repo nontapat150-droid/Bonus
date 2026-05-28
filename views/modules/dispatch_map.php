@@ -34,21 +34,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     .swal2-title { font-weight: 800 !important; color: #1e293b !important; }
     .swal2-confirm { border-radius: 1rem !important; padding: 0.8rem 2rem !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; }
     .swal2-cancel { border-radius: 1rem !important; padding: 0.8rem 2rem !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; }
-
-    /* Leaflet Popup Custom Styling */
-    .custom-leaflet-popup .leaflet-popup-content-wrapper {
-        border-radius: 1.5rem;
-        padding: 0;
-        overflow: hidden;
-        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    }
-    .custom-leaflet-popup .leaflet-popup-content {
-        margin: 0;
-        width: 250px !important;
-    }
-    .custom-leaflet-popup .leaflet-popup-tip-container {
-        display: none;
-    }
 </style>
 
 <div class="h-[calc(100vh-120px)] flex flex-col space-y-4">
@@ -56,7 +41,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     <?php if ($isAdmin): ?>
     <div class="bg-white/70 backdrop-blur-md p-5 rounded-[2rem] shadow-sm border border-white flex flex-wrap gap-4 items-center justify-between z-20 relative">
         <div class="flex items-center space-x-4">
-            <div class="p-3 bg-indigo-100 text-indigo-600 rounded-2xl shadow-inner">🗺️</div>
+            <div class="p-3 bg-indigo-100 text-indigo-600 rounded-2xl shadow-inner">📋</div>
             <div>
                 <h2 class="text-lg font-black text-slate-800 tracking-tight">ระบบจัดส่งอัจฉริยะ</h2>
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">จัดการทีมและจ่ายงาน</p>
@@ -78,7 +63,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             </button>
 
             <button id="optimizeRouteBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-2xl text-[10px] font-black shadow-lg shadow-emerald-100 transition-all flex items-center">
-                📍 เรียงคิวเส้นทาง
+                📍 เรียงคิวเส้นทาง (ลำดับใกล้สุด)
             </button>
 
             <div class="w-px h-8 bg-slate-200 mx-2 hidden sm:block"></div>
@@ -94,14 +79,13 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
     <?php endif; ?>
 
-    <div class="flex flex-col lg:flex-row flex-1 gap-4 min-h-0">
-
-        <div class="w-full lg:w-[40%] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 flex flex-col overflow-hidden h-full">
+    <div class="flex flex-col flex-1 gap-4 min-h-0">
+        <div class="w-full bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 flex flex-col overflow-hidden h-full">
             
             <div class="p-5 border-b border-slate-50 bg-slate-50/50 space-y-4">
                 <div class="flex items-center justify-between">
                     <h3 class="font-black text-slate-700 tracking-tight flex items-center text-sm">
-                        📦 รายละเอียดงาน
+                        📦 รายละเอียดงานที่ได้รับมอบหมาย
                         <span id="jobCountBadge" class="ml-2 bg-indigo-100 text-indigo-600 px-3 py-0.5 rounded-full text-[10px] font-black">0</span>
                     </h3>
                     <div class="flex items-center space-x-2">
@@ -111,19 +95,17 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 </div>
 
                 <div class="flex flex-wrap gap-2">
-    <input type="date" id="dateFilter" class="flex-1 text-[10px] font-black border-slate-100 rounded-xl focus:ring-indigo-500/20 px-3 py-2 cursor-pointer text-indigo-600 shadow-sm bg-white">
-    
-    <button onclick="document.getElementById('dateFilter').value=''; renderUI();" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-2 rounded-xl text-[10px] font-black shadow-sm transition-colors cursor-pointer">
-        🔄 ดูทุกงาน
-    </button>
-    
-    <select id="limitFilter" class="text-[10px] font-black border-slate-100 rounded-xl focus:ring-indigo-500/20 py-2 pl-3 pr-8 cursor-pointer bg-white text-indigo-600 shadow-sm">
-        <option value="20">20 รายการ</option>
-        <option value="50">50 รายการ</option>
-        <option value="100">100 รายการ</option>
-        <option value="all">ทั้งหมด</option>
-    </select>
-</div>
+                    <input type="date" id="dateFilter" class="flex-1 text-[10px] font-black border-slate-100 rounded-xl focus:ring-indigo-500/20 px-3 py-2 cursor-pointer text-indigo-600 shadow-sm bg-white">
+                    <button onclick="document.getElementById('dateFilter').value=''; renderUI();" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-2 rounded-xl text-[10px] font-black shadow-sm transition-colors cursor-pointer">
+                        🔄 ดูทุกงาน
+                    </button>
+                    <select id="limitFilter" class="text-[10px] font-black border-slate-100 rounded-xl focus:ring-indigo-500/20 py-2 pl-3 pr-8 cursor-pointer bg-white text-indigo-600 shadow-sm">
+                        <option value="20">20 รายการ</option>
+                        <option value="50">50 รายการ</option>
+                        <option value="100">100 รายการ</option>
+                        <option value="all">ทั้งหมด</option>
+                    </select>
+                </div>
 
                 <?php if ($isAdmin): ?>
                 <div class="flex gap-2">
@@ -132,10 +114,11 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                         <option value="unassigned">⏳ ยังไม่จ่ายงาน</option>
                     </select>
                     <div class="flex items-center space-x-1">
-                        <input type="text" id="newTeamName" placeholder="ชื่อทีม..." class="px-3 py-2 rounded-xl border-slate-100 focus:ring-2 focus:ring-indigo-500/20 text-[9px] font-bold shadow-sm w-20">       
+                        <input type="text" id="newTeamName" placeholder="ชื่อทีม..." class="px-3 py-2 rounded-xl border-slate-100 focus:ring-2 focus:ring-indigo-500/20 text-[9px] font-bold shadow-sm w-32">       
                         <button id="addTeamBtn" class="bg-indigo-600 text-white w-8 h-8 rounded-lg font-black flex items-center justify-center hover:bg-indigo-700 transition-all text-xs">+</button>
                     </div>
                 </div>
+                <div id="teamListContainer" class="flex flex-wrap gap-2 pt-2"></div>
                 <?php endif; ?>
             </div>
 
@@ -144,13 +127,18 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 <button id="bulkDeleteBtn" class="text-[9px] font-black bg-rose-500 hover:bg-rose-600 px-3 py-1 rounded-lg uppercase transition-all">ลบข้อมูล</button>
             </div>
 
-            <div class="flex-1 overflow-hidden flex flex-col bg-slate-50/20">
+            <div class="flex-1 overflow-hidden flex flex-col bg-slate-50/20 relative">
+                <div id="mapLoader" class="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 hidden">
+                    <div class="loader-spinner mb-4 w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p class="text-indigo-800 font-black text-xs uppercase tracking-widest animate-pulse">กำลังประมวลผลข้อมูล...</p>
+                </div>
+
                 <div class="table-container flex-1 overflow-auto w-full">
                     <table class="job-table w-full whitespace-nowrap">
                         <thead>
                             <tr class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
                                 <th class="col-checkbox px-4 py-3 text-center">#</th>
-                                <th class="col-seq px-4 py-3">ลำดับ</th>
+                                <th class="col-seq px-4 py-3">ลำดับ(ใกล้สุด)</th>
                                 <th class="col-access px-4 py-3">รหัสงาน</th>
                                 <th class="col-customer px-4 py-3">ลูกค้า</th>
                                 <th class="col-phone px-4 py-3">เบอร์โทร</th>
@@ -160,20 +148,9 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                             </tr>
                         </thead>
                         <tbody id="jobTableBody" class="text-[11px] font-bold text-slate-600">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
-
-        <div class="w-full lg:w-[60%] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 overflow-hidden relative h-full min-h-[400px]">
-            <div id="map" class="w-full h-full z-0"></div>
-            <div id="mapLoader" class="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 hidden">
-                <div class="loader-spinner mb-4 w-10 h-10 border-4"></div>
-                <p class="text-indigo-800 font-black text-xs uppercase tracking-widest animate-pulse">กำลังประมวลผลระบบแผนที่...</p>
-            </div>
-            <div class="absolute bottom-4 left-4 z-[10] flex flex-wrap gap-2 max-w-[90%]">
-                 <div id="teamListContainer" class="flex flex-wrap gap-2"></div>
             </div>
         </div>
     </div>
@@ -193,8 +170,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     const IS_ADMIN = <?php echo $isAdmin ? 'true' : 'false'; ?>;
 </script>
