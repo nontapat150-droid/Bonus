@@ -277,22 +277,36 @@ if ($page === 'home') {
             .kpi-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 
             /* === Table → Card List === */
-            .data-table thead { display: none; }
+            .data-table { min-width: 100% !important; border-collapse: separate !important; }
+            .data-table thead { display: none !important; }
+            .data-table tbody { display: block !important; width: 100% !important; }
             .data-table tbody tr {
-                display: flex; flex-direction: column;
+                display: flex !important; flex-direction: column;
                 padding: 14px 16px;
                 border: 1px solid var(--c-border);
                 border-radius: 12px;
                 margin-bottom: 8px;
                 background: var(--c-surface);
                 box-shadow: var(--shadow-1);
+                width: 100% !important;
+                box-sizing: border-box;
             }
             .data-table td {
-                padding: 6px 0;
+                padding: 6px 0 !important;
                 border: none !important;
-                display: flex; justify-content: space-between; align-items: center;
+                display: flex !important; justify-content: space-between; align-items: center;
                 text-align: right;
                 gap: 8px;
+                width: 100% !important;
+                box-sizing: border-box;
+            }
+            .data-table td[colspan] {
+                justify-content: center !important;
+                text-align: center !important;
+                flex-direction: column;
+            }
+            .data-table td[colspan] > * {
+                text-align: center !important;
             }
             .data-table td::before {
                 content: attr(data-label);
@@ -425,7 +439,7 @@ if ($page === 'home') {
                 </div>
 
             <?php else: ?>
-                <div class="card page-view">
+                <div class="page-view">
                 <?php
                 $routes = [
                     'oil' => hasRole(['technician']) ? 'views/modules/oil_form.php' : 'views/modules/oil_report.php',
@@ -437,7 +451,7 @@ if ($page === 'home') {
                 if (array_key_exists($page, $routes) && file_exists($routes[$page])) {
                     include $routes[$page];
                 } else {
-                    echo '<div class="text-center py-16">
+                    echo '<div class="card text-center py-16">
                             <div class="w-20 h-20 bg-[var(--c-surface-2)] rounded-full flex items-center justify-center mx-auto mb-6"><i data-lucide="settings" class="w-10 h-10 text-[var(--c-text-3)] animate-spin-slow" style="animation-duration: 4s;"></i></div>
                             <h2 class="text-xl font-bold text-[var(--c-text-1)] mb-2">Module Under Construction</h2>
                             <p class="text-sm text-[var(--c-text-3)] max-w-sm mx-auto">This section is currently being updated to match the new design system.</p>
