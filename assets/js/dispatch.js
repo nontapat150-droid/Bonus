@@ -404,8 +404,8 @@ async function runOptimizeRoute() {
 }
 
 function showJobPopup(job, color) {
-    // แก้ไข Link นำทางให้ถูกต้อง
-    const gmapsLink = `https://www.google.com/maps/search/?api=1&query=${job.lat},${job.lng}`;
+    const gmapsLink = `https://maps.google.com/?q=${job.lat},${job.lng}`;
+    
     
     // เพิ่มปุ่มกด จบงาน / ไม่สำเร็จ สำหรับช่าง (ถ้าไม่ใช่ Admin ถึงจะเห็นปุ่มนี้)
     let actionButtons = '';
