@@ -12,13 +12,13 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     .animate-row { opacity: 0; animation: fadeSlideUp 0.3s ease-out forwards; }
 
     /* 🌟 Compact Scrollbar */
-    .table-container { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+    .table-container { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; overflow: auto; }
     .table-container::-webkit-scrollbar { width: 5px; height: 5px; }
     .table-container::-webkit-scrollbar-track { background: transparent; }
     .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     
-    /* 🌟 COMPACT TABLE LAYOUT (ตัวทำให้ตารางเล็กลง) */
+    /* 🌟 COMPACT TABLE LAYOUT */
     .job-table { border-collapse: separate; border-spacing: 0; min-width: 900px; width: 100%; }
     .job-table th { 
         position: sticky; top: 0; z-index: 20; background: #f8fafc; 
@@ -29,20 +29,18 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         border-bottom: 1px solid #f1f5f9; padding: 6px 10px; transition: background-color 0.15s; vertical-align: middle;
     }
     
-    /* บังคับตัดคำไม่ให้ขึ้นบรรทัดใหม่ */
     .truncate-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* 🌟 Mobile Optimization */
     @media (max-width: 768px) {
         .dashboard-header { flex-direction: column; align-items: stretch; gap: 0.5rem; }
         .action-buttons { overflow-x: auto; padding-bottom: 4px; white-space: nowrap; }
     }
 </style>
 
-<div class="h-[calc(100vh-80px)] flex flex-col space-y-2 animate-dashboard p-1 md:p-0">
+<div class="flex flex-col space-y-2 animate-dashboard p-1 md:p-0 h-[85vh] md:h-[calc(100vh-80px)]">
     
     <?php if ($isAdmin): ?>
-    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-3 items-center justify-between z-20 dashboard-header">
+    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-3 items-center justify-between z-20 dashboard-header flex-shrink-0">
         <div class="flex items-center space-x-3 min-w-[200px]">
             <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-lg shadow-sm flex items-center justify-center text-sm">🚀</div>
             <div>
@@ -77,14 +75,14 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
     <?php endif; ?>
 
-    <div class="flex flex-col flex-1 gap-2 min-h-0 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative">
+    <div class="flex flex-col flex-1 gap-2 min-h-[400px] md:min-h-0 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative">
         
         <div id="mapLoader" class="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center z-50 hidden transition-opacity duration-200">
             <div class="w-10 h-10 border-3 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-2"></div>
             <p id="loaderText" class="text-indigo-800 font-bold text-xs uppercase tracking-widest animate-pulse">กำลังโหลด...</p>
         </div>
 
-        <div class="px-3 py-2 border-b border-slate-100 bg-slate-50/50 flex flex-wrap gap-2 items-center justify-between">
+        <div class="px-3 py-2 border-b border-slate-100 bg-slate-50/50 flex flex-wrap gap-2 items-center justify-between flex-shrink-0">
             <div class="flex items-center space-x-3">
                 <div class="flex items-center bg-white px-2 py-1 rounded-md border border-slate-200 shadow-sm cursor-pointer">
                     <input type="checkbox" id="selectAllJobs" class="w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-0 cursor-pointer">
@@ -120,16 +118,16 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         </div>
 
         <?php if ($isAdmin): ?>
-        <div id="teamListContainer" class="flex flex-wrap gap-1 px-3 pb-2 pt-1 border-b border-slate-50 bg-slate-50/20"></div>
+        <div id="teamListContainer" class="flex flex-wrap gap-1 px-3 pb-2 pt-1 border-b border-slate-50 bg-slate-50/20 flex-shrink-0"></div>
         <?php endif; ?>
 
-        <div id="selectionActions" class="px-3 py-1.5 bg-rose-50 border-b border-rose-100 flex items-center justify-between hidden transition-all">
+        <div id="selectionActions" class="px-3 py-1.5 bg-rose-50 border-b border-rose-100 flex items-center justify-between hidden transition-all flex-shrink-0">
             <p class="text-[10px] font-bold text-rose-800">เลือกอยู่ <span id="selectedCount" class="font-black">0</span> งาน</p>
             <button id="bulkDeleteBtn" class="text-[9px] font-black bg-rose-500 hover:bg-rose-600 text-white px-3 py-1 rounded-md uppercase transition-all shadow-sm">ลบที่เลือก</button>
         </div>
 
-        <div class="flex-1 overflow-hidden flex flex-col bg-white">
-            <div class="table-container flex-1 w-full overflow-x-auto">
+        <div class="flex-1 overflow-hidden relative bg-white">
+            <div class="table-container absolute inset-0 w-full h-full overflow-auto">
                 <table class="job-table">
                     <thead>
                         <tr>
