@@ -10,7 +10,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 animate__animated animate__fadeIn">
-    <div class="lg:col-span-5 card overflow-hidden flex flex-col z-[90]">
+    <div class="lg:col-span-5 card overflow-hidden flex flex-col">
         <div class="bg-gradient-to-br from-indigo-600 to-violet-700 px-6 py-6 text-center text-white">
             <h2 class="text-2xl font-black tracking-tight flex items-center justify-center gap-2">
                 <span class="text-3xl"><i data-lucide="camera" class="w-5 h-5 inline-block"></i></span> เช็คอินเข้างาน
@@ -38,7 +38,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 
     <div class="lg:col-span-7 flex flex-col gap-6">
-        <div class="card z-[90]">
+        <div class="card">
             <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
                 <i data-lucide="bar-chart-2" class="w-5 h-5 inline-block"></i> สรุปการเข้างาน <span id="dashLabel" class="ml-2 text-sm text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">-</span>
             </h3>
