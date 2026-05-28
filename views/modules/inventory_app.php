@@ -95,42 +95,49 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
     <div id="view-inbound" class="inv-view hidden space-y-6">
         <div class="card border-t-4 border-t-emerald-500">
-            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 border-b pb-4">
-                <h3 class="font-bold text-gray-700 text-lg flex items-center"><span class="text-emerald-500 mr-2"><i data-lucide="download" class="w-5 h-5 inline-block"></i></span> สแกนและรับเข้าสต็อก</h3>
-                <div class="inline-flex bg-gray-100 rounded-full p-1 flex-wrap justify-center gap-1">
-                    <button id="btnModeSn" onclick="setInboundMode('SN')" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all flex items-center">
-                        <i data-lucide="tag" class="w-5 h-5 inline-block"></i> มี SN (สแกนทีละชิ้น)
-                    </button>
-                    <button id="btnModeQty" onclick="setInboundMode('QTY')" class="px-4 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-700 transition-all flex items-center">
-                        <i data-lucide="package" class="w-5 h-5 inline-block"></i> นับจำนวน (วัสดุสิ้นเปลือง)
-                    </button>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
-                <div class="relative">
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">ชื่อสินค้า</label>
-                    <input type="text" id="mainProductInput" class="w-full input" placeholder="คลิกเพื่อเลือก หรือพิมพ์ชื่อสินค้าใหม่..." autocomplete="off">
-                    <div id="productDropdown" class="absolute z-[50] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
+            <h3 class="font-bold text-gray-700 text-lg flex items-center mb-6"><span class="text-emerald-500 mr-2"><i data-lucide="download" class="w-5 h-5 inline-block"></i></span> นำเข้าสินค้าด้วยการสแกน (ทีละรายการ)</h3>
+            
+            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-5">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
+                    <h4 class="font-bold text-slate-700 flex items-center"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs mr-2 uppercase tracking-widest">Step 1</span> เลือกระบบการรับเข้า</h4>
+                    <div class="inline-flex bg-white rounded-lg p-1 border border-slate-200 shadow-sm flex-wrap gap-1">
+                        <button id="btnModeSn" onclick="setInboundMode('SN')" class="px-4 py-2 rounded-md text-sm font-bold bg-emerald-50 text-emerald-700 transition-all flex items-center">
+                            <i data-lucide="tag" class="w-4 h-4 inline-block mr-1"></i> มี SN (สแกนทีละชิ้น)
+                        </button>
+                        <button id="btnModeQty" onclick="setInboundMode('QTY')" class="px-4 py-2 rounded-md text-sm font-medium text-slate-500 hover:text-slate-700 transition-all flex items-center">
+                            <i data-lucide="package" class="w-4 h-4 inline-block mr-1"></i> นับจำนวน (วัสดุสิ้นเปลือง)
+                        </button>
+                    </div>
                 </div>
 
-                <div id="areaModelSelect" class="relative">
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">รุ่น (Model)</label>
-                    <input type="text" id="mainModelInput" class="w-full input" placeholder="คลิกเพื่อเลือก หรือพิมพ์รุ่นใหม่..." autocomplete="off">
-                    <div id="modelDropdown" class="absolute z-[50] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
-                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                    <div class="md:col-span-2">
+                        <h4 class="font-bold text-slate-700 flex items-center mb-3"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs mr-2 uppercase tracking-widest">Step 2</span> ค้นหาสินค้าและรุ่น</h4>
+                    </div>
+                    <div class="relative mt-0">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">ชื่อสินค้า</label>
+                        <input type="text" id="mainProductInput" class="w-full input font-bold" placeholder="คลิกเพื่อเลือก หรือพิมพ์ชื่อสินค้าใหม่..." autocomplete="off">
+                        <div id="productDropdown" class="absolute z-[50] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
+                    </div>
 
-                <div id="areaInputSn" class="md:col-span-2 mt-4">
-                    <label class="block text-xs font-bold text-emerald-600 uppercase tracking-widest mb-2">สแกนบาร์โค้ด SN</label>
-                    <input type="text" id="scanInput" class="w-full h-16 text-center text-2xl font-bold font-mono tracking-widest border-2 border-dashed border-gray-300 rounded-xl focus:border-emerald-500 focus:bg-emerald-50 focus:text-emerald-700 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed" placeholder="เลือกสินค้าและรุ่นก่อนสแกน..." autocomplete="off" disabled>
-                </div>
+                    <div id="areaModelSelect" class="relative">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">รุ่น (Model)</label>
+                        <input type="text" id="mainModelInput" class="w-full input font-bold" placeholder="คลิกเพื่อเลือก หรือพิมพ์รุ่นใหม่..." autocomplete="off">
+                        <div id="modelDropdown" class="absolute z-[50] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
+                    </div>
 
-                <div id="areaInputQty" class="md:col-span-2 mt-4 hidden">
-                    <label class="block text-xs font-bold text-yellow-600 uppercase tracking-widest mb-2">ระบุจำนวนที่รับเข้า (รวมในสต็อกเดียว)</label>
-                    <div class="flex gap-2">
-                        <input type="number" id="inboundQty" class="w-1/2 h-16 text-center text-2xl font-bold border-2 border-gray-300 rounded-xl focus:border-yellow-500 focus:ring-0" placeholder="จำนวน" min="1">
-                        <input type="text" id="inboundUnit" class="w-1/4 h-16 text-center font-bold border-2 border-gray-300 rounded-xl focus:border-yellow-500 focus:ring-0" placeholder="หน่วย (เช่น ชิ้น)">
-                        <button onclick="saveInboundQty()" class="w-1/4 h-16 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl shadow-md text-lg transition-colors">บันทึก</button>
+                    <div id="areaInputSn" class="md:col-span-2 mt-4 pt-4 border-t border-slate-200">
+                        <h4 class="font-bold text-slate-700 flex items-center mb-3"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs mr-2 uppercase tracking-widest">Step 3</span> สแกนบาร์โค้ด</h4>
+                        <input type="text" id="scanInput" class="w-full h-16 text-center text-2xl font-bold font-mono tracking-widest border-2 border-dashed border-emerald-300 rounded-xl focus:border-emerald-500 focus:bg-emerald-50 focus:text-emerald-700 transition-all disabled:bg-slate-100 disabled:border-slate-200 disabled:cursor-not-allowed" placeholder="เลือกสินค้าและรุ่นก่อนสแกน..." autocomplete="off" disabled>
+                    </div>
+
+                    <div id="areaInputQty" class="md:col-span-2 mt-4 pt-4 border-t border-slate-200 hidden">
+                        <h4 class="font-bold text-slate-700 flex items-center mb-3"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs mr-2 uppercase tracking-widest">Step 3</span> ระบุจำนวนที่รับเข้า</h4>
+                        <div class="flex gap-2">
+                            <input type="number" id="inboundQty" class="w-1/2 h-16 text-center text-2xl font-bold border-2 border-slate-300 rounded-xl focus:border-yellow-500 focus:ring-0" placeholder="จำนวน" min="1">
+                            <input type="text" id="inboundUnit" class="w-1/4 h-16 text-center font-bold border-2 border-slate-300 rounded-xl focus:border-yellow-500 focus:ring-0" placeholder="หน่วย (เช่น ชิ้น)">
+                            <button onclick="saveInboundQty()" class="w-1/4 h-16 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-xl shadow-md text-lg transition-colors">บันทึก</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -140,7 +147,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             <h3 class="font-bold text-gray-700 mb-4 text-lg"><i data-lucide="bar-chart-2" class="w-5 h-5 inline-block"></i> นำเข้าสินค้าทีละหลายรายการ (Excel)</h3>  
             
             <div class="w-full max-w-md mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p class="text-sm font-semibold text-blue-900 mb-2"><i data-lucide="clipboard" class="w-5 h-5 inline-block"></i> รูปแบบไฟล์ที่ถูกต้อง:</p>
+                <p class="text-sm font-semibold text-blue-900 mb-2"><i data-lucide="clipboard" class="w-4 h-4 inline-block"></i> รูปแบบไฟล์ที่ถูกต้อง:</p>
                 <ul class="text-xs text-blue-800 space-y-1 ml-4 list-disc">
                     <li>ไฟล์ต้องเป็น Excel (.xlsx หรือ .xls)</li>
                     <li>คอลัมน์ที่ 1: <b>ชื่อสินค้า</b> (บังคับ)</li>
@@ -152,58 +159,70 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
             <div class="flex flex-col sm:flex-row gap-3 w-full max-w-md">
                 <input type="file" id="excelImport" accept=".xlsx, .xls" class="hidden">
-                <button onclick="document.getElementById('excelImport').click()" class="flex-1 bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold py-2 px-6 rounded-lg text-sm transition-colors flex items-center justify-center">
+                <button onclick="document.getElementById('excelImport').click()" class="flex-1 bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold py-3 px-6 rounded-lg text-sm transition-colors flex items-center justify-center">
                     <span class="mr-2 text-lg"><i data-lucide="folder" class="w-5 h-5 inline-block"></i></span> เลือกไฟล์ Excel
                 </button>
-                <button onclick="downloadTemplate()" class="flex-1 bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold py-2 px-6 rounded-lg text-sm transition-colors flex items-center justify-center">
+                <button onclick="downloadTemplate()" class="flex-1 bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold py-3 px-6 rounded-lg text-sm transition-colors flex items-center justify-center">
                     <span class="mr-2 text-lg"><i data-lucide="arrow-down" class="w-5 h-5 inline-block"></i></span> ดาวน์โหลด Template
                 </button>
             </div>
 
             <div id="excelPreview" class="mt-4 w-full hidden max-w-md">
                 <p class="text-sm text-green-600 font-bold text-center mb-2" id="excelCount"></p>
-                <button id="confirmExcelBtn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors"><i data-lucide="check" class="w-5 h-5 inline-block"></i> ยืนยันนำเข้าข้อมูลทั้งหมด</button>
+                <button id="confirmExcelBtn" class="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold hover:bg-emerald-700 transition-colors shadow-btn"><i data-lucide="check-circle" class="w-5 h-5 inline-block"></i> ยืนยันนำเข้าข้อมูลทั้งหมด</button>
             </div>
         </div>
     </div>
 
     <div id="view-outbound" class="inv-view hidden space-y-6">
-        <div class="card">
-            <h3 class="font-bold text-gray-700 mb-4 border-b pb-2 flex items-center"><span class="text-red-500 mr-2 text-xl"><i data-lucide="upload" class="w-5 h-5 inline-block"></i></span> สแกนเบิกสินค้าออก</h3>
+        <div class="card border-t-4 border-t-rose-500">
+            <h3 class="font-bold text-gray-700 mb-6 flex items-center text-lg"><span class="text-rose-500 mr-2 text-xl"><i data-lucide="upload" class="w-5 h-5 inline-block"></i></span> สแกนเบิกสินค้าออก</h3>
             
+            <h4 class="font-bold text-slate-700 flex items-center mb-3"><span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded text-xs mr-2 uppercase tracking-widest">Step 1</span> เพิ่มสินค้าลงคิวเบิก</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                    <label class="block text-sm font-bold text-gray-700 mb-2">เบิกสินค้ามี SN (ทีละชิ้น)</label>
+                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                    <label class="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">เบิกสินค้ามี SN (ทีละชิ้น)</label>
                     <div class="flex gap-2">
-                        <input type="text" id="out_sn" placeholder="ยิงบาร์โค้ด SN ตรงนี้..." class="flex-1 px-4 py-2 input font-mono">
-                        <button id="addOutboundBtn" class="bg-gray-800 text-white px-4 rounded-lg font-bold hover:bg-gray-900 transition-colors text-sm">เพิ่มลงคิว</button>
+                        <input type="text" id="out_sn" placeholder="ยิงบาร์โค้ด SN ตรงนี้..." class="flex-1 px-4 py-3 input font-mono">
+                        <button id="addOutboundBtn" class="bg-slate-800 text-white px-5 rounded-xl font-bold hover:bg-slate-900 transition-colors text-sm">เพิ่ม</button>
                     </div>
                 </div>
 
-                <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
-                    <label class="block text-sm font-bold text-yellow-800 mb-2">เบิกวัสดุสิ้นเปลือง (นับจำนวน)</label>
+                <div class="bg-yellow-50 p-5 rounded-2xl border border-yellow-200">
+                    <label class="block text-[10px] font-black uppercase tracking-widest text-yellow-700 mb-2">เบิกวัสดุสิ้นเปลือง (นับจำนวน)</label>
                     <div class="flex gap-2">
-                        <select id="outboundConsumableSelect" class="flex-1 px-3 py-2 border border-yellow-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 font-bold text-slate-700 shadow-sm cursor-pointer">
+                        <select id="outboundConsumableSelect" class="flex-1 px-3 py-3 input border-yellow-300 focus:ring-yellow-500 font-bold text-slate-700 cursor-pointer">
                             <option value="">-- เลือกวัสดุ --</option>
                         </select>
-                        <input type="number" id="outboundConsumableQty" placeholder="จำนวน" min="0.1" step="0.1" class="w-24 px-3 py-2 border border-yellow-300 rounded-lg text-sm focus:ring-2 focus:ring-yellow-500 font-bold text-center">
-                        <button id="addOutboundConsumableBtn" class="bg-yellow-600 text-white px-4 rounded-lg font-bold hover:bg-yellow-700 transition-colors text-sm">เพิ่ม</button>
+                        <input type="number" id="outboundConsumableQty" placeholder="จำนวน" min="0.1" step="0.1" class="w-24 px-3 py-3 input border-yellow-300 focus:ring-yellow-500 font-bold text-center">
+                        <button id="addOutboundConsumableBtn" class="bg-yellow-600 text-white px-5 rounded-xl font-bold hover:bg-yellow-700 transition-colors text-sm">เพิ่ม</button>
                     </div>
                 </div>
             </div>
 
-            <div class="border rounded-lg overflow-hidden w-full overflow-x-auto">
+            <h4 class="font-bold text-slate-700 flex items-center mb-3"><span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded text-xs mr-2 uppercase tracking-widest">Step 2</span> ตรวจสอบและยืนยัน</h4>
+            <div class="border rounded-xl overflow-hidden w-full overflow-x-auto shadow-sm">
                 <table class="w-full text-sm text-left text-gray-500 whitespace-nowrap">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                    <thead class="text-xs text-gray-700 uppercase bg-slate-100">
                         <tr>
-                            <th class="px-6 py-3">SN / รหัส</th>
-                            <th class="px-6 py-3">ชื่อสินค้า - รุ่น</th>
+                            <th class="px-6 py-4">SN / รหัส</th>
+                            <th class="px-6 py-4">ชื่อสินค้า - รุ่น</th>
                             <th class="px-6 py-3 text-center">จำนวน (หน่วย)</th>
                             <th class="px-6 py-3 text-center">นำออก</th>
                         </tr>
                     </thead>
                     <tbody id="stagingTableBody" class="divide-y divide-gray-100">
-                        <tr id="emptyStaging"><td colspan="4" class="px-6 py-8 text-center text-gray-400">ยังไม่มีรายการสแกน รอการเบิก</td></tr>
+                        <tr id="emptyStaging">
+                            <td colspan="4" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center justify-center">
+                                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                                        <i data-lucide="package-open" class="w-8 h-8 text-slate-300"></i>
+                                    </div>
+                                    <p class="font-bold text-slate-500 text-base">ยังไม่มีรายการในคิว</p>
+                                    <p class="text-xs text-slate-400 mt-1">กรุณาสแกน SN หรือเลือกวัสดุเพื่อเริ่มการเบิกออก</p>
+                                </div>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
