@@ -4,7 +4,6 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 ?>
 
 <div class="space-y-6">
-    <!-- Header & Date Filter -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div>
             <h2 class="text-2xl font-bold text-gray-800 flex items-center">
@@ -23,9 +22,9 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             </button>
             <?php if (hasRole(['admin', 'super_admin'])): ?>
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <input type="file" id="oilExcelImport" accept=".xlsx,.xls" class="hidden">
+                <input type="file" id="oilExcelImport" accept=".xlsx,.xls,.csv" class="hidden">
                 <button type="button" id="oilImportBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
-                    📥 นำเข้า Excel
+                    📥 นำเข้า Excel/CSV
                 </button>
                 <button type="button" id="oilConfirmExcelBtn" class="bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm hidden">
                     ยืนยันนำเข้า
@@ -44,12 +43,11 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
         <?php if (hasRole(['admin', 'super_admin'])): ?>
         <div id="oilExcelPreview" class="hidden mt-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-sm text-emerald-700">
             <p id="oilExcelCount" class="font-bold"></p>
-            <p class="mt-2 text-slate-600">ตรวจสอบข้อมูลใน Excel แล้วกดปุ่มยืนยันเพื่อนำเข้าข้อมูล</p>
+            <p class="mt-2 text-slate-600">ตรวจสอบข้อมูลในไฟล์แล้วกดปุ่มยืนยันเพื่อนำเข้าข้อมูล</p>
         </div>
         <?php endif; ?>
     </div>
 
-    <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md p-6 text-white">
             <h3 class="text-blue-100 text-sm font-medium">ค่าใช้จ่ายรวม</h3>
@@ -69,16 +67,13 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
         </div>
     </div>
 
-    <!-- Charts Area -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Cost Bar Chart -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
             <h3 class="font-bold text-gray-700 mb-4">เปรียบเทียบค่าใช้จ่ายรายวัน (บาท)</h3>
             <div class="relative h-64 w-full">
                 <canvas id="costChart"></canvas>
             </div>
         </div>
-        <!-- Liters Line Chart -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
             <h3 class="font-bold text-gray-700 mb-4">แนวโน้มปริมาณการใช้น้ำมัน (ลิตร)</h3>
             <div class="relative h-64 w-full">
@@ -87,39 +82,37 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
         </div>
     </div>
 
-    <!-- Data Table -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
             <h3 class="font-bold text-gray-700">ประวัติการเบิก</h3>
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-500">
+            <table class="w-full text-sm text-left text-gray-500 whitespace-nowrap">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3">วันที่/เวลา</th>
-                        <th class="px-6 py-3">ช่าง (ผู้เบิก)</th>
-                        <th class="px-6 py-3">ทีม/ป้ายทะเบียน</th>
-                        <th class="px-6 py-3 text-center">เคสงาน</th>
-                        <th class="px-6 py-3 text-right">เลขไมล์</th>
-                        <th class="px-6 py-3 text-right">จำนวนลิตร</th>
+                        <th class="px-6 py-3">วันที่</th>
+                        <th class="px-6 py-3">ทะเบียนรถ</th>
+                        <th class="px-6 py-3 text-right">เลขไมล์ปัจจุบัน</th>
+                        <th class="px-6 py-3 text-right">จำนวนน้ำมัน(ลิตร)</th>
+                        <th class="px-6 py-3 text-right text-gray-800">ยอดเงิน(บาท)</th>
+                        <th class="px-6 py-3 text-right">ระยะทางที่วิ่ง(กม.)</th>
+                        <th class="px-6 py-3 text-right">บาท/กม.</th>
                         <th class="px-6 py-3 text-right">ราคา/ลิตร</th>
-                        <th class="px-6 py-3 text-right text-gray-800">ยอดรวม (บาท)</th>
+                        <th class="px-6 py-3 text-center">ชื่อผู้เติม</th>
                         <th class="px-6 py-3 text-center">หลักฐาน</th>
                         <?php if (hasRole(['admin', 'super_admin'])): ?>
-                        <th class="px-6 py-3 text-center">การจัดการ</th>
+                        <th class="px-6 py-3 text-center">จัดการ</th>
                         <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody id="oilTableBody" class="divide-y divide-gray-100">
-                    <!-- Data injected via JS -->
-                    <tr><td colspan="9" class="px-6 py-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
+                    <tr><td colspan="11" class="px-6 py-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<!-- Image Modal -->
 <div id="imageModal" class="fixed inset-0 z-[100] hidden bg-black bg-opacity-80 flex justify-center items-center p-4">
     <div class="bg-white rounded-xl overflow-hidden max-w-4xl w-full flex flex-col max-h-[90vh]">
         <div class="p-4 border-b flex justify-between items-center bg-gray-50">
@@ -127,16 +120,13 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             <button onclick="closeImageModal()" class="text-gray-500 hover:text-red-500 text-xl font-bold">&times;</button>
         </div>
         <div id="modalImageGrid" class="p-4 grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto">
-            <!-- Images injected via JS -->
-        </div>
+            </div>
     </div>
 </div>
 
-<!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <?php if (hasRole(['admin', 'super_admin'])): ?>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <?php endif; ?>
-<!-- Load Oil Report Logic -->
 <script>window.IS_ADMIN = <?php echo hasRole(['admin','super_admin']) ? 'true' : 'false'; ?>;</script>
 <script src="assets/js/oil_report.js"></script>
