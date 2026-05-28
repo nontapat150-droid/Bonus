@@ -6,7 +6,6 @@ require_once '../../config/auth.php';
 header('Content-Type: application/json');
 requireLogin();
 
-// Allow Admin and Super Admin
 if (!hasRole(['admin', 'super_admin'])) {
     echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
@@ -25,7 +24,6 @@ if ($start_date && $end_date) {
 }
 
 try {
-    // 1. Fetch Aggregated Stats
     $statsSql = "SELECT
                     COUNT(o.id) as total_records,
                     SUM(o.liters) as total_liters,
@@ -36,9 +34,8 @@ try {
     $stmtStats->execute($params);
     $stats = $stmtStats->fetch();
 
-    // 2. Fetch Chart Data (Grouped by Date)
     $chartSql = "SELECT
-                    DATE(o.date_recorded) as record_date,
+                    DATE_FORMAT(o.date_recorded, '%d/%m/%Y') as record_date,
                     SUM(o.total_price) as daily_cost,
                     SUM(o.liters) as daily_liters
                  FROM oil_records o
@@ -49,9 +46,10 @@ try {
     $stmtChart->execute($params);
     $chartData = $stmtChart->fetchAll();
 
-    // 3. Fetch Detailed Table Data with Images + ข้อมูลทีม + เคสงาน
+    // เพิ่มคอลัมน์ใหม่ o.distance, o.baht_per_km, o.filler_name ที่เราดึงมาจาก Excel เข้าไปในการค้นหา
     $tableSql = "SELECT
                     o.id, o.license_plate, o.liters, o.mileage, o.price_per_liter, o.total_price, o.date_recorded,
+                    o.distance, o.baht_per_km, o.filler_name,
                     u.full_name as tech_name,
                     t.team_name,
                     (SELECT COUNT(*) FROM jobs j WHERE j.team_id = u.team_id) as team_job_count,
@@ -67,7 +65,6 @@ try {
     $stmtTable->execute($params);
     $tableData = $stmtTable->fetchAll();
 
-    // 4. นับจำนวนเคสงานทั้งหมดของทุกทีม
     $stmtJobs = $pdo->query("SELECT COUNT(*) as total_jobs FROM jobs");
     $jobsData = $stmtJobs->fetch();
 
@@ -86,3 +83,4 @@ try {
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
+?>

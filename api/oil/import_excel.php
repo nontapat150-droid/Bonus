@@ -19,52 +19,59 @@ if (!is_array($records) || empty($records)) {
     exit;
 }
 
+// สร้างคอลัมน์ในฐานข้อมูลอัตโนมัติหากยังไม่มี
+$columnsToAdd = [
+    "distance" => "DECIMAL(10,2) DEFAULT 0",
+    "baht_per_km" => "DECIMAL(10,2) DEFAULT 0",
+    "filler_name" => "VARCHAR(150) DEFAULT NULL"
+];
+
+foreach ($columnsToAdd as $col => $def) {
+    try {
+        $pdo->exec("ALTER TABLE oil_records ADD COLUMN `$col` $def");
+    } catch (PDOException $e) {
+        // คอลัมน์มีอยู่แล้ว ข้ามไป
+    }
+}
+
 $errors = [];
 $inserted = 0;
 
 try {
     $pdo->beginTransaction();
 
-    // Resolve tech_id from session; fallback to an admin/super_admin if missing or invalid
-    $sessionTechId = $_SESSION['user_id'] ?? null;
-    $techId = null;
-    if ($sessionTechId) {
-        $check = $pdo->prepare('SELECT id FROM users WHERE id = ? LIMIT 1');
-        $check->execute([$sessionTechId]);
-        $found = $check->fetchColumn();
-        if ($found) $techId = (int)$found;
-    }
-    if (!$techId) {
-        $fallback = $pdo->query("SELECT id FROM users WHERE role IN ('admin','super_admin') ORDER BY id LIMIT 1")->fetchColumn();
-        if ($fallback) $techId = (int)$fallback;
-    }
-    // as a last resort, try id=1 (often seeded superadmin)
-    if (!$techId) $techId = 1;
-
-    $stmt = $pdo->prepare("INSERT INTO oil_records (tech_id, license_plate, liters, mileage, price_per_liter, total_price, date_recorded) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO oil_records (tech_id, license_plate, liters, mileage, price_per_liter, total_price, date_recorded, distance, baht_per_km, filler_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
     foreach ($records as $index => $row) {
         $license_plate = trim($row['license_plate'] ?? '');
         $liters = floatval($row['liters'] ?? 0);
         $mileage = intval($row['mileage'] ?? 0);
         $price_per_liter = floatval($row['price_per_liter'] ?? 0);
-        $total_price = isset($row['total_price']) ? floatval($row['total_price']) : round($liters * $price_per_liter, 2);
+        $total_price = floatval($row['total_price'] ?? 0);
+        $distance = floatval($row['distance'] ?? 0);
+        $baht_per_km = floatval($row['baht_per_km'] ?? 0);
+        $filler_name = trim($row['filler_name'] ?? '');
         $date_recorded = trim($row['date_recorded'] ?? '');
 
-        if ($license_plate === '' || $liters <= 0 || $mileage < 0 || $price_per_liter <= 0) {
-            $errors[] = "แถวที่ " . ($index + 2) . " ข้อมูลไม่ครบถ้วน: ป้ายทะเบียน, ลิตร, ไมล์, หรือราคาไม่ถูกต้อง";
+        // ป้องกันค่าวันที่เป็น null หรือมีปัญหา
+        if ($date_recorded === '' || $date_recorded === null) {
+            $date_recorded = date('Y-m-d H:i:s');
+        }
+
+        if ($license_plate === '' || $liters <= 0 || $mileage < 0) {
+            $errors[] = "แถวที่ " . ($index + 2) . " ข้อมูลไม่ครบถ้วน";
             continue;
         }
 
-        if ($date_recorded !== '') {
-            $timestamp = strtotime($date_recorded);
-            if ($timestamp === false) {
-                $errors[] = "แถวที่ " . ($index + 2) . " รูปแบบวันที่ไม่ถูกต้อง: {$date_recorded}";
-                continue;
+        // ค้นหา Tech ID ในระบบ ถ้าเจอให้ผูกชื่อ ถ้าไม่เจอใช้ default = 1
+        $techId = 1; 
+        if ($filler_name !== '') {
+            $stmtFind = $pdo->prepare("SELECT id FROM users WHERE full_name = ? LIMIT 1");
+            $stmtFind->execute([$filler_name]);
+            $found = $stmtFind->fetchColumn();
+            if ($found) {
+                $techId = (int)$found;
             }
-            $date_recorded = date('Y-m-d H:i:s', $timestamp);
-        } else {
-            $date_recorded = date('Y-m-d H:i:s');
         }
 
         $stmt->execute([
@@ -74,56 +81,20 @@ try {
             $mileage,
             $price_per_liter,
             $total_price,
-            $date_recorded
+            $date_recorded,
+            $distance,
+            $baht_per_km,
+            $filler_name
         ]);
         $inserted++;
     }
 
     $pdo->commit();
-    // If there were any errors, write structured log for debugging
-    $logInfo = null;
-    if (!empty($errors)) {
-        try {
-            $logDir = __DIR__ . '/../../uploads/import_logs';
-            if (!is_dir($logDir)) {
-                mkdir($logDir, 0755, true);
-            }
-            $logFile = $logDir . '/import_excel_' . date('Ymd_His') . '.log';
-            $lines = [];
-            foreach ($errors as $err) {
-                // If an error is already a JSON-able array, leave as-is
-                if (is_array($err)) {
-                    $lines[] = json_encode($err, JSON_UNESCAPED_UNICODE);
-                } else {
-                    $lines[] = json_encode(['message' => $err], JSON_UNESCAPED_UNICODE);
-                }
-            }
-            file_put_contents($logFile, implode(PHP_EOL, $lines) . PHP_EOL, FILE_APPEND | LOCK_EX);
-            $logInfo = basename($logFile);
-        } catch (Exception $le) {
-            // If logging fails, include minimal note in response
-            $logInfo = null;
-        }
-    }
-
-    echo json_encode(['success' => true, 'inserted' => $inserted, 'errors' => $errors, 'log' => $logInfo]);
+    echo json_encode(['success' => true, 'inserted' => $inserted, 'errors' => $errors]);
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    // Write exception details to log for debugging
-    try {
-        $logDir = __DIR__ . '/../../uploads/import_logs';
-        if (!is_dir($logDir)) mkdir($logDir, 0755, true);
-        $errFile = $logDir . '/import_exception_' . date('Ymd_His') . '.log';
-        $details = [
-            'message' => $e->getMessage(),
-            'code' => $e->getCode(),
-            'trace' => $e->getTraceAsString()
-        ];
-        file_put_contents($errFile, json_encode($details, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . PHP_EOL, FILE_APPEND | LOCK_EX);
-    } catch (Exception $le) {
-        // ignore logging failure
-    }
-    echo json_encode(['success' => false, 'error' => $e->getMessage(), 'log' => isset($errFile) ? basename($errFile) : null]);
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
+?>
