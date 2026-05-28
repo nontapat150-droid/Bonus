@@ -4,6 +4,9 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 $isAdmin = hasRole(['admin', 'super_admin']);
 ?>
 
+<script>
+    window.USER_ROLE = '<?php echo $_SESSION['role'] ?? 'guest'; ?>';
+</script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 animate__animated animate__fadeIn">
@@ -41,16 +44,16 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             </h3>
             <div class="grid grid-cols-3 gap-4">
                 <div class="bg-blue-50 border border-blue-100 p-4 rounded-2xl text-center">
-                    <p class="text-xs text-blue-600 font-bold mb-1">วันทำงานทั้งหมด</p>
-                    <p class="text-3xl font-black text-blue-800" id="dashTotal">0</p>
+                    <p class="text-xs text-blue-600 font-bold mb-1">วันทั้งหมด</p>
+                    <p class="text-3xl md:text-4xl font-black text-blue-800" id="dashTotal">0</p>
                 </div>
                 <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl text-center">
-                    <p class="text-xs text-emerald-600 font-bold mb-1">มาตรงเวลา</p>
-                    <p class="text-3xl font-black text-emerald-800" id="dashOntime">0</p>
+                    <p class="text-xs text-emerald-600 font-bold mb-1">ตรงเวลา</p>
+                    <p class="text-3xl md:text-4xl font-black text-emerald-800" id="dashOntime">0</p>
                 </div>
                 <div class="bg-orange-50 border border-orange-100 p-4 rounded-2xl text-center">
                     <p class="text-xs text-orange-600 font-bold mb-1">มาสาย</p>
-                    <p class="text-3xl font-black text-orange-800" id="dashLate">0</p>
+                    <p class="text-3xl md:text-4xl font-black text-orange-800" id="dashLate">0</p>
                 </div>
             </div>
         </div>
@@ -61,8 +64,8 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 <h3 class="font-bold text-gray-800 flex items-center"><span class="mr-2">⚙️</span> ตั้งค่าระบบ (แอดมิน)</h3>
                 <p class="text-xs text-gray-500 mt-1">กำหนดเวลาที่ถือว่า "มาสาย"</p>
             </div>
-            <div class="flex items-center gap-2">
-                <input type="time" id="lateTimeInput" class="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-bold text-gray-700">
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <input type="time" id="lateTimeInput" class="flex-1 sm:w-auto px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-bold text-gray-700">
                 <button onclick="saveSettings()" class="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold hover:bg-slate-900 transition-colors">บันทึก</button>
             </div>
         </div>
@@ -73,7 +76,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 <h3 class="font-bold text-gray-800">🕒 ประวัติเช็คอิน</h3>
                 <div class="flex items-center gap-2 flex-wrap">
                     <input type="date" id="filterDate" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                    <span class="text-sm text-gray-400">หรือ</span>
+                    <span class="text-sm text-gray-400 hidden md:inline">หรือ</span>
                     <input type="month" id="filterMonth" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                     <button onclick="loadCheckinHistory()" class="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-indigo-100">ค้นหา</button>
                     <?php if($isAdmin): ?>
@@ -81,21 +84,40 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <?php endif; ?>
                 </div>
             </div>
-            <div class="overflow-x-auto flex-1 w-full">
-                <table class="w-full text-sm text-left whitespace-nowrap">
-                    <thead class="text-xs text-slate-500 uppercase bg-slate-50 rounded-lg">
+            <div class="w-full flex-1">
+                <table class="w-full text-sm text-left block md:table">
+                    <thead class="hidden md:table-header-group text-xs text-slate-500 uppercase bg-slate-50 rounded-lg">
                         <tr>
                             <th class="px-4 py-3 rounded-l-lg">วันที่ - เวลา</th>
                             <th class="px-4 py-3 text-center">รูปถ่าย</th>
                             <th class="px-4 py-3">พนักงาน</th>
-                            <th class="px-4 py-3 text-center rounded-r-lg">สถานะ</th>
+                            <th class="px-4 py-3 text-center">สถานะ</th>
+                            <th class="px-4 py-3 text-center rounded-r-lg">จัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="historyTableBody" class="divide-y divide-gray-100">
-                        <tr><td colspan="4" class="text-center py-8 text-gray-400">กำลังโหลด...</td></tr>
-                    </tbody>
+                    <tbody id="historyTableBody" class="block md:table-row-group divide-y divide-gray-100">
+                        </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+</div>
+
+<div id="editCheckinModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-[95%] md:max-w-sm overflow-hidden shadow-2xl animate__animated animate__zoomIn">
+        <div class="bg-indigo-600 p-4 flex justify-between items-center text-white">
+            <h3 class="font-bold">✏️ แก้ไขเวลาเช็คอิน</h3>
+            <button onclick="closeEditCheckinModal()" class="text-white hover:text-rose-300 font-black text-xl">&times;</button>
+        </div>
+        <div class="p-6">
+            <input type="hidden" id="edit_checkin_id">
+            <label class="block text-sm font-bold text-gray-700 mb-2">เวลาเข้างานที่ต้องการแก้</label>
+            <input type="datetime-local" id="edit_checkin_time" class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 font-bold text-gray-800">
+            <p class="text-xs text-slate-400 mt-2">* ระบบจะบันทึกเวลาใหม่ และคำนวณสถานะสาย/ตรงเวลา ใหม่อัตโนมัติ</p>
+        </div>
+        <div class="p-4 bg-slate-50 border-t flex justify-end gap-2">
+            <button onclick="closeEditCheckinModal()" class="px-4 py-2 bg-white text-slate-600 rounded-xl font-bold border border-slate-200">ยกเลิก</button>
+            <button onclick="saveEditCheckin()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700">บันทึกเวลา</button>
         </div>
     </div>
 </div>
