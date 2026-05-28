@@ -404,10 +404,10 @@ async function runOptimizeRoute() {
 }
 
 function showJobPopup(job, color) {
-    const gmapsLink = `https://maps.google.com/?q={job.lat},{job.lng}`;
+    // ลิงก์สำหรับเปิดแอป Google Maps พร้อมเริ่มนำทางไปยังพิกัดเป้าหมาย
+    const gmapsLink = `https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`;
     
-    
-    // เพิ่มปุ่มกด จบงาน / ไม่สำเร็จ สำหรับช่าง (ถ้าไม่ใช่ Admin ถึงจะเห็นปุ่มนี้)
+    // เพิ่มปุ่มกด จบงาน / ไม่สำเร็จ สำหรับช่าง
     let actionButtons = '';
     if (!IS_ADMIN) {
         actionButtons = `
