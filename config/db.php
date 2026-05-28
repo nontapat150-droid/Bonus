@@ -1,11 +1,11 @@
 <?php
 // config/db.php
 
-$host = '127.0.0.1';
-$db   = 'smart_business_suite';
-$user = 'root'; // Adjust based on XAMPP default
-$pass = '';     // Adjust based on XAMPP default
-$charset = 'utf8mb4';
+$host = 'sql207.infinityfree.com';
+$db   = 'if0_42036532_ro';
+$user = 'if0_42036532'; // Adjust based on XAMPP default
+$pass = 'Wxv8bmb9Cak';     // Adjust based on XAMPP default
+$charset = 'utf8';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 $options = [
