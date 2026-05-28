@@ -9,7 +9,6 @@ if (!hasRole('super_admin')) {
 ?>
 
 <div class="space-y-6 pb-20 lg:pb-0">
-    <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white/60 backdrop-blur-md p-6 rounded-[2rem] shadow-sm border border-white">
         <div>
             <h2 class="text-3xl font-black text-slate-800 tracking-tight flex items-center">
@@ -18,15 +17,16 @@ if (!hasRole('super_admin')) {
             </h2>
             <p class="text-slate-500 text-sm mt-1 font-medium">เพิ่ม แก้ไข และกำหนดสิทธิ์การใช้งานของพนักงาน</p>
         </div>
-        <button onclick="loadPendingUsers()" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-lg shadow-amber-100 flex items-center justify-center">
-                <span class="mr-2">⏳</span> รออนุมัติ
+        <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
+            <button onclick="loadPendingUsers()" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-lg shadow-amber-100 flex items-center justify-center w-full sm:w-auto">
+                    <span class="mr-2">⏳</span> รออนุมัติ
+                </button>
+            <button onclick="openUserModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-lg shadow-indigo-100 flex items-center justify-center w-full sm:w-auto">
+                <span class="mr-2 text-lg">+</span> เพิ่มพนักงานใหม่
             </button>
-        <button onclick="openUserModal()" class="mt-4 md:mt-0 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-lg shadow-indigo-100 flex items-center justify-center">
-            <span class="mr-2 text-lg">+</span> เพิ่มพนักงานใหม่
-        </button>
+        </div>
     </div>
 
-    <!-- User List Table -->
     <div class="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 overflow-hidden animate__animated animate__fadeIn">
         <div class="px-8 py-6 border-b border-slate-50 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
             <h3 class="font-black text-slate-700 tracking-tight">รายชื่อพนักงานทั้งหมด</h3>
@@ -36,8 +36,8 @@ if (!hasRole('super_admin')) {
             </div>
         </div>
         
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-slate-500">
+        <div class="overflow-x-auto w-full">
+            <table class="w-full text-sm text-left text-slate-500 whitespace-nowrap">
                 <thead class="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black bg-slate-50/30">
                     <tr>
                         <th class="px-8 py-5">ชื่อ-นามสกุล</th>
@@ -48,7 +48,6 @@ if (!hasRole('super_admin')) {
                     </tr>
                 </thead>
                 <tbody id="userTableBody" class="divide-y divide-slate-50">
-                    <!-- Data via JS -->
                     <tr><td colspan="5" class="px-8 py-20 text-center"><div class="loader-spinner mx-auto mb-4 w-8 h-8"></div><p class="font-bold text-slate-400">กำลังโหลดรายชื่อ...</p></td></tr>
                 </tbody>
             </table>
@@ -56,9 +55,8 @@ if (!hasRole('super_admin')) {
     </div>
 </div>
 
-<!-- User Modal -->
 <div id="userModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-4">
-    <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-md overflow-hidden animate__animated animate__zoomIn">
+    <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-[95%] md:max-w-md overflow-hidden animate__animated animate__zoomIn">
         <div class="p-8 bg-gradient-to-br from-indigo-600 to-violet-700 text-white flex justify-between items-center">
             <h3 id="modalTitle" class="text-xl font-black italic tracking-tight">เพิ่มพนักงานใหม่</h3>
             <button onclick="closeUserModal()" class="text-white/50 hover:text-white text-3xl font-light">&times;</button>
@@ -90,8 +88,7 @@ if (!hasRole('super_admin')) {
                 <label class="block text-[10px] font-black uppercase tracking-widest text-amber-500 mb-2 ml-1">🚗 ทีม / ป้ายทะเบียนรถ</label>
                 <select id="team_id" name="team_id" class="w-full px-5 py-3.5 rounded-2xl bg-amber-50 border-transparent focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold transition-all">
                     <option value="">-- ไม่มีทีม --</option>
-                    <!-- ตัวเลือกจะถูกโหลดจาก JS -->
-                </select>
+                    </select>
                 <p class="text-[10px] text-slate-400 mt-2 ml-1 italic">* เลือกป้ายทะเบียนที่เคยลงทะเบียนในระบบ เพื่อย้ายทีม</p>
             </div>
 
@@ -110,13 +107,13 @@ if (!hasRole('super_admin')) {
     </div>
 </div>
 <div id="pendingModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-4">
-    <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-3xl overflow-hidden animate__animated animate__zoomIn">
+    <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-[95%] md:max-w-3xl overflow-hidden animate__animated animate__zoomIn">
         <div class="p-8 bg-gradient-to-br from-amber-500 to-orange-600 text-white flex justify-between items-center">
             <h3 class="text-xl font-black tracking-tight">รายการรออนุมัติเข้าใช้งาน</h3>
             <button onclick="document.getElementById('pendingModal').classList.add('hidden')" class="text-white/50 hover:text-white text-3xl font-light">&times;</button>
         </div>
-        <div class="p-8 max-h-[60vh] overflow-y-auto">
-            <table class="w-full text-sm text-left text-slate-500">
+        <div class="p-8 max-h-[60vh] overflow-y-auto w-full overflow-x-auto">
+            <table class="w-full text-sm text-left text-slate-500 whitespace-nowrap">
                 <thead class="text-[10px] text-slate-400 uppercase font-black bg-slate-50">
                     <tr>
                         <th class="px-4 py-3">ชื่อ-นามสกุล</th>

@@ -12,7 +12,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     window.IS_ADMIN = <?php echo $isAdmin ? 'true' : 'false'; ?>;
@@ -74,7 +73,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 </div>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left text-gray-500">
+                <table class="w-full text-sm text-left text-gray-500 whitespace-nowrap">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
                             <th class="px-6 py-3">รหัสสินค้า</th>
@@ -173,7 +172,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             <h3 class="font-bold text-gray-700 mb-4 border-b pb-2 flex items-center"><span class="text-red-500 mr-2 text-xl">📤</span> สแกนเบิกสินค้าออก</h3>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <!-- ฝั่งสแกน SN -->
                 <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
                     <label class="block text-sm font-bold text-gray-700 mb-2">เบิกสินค้ามี SN (ทีละชิ้น)</label>
                     <div class="flex gap-2">
@@ -182,7 +180,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     </div>
                 </div>
 
-                <!-- ฝั่งเบิกวัสดุสิ้นเปลือง -->
                 <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
                     <label class="block text-sm font-bold text-yellow-800 mb-2">เบิกวัสดุสิ้นเปลือง (นับจำนวน)</label>
                     <div class="flex gap-2">
@@ -195,8 +192,8 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 </div>
             </div>
 
-            <div class="border rounded-lg overflow-hidden">
-                <table class="w-full text-sm text-left text-gray-500">
+            <div class="border rounded-lg overflow-hidden w-full overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500 whitespace-nowrap">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                         <tr>
                             <th class="px-6 py-3">SN / รหัส</th>
@@ -230,11 +227,10 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 </button>
             </div>
 
-            <!-- หมวดหมู่: อุปกรณ์แบบมี SN -->
             <div class="mb-6">
                 <h4 class="font-bold text-slate-700 mb-2">1. อุปกรณ์แบบมีหมายเลขซีเรียล (รับมาวันนี้)</h4>
-                <div class="border rounded-lg overflow-hidden">
-                    <table class="w-full text-sm text-left text-gray-500">
+                <div class="border rounded-lg overflow-hidden w-full overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500 whitespace-nowrap">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                             <tr>
                                 <th class="px-6 py-3 w-10 text-center">
@@ -252,11 +248,10 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 </div>
             </div>
 
-            <!-- หมวดหมู่: วัสดุสิ้นเปลือง -->
             <div class="mb-6">
                 <h4 class="font-bold text-slate-700 mb-2">2. วัสดุสิ้นเปลือง (ของในคลังส่วนตัว)</h4>
-                <div class="border rounded-lg overflow-hidden">
-                    <table class="w-full text-sm text-left text-gray-500">
+                <div class="border rounded-lg overflow-hidden w-full overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500 whitespace-nowrap">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                             <tr>
                                 <th class="px-6 py-3">ชื่อวัสดุ</th>
@@ -292,7 +287,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 
                 <div class="flex items-center gap-3 w-full md:w-auto">
                     <?php if ($isAdmin): ?>
-                    <!-- ตัวกรองสำหรับ Admin -->
                     <select id="filterHistoryTeam" class="text-sm border-gray-300 rounded-lg py-2 pl-3 pr-8 focus:ring-purple-500 focus:border-purple-500">
                         <option value="">ทุกทีม</option>
                     </select>
@@ -306,8 +300,8 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     </button>
                 </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left text-gray-500">
+            <div class="overflow-x-auto w-full">
+                <table class="w-full text-sm text-left text-gray-500 whitespace-nowrap">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
                             <th class="px-6 py-3">วันที่/เวลา</th>
@@ -327,7 +321,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 </div>
 
 <div id="outboundModal" class="fixed inset-0 z-[100] hidden bg-black bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-2xl w-full flex flex-col max-h-[90vh] transform transition-all">
+    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-2xl flex flex-col max-h-[90vh] transform transition-all">
         <div class="bg-gray-800 p-4 border-b flex justify-between items-center text-white">
             <h3 class="font-bold text-lg flex items-center"><span class="mr-2">📑</span> บิลสรุปการเบิกสินค้า</h3>
             <button onclick="closeOutboundModal()" class="text-gray-400 hover:text-white text-2xl font-bold leading-none">&times;</button>
@@ -347,23 +341,25 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     </select>
                 </div>
 
-                <table class="w-full text-sm text-left">
-                    <thead class="border-b-2 border-gray-800">
-                        <tr>
-                            <th class="py-2">ลำดับ</th>
-                            <th class="py-2">รายการ (สินค้า - รุ่น)</th>
-                            <th class="py-2 text-right">SN</th>
-                        </tr>
-                    </thead>
-                    <tbody id="billTableBody" class="divide-y divide-gray-200">
-                        </tbody>
-                    <tfoot class="border-t-2 border-gray-800 font-bold">
-                        <tr>
-                            <td colspan="2" class="py-3 text-right">รวมทั้งสิ้น:</td>     
-                            <td class="py-3 text-right text-red-600 text-lg" id="billTotal">0 ชิ้น</td> 
-                        </tr>
-                    </tfoot>
-                </table>
+                <div class="w-full overflow-x-auto">
+                    <table class="w-full text-sm text-left whitespace-nowrap">
+                        <thead class="border-b-2 border-gray-800">
+                            <tr>
+                                <th class="py-2">ลำดับ</th>
+                                <th class="py-2">รายการ (สินค้า - รุ่น)</th>
+                                <th class="py-2 text-right">SN</th>
+                            </tr>
+                        </thead>
+                        <tbody id="billTableBody" class="divide-y divide-gray-200">
+                            </tbody>
+                        <tfoot class="border-t-2 border-gray-800 font-bold">
+                            <tr>
+                                <td colspan="2" class="py-3 text-right">รวมทั้งสิ้น:</td>     
+                                <td class="py-3 text-right text-red-600 text-lg" id="billTotal">0 ชิ้น</td> 
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
         </div>
         <div class="p-4 border-t bg-gray-50 flex justify-end space-x-3">
@@ -376,7 +372,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 </div>
 
 <div id="snListModal" class="fixed inset-0 z-[100] hidden bg-black bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-lg w-full flex flex-col max-h-[90vh] transform transition-all animate__animated animate__zoomIn">
+    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-lg flex flex-col max-h-[90vh] transform transition-all animate__animated animate__zoomIn">
         <div class="bg-indigo-600 p-4 border-b flex justify-between items-center text-white">
             <h3 class="font-bold text-lg flex items-center"><span class="mr-2">🏷️</span> รายการหมายเลขซีเรียล</h3>
             <button onclick="closeSnModal()" class="text-indigo-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
