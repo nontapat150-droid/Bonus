@@ -4,6 +4,9 @@
 if (!defined('PDO::ATTR_ERRMODE')) {
     exit('เข้าถึงโดยตรงไม่ได้');
 }
+
+// ตรวจสอบสิทธิ์ว่าเป็น Admin หรือ Super Admin หรือไม่
+$isAdmin = hasRole(['admin', 'super_admin']);
 ?>
 
 <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
@@ -17,10 +20,8 @@ if (!defined('PDO::ATTR_ERRMODE')) {
     <div class="p-6">
         <form id="oilForm" enctype="multipart/form-data" class="space-y-6">
 
-            <!-- Alert Message Area -->
             <div id="alertBox" class="hidden rounded-lg p-4 mb-4 text-sm"></div>
 
-            <!-- ข้อมูลผู้เติมน้ำมัน (แสดงอัตโนมัติ) -->
             <div class="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-2xl p-5 border border-indigo-100">
                 <p class="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-3">👤 ผู้บันทึกข้อมูล</p>
                 <div class="flex items-center space-x-4">
@@ -35,7 +36,21 @@ if (!defined('PDO::ATTR_ERRMODE')) {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- License Plate Dropdown -->
+                
+                <?php if ($isAdmin): ?>
+                <div class="col-span-1 md:col-span-2 bg-amber-50 p-4 rounded-xl border border-amber-200">
+                    <label class="block text-sm font-bold text-amber-800 mb-1">📅 วันที่/เวลา เติมน้ำมัน (สำหรับแอดมินบันทึกย้อนหลัง)</label>
+                    <div class="relative mt-2">
+                        <input type="datetime-local" id="date_recorded" name="date_recorded"
+                            class="w-full pl-10 pr-4 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors font-medium text-slate-700">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-amber-500">⏰</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-amber-600 mt-2 font-medium">* หากปล่อยว่างไว้ ระบบจะใช้ <span class="font-bold underline">วันและเวลาปัจจุบัน</span> โดยอัตโนมัติ</p>
+                </div>
+                <?php endif; ?>
+
                 <div class="col-span-1 md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">ป้ายทะเบียนรถ <span class="text-red-500">*</span></label>
                     <div class="relative">
@@ -48,14 +63,12 @@ if (!defined('PDO::ATTR_ERRMODE')) {
                         </div>
                     </div>
                     <p class="text-xs text-amber-600 mt-1 font-medium">* แสดงป้ายทะเบียนที่ลงทะเบียนในระบบแล้ว (จากทีมงาน)</p>
-                    <!-- จำนวนเคสงานของทีมที่เลือก -->
                     <div id="teamJobCount" class="hidden mt-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 text-sm">
                         <span class="font-bold text-emerald-700">📋 เคสงานของทีมนี้:</span>
                         <span id="jobCountValue" class="font-black text-emerald-600 ml-1">0</span> <span class="text-emerald-600">งาน</span>
                     </div>
                 </div>
 
-                <!-- Mileage -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">เลขไมล์ปัจจุบัน <span class="text-red-500">*</span></label>
                     <div class="relative">
@@ -68,7 +81,6 @@ if (!defined('PDO::ATTR_ERRMODE')) {
                     </div>
                 </div>
 
-                <!-- Liters -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">จำนวนลิตร <span class="text-red-500">*</span></label>
                     <div class="relative">
@@ -81,7 +93,6 @@ if (!defined('PDO::ATTR_ERRMODE')) {
                     </div>
                 </div>
 
-                <!-- Price per Liter -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">ราคา/ลิตร <span class="text-red-500">*</span></label>
                     <div class="relative">
@@ -94,7 +105,6 @@ if (!defined('PDO::ATTR_ERRMODE')) {
                     </div>
                 </div>
 
-                <!-- Total Price (Auto-calculated) -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">ราคารวม (บาท)</label>
                     <div class="relative">
@@ -108,7 +118,6 @@ if (!defined('PDO::ATTR_ERRMODE')) {
                 </div>
             </div>
 
-            <!-- Image Upload -->
             <div class="mt-6 border-t border-gray-200 pt-6">
                 <label class="block text-sm font-medium text-gray-700 mb-2">รูปภาพหลักฐาน (อัปโหลดได้สูงสุด 10 รูป) <span class="text-red-500">*</span></label>   
 
@@ -119,20 +128,16 @@ if (!defined('PDO::ATTR_ERRMODE')) {
                                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
                             </svg>
                             <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">คลิกเพื่ออัปโหลด</span> หรือลากไฟล์มาวาง</p>
-                            <p class="text-xs text-gray-500">PNG, JPG, JPEG (รองรับมือถือ) / ขนาดไม่เกิน 5MB ต่อรูป ระบบจะบีบอัดให้โดยอัตโนมัติ</p>
+                            <p class="text-xs text-gray-500">PNG, JPG, JPEG (รองรับมือถือ)</p>
                         </div>
                         <input id="oil_images" name="oil_images[]" type="file" class="hidden" multiple accept="image/*" required />
                     </label>
                 </div>
 
-                <!-- Image Preview Area -->
-                <div id="imagePreviewContainer" class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-4">
-                    <!-- Previews will be injected here via JS -->
-                </div>
+                <div id="imagePreviewContainer" class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-4"></div>
                 <p id="imageCount" class="text-xs text-gray-500 mt-2 text-right">เลือกแล้ว: 0/10 รูป</p>
             </div>
 
-            <!-- Submit Button -->
             <div class="pt-4">
                 <button type="submit" id="submitBtn" class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                     <span>บันทึกข้อมูล</span>
@@ -142,5 +147,4 @@ if (!defined('PDO::ATTR_ERRMODE')) {
     </div>
 </div>
 
-<!-- Load Oil Form Logic -->
 <script src="assets/js/oil.js"></script>

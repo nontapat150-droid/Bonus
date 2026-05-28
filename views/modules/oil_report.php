@@ -20,32 +20,20 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             <button id="filterBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
                 ค้นหา
             </button>
-            <?php if (hasRole(['admin', 'super_admin'])): ?>
-            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <input type="file" id="oilExcelImport" accept=".xlsx,.xls,.csv" class="hidden">
-                <button type="button" id="oilImportBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
-                    📥 นำเข้า Excel/CSV
-                </button>
-                <button type="button" id="oilConfirmExcelBtn" class="bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm hidden">
-                    ยืนยันนำเข้า
-                </button>
-                <button type="button" id="oilDeleteAllBtn" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
-                    🗑️ ลบทั้งหมด
-                </button>
-            </div>
-            <?php endif; ?>
+            <input type="file" id="importOilExcel" accept=".xlsx, .xls" class="hidden">
+            <button onclick="document.getElementById('importOilExcel').click()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm flex items-center">
+                <span class="mr-2">📥</span> นำเข้า Excel
+            </button>
+            <button onclick="exportOilExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm flex items-center">
+                <span class="mr-2">📥</span> ส่งออก Excel
+            </button>
+            
             <?php if (hasRole('super_admin')): ?>
             <a href="index.php?page=oil_test_form" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm text-center">
                 + บันทึก (ทดสอบ)
             </a>
             <?php endif; ?>
         </div>
-        <?php if (hasRole(['admin', 'super_admin'])): ?>
-        <div id="oilExcelPreview" class="hidden mt-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-sm text-emerald-700">
-            <p id="oilExcelCount" class="font-bold"></p>
-            <p class="mt-2 text-slate-600">ตรวจสอบข้อมูลในไฟล์แล้วกดปุ่มยืนยันเพื่อนำเข้าข้อมูล</p>
-        </div>
-        <?php endif; ?>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -70,15 +58,11 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
             <h3 class="font-bold text-gray-700 mb-4">เปรียบเทียบค่าใช้จ่ายรายวัน (บาท)</h3>
-            <div class="relative h-64 w-full">
-                <canvas id="costChart"></canvas>
-            </div>
+            <div class="relative h-64 w-full"><canvas id="costChart"></canvas></div>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
             <h3 class="font-bold text-gray-700 mb-4">แนวโน้มปริมาณการใช้น้ำมัน (ลิตร)</h3>
-            <div class="relative h-64 w-full">
-                <canvas id="litersChart"></canvas>
-            </div>
+            <div class="relative h-64 w-full"><canvas id="litersChart"></canvas></div>
         </div>
     </div>
 
@@ -86,30 +70,31 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
             <h3 class="font-bold text-gray-700">ประวัติการเบิก</h3>
         </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <h3 class="font-bold text-gray-700">ประวัติการเบิก และการคำนวณต้นทุน</h3>
+        </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-500 whitespace-nowrap">
+            <table class="w-full text-sm text-left text-gray-500">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3">วันที่</th>
-                        <th class="px-6 py-3">ทะเบียนรถ</th>
-                        <th class="px-6 py-3 text-right">เลขไมล์ปัจจุบัน</th>
-                        <th class="px-6 py-3 text-right">จำนวนน้ำมัน(ลิตร)</th>
-                        <th class="px-6 py-3 text-right text-gray-800">ยอดเงิน(บาท)</th>
-                        <th class="px-6 py-3 text-right">ระยะทางที่วิ่ง(กม.)</th>
-                        <th class="px-6 py-3 text-right">บาท/กม.</th>
-                        <th class="px-6 py-3 text-right">ราคา/ลิตร</th>
-                        <th class="px-6 py-3 text-center">ชื่อผู้เติม</th>
-                        <th class="px-6 py-3 text-center">หลักฐาน</th>
-                        <?php if (hasRole(['admin', 'super_admin'])): ?>
-                        <th class="px-6 py-3 text-center">จัดการ</th>
-                        <?php endif; ?>
+                        <th class="px-4 py-3">วันที่/เวลา</th>
+                        <th class="px-4 py-3">ช่าง (ผู้เบิก)</th>
+                        <th class="px-4 py-3">ทีม/ป้ายทะเบียน</th>
+                        <th class="px-4 py-3 text-center">ระยะทาง (กม.)</th>
+                        <th class="px-4 py-3 text-center">เคสงาน (รอบ)</th>
+                        <th class="px-4 py-3 text-right">ต้นทุน/กม.</th>
+                        <th class="px-4 py-3 text-right">ต้นทุน/งาน</th>
+                        <th class="px-4 py-3 text-right text-gray-800">ยอดรวม (บาท)</th>
+                        <th class="px-4 py-3 text-center">จัดการ</th>
                     </tr>
                 </thead>
                 <tbody id="oilTableBody" class="divide-y divide-gray-100">
-                    <tr><td colspan="11" class="px-6 py-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
+                    <tr><td colspan="9" class="px-6 py-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
                 </tbody>
             </table>
         </div>
+    </div>
     </div>
 </div>
 
@@ -119,14 +104,39 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             <h3 class="font-bold text-gray-800">รูปภาพหลักฐานการเติมน้ำมัน</h3>
             <button onclick="closeImageModal()" class="text-gray-500 hover:text-red-500 text-xl font-bold">&times;</button>
         </div>
-        <div id="modalImageGrid" class="p-4 grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto">
+        <div id="modalImageGrid" class="p-4 grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto"></div>
+    </div>
+</div>
+
+<div id="editOilModal" class="fixed inset-0 z-[100] hidden bg-slate-900 bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-[2rem] shadow-2xl overflow-hidden max-w-md w-full animate__animated animate__zoomIn">
+        <div class="bg-indigo-600 p-5 border-b flex justify-between items-center text-white">
+            <h3 class="font-black text-lg">✏️ แก้ไขข้อมูลผู้เติม / ทะเบียนรถ</h3>
+            <button onclick="closeEditOilModal()" class="text-indigo-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
+        </div>
+        <div class="p-6 space-y-5 bg-slate-50">
+            <input type="hidden" id="edit_record_id">
+            
+            <div>
+                <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ชื่อผู้เติม (ช่างเทคนิค)</label>
+                <select id="edit_tech_id" class="w-full px-4 py-3 border border-slate-300 rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 shadow-sm"></select>
             </div>
+            
+            <div>
+                <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ป้ายทะเบียนรถ (ทีม)</label>
+                <select id="edit_license_plate" class="w-full px-4 py-3 border border-slate-300 rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 shadow-sm"></select>
+            </div>
+        </div>
+        <div class="p-4 border-t bg-white flex justify-end space-x-3">
+            <button onclick="closeEditOilModal()" class="px-6 py-2.5 rounded-xl text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 transition-colors">ยกเลิก</button>
+            <button onclick="saveEditOil()" class="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-black shadow-lg shadow-indigo-200 transition-colors">บันทึกการแก้ไข</button>
+        </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<?php if (hasRole(['admin', 'super_admin'])): ?>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<?php endif; ?>
-<script>window.IS_ADMIN = <?php echo hasRole(['admin','super_admin']) ? 'true' : 'false'; ?>;</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script src="assets/js/oil_report.js"></script>
