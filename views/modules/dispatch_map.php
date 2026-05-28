@@ -42,7 +42,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     <?php if ($isAdmin): ?>
     <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-3 items-center justify-between z-20 dashboard-header flex-shrink-0">
         <div class="flex items-center space-x-3 min-w-[200px]">
-            <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-lg shadow-sm flex items-center justify-center text-sm">🚀</div>
+            <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-lg shadow-sm flex items-center justify-center text-sm"><i data-lucide="rocket" class="w-5 h-5 inline-block"></i></div>
             <div>
                 <h2 class="text-sm font-black text-slate-800 tracking-tight leading-none">ระบบแจกจ่ายงาน</h2>
                 <p class="text-[9px] font-bold text-indigo-500 uppercase tracking-widest mt-0.5">Smart Dispatch</p>
@@ -52,24 +52,24 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         <div class="action-buttons flex items-center gap-1.5 flex-1 justify-end">
             <input type="file" id="jobExcelFile" accept=".xlsx, .xls" class="hidden">
             <button onclick="document.getElementById('jobExcelFile').click()" class="bg-slate-50 hover:bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border border-slate-200">
-                📥 นำเข้า
+                <i data-lucide="download" class="w-5 h-5 inline-block"></i> นำเข้า
             </button>
             <button id="exportExcelBtn" class="bg-sky-50 text-sky-600 hover:bg-sky-100 border border-sky-100 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all">
-                📊 ส่งออก
+                <i data-lucide="bar-chart-2" class="w-5 h-5 inline-block"></i> ส่งออก
             </button>
             <div class="w-px h-5 bg-slate-200 mx-1 hidden md:block"></div>
-            <button id="dispatchModalBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition-all">
-                🤖 จ่ายงานออโต้
+            <button id="dispatchModalBtn" class="btn-primary px-3 py-1.5 text-[10px]">
+                <i data-lucide="bot" class="w-5 h-5 inline-block"></i> จ่ายงานออโต้
             </button>
             <button id="optimizeRouteBtn" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm transition-all">
-                📍 เรียงคิว
+                <i data-lucide="map-pin" class="w-5 h-5 inline-block"></i> เรียงคิว
             </button>
             <div class="w-px h-5 bg-slate-200 mx-1 hidden md:block"></div>
             <button id="clearAssignmentsBtn" class="bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-100 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all">
-                🔄 ล้างการจ่าย
+                <i data-lucide="refresh-cw" class="w-5 h-5 inline-block"></i> ล้างการจ่าย
             </button>
             <button id="deleteAllJobsBtn" class="bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all">
-                🗑️ ลบทั้งหมด
+                <i data-lucide="trash-2" class="w-5 h-5 inline-block"></i> ลบทั้งหมด
             </button>
         </div>
     </div>
@@ -77,7 +77,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
     <div class="flex flex-col flex-1 gap-2 min-h-[400px] md:min-h-0 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden relative">
         
-        <div id="mapLoader" class="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center z-50 hidden transition-opacity duration-200">
+        <div id="mapLoader" class="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center z-[80] hidden transition-opacity duration-200">
             <div class="w-10 h-10 border-3 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-2"></div>
             <p id="loaderText" class="text-indigo-800 font-bold text-xs uppercase tracking-widest animate-pulse">กำลังโหลด...</p>
         </div>
@@ -92,7 +92,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             </div>
 
             <div class="flex items-center gap-1.5 flex-wrap">
-                <input type="date" id="dateFilter" class="text-[10px] font-bold border-slate-200 rounded-lg px-2 py-1 h-7 focus:ring-0 text-slate-600">
+                <input type="date" id="dateFilter" class="text-[10px] font-bold input">
                 <button onclick="document.getElementById('dateFilter').value=''; renderUI();" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 h-7 rounded-lg text-[9px] font-bold transition-all">
                     ทุกวัน
                 </button>
@@ -106,8 +106,8 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 <?php if ($isAdmin): ?>
                 <div class="w-px h-4 bg-slate-200 mx-1"></div>
                 <select id="teamFilter" class="text-[10px] font-bold border-indigo-100 bg-indigo-50 text-indigo-700 rounded-lg py-1 pl-2 pr-6 h-7 focus:ring-0">
-                    <option value="all">📍 ทุกทีม</option>
-                    <option value="unassigned">⏳ ยังไม่จ่าย</option>
+                    <option value="all"><i data-lucide="map-pin" class="w-5 h-5 inline-block"></i> ทุกทีม</option>
+                    <option value="unassigned"><i data-lucide="hourglass" class="w-5 h-5 inline-block"></i> ยังไม่จ่าย</option>
                 </select>
                 <div class="flex items-center h-7 bg-white rounded-lg border border-slate-200 overflow-hidden">
                     <input type="text" id="newTeamName" placeholder="ชื่อทีมใหม่" class="border-0 px-2 h-full text-[10px] font-bold focus:ring-0 w-20 md:w-24">       
@@ -149,8 +149,8 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 </div>
 
-<div id="dispatchModal" class="fixed inset-0 z-[100] hidden bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate__animated animate__zoomIn">
+<div id="dispatchModal" class="fixed inset-0 z-[80] hidden bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate__animated animate__zoomIn z-[90]">
         <div class="p-4 bg-indigo-600 text-white text-center">
             <h3 class="text-sm font-black uppercase">Auto-Dispatch</h3>
             <p class="text-[10px] mt-1 text-indigo-100">รอจ่าย: <span id="unassignedCount" class="font-bold">0</span> งาน</p>
@@ -158,7 +158,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         <div class="p-3 max-h-[40vh] overflow-y-auto space-y-1.5" id="dispatchTeamList"></div>
         <div class="p-3 bg-slate-50 flex gap-2 border-t border-slate-100">
             <button onclick="closeDispatchModal()" class="flex-1 py-2 bg-white text-slate-600 rounded-lg font-bold text-[10px] border border-slate-200 hover:bg-slate-100">ยกเลิก</button>
-            <button id="confirmDispatchBtn" class="flex-[2] py-2 bg-indigo-600 text-white rounded-lg font-bold text-[10px] shadow-sm hover:bg-indigo-700">ยืนยันการจ่าย 🚀</button>
+            <button id="confirmDispatchBtn" class="btn-primary flex-[2] py-2 text-[10px]">ยืนยันการจ่าย <i data-lucide="rocket" class="w-5 h-5 inline-block"></i></button>
         </div>
     </div>
 </div>

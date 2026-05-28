@@ -12,16 +12,16 @@ if (!hasRole('super_admin')) {
     <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white/60 backdrop-blur-md p-6 rounded-[2rem] shadow-sm border border-white">
         <div>
             <h2 class="text-3xl font-black text-slate-800 tracking-tight flex items-center">
-                <span class="mr-3 p-2 bg-rose-100 text-rose-600 rounded-2xl shadow-inner text-2xl">👥</span>
+                <span class="mr-3 p-2 bg-rose-100 text-rose-600 rounded-2xl shadow-inner text-2xl"><i data-lucide="users" class="w-5 h-5 inline-block"></i></span>
                 จัดการพนักงาน
             </h2>
             <p class="text-slate-500 text-sm mt-1 font-medium">เพิ่ม แก้ไข และกำหนดสิทธิ์การใช้งานของพนักงาน</p>
         </div>
         <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
             <button onclick="loadPendingUsers()" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-lg shadow-amber-100 flex items-center justify-center w-full sm:w-auto">
-                    <span class="mr-2">⏳</span> รออนุมัติ
+                    <span class="mr-2"><i data-lucide="hourglass" class="w-5 h-5 inline-block"></i></span> รออนุมัติ
                 </button>
-            <button onclick="openUserModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-black text-sm transition-all shadow-lg shadow-indigo-100 flex items-center justify-center w-full sm:w-auto">
+            <button onclick="openUserModal()" class="btn-primary flex items-center justify-center w-full sm:w-auto">
                 <span class="mr-2 text-lg">+</span> เพิ่มพนักงานใหม่
             </button>
         </div>
@@ -32,7 +32,7 @@ if (!hasRole('super_admin')) {
             <h3 class="font-black text-slate-700 tracking-tight">รายชื่อพนักงานทั้งหมด</h3>
             <div class="relative w-full sm:w-64">
                 <input type="text" id="searchUser" placeholder="ค้นหาชื่อ หรือ Username..." class="w-full pl-11 pr-4 py-3 rounded-2xl bg-white border-transparent focus:border-indigo-500 focus:ring-0 text-sm font-bold shadow-sm transition-all">
-                <span class="absolute left-4 top-3.5 text-slate-300">🔍</span>
+                <span class="absolute left-4 top-3.5 text-slate-300"><i data-lucide="search" class="w-5 h-5 inline-block"></i></span>
             </div>
         </div>
         
@@ -55,8 +55,8 @@ if (!hasRole('super_admin')) {
     </div>
 </div>
 
-<div id="userModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-4">
-    <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-[95%] md:max-w-md overflow-hidden animate__animated animate__zoomIn">
+<div id="userModal" class="fixed inset-0 z-[80] hidden bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-4">
+    <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-[95%] md:max-w-md overflow-hidden animate__animated animate__zoomIn z-[90]">
         <div class="p-8 bg-gradient-to-br from-indigo-600 to-violet-700 text-white flex justify-between items-center">
             <h3 id="modalTitle" class="text-xl font-black italic tracking-tight">เพิ่มพนักงานใหม่</h3>
             <button onclick="closeUserModal()" class="text-white/50 hover:text-white text-3xl font-light">&times;</button>
@@ -67,17 +67,17 @@ if (!hasRole('super_admin')) {
             
             <div>
                 <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">ชื่อ-นามสกุลจริง</label>
-                <input type="text" id="full_name" name="full_name" required class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-bold transition-all" placeholder="ตัวอย่าง: นายสมชาย ยอดรัก">
+                <input type="text" id="full_name" name="full_name" required class="input" placeholder="ตัวอย่าง: นายสมชาย ยอดรัก">
             </div>
 
             <div>
                 <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">ชื่อผู้ใช้ (Username)</label>
-                <input type="text" id="username_field" name="username" required class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-bold transition-all" placeholder="สำหรับใช้ Login">
+                <input type="text" id="username_field" name="username" required class="input" placeholder="สำหรับใช้ Login">
             </div>
 
             <div>
                 <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">ตำแหน่งในระบบ</label>
-                <select id="role" name="role" onchange="toggleLateTimeField()" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-bold transition-all">
+                <select id="role" name="role" onchange="toggleLateTimeField()" class="input">
                     <option value="technician">ช่างเทคนิค (Technician)</option>
                     <option value="sales">เซล (Sales)</option>
                     <option value="admin">ผู้ดูแลระบบ (Admin)</option>
@@ -86,14 +86,14 @@ if (!hasRole('super_admin')) {
             </div>
 
             <div id="lateTimeField" class="hidden">
-                <label class="block text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2 ml-1">⏰ เวลามาสายที่อนุมัติ (สำหรับ Sales & Technician)</label>
-                <input type="time" id="allow_late_time" name="allow_late_time" value="08:30" class="w-full px-5 py-3.5 rounded-2xl bg-orange-50 border-transparent focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 font-bold transition-all">
+                <label class="block text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2 ml-1"><i data-lucide="clock" class="w-5 h-5 inline-block"></i> เวลามาสายที่อนุมัติ (สำหรับ Sales & Technician)</label>
+                <input type="time" id="allow_late_time" name="allow_late_time" value="08:30" class="input">
                 <p class="text-[10px] text-slate-400 mt-2 ml-1 italic">* ตั้งเวลาที่อนุญาตให้มาสายได้ (เช่น 08:30 = อนุญาตให้มาตั้งแต่ 08:30 ให้ถือว่า "มาตรงเวลา")</p>
             </div>
 
             <div>
-                <label class="block text-[10px] font-black uppercase tracking-widest text-amber-500 mb-2 ml-1">🚗 ทีม / ป้ายทะเบียนรถ</label>
-                <select id="team_id" name="team_id" class="w-full px-5 py-3.5 rounded-2xl bg-amber-50 border-transparent focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold transition-all">
+                <label class="block text-[10px] font-black uppercase tracking-widest text-amber-500 mb-2 ml-1"><i data-lucide="car" class="w-5 h-5 inline-block"></i> ทีม / ป้ายทะเบียนรถ</label>
+                <select id="team_id" name="team_id" class="input">
                     <option value="">-- ไม่มีทีม --</option>
                     </select>
                 <p class="text-[10px] text-slate-400 mt-2 ml-1 italic">* เลือกป้ายทะเบียนที่เคยลงทะเบียนในระบบ เพื่อย้ายทีม</p>
@@ -101,20 +101,20 @@ if (!hasRole('super_admin')) {
 
             <div>
                 <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">รหัสผ่าน</label>
-                <input type="password" id="password" name="password" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-bold transition-all" placeholder="เว้นว่างไว้หากไม่ต้องการเปลี่ยน">
+                <input type="password" id="password" name="password" class="input" placeholder="เว้นว่างไว้หากไม่ต้องการเปลี่ยน">
                 <p id="passwordHelp" class="text-[10px] text-slate-400 mt-2 ml-1 hidden italic">* หากแก้ไขข้อมูล ไม่ต้องกรอกหากไม่ต้องการเปลี่ยนรหัสผ่าน</p>
             </div>
 
             <div class="pt-4">
-                <button type="submit" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black shadow-lg shadow-indigo-100 transform transition-all active:scale-95">
-                    🚀 บันทึกข้อมูลพนักงาน
+                <button type="submit" class="w-full py-4 btn-primary">
+                    <i data-lucide="rocket" class="w-5 h-5 inline-block"></i> บันทึกข้อมูลพนักงาน
                 </button>
             </div>
         </form>
     </div>
 </div>
-<div id="pendingModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-4">
-    <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-[95%] md:max-w-3xl overflow-hidden animate__animated animate__zoomIn">
+<div id="pendingModal" class="fixed inset-0 z-[80] hidden bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-4">
+    <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-[95%] md:max-w-3xl overflow-hidden animate__animated animate__zoomIn z-[90]">
         <div class="p-8 bg-gradient-to-br from-amber-500 to-orange-600 text-white flex justify-between items-center">
             <h3 class="text-xl font-black tracking-tight">รายการรออนุมัติเข้าใช้งาน</h3>
             <button onclick="document.getElementById('pendingModal').classList.add('hidden')" class="text-white/50 hover:text-white text-3xl font-light">&times;</button>

@@ -10,10 +10,10 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 animate__animated animate__fadeIn">
-    <div class="lg:col-span-5 bg-white rounded-[2rem] shadow-xl overflow-hidden flex flex-col">
+    <div class="lg:col-span-5 card overflow-hidden flex flex-col z-[90]">
         <div class="bg-gradient-to-br from-indigo-600 to-violet-700 px-6 py-6 text-center text-white">
             <h2 class="text-2xl font-black tracking-tight flex items-center justify-center gap-2">
-                <span class="text-3xl">📸</span> เช็คอินเข้างาน
+                <span class="text-3xl"><i data-lucide="camera" class="w-5 h-5 inline-block"></i></span> เช็คอินเข้างาน
             </h2>
         </div>
         <div class="p-6 text-center space-y-6 flex-1 flex flex-col justify-center">
@@ -30,17 +30,17 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <img id="imagePreview" class="absolute inset-0 w-full h-full object-cover hidden" src="" alt="Preview">
                     <input id="checkin_image" name="checkin_image" type="file" class="hidden" accept="image/*" capture="environment" required />
                 </label>
-                <button type="submit" id="submitBtn" class="mt-4 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black shadow-lg shadow-indigo-200 transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                    ✅ ยืนยันการเช็คอิน
+                <button type="submit" id="submitBtn" class="mt-4 w-full py-3 btn-primary">
+                    <i data-lucide="check-circle" class="w-5 h-5 inline-block"></i> ยืนยันการเช็คอิน
                 </button>
             </form>
         </div>
     </div>
 
     <div class="lg:col-span-7 flex flex-col gap-6">
-        <div class="bg-white rounded-[2rem] shadow-xl p-6 border border-gray-50">
+        <div class="card z-[90]">
             <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                📊 สรุปการเข้างาน <span id="dashLabel" class="ml-2 text-sm text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">-</span>
+                <i data-lucide="bar-chart-2" class="w-5 h-5 inline-block"></i> สรุปการเข้างาน <span id="dashLabel" class="ml-2 text-sm text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">-</span>
             </h3>
             <div class="grid grid-cols-3 gap-4">
                 <div class="bg-blue-50 border border-blue-100 p-4 rounded-2xl text-center">
@@ -59,25 +59,25 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         </div>
 
         <?php if($isAdmin): ?>
-        <div class="bg-white rounded-[2rem] shadow-xl p-6 border border-gray-50 flex items-center justify-between gap-4 flex-wrap">
+        <div class="card flex items-center justify-between gap-4 flex-wrap z-[90]">
             <div>
-                <h3 class="font-bold text-gray-800 flex items-center"><span class="mr-2">⚙️</span> ตั้งค่าระบบ (แอดมิน)</h3>
+                <h3 class="font-bold text-gray-800 flex items-center"><span class="mr-2"><i data-lucide="settings" class="w-5 h-5 inline-block"></i></span> ตั้งค่าระบบ (แอดมิน)</h3>
                 <p class="text-xs text-gray-500 mt-1">กำหนดเวลาที่ถือว่า "มาสาย"</p>
             </div>
             <div class="flex items-center gap-2 w-full sm:w-auto">
-                <input type="time" id="lateTimeInput" class="flex-1 sm:w-auto px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-bold text-gray-700">
+                <input type="time" id="lateTimeInput" class="flex-1 sm:w-auto input">
                 <button onclick="saveSettings()" class="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold hover:bg-slate-900 transition-colors">บันทึก</button>
             </div>
         </div>
         <?php endif; ?>
 
-        <div class="bg-white rounded-[2rem] shadow-xl p-6 border border-gray-50 flex-1 flex flex-col">
+        <div class="card flex-1 flex flex-col z-[90]">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                <h3 class="font-bold text-gray-800">🕒 ประวัติเช็คอิน</h3>
+                <h3 class="font-bold text-gray-800"><i data-lucide="clock" class="w-5 h-5 inline-block"></i> ประวัติเช็คอิน</h3>
                 <div class="flex items-center gap-2 flex-wrap">
-                    <input type="date" id="filterDate" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                    <input type="date" id="filterDate" class="px-3 py-1.5 input">
                     <span class="text-sm text-gray-400 hidden md:inline">หรือ</span>
-                    <input type="month" id="filterMonth" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                    <input type="month" id="filterMonth" class="px-3 py-1.5 input">
                     <button onclick="loadCheckinHistory()" class="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-indigo-100">ค้นหา</button>
                     <?php if($isAdmin): ?>
                     <button onclick="exportCheckin()" class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-emerald-100">Excel</button>
@@ -103,10 +103,10 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 </div>
 
-<div id="editCheckinModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl w-full max-w-[95%] md:max-w-sm overflow-hidden shadow-2xl animate__animated animate__zoomIn">
+<div id="editCheckinModal" class="hidden fixed inset-0 bg-slate-900/60 z-[80] flex justify-center items-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-[95%] md:max-w-sm overflow-hidden shadow-2xl animate__animated animate__zoomIn z-[90]">
         <div class="bg-indigo-600 p-4 flex justify-between items-center text-white">
-            <h3 class="font-bold">✏️ แก้ไขเวลาเช็คอิน</h3>
+            <h3 class="font-bold"><i data-lucide="edit-2" class="w-5 h-5 inline-block"></i> แก้ไขเวลาเช็คอิน</h3>
             <button onclick="closeEditCheckinModal()" class="text-white hover:text-rose-300 font-black text-xl">&times;</button>
         </div>
         <div class="p-6">
@@ -120,18 +120,18 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     </div>
                 </div>
                 <div class="mt-3 flex flex-wrap gap-2">
-                    <button type="button" onclick="document.getElementById('edit_checkin_image').click()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all">เลือกไฟล์รูปใหม่</button>
+                    <button type="button" onclick="document.getElementById('edit_checkin_image').click()" class="btn-primary px-4 py-2">เลือกไฟล์รูปใหม่</button>
                     <button type="button" id="deleteImageBtn" onclick="deleteCheckinImage()" class="px-4 py-2 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600 transition-all hidden">ลบรูปภาพ</button>
                 </div>
                 <input type="file" id="edit_checkin_image" name="checkin_image" accept="image/*" class="hidden">
             </div>
             <label class="block text-sm font-bold text-gray-700 mb-2">เวลาเข้างานที่ต้องการแก้</label>
-            <input type="datetime-local" id="edit_checkin_time" class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 font-bold text-gray-800">
+            <input type="datetime-local" id="edit_checkin_time" class="w-full input">
             <p class="text-xs text-slate-400 mt-2">* ระบบจะบันทึกเวลาใหม่ และคำนวณสถานะสาย/ตรงเวลา ใหม่อัตโนมัติ</p>
         </div>
         <div class="p-4 bg-slate-50 border-t flex justify-end gap-2">
             <button onclick="closeEditCheckinModal()" class="px-4 py-2 bg-white text-slate-600 rounded-xl font-bold border border-slate-200">ยกเลิก</button>
-            <button onclick="saveEditCheckin()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700">บันทึกเวลา</button>
+            <button onclick="saveEditCheckin()" class="px-4 py-2 btn-primary">บันทึกเวลา</button>
         </div>
     </div>
 </div>

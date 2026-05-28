@@ -1,204 +1,191 @@
 <?php
 // views/layouts/sidebar.php
-// Modern SaaS Sidebar with Bottom Tab Bar for Mobile
+// Ultimate SaaS Sidebar (Collapsible Desktop + Drawer/Bottom Nav Mobile)
 ?>
 <!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest"></script>
 
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    
-    :root {
-        --primary: #6C5CE7;
-        --primary-hover: #5A4BD1;
-        --bg-main: #F4F5FB;
-        --sidebar-bg: #FFFFFF;
-        --text-main: #1A1A2E;
-        --text-muted: #6B7280;
-        --border: #E5E7EB;
-    }
+<!-- CSS is handled in index.php for global scope -->
 
-    body {
-        font-family: 'Inter', 'Sarabun', sans-serif;
-        background-color: var(--bg-main);
-        color: var(--text-main);
-    }
-
-    /* Sidebar Desktop */
-    #sidebar-desktop {
-        width: 240px;
-        background: var(--sidebar-bg);
-        border-right: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-        position: fixed;
-        left: 0;
-        top: 0;
-        z-index: 50;
-    }
-
-    .nav-link {
-        display: flex;
-        align-items: center;
-        padding: 10px 16px;
-        margin: 4px 12px;
-        border-radius: 8px;
-        color: var(--text-muted);
-        font-weight: 500;
-        transition: all 0.15s ease;
-        text-decoration: none;
-    }
-
-    .nav-link:hover {
-        background-color: #F9FAFB;
-        color: var(--text-main);
-    }
-
-    .nav-link.active {
-        background-color: var(--primary);
-        color: #FFFFFF;
-    }
-
-    .nav-link i {
-        margin-right: 12px;
-        width: 20px;
-        height: 20px;
-    }
-
-    /* Bottom Nav Mobile */
-    #bottom-nav {
-        display: none;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: #FFFFFF;
-        border-top: 1px solid var(--border);
-        padding: 8px 12px;
-        z-index: 100;
-        justify-content: space-around;
-        align-items: center;
-    }
-
-    .bottom-nav-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        color: var(--text-muted);
-        font-size: 10px;
-        font-weight: 600;
-        text-decoration: none;
-    }
-
-    .bottom-nav-item.active {
-        color: var(--primary);
-    }
-
-    .bottom-nav-item i {
-        width: 24px;
-        height: 24px;
-        margin-bottom: 2px;
-    }
-
-    @media (max-width: 767px) {
-        #sidebar-desktop { display: none; }
-        #bottom-nav { display: flex; }
-        main { padding-bottom: 80px !important; margin-left: 0 !important; }
-    }
-
-    @media (min-width: 768px) {
-        main { margin-left: 240px; }
-    }
-</style>
-
-<!-- Sidebar Desktop -->
-<aside id="sidebar-desktop">
+<!-- === Sidebar Desktop === -->
+<aside id="sidebar-desktop" class="sidebar">
     <!-- App Logo -->
-    <div class="p-6 mb-2">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">B</div>
-            <span class="text-xl font-bold tracking-tight text-slate-900">Bonus<span class="text-indigo-600">.</span></span>
-        </div>
+    <div class="sidebar-logo">
+        <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-btn shrink-0">B</div>
+        <span class="sidebar-logo-text text-xl font-bold tracking-tight text-slate-900">Bonus<span class="text-indigo-600">.</span></span>
     </div>
 
     <!-- Nav Menu -->
-    <nav class="flex-1 overflow-y-auto">
-        <a href="index.php?page=home" class="nav-link <?= $page === 'home' ? 'active' : '' ?>">
-            <i data-lucide="layout-dashboard"></i> <span>หน้าแรก</span>
+    <nav class="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 custom-scrollbar">
+        
+        <a href="index.php?page=home" class="nav-item <?= $page === 'home' ? 'active' : '' ?>" data-label="หน้าแรก">
+            <div class="icon"><i data-lucide="layout-dashboard"></i></div>
+            <span class="nav-label">หน้าแรก</span>
         </a>
 
-        <div class="px-7 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-4">เมนูหลัก</div>
+        <div class="nav-label px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 whitespace-nowrap">เมนูหลัก</div>
         
-        <a href="index.php?page=checkin" class="nav-link <?= $page === 'checkin' ? 'active' : '' ?>">
-            <i data-lucide="camera"></i> <span>เช็คอิน</span>
+        <a href="index.php?page=checkin" class="nav-item <?= $page === 'checkin' ? 'active' : '' ?>" data-label="ระบบเช็คอิน">
+            <div class="icon"><i data-lucide="camera"></i></div>
+            <span class="nav-label">ระบบเช็คอิน</span>
         </a>
 
         <?php if (!hasRole('sales')): ?>
-        <a href="index.php?page=oil" class="nav-link <?= $page === 'oil' ? 'active' : '' ?>">
-            <i data-lucide="fuel"></i> <span>น้ำมัน/รถ</span>
+        <a href="index.php?page=oil" class="nav-item <?= $page === 'oil' ? 'active' : '' ?>" data-label="น้ำมันและยานพาหนะ">
+            <div class="icon"><i data-lucide="fuel"></i></div>
+            <span class="nav-label">น้ำมันและยานพาหนะ</span>
         </a>
-        <a href="index.php?page=dispatch" class="nav-link <?= $page === 'dispatch' ? 'active' : '' ?>">
-            <i data-lucide="map"></i> <span>แผนที่งาน</span>
+        <a href="index.php?page=dispatch" class="nav-item <?= $page === 'dispatch' ? 'active' : '' ?>" data-label="ระบบจัดส่งอัจฉริยะ">
+            <div class="icon"><i data-lucide="map"></i></div>
+            <span class="nav-label">ระบบจัดส่งอัจฉริยะ</span>
         </a>
         <?php endif; ?>
 
         <?php if (hasRole(['admin', 'super_admin'])): ?>
-        <a href="index.php?page=inventory" class="nav-link <?= $page === 'inventory' ? 'active' : '' ?>">
-            <i data-lucide="package"></i> <span>คลังสินค้า</span>
+        <a href="index.php?page=inventory" class="nav-item <?= $page === 'inventory' ? 'active' : '' ?>" data-label="ระบบคลังสินค้า">
+            <div class="icon"><i data-lucide="package"></i></div>
+            <span class="nav-label">ระบบคลังสินค้า</span>
         </a>
         <?php endif; ?>
 
         <?php if (hasRole('super_admin')): ?>
-        <div class="px-7 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-4">ตั้งค่า</div>
-        <a href="index.php?page=users" class="nav-link <?= $page === 'users' ? 'active' : '' ?>">
-            <i data-lucide="users"></i> <span>จัดการผู้ใช้</span>
+        <div class="nav-label px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 whitespace-nowrap">ตั้งค่าระบบ</div>
+        <a href="index.php?page=users" class="nav-item <?= $page === 'users' ? 'active' : '' ?>" data-label="จัดการผู้ใช้">
+            <div class="icon"><i data-lucide="users"></i></div>
+            <span class="nav-label">จัดการผู้ใช้</span>
         </a>
         <?php endif; ?>
     </nav>
 
     <!-- User Profile Section -->
-    <div class="p-4 border-t border-gray-100">
-        <div class="flex items-center gap-3 p-2">
-            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm">
-                <?= strtoupper(substr($user['full_name'] ?? 'U', 0, 2)) ?>
-            </div>
-            <div class="flex-1 overflow-hidden">
-                <p class="text-sm font-bold text-slate-900 truncate"><?= htmlspecialchars($user['full_name']) ?></p>
-                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-tight"><?= htmlspecialchars($user['role']) ?></p>
-            </div>
-            <a href="logout.php" class="text-slate-400 hover:text-red-500 transition-colors" title="ออกจากระบบ">
-                <i data-lucide="log-out" class="w-5 h-5"></i>
-            </a>
+    <div class="sidebar-user flex items-center gap-3 group relative cursor-pointer interactive hover:bg-slate-50 rounded-lg mx-2 mb-2">
+        <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold shrink-0">
+            <?= strtoupper(substr($user['full_name'] ?? 'U', 0, 2)) ?>
         </div>
+        <div class="nav-label flex-1 overflow-hidden">
+            <p class="text-sm font-bold text-slate-900 truncate"><?= htmlspecialchars($user['full_name']) ?></p>
+            <p class="text-[10px] text-slate-500 font-medium uppercase tracking-tight"><?= htmlspecialchars($user['role']) ?></p>
+        </div>
+        <a href="logout.php" class="nav-label text-slate-400 hover:text-red-500 transition-colors shrink-0" title="ออกจากระบบ">
+            <i data-lucide="log-out" class="w-5 h-5"></i>
+        </a>
+        
+        <!-- Hover tooltip for collapsed state -->
+        <div class="hidden-tooltip absolute left-16 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity whitespace-nowrap z-60">
+            <?= htmlspecialchars($user['full_name']) ?> <br>
+            <span class="text-red-400 text-[10px]"><a href="logout.php">ออกจากระบบ</a></span>
+        </div>
+    </div>
+
+    <!-- Toggle Button -->
+    <button id="sidebarToggle" class="sidebar-toggle">
+        <i data-lucide="chevron-left" class="w-4 h-4 chevron text-slate-500"></i>
+    </button>
+</aside>
+
+<!-- === Mobile Drawer Backdrop === -->
+<div id="mobileDrawerBackdrop" class="mobile-drawer-backdrop"></div>
+
+<!-- === Mobile Drawer === -->
+<aside id="mobileDrawer" class="mobile-drawer flex flex-col">
+    <!-- App Logo -->
+    <div class="h-14 px-4 flex items-center justify-between border-b border-gray-100 shrink-0">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm">B</div>
+            <span class="text-xl font-bold tracking-tight text-slate-900">Bonus<span class="text-indigo-600">.</span></span>
+        </div>
+        <button id="closeDrawerBtn" class="p-2 text-slate-400 hover:text-slate-600">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+    </div>
+
+    <!-- Drawer Nav -->
+    <nav class="flex-1 overflow-y-auto py-4 px-2">
+        <a href="index.php?page=home" class="nav-item <?= $page === 'home' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="layout-dashboard"></i></div>
+            <span class="nav-label">หน้าแรก</span>
+        </a>
+        
+        <!-- Copy all links here as needed, omitting for brevity since Bottom Tabs cover core nav -->
+        <?php if (hasRole(['admin', 'super_admin'])): ?>
+        <a href="index.php?page=inventory" class="nav-item <?= $page === 'inventory' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="package"></i></div>
+            <span class="nav-label">ระบบคลังสินค้า</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (hasRole('super_admin')): ?>
+        <div class="nav-label px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">ตั้งค่าระบบ</div>
+        <a href="index.php?page=users" class="nav-item <?= $page === 'users' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="users"></i></div>
+            <span class="nav-label">จัดการผู้ใช้</span>
+        </a>
+        <?php endif; ?>
+    </nav>
+    
+    <div class="p-4 border-t border-gray-100">
+        <a href="logout.php" class="flex items-center gap-3 text-red-500 font-medium p-2 hover:bg-red-50 rounded-lg transition-colors">
+            <i data-lucide="log-out" class="w-5 h-5"></i>
+            <span>ออกจากระบบ</span>
+        </a>
     </div>
 </aside>
 
-<!-- Bottom Nav Mobile -->
-<nav id="bottom-nav">
-    <a href="index.php?page=home" class="bottom-nav-item <?= $page === 'home' ? 'active' : '' ?>">
-        <i data-lucide="layout-dashboard"></i>
-        <span>Home</span>
+<!-- === Bottom Nav Mobile === -->
+<nav id="bottom-nav" class="bottom-tabs md:hidden">
+    <a href="index.php?page=home" class="tab-item <?= $page === 'home' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="layout-dashboard" class="w-6 h-6"></i></div>
+        <span class="tab-label">Home</span>
     </a>
-    <a href="index.php?page=checkin" class="bottom-nav-item <?= $page === 'checkin' ? 'active' : '' ?>">
-        <i data-lucide="camera"></i>
-        <span>Scan</span>
+    <a href="index.php?page=checkin" class="tab-item <?= $page === 'checkin' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="camera" class="w-6 h-6"></i></div>
+        <span class="tab-label">Scan</span>
     </a>
-    <a href="index.php?page=oil" class="bottom-nav-item <?= $page === 'oil' ? 'active' : '' ?>">
-        <i data-lucide="fuel"></i>
-        <span>Oil</span>
+    <a href="index.php?page=oil" class="tab-item <?= $page === 'oil' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="fuel" class="w-6 h-6"></i></div>
+        <span class="tab-label">Oil</span>
     </a>
-    <a href="index.php?page=dispatch" class="bottom-nav-item <?= $page === 'dispatch' ? 'active' : '' ?>">
-        <i data-lucide="map"></i>
-        <span>Map</span>
-    </a>
-    <a href="logout.php" class="bottom-nav-item text-red-400">
-        <i data-lucide="log-out"></i>
-        <span>Exit</span>
+    <a href="index.php?page=dispatch" class="tab-item <?= $page === 'dispatch' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="map" class="w-6 h-6"></i></div>
+        <span class="tab-label">Map</span>
     </a>
 </nav>
 
 <script>
-    // Initialize Lucide Icons
     lucide.createIcons();
+
+    // Desktop Sidebar Toggle Logic
+    const sidebar = document.getElementById('sidebar-desktop');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    const mainContent = document.getElementById('main-content-area'); // Need to ensure this ID is in index.php
+
+    if (sidebar && toggleBtn) {
+        // Load state
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            sidebar.classList.add('collapsed');
+            if(mainContent) mainContent.classList.add('sidebar-collapsed');
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            if(mainContent) mainContent.classList.toggle('sidebar-collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        });
+    }
+
+    // Tooltip logic for user profile when collapsed
+    const userSect = document.querySelector('.sidebar-user');
+    const userTooltip = document.querySelector('.hidden-tooltip');
+    if(userSect && userTooltip) {
+        userSect.addEventListener('mouseenter', () => {
+            if(sidebar.classList.contains('collapsed')) {
+                userTooltip.style.opacity = '1';
+                userTooltip.style.pointerEvents = 'auto';
+            }
+        });
+        userSect.addEventListener('mouseleave', () => {
+            userTooltip.style.opacity = '0';
+            userTooltip.style.pointerEvents = 'none';
+        });
+    }
 </script>

@@ -4,28 +4,28 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 ?>
 
 <div class="space-y-6">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between card">
         <div>
             <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                <span class="mr-2 text-3xl">📊</span> รายงานการใช้น้ำมัน   
+                <span class="mr-2 text-3xl"><i data-lucide="bar-chart-2" class="w-5 h-5 inline-block"></i></span> รายงานการใช้น้ำมัน   
             </h2>
             <p class="text-gray-500 text-sm mt-1">ตรวจสอบประวัติการเบิกค่าน้ำมันและดูสถิติ</p>
         </div>
         <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
             <div class="flex items-center space-x-2">
-                <input type="date" id="start_date" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                <input type="date" id="start_date" class="px-3 py-2 input w-full sm:w-auto">
                 <span class="text-gray-500">ถึง</span>
-                <input type="date" id="end_date" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
+                <input type="date" id="end_date" class="px-3 py-2 input w-full sm:w-auto">
             </div>
-            <button id="filterBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm w-full sm:w-auto">
+            <button id="filterBtn" class="btn-primary shadow-sm w-full sm:w-auto">
                 ค้นหา
             </button>
             <input type="file" id="importOilExcel" accept=".xlsx, .xls" class="hidden">
             <button onclick="document.getElementById('importOilExcel').click()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center w-full sm:w-auto">
-                <span class="mr-2">📥</span> นำเข้า Excel
+                <span class="mr-2"><i data-lucide="download" class="w-5 h-5 inline-block"></i></span> นำเข้า Excel
             </button>
             <button onclick="exportOilExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center w-full sm:w-auto">
-                <span class="mr-2">📥</span> ส่งออก Excel
+                <span class="mr-2"><i data-lucide="download" class="w-5 h-5 inline-block"></i></span> ส่งออก Excel
             </button>
             
             <?php if (hasRole('super_admin')): ?>
@@ -50,23 +50,23 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             <p class="text-3xl font-bold mt-2"><span id="stat_total_records">0</span> รายการ</p>
         </div>
         <div class="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl shadow-md p-6 text-white">
-            <h3 class="text-amber-100 text-sm font-medium">📋 เคสงานทุกทีม</h3>
+            <h3 class="text-amber-100 text-sm font-medium"><i data-lucide="clipboard" class="w-5 h-5 inline-block"></i> เคสงานทุกทีม</h3>
             <p class="text-3xl font-bold mt-2"><span id="stat_total_jobs">0</span> งาน</p>
         </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="card">
             <h3 class="font-bold text-gray-700 mb-4">เปรียบเทียบค่าใช้จ่ายรายวัน (บาท)</h3>
             <div class="relative h-64 w-full"><canvas id="costChart"></canvas></div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <div class="card">
             <h3 class="font-bold text-gray-700 mb-4">แนวโน้มปริมาณการใช้น้ำมัน (ลิตร)</h3>
             <div class="relative h-64 w-full"><canvas id="litersChart"></canvas></div>
         </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="card overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
             <h3 class="font-bold text-gray-700">ประวัติการเบิก และการคำนวณต้นทุน</h3>
         </div>
@@ -93,7 +93,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
     </div>
 </div>
 
-<div id="imageModal" class="fixed inset-0 z-[100] hidden bg-black bg-opacity-80 flex justify-center items-center p-4">
+<div id="imageModal" class="fixed inset-0 z-[80] hidden bg-black bg-opacity-80 flex justify-center items-center p-4">
     <div class="bg-white rounded-xl overflow-hidden w-full max-w-[95%] md:max-w-4xl flex flex-col max-h-[90vh]">
         <div class="p-4 border-b flex justify-between items-center bg-gray-50">
             <h3 class="font-bold text-gray-800">รูปภาพหลักฐานการเติมน้ำมัน</h3>
@@ -103,10 +103,10 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
     </div>
 </div>
 
-<div id="editOilModal" class="fixed inset-0 z-[100] hidden bg-slate-900 bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-md animate__animated animate__zoomIn">
+<div id="editOilModal" class="fixed inset-0 z-[80] hidden bg-slate-900 bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-md animate__animated animate__zoomIn z-[90]">
         <div class="bg-indigo-600 p-5 border-b flex justify-between items-center text-white">
-            <h3 class="font-black text-lg">✏️ แก้ไขข้อมูลผู้เติม / ทะเบียนรถ</h3>
+            <h3 class="font-black text-lg"><i data-lucide="edit-2" class="w-5 h-5 inline-block"></i> แก้ไขข้อมูลผู้เติม / ทะเบียนรถ</h3>
             <button onclick="closeEditOilModal()" class="text-indigo-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
         </div>
         <div class="p-6 space-y-5 bg-slate-50">
@@ -114,17 +114,17 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             
             <div>
                 <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ชื่อผู้เติม (ช่างเทคนิค)</label>
-                <select id="edit_tech_id" class="w-full px-4 py-3 border border-slate-300 rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 shadow-sm"></select>
+                <select id="edit_tech_id" class="input"></select>
             </div>
             
             <div>
                 <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ป้ายทะเบียนรถ (ทีม)</label>
-                <select id="edit_license_plate" class="w-full px-4 py-3 border border-slate-300 rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 shadow-sm"></select>
+                <select id="edit_license_plate" class="input"></select>
             </div>
         </div>
         <div class="p-4 border-t bg-white flex justify-end space-x-3">
             <button onclick="closeEditOilModal()" class="px-6 py-2.5 rounded-xl text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 transition-colors">ยกเลิก</button>
-            <button onclick="saveEditOil()" class="px-6 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-black shadow-lg shadow-indigo-200 transition-colors">บันทึกการแก้ไข</button>
+            <button onclick="saveEditOil()" class="btn-primary">บันทึกการแก้ไข</button>
         </div>
     </div>
 </div>

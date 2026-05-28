@@ -26,50 +26,50 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 </style>
 
 <div class="space-y-6">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between card">
         <div>
             <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                <span class="mr-2 text-3xl">📦</span> ระบบคลังสินค้า
+                <span class="mr-2 text-3xl"><i data-lucide="package" class="w-5 h-5 inline-block"></i></span> ระบบคลังสินค้า
             </h2>
             <p class="text-gray-500 text-sm mt-1">จัดการสต็อก นำเข้า เบิกจ่าย และดูประวัติ</p>
         </div>
     </div>
 
-    <div class="flex overflow-x-auto bg-white rounded-xl shadow-sm border border-gray-100 p-2 space-x-2">       
+    <div class="flex overflow-x-auto card space-x-2">       
         <?php if ($isAdmin): ?>
         <button onclick="invTab('overview')" id="tab-overview" class="inv-tab active px-6 py-2 rounded-lg text-sm font-bold bg-purple-100 text-purple-700 transition-colors whitespace-nowrap">
-            📊 คลังสินค้า
+            <i data-lucide="bar-chart-2" class="w-5 h-5 inline-block"></i> คลังสินค้า
         </button>
         <button onclick="invTab('inbound')" id="tab-inbound" class="inv-tab px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors whitespace-nowrap">
-            📥 นำเข้า
+            <i data-lucide="download" class="w-5 h-5 inline-block"></i> นำเข้า
         </button>
         <button onclick="invTab('outbound')" id="tab-outbound" class="inv-tab px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors whitespace-nowrap relative">
-            📤 เบิกออก
+            <i data-lucide="upload" class="w-5 h-5 inline-block"></i> เบิกออก
             <span id="outboundBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
         </button>
         <?php endif; ?>
         <button onclick="invTab('transfer')" id="tab-transfer" class="inv-tab <?php echo !$isAdmin ? 'active px-6 py-2 rounded-lg text-sm font-bold bg-purple-100 text-purple-700' : 'px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50'; ?> transition-colors whitespace-nowrap relative">
-            🔄 โอนย้าย (ยืมของ)
+            <i data-lucide="refresh-cw" class="w-5 h-5 inline-block"></i> โอนย้าย (ยืมของ)
             <span id="transferBadge" class="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
         </button>
         <button onclick="invTab('history')" id="tab-history" class="inv-tab px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors whitespace-nowrap">
-            🕒 ประวัติ
+            <i data-lucide="clock" class="w-5 h-5 inline-block"></i> ประวัติ
         </button>
     </div>
 
     <?php if ($isAdmin): ?>
     <div id="view-overview" class="inv-view block space-y-4">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="card overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-3">
                     <h3 class="font-bold text-gray-700">รายการสินค้าคงเหลือ</h3>
                     <button onclick="deleteAllInventory()" class="text-xs bg-red-50 hover:bg-red-600 hover:text-white text-red-600 border border-red-200 font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center shadow-sm">
-                        <span class="mr-1">🗑️</span> ล้างคลังทั้งหมด
+                        <span class="mr-1"><i data-lucide="trash-2" class="w-5 h-5 inline-block"></i></span> ล้างคลังทั้งหมด
                     </button>
                 </div>
                 <div class="relative w-full sm:w-64">
-                    <input type="text" id="searchStock" placeholder="ค้นหาสินค้า หรือ รุ่น..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
-                    <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
+                    <input type="text" id="searchStock" placeholder="ค้นหาสินค้า หรือ รุ่น..." class="w-full pl-10 pr-4 py-2 input">
+                    <span class="absolute left-3 top-2.5 text-gray-400"><i data-lucide="search" class="w-5 h-5 inline-block"></i></span>
                 </div>
             </div>
             <div class="overflow-x-auto">
@@ -94,15 +94,15 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     <?php endif; ?>
 
     <div id="view-inbound" class="inv-view hidden space-y-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-t-4 border-t-emerald-500">
+        <div class="card border-t-4 border-t-emerald-500">
             <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 border-b pb-4">
-                <h3 class="font-bold text-gray-700 text-lg flex items-center"><span class="text-emerald-500 mr-2">📥</span> สแกนและรับเข้าสต็อก</h3>
+                <h3 class="font-bold text-gray-700 text-lg flex items-center"><span class="text-emerald-500 mr-2"><i data-lucide="download" class="w-5 h-5 inline-block"></i></span> สแกนและรับเข้าสต็อก</h3>
                 <div class="inline-flex bg-gray-100 rounded-full p-1 flex-wrap justify-center gap-1">
                     <button id="btnModeSn" onclick="setInboundMode('SN')" class="px-4 py-2 rounded-full text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all flex items-center">
-                        🏷️ มี SN (สแกนทีละชิ้น)
+                        <i data-lucide="tag" class="w-5 h-5 inline-block"></i> มี SN (สแกนทีละชิ้น)
                     </button>
                     <button id="btnModeQty" onclick="setInboundMode('QTY')" class="px-4 py-2 rounded-full text-sm font-medium text-gray-500 hover:text-gray-700 transition-all flex items-center">
-                        📦 นับจำนวน (วัสดุสิ้นเปลือง)
+                        <i data-lucide="package" class="w-5 h-5 inline-block"></i> นับจำนวน (วัสดุสิ้นเปลือง)
                     </button>
                 </div>
             </div>
@@ -110,14 +110,14 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
                 <div class="relative">
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">ชื่อสินค้า</label>
-                    <input type="text" id="mainProductInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700" placeholder="คลิกเพื่อเลือก หรือพิมพ์ชื่อสินค้าใหม่..." autocomplete="off">
-                    <div id="productDropdown" class="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
+                    <input type="text" id="mainProductInput" class="w-full input" placeholder="คลิกเพื่อเลือก หรือพิมพ์ชื่อสินค้าใหม่..." autocomplete="off">
+                    <div id="productDropdown" class="absolute z-[80] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
                 </div>
 
                 <div id="areaModelSelect" class="relative">
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">รุ่น (Model)</label>
-                    <input type="text" id="mainModelInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700" placeholder="คลิกเพื่อเลือก หรือพิมพ์รุ่นใหม่..." autocomplete="off">
-                    <div id="modelDropdown" class="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
+                    <input type="text" id="mainModelInput" class="w-full input" placeholder="คลิกเพื่อเลือก หรือพิมพ์รุ่นใหม่..." autocomplete="off">
+                    <div id="modelDropdown" class="absolute z-[80] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
                 </div>
 
                 <div id="areaInputSn" class="md:col-span-2 mt-4">
@@ -136,11 +136,11 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center">
-            <h3 class="font-bold text-gray-700 mb-4 text-lg">📊 นำเข้าสินค้าทีละหลายรายการ (Excel)</h3>  
+        <div class="card flex flex-col items-center">
+            <h3 class="font-bold text-gray-700 mb-4 text-lg"><i data-lucide="bar-chart-2" class="w-5 h-5 inline-block"></i> นำเข้าสินค้าทีละหลายรายการ (Excel)</h3>  
             
             <div class="w-full max-w-md mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p class="text-sm font-semibold text-blue-900 mb-2">📋 รูปแบบไฟล์ที่ถูกต้อง:</p>
+                <p class="text-sm font-semibold text-blue-900 mb-2"><i data-lucide="clipboard" class="w-5 h-5 inline-block"></i> รูปแบบไฟล์ที่ถูกต้อง:</p>
                 <ul class="text-xs text-blue-800 space-y-1 ml-4 list-disc">
                     <li>ไฟล์ต้องเป็น Excel (.xlsx หรือ .xls)</li>
                     <li>คอลัมน์ที่ 1: <b>ชื่อสินค้า</b> (บังคับ)</li>
@@ -153,29 +153,29 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             <div class="flex flex-col sm:flex-row gap-3 w-full max-w-md">
                 <input type="file" id="excelImport" accept=".xlsx, .xls" class="hidden">
                 <button onclick="document.getElementById('excelImport').click()" class="flex-1 bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold py-2 px-6 rounded-lg text-sm transition-colors flex items-center justify-center">
-                    <span class="mr-2 text-lg">📁</span> เลือกไฟล์ Excel
+                    <span class="mr-2 text-lg"><i data-lucide="folder" class="w-5 h-5 inline-block"></i></span> เลือกไฟล์ Excel
                 </button>
                 <button onclick="downloadTemplate()" class="flex-1 bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold py-2 px-6 rounded-lg text-sm transition-colors flex items-center justify-center">
-                    <span class="mr-2 text-lg">⬇️</span> ดาวน์โหลด Template
+                    <span class="mr-2 text-lg"><i data-lucide="arrow-down" class="w-5 h-5 inline-block"></i></span> ดาวน์โหลด Template
                 </button>
             </div>
 
             <div id="excelPreview" class="mt-4 w-full hidden max-w-md">
                 <p class="text-sm text-green-600 font-bold text-center mb-2" id="excelCount"></p>
-                <button id="confirmExcelBtn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors">✓ ยืนยันนำเข้าข้อมูลทั้งหมด</button>
+                <button id="confirmExcelBtn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors"><i data-lucide="check" class="w-5 h-5 inline-block"></i> ยืนยันนำเข้าข้อมูลทั้งหมด</button>
             </div>
         </div>
     </div>
 
     <div id="view-outbound" class="inv-view hidden space-y-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 class="font-bold text-gray-700 mb-4 border-b pb-2 flex items-center"><span class="text-red-500 mr-2 text-xl">📤</span> สแกนเบิกสินค้าออก</h3>
+        <div class="card">
+            <h3 class="font-bold text-gray-700 mb-4 border-b pb-2 flex items-center"><span class="text-red-500 mr-2 text-xl"><i data-lucide="upload" class="w-5 h-5 inline-block"></i></span> สแกนเบิกสินค้าออก</h3>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
                     <label class="block text-sm font-bold text-gray-700 mb-2">เบิกสินค้ามี SN (ทีละชิ้น)</label>
                     <div class="flex gap-2">
-                        <input type="text" id="out_sn" placeholder="ยิงบาร์โค้ด SN ตรงนี้..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 font-mono">
+                        <input type="text" id="out_sn" placeholder="ยิงบาร์โค้ด SN ตรงนี้..." class="flex-1 px-4 py-2 input font-mono">
                         <button id="addOutboundBtn" class="bg-gray-800 text-white px-4 rounded-lg font-bold hover:bg-gray-900 transition-colors text-sm">เพิ่มลงคิว</button>
                     </div>
                 </div>
@@ -217,13 +217,13 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 
     <div id="view-transfer" class="inv-view hidden space-y-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-t-4 border-t-blue-500">
-            <h3 class="font-bold text-gray-700 mb-4 border-b pb-2 flex items-center"><span class="text-blue-500 mr-2 text-xl">🔄</span> โอนย้าย / ยืมของระหว่างช่าง</h3>
+        <div class="card border-t-4 border-t-blue-500">
+            <h3 class="font-bold text-gray-700 mb-4 border-b pb-2 flex items-center"><span class="text-blue-500 mr-2 text-xl"><i data-lucide="refresh-cw" class="w-5 h-5 inline-block"></i></span> โอนย้าย / ยืมของระหว่างช่าง</h3>
             
             <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
                 <p class="text-sm text-gray-500">เลือกสินค้าหรือระบุจำนวนวัสดุ เพื่อทำการโอนย้ายไปยังช่างคนอื่น</p>
                 <button onclick="loadMyTodayItems()" class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center border border-blue-200">
-                    <span class="mr-1">🔄</span> รีเฟรชรายการ
+                    <span class="mr-1"><i data-lucide="refresh-cw" class="w-5 h-5 inline-block"></i></span> รีเฟรชรายการ
                 </button>
             </div>
 
@@ -268,7 +268,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
             <div class="mt-6 flex flex-col md:flex-row items-center gap-4 justify-between bg-blue-50 p-4 rounded-xl border border-blue-100">
                 <div class="w-full md:w-1/2">
-                    <label class="block text-sm font-bold text-blue-800 mb-2">👤 เลือกช่างผู้รับของ (ยืมไป)</label>
+                    <label class="block text-sm font-bold text-blue-800 mb-2"><i data-lucide="user" class="w-5 h-5 inline-block"></i> เลือกช่างผู้รับของ (ยืมไป)</label>
                     <select id="transferTargetSelect" class="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-slate-700 shadow-sm cursor-pointer">
                         <option value="">-- โหลดรายชื่อ... --</option>
                     </select>
@@ -281,7 +281,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 
     <div id="view-history" class="inv-view <?php echo !$isAdmin ? 'block' : 'hidden'; ?> space-y-4">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="card overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center flex-wrap gap-4">       
                 <h3 class="font-bold text-gray-700">ประวัติการรับเข้า - เบิกออก</h3>
                 
@@ -296,7 +296,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <?php endif; ?>
                     
                     <button id="exportHistoryBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center whitespace-nowrap">
-                        <span class="mr-2">📊</span> ส่งออก Excel
+                        <span class="mr-2"><i data-lucide="bar-chart-2" class="w-5 h-5 inline-block"></i></span> ส่งออก Excel
                     </button>
                 </div>
             </div>
@@ -320,10 +320,10 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 </div>
 
-<div id="outboundModal" class="fixed inset-0 z-[100] hidden bg-black bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-2xl flex flex-col max-h-[90vh] transform transition-all">
+<div id="outboundModal" class="fixed inset-0 z-[80] hidden bg-black bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-2xl flex flex-col max-h-[90vh] transform transition-all z-[90]">
         <div class="bg-gray-800 p-4 border-b flex justify-between items-center text-white">
-            <h3 class="font-bold text-lg flex items-center"><span class="mr-2">📑</span> บิลสรุปการเบิกสินค้า</h3>
+            <h3 class="font-bold text-lg flex items-center"><span class="mr-2"><i data-lucide="file-text" class="w-5 h-5 inline-block"></i></span> บิลสรุปการเบิกสินค้า</h3>
             <button onclick="closeOutboundModal()" class="text-gray-400 hover:text-white text-2xl font-bold leading-none">&times;</button>
         </div>
         <div class="p-6 overflow-y-auto">
@@ -335,7 +335,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 </div>
 
                 <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
-                    <label class="block text-sm font-bold text-blue-800 mb-2">📦 ระบุผู้รับของ (เบิกให้ใคร / ทีมไหน?)</label>
+                    <label class="block text-sm font-bold text-blue-800 mb-2"><i data-lucide="package" class="w-5 h-5 inline-block"></i> ระบุผู้รับของ (เบิกให้ใคร / ทีมไหน?)</label>
                     <select id="outboundTargetSelect" class="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-bold text-slate-700 shadow-sm cursor-pointer">
                         <option value="">-- กำลังโหลดรายชื่อผู้รับ... --</option>
                     </select>
@@ -365,24 +365,24 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         <div class="p-4 border-t bg-gray-50 flex justify-end space-x-3">
             <button onclick="closeOutboundModal()" class="px-6 py-2 rounded-lg text-gray-600 bg-white border border-gray-300 hover:bg-gray-100 font-medium transition-colors">ปิด</button>
             <button id="finalSubmitOutbound" class="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-bold shadow-md flex items-center transition-colors">
-                <span class="mr-2">✅</span> ยืนยันตัดสต็อกทันที
+                <span class="mr-2"><i data-lucide="check-circle" class="w-5 h-5 inline-block"></i></span> ยืนยันตัดสต็อกทันที
             </button>
         </div>
     </div>
 </div>
 
-<div id="snListModal" class="fixed inset-0 z-[100] hidden bg-black bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-lg flex flex-col max-h-[90vh] transform transition-all animate__animated animate__zoomIn">
+<div id="snListModal" class="fixed inset-0 z-[80] hidden bg-black bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-lg flex flex-col max-h-[90vh] transform transition-all animate__animated animate__zoomIn z-[90]">
         <div class="bg-indigo-600 p-4 border-b flex justify-between items-center text-white">
-            <h3 class="font-bold text-lg flex items-center"><span class="mr-2">🏷️</span> รายการหมายเลขซีเรียล</h3>
+            <h3 class="font-bold text-lg flex items-center"><span class="mr-2"><i data-lucide="tag" class="w-5 h-5 inline-block"></i></span> รายการหมายเลขซีเรียล</h3>
             <button onclick="closeSnModal()" class="text-indigo-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
         </div>
         <div class="p-5 border-b bg-slate-50">
             <h4 id="snModalProductName" class="text-lg font-black text-slate-800">ชื่อสินค้า</h4>
             <p id="snModalModelName" class="text-sm text-slate-500 mb-4">รุ่น: -</p>
             <div class="relative w-full">
-                <input type="text" id="searchSnInModal" placeholder="ค้นหาหมายเลข SN ภายในรุ่นนี้..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 font-mono">
-                <span class="absolute left-3 top-2.5 text-slate-400">🔍</span>
+                <input type="text" id="searchSnInModal" placeholder="ค้นหาหมายเลข SN ภายในรุ่นนี้..." class="w-full pl-10 pr-4 py-2 input font-mono">
+                <span class="absolute left-3 top-2.5 text-slate-400"><i data-lucide="search" class="w-5 h-5 inline-block"></i></span>
             </div>
         </div>
         <div class="p-5 overflow-y-auto bg-white flex-1 custom-scrollbar">
