@@ -1,0 +1,28 @@
+name: Deploy PHP App to InfinityFree
+
+on:
+  push:
+    branches:
+      - main  # หรือเปลี่ยนเป็น master ถ้า branch หลักของคุณชื่อ master
+
+jobs:
+  web-deploy:
+    name: Deploy to FTP
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get latest code
+      uses: actions/checkout@v4
+      
+    - name: Sync files to InfinityFree
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: /htdocs/  # บังคับอัปโหลดไปที่โฟลเดอร์ htdocs ของ InfinityFree
+        exclude: |
+          **/.git*
+          **/.git*/**
+          .github/**
+          sql/** # ไม่ต้องอัปโหลดไฟล์โครงสร้างฐานข้อมูลขึ้นไป
+          README.md
