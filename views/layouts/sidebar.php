@@ -56,6 +56,14 @@
     .drawer-open {
         transform: translateX(0) !important;
     }
+
+    /* 🟢 ดันเนื้อหาลงมาไม่ให้ Navbar มือถือบัง */
+    @media (max-width: 1024px) {
+        main {
+            /* Navbar ใหม่สูง 4rem (64px) + ระยะห่าง 1rem รวมเป็น 5rem ทำให้พอดีไม่กินที่ */
+            padding-top: 5.5rem !important; 
+        }
+    }
 </style>
 
 <aside id="desktopSidebar" class="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col h-full sticky top-0 shadow-sm relative z-40" style="height: 100vh;">
@@ -135,7 +143,7 @@
     </div>
 </aside>
 
-<div class="md:hidden bg-white border-b border-slate-100 p-4 flex justify-between items-center fixed top-0 left-0 w-full z-[40] shadow-sm h-[5rem]">
+<div class="md:hidden bg-white border-b border-slate-100 px-4 py-2 flex justify-between items-center fixed top-0 left-0 w-full z-[40] shadow-sm h-16">
     <h2 class="text-xl font-black text-indigo-600 tracking-tighter">สมาร์ทสูท</h2>
     <button id="mobileMenuBtn" class="p-2 text-slate-500 hover:text-indigo-600 focus:outline-none transition-colors bg-slate-50 rounded-xl">
         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -216,7 +224,6 @@
 
         function openDrawer() {
             mobileOverlay.classList.remove('hidden');
-            // หน่วงเวลาเล็กน้อยเพื่อให้ CSS Render ทันก่อนปรับ opacity
             setTimeout(() => {
                 mobileOverlay.classList.remove('opacity-0');
                 mobileDrawer.classList.add('drawer-open');
@@ -228,7 +235,7 @@
             mobileOverlay.classList.add('opacity-0');
             setTimeout(() => {
                 mobileOverlay.classList.add('hidden');
-            }, 300); // รอให้ Animation เล่นจบ (0.3s)
+            }, 300);
         }
 
         if (mobileMenuBtn && mobileDrawer) {
