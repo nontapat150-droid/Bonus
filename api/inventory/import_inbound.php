@@ -36,16 +36,16 @@ try {
     $pdo->beginTransaction();
 
     // เตรียม SQL Statements สำหรับเช็คและบันทึก
-    $stmtFindProdByName = $pdo->prepare("SELECT id, product_code FROM products WHERE name = ?");
-    $stmtFindProdByCode = $pdo->prepare("SELECT id, name FROM products WHERE product_code = ?");
+    $stmtFindProdByName = $pdo->prepare("SELECT id, product_code FROM products WHERE name = ? LIMIT 1");
+    $stmtFindProdByCode = $pdo->prepare("SELECT id, name FROM products WHERE product_code = ? LIMIT 1");
     $stmtInstProd = $pdo->prepare("INSERT INTO products (product_code, name) VALUES (?, ?)");
     $stmtUpdateProdCode = $pdo->prepare("UPDATE products SET product_code = ? WHERE id = ?");
 
-    $stmtFindModel = $pdo->prepare("SELECT id FROM product_models WHERE product_id = ? AND model_name = ?");    
+    $stmtFindModel = $pdo->prepare("SELECT id FROM product_models WHERE product_id = ? AND model_name = ? LIMIT 1");    
     $stmtInstModel = $pdo->prepare("INSERT INTO product_models (product_id, model_name) VALUES (?, ?)");        
 
-    $stmtCheckSN = $pdo->prepare("SELECT id FROM inventory_items WHERE sn = ?");
-    $stmtInstItem = $pdo->prepare("INSERT INTO inventory_items (model_id, sn, status) VALUES (?, ?, 'in_stock')");
+    $stmtCheckSN = $pdo->prepare("SELECT id FROM inventory_items WHERE sn = ? LIMIT 1");
+    $stmtInstItem = $pdo->prepare("INSERT INTO inventory_items (model_id, sn, status, remark) VALUES (?, ?, 'in_stock', ?)");
     $stmtLog = $pdo->prepare("INSERT INTO inventory_logs (item_id, action, admin_id) VALUES (?, 'in', ?)");     
 
     foreach ($items as $index => $item) {
@@ -53,11 +53,11 @@ try {
         $pName = trim($item['product_name'] ?? '');
         $mName = trim($item['model_name'] ?? '');
         $sn = trim($item['sn'] ?? '');
+        $remark = trim($item['remark'] ?? '');
 
         // ตรวจสอบข้อมูลที่บังคับ
-        if (empty($pName) || empty($mName)) {
-            $rowNum = $index + 2; // +2 เพราะ row 0 = header, index 0 = row 1
-            $errors[] = "แถวที่ $rowNum: ข้อมูลไม่สมบูรณ์ (ชื่อสินค้า: '$pName', รุ่น: '$mName')";
+        if (empty($pName)) {
+            $errors[] = "แถวที่ " . ($index + 1) . ": ชื่อสินค้าห้ามว่าง";
             continue;
         }
 
@@ -66,10 +66,11 @@ try {
             $sn = 'SYS-' . strtoupper(uniqid());
         }
 
+        // เช็ค SN ซ้ำในระบบ
         $stmtCheckSN->execute([$sn]);
         if ($stmtCheckSN->fetch()) {
             $stats['duplicate_sns']++;
-            $errors[] = "แถวที่ " . ($index + 1) . ": หมายเลขซีเรียล '$sn' มีอยู่ในระบบแล้ว";
+            $errors[] = "แถวที่ " . ($index + 1) . ": หมายเลขซีเรียล '$sn' มีอยู่ในระบบแล้ว (ถูกข้าม)";
             continue;
         }
 
@@ -81,7 +82,7 @@ try {
             $existingByCode = $stmtFindProdByCode->fetch();
             if ($existingByCode) {
                 // ถ้ารหัสซ้ำ แต่ชื่อไม่เหมือนกัน ให้ตีกลับ
-                if (strtolower($existingByCode['name']) !== strtolower($pName)) {
+                if (mb_strtolower($existingByCode['name']) !== mb_strtolower($pName)) {
                     $errors[] = "แถวที่ " . ($index + 1) . ": รหัสสินค้า '$pCodeInput' ถูกใช้งานแล้วกับสินค้าอื่น ({$existingByCode['name']})";
                     continue;
                 }
@@ -99,7 +100,9 @@ try {
                 if (!empty($pCodeInput) && $existingByName['product_code'] !== $pCodeInput) {
                     try {
                         $stmtUpdateProdCode->execute([$pCodeInput, $prodId]);
-                    } catch (PDOException $e) {} // ข้าม error ถ้ารหัสซ้ำ
+                    } catch (PDOException $e) {
+                        // ถ้าอัปเดตไม่ได้ (เช่น รหัสไปซ้ำกับตัวอื่น) ก็ใช้รหัสเดิมต่อไป
+                    }
                 }
             }
         }
@@ -111,30 +114,41 @@ try {
                 $stmtInstProd->execute([$pCode, $pName]);
                 $prodId = $pdo->lastInsertId();
             } catch (PDOException $e) {
-                $errors[] = "แถวที่ " . ($index + 1) . ": รหัสสินค้าหรือชื่อซ้ำในระบบ";
+                $errors[] = "แถวที่ " . ($index + 1) . ": ไม่สามารถสร้างสินค้า '$pName' ได้ (รหัสสินค้าหรือชื่ออาจซ้ำในระบบ)";
                 continue;
             }
         }
 
-        // --- เพิ่ม Model ---
+        // --- เพิ่ม/หา Model ---
+        // ถ้าไม่มีชื่อรุ่น ให้ใช้คำว่า "Default" หรือ ชื่อสินค้า
+        if (empty($mName)) $mName = 'Standard';
+
         $stmtFindModel->execute([$prodId, $mName]);
         $modelId = $stmtFindModel->fetchColumn();
 
         if (!$modelId) {
-            $stmtInstModel->execute([$prodId, $mName]);
-            $modelId = $pdo->lastInsertId();
+            try {
+                $stmtInstModel->execute([$prodId, $mName]);
+                $modelId = $pdo->lastInsertId();
+            } catch (PDOException $e) {
+                $errors[] = "แถวที่ " . ($index + 1) . ": ไม่สามารถบันทึกรุ่น '$mName' ได้";
+                continue;
+            }
         }
 
         // --- เพิ่ม Item และบันทึก Log ---
-        $stmtInstItem->execute([$modelId, $sn]);
-        $itemId = $pdo->lastInsertId();
+        try {
+            $stmtInstItem->execute([$modelId, $sn, $remark]);
+            $itemId = $pdo->lastInsertId();
+            $stmtLog->execute([$itemId, $admin_id]);
 
-        $stmtLog->execute([$itemId, $admin_id]);
-
-        $uniqueProducts[$prodId] = true;
-        $uniqueModels[$modelId] = true;
-        $stats['imported_sns']++;
-        $successCount++;
+            $uniqueProducts[$prodId] = true;
+            $uniqueModels[$modelId] = true;
+            $stats['imported_sns']++;
+            $successCount++;
+        } catch (PDOException $e) {
+            $errors[] = "แถวที่ " . ($index + 1) . ": เกิดข้อผิดพลาดทางเทคนิคขณะบันทึก SN '$sn': " . $e->getMessage();
+        }
     }
 
     $stats['products_count'] = count($uniqueProducts);
@@ -149,7 +163,7 @@ try {
     ]);
 
 } catch (Exception $e) {
-    $pdo->rollBack();
+    if ($pdo->inTransaction()) $pdo->rollBack();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>

@@ -515,16 +515,17 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    Toast.info('กำลังอ่านข้อมูลจากไฟล์ Excel...');
+    Loader.show();
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
             const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
+            const workbook = XLSX.read(data, {type: 'array', cellDates: true});
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+            const json = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
 
             if (!json || json.length === 0) {
+                Loader.hide();
                 Toast.error('ไฟล์ Excel ว่างเปล่า');
                 return;
             }
@@ -532,7 +533,7 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
             excelDataPayload = [];
             let skipped = 0;
 
-            // ฟังก์ชันตรวจสอบว่าเป็นคอลัมน์ที่ต้องการหรือไม่
+            // ฟังก์ชันตรวจสอบว่าเป็นคอลัมน์ที่ต้องการหรือไม่ (ปรับให้ฉลาดขึ้น)
             const isSNCol = (h) => {
                 const s = String(h).toLowerCase().trim();
                 return s.includes('sn') || s.includes('ซีเรียล') || s.includes('serial') || s.includes('หมายเลข');
@@ -549,66 +550,75 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
                 const s = String(h).toLowerCase().trim();
                 return s.includes('code') || s.includes('รหัส') || s.includes('product_code');
             };
+            const isRemarkCol = (h) => {
+                const s = String(h).toLowerCase().trim();
+                return s.includes('remark') || s.includes('หมายเหตุ') || s.includes('note');
+            };
 
             // ตรวจสอบคอลัมน์จากแถวแรก (Header)
             const headerRow = json[0] || [];
-            let cI = -1, nI = -1, mI = -1, sI = -1;
+            let cI = -1, nI = -1, mI = -1, sI = -1, rI = -1;
 
             headerRow.forEach((cell, idx) => {
                 const header = String(cell).trim();
                 if (isCodeCol(header)) cI = idx;
-                if (isNameCol(header)) nI = idx;
-                if (isModelCol(header)) mI = idx;
-                if (isSNCol(header)) sI = idx;
+                else if (isNameCol(header)) nI = idx;
+                else if (isModelCol(header)) mI = idx;
+                else if (isSNCol(header)) sI = idx;
+                else if (isRemarkCol(header)) rI = idx;
             });
 
-            // ถ้าไม่พบ Name หรือ Model จากการแสกน ให้ใช้ตำแหน่งเริ่มต้น
-            if (nI === -1) nI = 0;  // คอลัมน์แรกคือ ชื่อสินค้า
-            if (mI === -1) mI = 1;  // คอลัมน์ที่สอง คือ รุ่น
-            if (sI === -1) sI = 2;  // คอลัมน์ที่สาม คือ SN
-            if (cI === -1) cI = -1; // ไม่มีรหัสสินค้า (ไม่บังคับ)
+            // ถ้าไม่พบ Name หรือ Model จากการแสกน ให้ใช้ตำแหน่งเริ่มต้น (Fallback)
+            // ค้นหาแถวแรกที่มีข้อมูลจริงๆ เพื่อเช็คว่ามี Header หรือไม่
+            let startRow = 1;
+            if (nI === -1 && mI === -1 && sI === -1) {
+                // ถ้าไม่เจอ Header เลย อาจเป็นไฟล์ไม่มี Header ให้ใช้ 0, 1, 2
+                nI = 0; mI = 1; sI = 2;
+                startRow = 0; // เริ่มอ่านตั้งแต่แถวแรก
+            }
 
-            console.log('Column Detection:', { productCode: cI, productName: nI, model: mI, sn: sI });
+            console.log('Column Detection:', { productCode: cI, productName: nI, model: mI, sn: sI, remark: rI, startFrom: startRow });
 
-            // ประมวลผลข้อมูล (ข้ามแถวแรก - Header)
-            json.forEach((row, index) => {
-                if (index === 0) return;
-                if (!row || row.length === 0) return;
+            // ประมวลผลข้อมูล
+            for (let i = startRow; i < json.length; i++) {
+                const row = json[i];
+                if (!row || row.length === 0 || !row.some(cell => cell !== "")) continue;
 
-                const pCode = cI !== -1 && row[cI] ? String(row[cI]).trim() : '';
-                const pName = nI !== -1 && row[nI] ? String(row[nI]).trim() : '';
-                const mName = mI !== -1 && row[mI] ? String(row[mI]).trim() : '';
-                const sn = sI !== -1 && row[sI] ? String(row[sI]).trim() : '';
+                const pCode = cI !== -1 ? String(row[cI] || '').trim() : '';
+                const pName = nI !== -1 ? String(row[nI] || '').trim() : '';
+                const mName = mI !== -1 ? String(row[mI] || '').trim() : '';
+                const sn = sI !== -1 ? String(row[sI] || '').trim() : '';
+                const remark = rI !== -1 ? String(row[rI] || '').trim() : '';
 
-                // ตรวจสอบว่ามี ชื่อสินค้า และ รุ่น
-                if (pName && mName) {
+                // ตรวจสอบว่ามี ชื่อสินค้า (ขั้นต่ำ)
+                if (pName) {
                     excelDataPayload.push({
                         product_code: pCode,
                         product_name: pName,
                         model_name: mName,
-                        sn: sn
+                        sn: sn,
+                        remark: remark
                     });
                 } else {
-                    if (pName || mName || sn) { // มีข้อมูลบางส่วน แต่ไม่สมบูรณ์
-                        skipped++;
-                    }
+                    skipped++;
                 }
-            });
+            }
 
+            Loader.hide();
             const previewDiv = document.getElementById('excelPreview');
             const countP = document.getElementById('excelCount');
 
             if (excelDataPayload.length > 0) {
-                countP.textContent = `✓ พบข้อมูลพร้อมนำเข้า ${excelDataPayload.length} รายการ (ข้ามข้อมูลไม่สมบูรณ์ ${skipped} แถว)`;
+                countP.textContent = `✓ พบข้อมูลพร้อมนำเข้า ${excelDataPayload.length} รายการ (ข้ามแถวว่าง/ไม่สมบูรณ์ ${skipped} แถว)`;
                 previewDiv.classList.remove('hidden');
                 previewDiv.classList.add('animate__animated', 'animate__bounceIn');
-                Toast.success('โหลดไฟล์สำเร็จ! กรุณากดปุ่มยืนยัน');
+                Toast.success('โหลดไฟล์สำเร็จ! กรุณากดปุ่มยืนยันด้านล่าง');
             } else {
-                Toast.error(`ไม่พบข้อมูลที่ถูกต้องในไฟล์ (ข้ามแล้ว ${skipped} แถว)\n\nตรวจสอบว่าไฟล์มีคอลัมน์: ชื่อสินค้า | รุ่น | ซีเรียล`);
+                Toast.error(`ไม่พบข้อมูลที่ถูกต้องในไฟล์\n\nตรวจสอบว่าไฟล์มีคอลัมน์: ชื่อสินค้า | รุ่น | ซีเรียล`);
                 previewDiv.classList.add('hidden');
-                console.log('Raw file data:', json);
             }
         } catch (err) {
+            Loader.hide();
             console.error('Error:', err);
             Toast.error('ไฟล์ Excel รูปแบบไม่ถูกต้อง: ' + err.message);
         }
@@ -618,6 +628,17 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
 
 document.getElementById('confirmExcelBtn')?.addEventListener('click', async (e) => {
     if (excelDataPayload.length === 0) return;
+
+    const result = await Swal.fire({
+        title: 'ยืนยันการนำเข้า?',
+        text: `คุณกำลังจะนำเข้าข้อมูลสินค้าจำนวน ${excelDataPayload.length} รายการ เข้าสู่ระบบคลัง`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยันนำเข้า',
+        cancelButtonText: 'ยกเลิก'
+    });
+
+    if (!result.isConfirmed) return;
 
     Loader.show();
     const btn = e.target;
@@ -631,19 +652,33 @@ document.getElementById('confirmExcelBtn')?.addEventListener('click', async (e) 
         });
         const data = await res.json();
 
+        Loader.hide();
         if (data.success) {
-            Toast.success(`นำเข้าสินค้าสำเร็จทั้งหมด ${data.imported} รายการ`);
+            let msg = `นำเข้าสำเร็จ ${data.imported} รายการ`;
+            if (data.errors && data.errors.length > 0) {
+                msg += `\n(พบข้อผิดพลาด ${data.errors.length} รายการ)`;
+                console.warn('Import Errors:', data.errors);
+            }
+            
+            await Swal.fire({
+                title: 'ดำเนินการเสร็จสิ้น',
+                text: msg,
+                icon: data.errors && data.errors.length > 0 ? 'warning' : 'success',
+                confirmButtonText: 'ตกลง'
+            });
+
             document.getElementById('excelPreview').classList.add('hidden');
             document.getElementById('excelImport').value = '';
             excelDataPayload = [];
             loadStockOverview();
+            invTab('overview');
         } else {
             Toast.error('เกิดข้อผิดพลาด: ' + data.error);
         }
     } catch (err) {
+        Loader.hide();
         Toast.error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
     } finally {
-        Loader.hide();
         btn.disabled = false;
     }
 });

@@ -1,7 +1,8 @@
 <?php
 /**
- * API: ทดสอบไฟล์ Excel ก่อนนำเข้า
- * Validate Excel file format before import
+ * API: ทดสอบไฟล์ Excel/CSV ก่อนนำเข้า
+ * ปัจจุบันระบบหลักใช้การตรวจสอบฝั่ง Client (JavaScript + SheetJS) 
+ * ไฟล์นี้ใช้สำหรับตรวจสอบเบื้องต้นกรณีอัปโหลด CSV โดยตรง
  */
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
@@ -20,90 +21,52 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_FILES['file'])) {
 }
 
 $file = $_FILES['file'];
-$errors = [];
-$warnings = [];
 $validRows = [];
 $skippedRows = [];
 
 try {
-    // อ่านไฟล์ CSV/Excel
     $filePath = $file['tmp_name'];
-    $fileName = $file['name'];
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     
-    // ตรวจสอบนามสกุล
-    $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-    if (!in_array($ext, ['csv', 'xlsx', 'xls'])) {
-        throw new Exception('ไฟล์ต้องเป็น CSV หรือ Excel (.csv, .xlsx, .xls)');
+    if ($ext !== 'csv') {
+        throw new Exception('API นี้รองรับเฉพาะไฟล์ .csv เท่านั้น สำหรับ .xlsx กรุณาใช้ผ่านหน้าจอระบบนำเข้าปกติ');
     }
 
-    // อ่านไฟล์ CSV
-    $rows = [];
-    if ($ext === 'csv') {
-        $handle = fopen($filePath, 'r');
-        if (!$handle) throw new Exception('ไม่สามารถเปิดไฟล์ได้');
-        
-        while (($row = fgetcsv($handle)) !== false) {
-            $rows[] = $row;
-        }
-        fclose($handle);
-    } else {
-        // สำหรับ XLSX/XLS ให้ใช้ JavaScript เพราะ PHP ต้อง library เพิ่มเติม
-        throw new Exception('ตอนนี้รองรับเฉพาะไฟล์ CSV เท่านั้น ลองบันทึกไฟล์ Excel เป็น CSV');
-    }
+    $handle = fopen($filePath, 'r');
+    if (!$handle) throw new Exception('ไม่สามารถเปิดไฟล์ได้');
+    
+    $headers = fgetcsv($handle); // ข้ามหัว
+    $rowIdx = 2;
 
-    if (empty($rows)) {
-        throw new Exception('ไฟล์ว่างเปล่า');
-    }
-
-    // ตรวจสอบ header
-    $headerRow = $rows[0];
-    $message = "ข้อมูล Header แถวที่ 1: " . implode(', ', $headerRow);
-
-    // ประมวลผล data rows
-    for ($i = 1; $i < count($rows); $i++) {
-        $row = $rows[$i];
-        
-        // ข้ามแถวว่าง
+    while (($row = fgetcsv($handle)) !== false) {
         if (empty(array_filter($row))) continue;
 
-        $productName = isset($row[0]) ? trim($row[0]) : '';
+        $pName = isset($row[0]) ? trim($row[0]) : '';
         $model = isset($row[1]) ? trim($row[1]) : '';
         $sn = isset($row[2]) ? trim($row[2]) : '';
 
-        if ($productName && $model) {
+        if ($pName) {
             $validRows[] = [
-                'row' => $i + 1,
-                'product_name' => $productName,
-                'model' => $model,
-                'sn' => $sn ?: '(จะสร้างอัตโนมัติ)'
+                'row' => $rowIdx,
+                'product_name' => $pName,
+                'model' => $model ?: 'Standard',
+                'sn' => $sn ?: '(Auto-generated)'
             ];
         } else {
-            $skippedRows[] = [
-                'row' => $i + 1,
-                'reason' => 'ข้อมูลไม่สมบูรณ์ (ชื่อ: ' . ($productName ?: 'ว่าง') . ', รุ่น: ' . ($model ?: 'ว่าง') . ')'
-            ];
+            $skippedRows[] = ['row' => $rowIdx, 'reason' => 'ไม่มีชื่อสินค้า'];
         }
+        $rowIdx++;
     }
-
-    if (count($validRows) === 0) {
-        throw new Exception('ไม่พบข้อมูลที่ถูกต้อง: ' . count($skippedRows) . ' แถวถูกข้าม');
-    }
+    fclose($handle);
 
     echo json_encode([
         'success' => true,
-        'message' => $message,
         'valid_count' => count($validRows),
         'skipped_count' => count($skippedRows),
-        'valid_rows' => array_slice($validRows, 0, 5), // แสดง 5 แถวแรก
-        'skipped_rows' => array_slice($skippedRows, 0, 5),
-        'total_rows' => count($rows) - 1 // ไม่นับ header
+        'preview' => array_slice($validRows, 0, 10)
     ]);
 
 } catch (Exception $e) {
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage(),
-        'hint' => 'ตรวจสอบว่าคอลัมน์อยู่ในลำดับที่ถูกต้อง: ชื่อสินค้า | รุ่น | ซีเรียล'
-    ]);
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>
