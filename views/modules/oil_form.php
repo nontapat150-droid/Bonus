@@ -9,7 +9,7 @@ if (!defined('PDO::ATTR_ERRMODE')) {
 $isAdmin = hasRole(['admin', 'super_admin']);
 ?>
 
-<div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden z-[90]">
+<div class="max-w-2xl mx-auto card overflow-hidden">
     <div class="bg-blue-600 px-6 py-4">
         <h2 class="text-2xl font-bold text-white flex items-center">
             <span class="mr-2 text-3xl"><i data-lucide="fuel" class="w-5 h-5 inline-block"></i></span> บันทึกการใช้น้ำมัน

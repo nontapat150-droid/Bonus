@@ -111,13 +111,13 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 <div class="relative">
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">ชื่อสินค้า</label>
                     <input type="text" id="mainProductInput" class="w-full input" placeholder="คลิกเพื่อเลือก หรือพิมพ์ชื่อสินค้าใหม่..." autocomplete="off">
-                    <div id="productDropdown" class="absolute z-[80] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
+                    <div id="productDropdown" class="absolute z-[50] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
                 </div>
 
                 <div id="areaModelSelect" class="relative">
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">รุ่น (Model)</label>
                     <input type="text" id="mainModelInput" class="w-full input" placeholder="คลิกเพื่อเลือก หรือพิมพ์รุ่นใหม่..." autocomplete="off">
-                    <div id="modelDropdown" class="absolute z-[80] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
+                    <div id="modelDropdown" class="absolute z-[50] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
                 </div>
 
                 <div id="areaInputSn" class="md:col-span-2 mt-4">

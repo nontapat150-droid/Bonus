@@ -275,6 +275,36 @@ if ($page === 'home') {
 
             .hide-mobile { display: none; }
             .kpi-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+
+            /* === Table → Card List === */
+            .data-table thead { display: none; }
+            .data-table tbody tr {
+                display: flex; flex-direction: column;
+                padding: 14px 16px;
+                border: 1px solid var(--c-border);
+                border-radius: 12px;
+                margin-bottom: 8px;
+                background: var(--c-surface);
+                box-shadow: var(--shadow-1);
+            }
+            .data-table td {
+                padding: 6px 0;
+                border: none !important;
+                display: flex; justify-content: space-between; align-items: center;
+                text-align: right;
+                gap: 8px;
+            }
+            .data-table td::before {
+                content: attr(data-label);
+                font-size: 11px; font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: var(--c-text-3);
+                text-align: left;
+                flex-shrink: 0;
+            }
+            .data-table td:empty { display: none; } /* Hide empty cells */
+            .data-table td > * { text-align: right; } /* Ensure content like buttons is right-aligned */
         }
         @media (min-width: 768px) {
             .mobile-drawer, .mobile-drawer-backdrop, .bottom-tabs { display: none !important; }
@@ -477,6 +507,30 @@ if ($page === 'home') {
             success(msg) { this.show(msg, 'success'); },
             error(msg) { this.show(msg, 'error'); }
         };
+
+        // Auto-inject data-label for Mobile Table Card view
+        function enhanceTablesForMobile() {
+            document.querySelectorAll('table').forEach(table => {
+                table.classList.add('data-table');
+                const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText.trim());
+                table.querySelectorAll('tbody tr').forEach(row => {
+                    row.querySelectorAll('td').forEach((cell, index) => {
+                        if(headers[index] && !cell.hasAttribute('data-label') && !cell.hasAttribute('colspan')) {
+                            cell.setAttribute('data-label', headers[index]);
+                        }
+                    });
+                });
+            });
+        }
+        
+        enhanceTablesForMobile();
+        const observer = new MutationObserver((mutations) => {
+            let shouldEnhance = false;
+            mutations.forEach(m => { if(m.addedNodes.length > 0) shouldEnhance = true; });
+            if(shouldEnhance) enhanceTablesForMobile();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
     </script>
 
 </body>
