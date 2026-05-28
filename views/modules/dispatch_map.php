@@ -121,9 +121,16 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         <div id="teamListContainer" class="flex flex-wrap gap-2 px-4 pb-3 pt-2 border-b border-[var(--c-border)] bg-[var(--c-surface-3)] shrink-0"></div>
         <?php endif; ?>
 
-        <div id="selectionActions" class="px-4 py-2 bg-[var(--c-danger-bg)] border-b border-[var(--c-danger-bg)] flex items-center justify-between hidden transition-all shrink-0">
-            <p class="text-[11px] font-bold text-[var(--c-danger-text)]">เลือกอยู่ <span id="selectedCount" class="font-black text-sm ml-1">0</span> งาน</p>
-            <button id="bulkDeleteBtn" class="text-[10px] font-black bg-[var(--c-danger)] hover:opacity-80 text-white px-4 py-1.5 rounded-lg uppercase transition-all shadow-sm">ลบที่เลือก</button>
+        <div id="selectionActions" class="px-4 py-2 bg-[var(--c-primary-faint)] border-b border-[var(--c-primary-faint)] flex items-center justify-between hidden transition-all shrink-0">
+            <p class="text-[11px] font-bold text-[var(--c-primary)]">เลือกอยู่ <span id="selectedCount" class="font-black text-sm ml-1">0</span> งาน</p>
+            <div class="flex gap-2">
+                <button id="navigateSelectedBtn" class="text-[10px] font-black bg-[var(--c-primary)] hover:bg-[var(--c-primary-hover)] text-white px-3 py-1.5 rounded-lg uppercase transition-all shadow-sm flex items-center">
+                    <i data-lucide="navigation" class="w-3 h-3 mr-1"></i> นำทาง
+                </button>
+                <?php if ($isAdmin): ?>
+                <button id="bulkDeleteBtn" class="text-[10px] font-black bg-[var(--c-danger)] hover:bg-[#DC2626] text-white px-3 py-1.5 rounded-lg uppercase transition-all shadow-sm">ลบ</button>
+                <?php endif; ?>
+            </div>
         </div>
 
         <div class="flex-1 overflow-hidden relative bg-[var(--c-surface)]">
