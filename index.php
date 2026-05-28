@@ -1,5 +1,5 @@
 <?php
-// index.php (Main Home Page Router)
+// index.php (Modern SaaS Dashboard)
 require_once 'config/db.php';
 require_once 'config/auth.php';
 
@@ -18,24 +18,18 @@ $stats = [
 
 if ($page === 'home') {
     try {
-        // 1. Jobs Today (Created today or plan_arrival_date is today)
         $stmt = $pdo->query("SELECT COUNT(*) FROM jobs WHERE DATE(created_at) = CURDATE() OR plan_arrival_date = CURDATE()");
         $stats['jobs_today'] = $stmt->fetchColumn();
 
-        // 2. Oil Cost Today
         $stmt = $pdo->query("SELECT SUM(total_price) FROM oil_records WHERE DATE(date_recorded) = CURDATE()");
         $stats['oil_cost_today'] = $stmt->fetchColumn() ?: 0;
 
-        // 3. Total Stock (In stock items)
         $stmt = $pdo->query("SELECT COUNT(*) FROM inventory_items WHERE status = 'in_stock'");
         $stats['total_stock'] = $stmt->fetchColumn();
 
-        // 4. Total Staff (Total users)
         $stmt = $pdo->query("SELECT COUNT(*) FROM users");
         $stats['total_staff'] = $stmt->fetchColumn();
-    } catch (PDOException $e) {
-        // Silently fail or log error
-    }
+    } catch (PDOException $e) {}
 }
 
 ?>
@@ -44,238 +38,300 @@ if ($page === 'home') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบบริหารจัดการธุรกิจอัจฉริยะ</title>
+    <title>Bonus. | Smart Business Suite</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
+        :root {
+            --primary: #6C5CE7;
+            --primary-hover: #5A4BD1;
+            --bg-main: #F4F5FB;
+            --surface: #FFFFFF;
+            --text-primary: #1A1A2E;
+            --text-secondary: #6B7280;
+            --border: #E5E7EB;
+        }
+
         body {
-            font-family: 'Sarabun', sans-serif;
-            background: #fdfdfd;
+            font-family: 'Inter', 'Sarabun', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
         }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .glass-card:hover {
-            transform: translateY(-8px);
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 30px 40px -15px rgba(0, 0, 0, 0.1);
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            padding: 24px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
 
-        .hero-gradient {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #9333ea 100%);
+        .top-bar {
+            height: 64px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 40;
         }
 
-        .stat-card {
-            position: relative;
-            overflow: hidden;
-        }
-        .stat-card::after {
-            content: '';
-            position: absolute;
-            right: -10%;
-            bottom: -10%;
-            width: 100px;
-            height: 100px;
-            background: white;
-            opacity: 0.1;
-            border-radius: 50%;
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+            transition: background-color 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        /* Toast & Loader */
-        #toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
-        .toast { min-width: 280px; padding: 1rem; border-radius: 1rem; color: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; animation: slideInRight 0.3s ease-out; }
-        .toast.success { background: #10b981; }
-        .toast.error { background: #ef4444; }
-        #global-loader { position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        #global-loader.active { display: flex; }
-        .loader-spinner { width: 40px; height: 40px; border: 4px solid #f3f4f6; border-top: 4px solid #6366f1; border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
 
-        /* Mobile Adjustments */
-        @media (max-width: 1024px) {
-            main { padding-top: 5rem; }
+        .search-input {
+            background: #F9FAFB;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            width: 320px;
+            font-size: 13px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(108,92,231,0.15);
+        }
+
+        .badge-k {
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 4px;
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-left: 8px;
+        }
+
+        /* Responsive Mobile */
+        @media (max-width: 767px) {
+            .top-bar { padding: 0 16px; }
+            .search-input { width: 40px; padding: 10px; border-radius: 50%; border: none; background: transparent; }
+            .search-input::placeholder { color: transparent; }
+            .search-input-box i { position: absolute; left: 12px; top: 12px; }
+            .card { padding: 16px; }
+            main { padding: 16px !important; }
+            .badge-k { display: none; }
         }
     </style>
 </head>
-<body class="text-slate-800 h-screen flex overflow-hidden">
-
-    <div id="global-loader">
-        <div class="loader-spinner mb-4"></div>
-        <p class="text-indigo-600 font-black animate-pulse">กำลังประมวลผล...</p>
-    </div>
-
-    <div id="toast-container"></div>
+<body class="flex min-h-screen">
 
     <?php include 'views/layouts/sidebar.php'; ?>
 
-    <main class="flex-1 overflow-y-auto p-4 lg:p-10">
-
-        <?php if ($page === 'home'): ?>
-            <div class="max-w-6xl mx-auto space-y-10 animate__animated animate__fadeIn">
-                
-                <section class="hero-gradient rounded-[2.5rem] p-8 lg:p-12 text-white shadow-2xl shadow-indigo-200 relative overflow-hidden group">
-                    <div class="relative z-10">
-                        <span class="bg-white/20 backdrop-blur-md px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4 inline-block border border-white/10 animate__animated animate__fadeInDown">
-                            Dashboard • ประจำวันที่ <?php echo date('d/m/Y'); ?>
-                        </span>
-                        <h1 class="text-4xl lg:text-6xl font-black tracking-tighter mb-4 leading-tight">
-                            ยินดีต้อนรับกลับมา,<br> 
-                            <span class="text-yellow-300"><?php echo htmlspecialchars($user['full_name']); ?></span> ✨
-                        </h1>
-                        <p class="text-indigo-100 text-lg lg:text-xl font-medium max-w-xl opacity-90">
-                            ยินดีที่ได้พบคุณอีกครั้ง! วันนี้เรามีงานที่รอให้คุณจัดการและสรุปข้อมูลที่น่าสนใจด้านล่างนี้
-                        </p>
-                    </div>
-                    <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
-                    <div class="absolute right-10 top-10 text-8xl opacity-20 group-hover:scale-110 transition-transform duration-700">🚀</div>
-                </section>
-
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-                    <div class="stat-card bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all">
-                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 text-2xl shadow-inner">⚡</div>
-                        <p class="text-slate-400 text-xs font-black uppercase tracking-widest">งานวันนี้</p>
-                        <h3 class="text-3xl font-black text-slate-800 mt-1"><?php echo number_format($stats['jobs_today']); ?> <span class="text-sm font-medium text-slate-400">งาน</span></h3>
-                    </div>
-                    <div class="stat-card bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all">
-                        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 text-2xl shadow-inner">⛽</div>
-                        <p class="text-slate-400 text-xs font-black uppercase tracking-widest">ค่าน้ำมันวันนี้</p>
-                        <h3 class="text-3xl font-black text-slate-800 mt-1">฿<?php echo number_format($stats['oil_cost_today']); ?></h3>
-                    </div>
-                    <div class="stat-card bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all">
-                        <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-4 text-2xl shadow-inner">📦</div>
-                        <p class="text-slate-400 text-xs font-black uppercase tracking-widest">สินค้าในคลัง</p>
-                        <h3 class="text-3xl font-black text-slate-800 mt-1"><?php echo number_format($stats['total_stock']); ?> <span class="text-sm font-medium text-slate-400">ชิ้น</span></h3>
-                    </div>
-                    <div class="stat-card bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all">
-                        <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mb-4 text-2xl shadow-inner">👥</div>
-                        <p class="text-slate-400 text-xs font-black uppercase tracking-widest">พนักงานทั้งหมด</p>
-                        <h3 class="text-3xl font-black text-slate-800 mt-1"><?php echo number_format($stats['total_staff']); ?> <span class="text-sm font-medium text-slate-400">ท่าน</span></h3>
-                    </div>
+    <div class="flex-1 flex flex-col min-w-0">
+        
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="flex items-center gap-4 flex-1">
+                <div class="relative search-input-box">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                    <input type="text" placeholder="ค้นหาข้อมูล... (⌘K)" class="search-input pl-10">
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 badge-k">⌘K</span>
                 </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
+                <a href="index.php?page=checkin" class="btn-primary">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>ทำรายการใหม่</span>
+                </a>
+            </div>
+        </header>
 
-                <div class="space-y-6">
-                    <h2 class="text-2xl font-black text-slate-800 tracking-tight flex items-center">
-                        <span class="w-2 h-8 bg-indigo-600 rounded-full mr-3"></span>
-                        เมนูการใช้งานหลัก
-                    </h2>
+        <main class="p-6 overflow-y-auto">
+            
+            <?php if ($page === 'home'): ?>
+                <div class="max-w-7xl mx-auto space-y-8 animate__animated animate__fadeIn">
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-                        
-                        <a href="index.php?page=checkin" class="glass-card group p-8 rounded-[2.5rem] relative overflow-hidden">
-                            <div class="relative z-10">
-                                <div class="w-16 h-16 bg-orange-500 text-white rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-lg shadow-orange-200 group-hover:rotate-12 transition-transform">📸</div>
-                                <h3 class="text-2xl font-black text-slate-800 mb-2">ระบบเช็คอิน</h3>
-                                <p class="text-slate-500 text-sm leading-relaxed">ถ่ายรูปเพื่อบันทึกเวลาเข้างานแบบเรียลไทม์</p>
-                                <div class="mt-6 flex items-center text-orange-600 font-black text-xs uppercase tracking-widest group-hover:translate-x-2 transition-transform">
-                                    เช็คอินเข้างาน <span class="ml-2">➜</span>
-                                </div>
-                            </div>
-                            <div class="absolute -right-4 -top-4 text-8xl opacity-[0.03] font-black group-hover:scale-125 transition-transform duration-700 uppercase">Time</div>
-                        </a>
-
-                        <a href="index.php?page=oil" class="glass-card group p-8 rounded-[2.5rem] relative overflow-hidden">
-                            <div class="relative z-10">
-                                <div class="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-lg shadow-blue-200 group-hover:rotate-12 transition-transform">⛽</div>
-                                <h3 class="text-2xl font-black text-slate-800 mb-2">ระบบบันทึกน้ำมัน</h3>
-                                <p class="text-slate-500 text-sm leading-relaxed">บันทึกเลขไมล์และหลักฐานการใช้น้ำมันเพื่อเบิกจ่าย</p>
-                                <div class="mt-6 flex items-center text-blue-600 font-black text-xs uppercase tracking-widest group-hover:translate-x-2 transition-transform">
-                                    เข้าใช้งานระบบ <span class="ml-2">➜</span>
-                                </div>
-                            </div>
-                            <div class="absolute -right-4 -top-4 text-8xl opacity-[0.03] font-black group-hover:scale-125 transition-transform duration-700 uppercase">Oil</div>
-                        </a>
-
-                        <a href="index.php?page=dispatch" class="glass-card group p-8 rounded-[2.5rem] relative overflow-hidden">
-                            <div class="relative z-10">
-                                <div class="w-16 h-16 bg-emerald-600 text-white rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-lg shadow-emerald-200 group-hover:rotate-12 transition-transform">🗺️</div>
-                                <h3 class="text-2xl font-black text-slate-800 mb-2">ระบบจัดส่ง</h3>
-                                <p class="text-slate-500 text-sm leading-relaxed">จัดการแผนที่ เส้นทาง และจ่ายงานให้ทีมช่างอัตโนมัติ</p>
-                                <div class="mt-6 flex items-center text-emerald-600 font-black text-xs uppercase tracking-widest group-hover:translate-x-2 transition-transform">
-                                    เปิดแผนที่ <span class="ml-2">➜</span>
-                                </div>
-                            </div>
-                            <div class="absolute -right-4 -top-4 text-8xl opacity-[0.03] font-black group-hover:scale-125 transition-transform duration-700 uppercase">Map</div>
-                        </a>
-
-                        <a href="index.php?page=inventory" class="glass-card group p-8 rounded-[2.5rem] relative overflow-hidden">
-                            <div class="relative z-10">
-                                <div class="w-16 h-16 bg-purple-600 text-white rounded-2xl flex items-center justify-center mb-6 text-3xl shadow-lg shadow-purple-200 group-hover:rotate-12 transition-transform">📦</div>
-                                <h3 class="text-2xl font-black text-slate-800 mb-2">คลังสินค้าอัจฉริยะ</h3>
-                                <p class="text-slate-500 text-sm leading-relaxed">เช็คสต็อก นำเข้า-เบิกออกสินค้าด้วยระบบบาร์โค้ด</p>
-                                <div class="mt-6 flex items-center text-purple-600 font-black text-xs uppercase tracking-widest group-hover:translate-x-2 transition-transform">
-                                    จัดการสต็อก <span class="ml-2">➜</span>
-                                </div>
-                            </div>
-                            <div class="absolute -right-4 -top-4 text-8xl opacity-[0.03] font-black group-hover:scale-125 transition-transform duration-700 uppercase">Stock</div>
-                        </a>
-
+                    <!-- Welcome Section -->
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">ยินดีต้อนรับ, <?= htmlspecialchars($user['full_name']) ?> 👋</h1>
+                            <p class="text-slate-500 mt-1">นี่คือสรุปข้อมูลระบบงานประจำวันที่ <?= date('d M Y') ?></p>
+                        </div>
                     </div>
+
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="card relative overflow-hidden group">
+                            <div class="absolute top-6 right-6 w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">
+                                <i data-lucide="zap"></i>
+                            </div>
+                            <h3 class="text-3xl font-bold text-slate-900"><?= number_format($stats['jobs_today']) ?></h3>
+                            <p class="text-sm font-medium text-slate-500 mt-1">งานที่ต้องทำวันนี้</p>
+                            <div class="mt-4 flex items-center gap-2">
+                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full">↑ 12%</span>
+                                <span class="text-[10px] text-slate-400 font-medium">จากเมื่อวาน</span>
+                            </div>
+                        </div>
+
+                        <div class="card relative overflow-hidden">
+                            <div class="absolute top-6 right-6 w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center">
+                                <i data-lucide="fuel"></i>
+                            </div>
+                            <h3 class="text-3xl font-bold text-slate-900">฿<?= number_format($stats['oil_cost_today']) ?></h3>
+                            <p class="text-sm font-medium text-slate-500 mt-1">ค่าน้ำมันวันนี้</p>
+                            <div class="mt-4 flex items-center gap-2">
+                                <span class="px-2 py-0.5 bg-rose-100 text-rose-700 text-[10px] font-bold rounded-full">↓ 5%</span>
+                                <span class="text-[10px] text-slate-400 font-medium">ประหยัดขึ้น</span>
+                            </div>
+                        </div>
+
+                        <div class="card relative overflow-hidden">
+                            <div class="absolute top-6 right-6 w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                                <i data-lucide="package"></i>
+                            </div>
+                            <h3 class="text-3xl font-bold text-slate-900"><?= number_format($stats['total_stock']) ?></h3>
+                            <p class="text-sm font-medium text-slate-500 mt-1">สินค้าคงคลัง</p>
+                            <div class="mt-4 flex items-center gap-2 text-[10px] text-slate-400 font-medium">
+                                <i data-lucide="clock" class="w-3 h-3"></i> อัปเดตล่าสุด 5 นาทีที่แล้ว
+                            </div>
+                        </div>
+
+                        <div class="card relative overflow-hidden">
+                            <div class="absolute top-6 right-6 w-10 h-10 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center">
+                                <i data-lucide="users"></i>
+                            </div>
+                            <h3 class="text-3xl font-bold text-slate-900"><?= number_format($stats['total_staff']) ?></h3>
+                            <p class="text-sm font-medium text-slate-500 mt-1">จำนวนบุคลากร</p>
+                            <div class="mt-4 flex items-center gap-2 text-[10px] text-slate-400 font-medium">
+                                <i data-lucide="check-circle" class="w-3 h-3 text-emerald-500"></i> ทุกคนพร้อมปฏิบัติงาน
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Actions (Quick Access) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="card flex flex-col justify-between hover:border-indigo-200 transition-all cursor-pointer group">
+                            <div class="flex items-start justify-between">
+                                <div class="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100">
+                                    <i data-lucide="map-pin"></i>
+                                </div>
+                                <i data-lucide="arrow-up-right" class="text-slate-300 group-hover:text-indigo-600 transition-colors"></i>
+                            </div>
+                            <div class="mt-8">
+                                <h3 class="text-lg font-bold text-slate-900">ระบบจัดส่งและแผนที่</h3>
+                                <p class="text-sm text-slate-500 mt-1">ดูตำแหน่งงานของทีมช่างและวางแผนเส้นทางอัจฉริยะ</p>
+                            </div>
+                            <a href="index.php?page=dispatch" class="mt-6 text-indigo-600 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+                                เข้าสู่ระบบแผนที่ <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                            </a>
+                        </div>
+
+                        <div class="card flex flex-col justify-between hover:border-emerald-200 transition-all cursor-pointer group">
+                            <div class="flex items-start justify-between">
+                                <div class="w-12 h-12 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-100">
+                                    <i data-lucide="box"></i>
+                                </div>
+                                <i data-lucide="arrow-up-right" class="text-slate-300 group-hover:text-emerald-600 transition-colors"></i>
+                            </div>
+                            <div class="mt-8">
+                                <h3 class="text-lg font-bold text-slate-900">จัดการคลังสินค้า</h3>
+                                <p class="text-sm text-slate-500 mt-1">ตรวจสอบสินค้า รับเข้า-เบิกออก และประวัติการทำรายการ</p>
+                            </div>
+                            <a href="index.php?page=inventory" class="mt-6 text-emerald-600 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+                                ไปที่คลังสินค้า <i data-lucide="chevron-right" class="w-3 h-3"></i>
+                            </a>
+                        </div>
+                    </div>
+
                 </div>
 
-            </div>
+            <?php else: ?>
+                <div class="animate__animated animate__fadeIn">
+                <?php
+                $routes = [
+                    'oil' => hasRole(['technician']) ? 'views/modules/oil_form.php' : 'views/modules/oil_report.php',
+                    'oil_test_form' => 'views/modules/oil_form.php',
+                    'dispatch' => 'views/modules/dispatch_map.php',
+                    'inventory' => 'views/modules/inventory_app.php',
+                    'users' => 'views/modules/user_settings.php',
+                    'checkin' => 'views/modules/checkin.php'
+                ];
+                if (array_key_exists($page, $routes) && file_exists($routes[$page])) {
+                    include $routes[$page];
+                } else {
+                    echo '<div class="card p-12 text-center max-w-2xl mx-auto">
+                            <div class="text-6xl mb-6">⚙️</div>
+                            <h2 class="text-2xl font-bold text-slate-900 mb-2">อยู่ระหว่างการพัฒนา</h2>
+                            <p class="text-slate-500">โมดูลนี้กำลังถูกปรับปรุงเพื่อประสิทธิภาพที่ดีที่สุดสำหรับคุณ</p>
+                            <a href="index.php?page=home" class="mt-8 btn-primary">กลับหน้าแรก</a>
+                          </div>';
+                }
+                ?>
+                </div>
+            <?php endif; ?>
 
-        <?php else: ?>
-            <div class="animate__animated animate__fadeIn">
-            <?php
-            $routes = [
-                'oil' => hasRole(['technician']) ? 'views/modules/oil_form.php' : 'views/modules/oil_report.php',
-                'oil_test_form' => 'views/modules/oil_form.php',
-                'dispatch' => 'views/modules/dispatch_map.php',
-                'inventory' => 'views/modules/inventory_app.php',
-                'users' => 'views/modules/user_settings.php',
-                'checkin' => 'views/modules/checkin.php' // <-- ลงทะเบียนเส้นทาง checkin ที่นี่
-            ];
-            if (array_key_exists($page, $routes) && file_exists($routes[$page])) {
-                include $routes[$page];
-            } else {
-                echo '<div class="glass-card p-12 rounded-[2.5rem] text-center max-w-2xl mx-auto shadow-2xl">
-                        <div class="text-8xl mb-6">⚙️</div>
-                        <h2 class="text-3xl font-black text-slate-800 mb-4 tracking-tighter italic">อยู่ระหว่างการพัฒนา</h2>
-                        <p class="text-slate-400 font-medium">โมดูลนี้กำลังถูกปรับปรุงเพื่อประสิทธิภาพที่ดีที่สุดสำหรับคุณ</p>
-                        <a href="index.php?page=home" class="mt-8 inline-block bg-indigo-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg">กลับหน้าหลัก</a>
-                      </div>';
-            }
-            ?>
-            </div>
-        <?php endif; ?>
+            <footer class="mt-20 text-center pb-10">
+                <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                    &copy; <?= date('Y') ?> Bonus. SMART BUSINESS SUITE • PRIVACY POLICY
+                </p>
+            </footer>
+        </main>
+    </div>
 
-        <footer class="mt-20 text-center border-t border-slate-100 pt-10 pb-10">
-            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">
-                &copy; <?php echo date('Y'); ?> ระบบบริหารจัดการธุรกิจอัจฉริยะ • SMART BUSINESS SUITE
-            </p>
-        </footer>
-    </main>
-
+    <!-- Toast UI -->
+    <div id="toast-container" class="fixed top-6 right-6 z-[100] flex flex-col gap-3"></div>
+    
     <script>
+        // Lucide init
+        lucide.createIcons();
+
         const Toast = {
             show(message, type = 'success') {
                 const container = document.getElementById('toast-container');
                 const toast = document.createElement('div');
-                toast.className = `toast ${type}`;
-                const icon = type === 'success' ? '✅' : '❌';
-                toast.innerHTML = `<div class="flex items-center font-bold text-sm"><span class="mr-3 text-lg">${icon}</span> ${message}</div><button onclick="this.parentElement.remove()" class="ml-4 opacity-50 hover:opacity-100">&times;</button>`;
+                toast.className = `card flex items-center justify-between gap-4 py-3 px-4 border-l-4 ${type === 'success' ? 'border-emerald-500' : 'border-red-500'} animate__animated animate__fadeInRight`;
+                toast.style.width = '300px';
+                
+                const icon = type === 'success' ? 'check-circle' : 'alert-circle';
+                const iconColor = type === 'success' ? 'text-emerald-500' : 'text-red-500';
+
+                toast.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="${icon}" class="${iconColor} w-5 h-5"></i>
+                        <span class="font-semibold text-slate-800">${message}</span>
+                    </div>
+                    <button onclick="this.parentElement.remove()" class="text-slate-300 hover:text-slate-500">&times;</button>
+                `;
                 container.appendChild(toast);
+                lucide.createIcons();
+                
                 setTimeout(() => {
-                    toast.style.animation = 'fadeOut 0.4s ease forwards';
-                    setTimeout(() => toast.remove(), 400);
-                }, 3000);
+                    toast.classList.replace('animate__fadeInRight', 'animate__fadeOutRight');
+                    setTimeout(() => toast.remove(), 500);
+                }, 4000);
             },
             success(msg) { this.show(msg, 'success'); },
-            error(msg) { this.show(msg, 'error'); },
-            info(msg) { this.show(msg, 'info'); }
-        };
-        const Loader = {
-            show() { document.getElementById('global-loader').classList.add('active'); },
-            hide() { document.getElementById('global-loader').classList.remove('active'); }
+            error(msg) { this.show(msg, 'error'); }
         };
     </script>
 
