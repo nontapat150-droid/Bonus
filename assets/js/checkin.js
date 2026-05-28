@@ -1,5 +1,9 @@
 // assets/js/checkin.js
 let checkinData = [];
+let editImageInput;
+let editImagePreview;
+let editImagePlaceholder;
+let deleteImageBtn;
 
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('checkinForm');
@@ -8,10 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadPrompt = document.getElementById('uploadPrompt');
     const timeDisplay = document.getElementById('currentTime');
     const submitBtn = document.getElementById('submitBtn');
-    const editImageInput = document.getElementById('edit_checkin_image');
-    const editImagePreview = document.getElementById('editImagePreview');
-    const editImagePlaceholder = document.getElementById('editImagePlaceholder');
-    const deleteImageBtn = document.getElementById('deleteImageBtn');
+    editImageInput = document.getElementById('edit_checkin_image');
+    editImagePreview = document.getElementById('editImagePreview');
+    editImagePlaceholder = document.getElementById('editImagePlaceholder');
+    deleteImageBtn = document.getElementById('deleteImageBtn');
 
     const now = new Date();
     const currMonth = now.toISOString().slice(0, 7);
