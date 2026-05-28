@@ -73,7 +73,7 @@
         </svg>
     </button>
     <div class="sidebar-header-box p-8 border-b border-slate-50 transition-all duration-300">
-        <h2 class="sidebar-brand-text text-2xl font-black text-indigo-600 tracking-tighter">สมาร์ทสูท</h2>
+        <h2 class="sidebar-brand-text text-2xl font-black text-indigo-600 tracking-tighter">ระบบจัดการงาน</h2>
         <div class="mt-4 flex items-center transition-all duration-300">
             <div class="user-avatar w-10 h-10 rounded-full bg-indigo-100 flex-shrink-0 flex items-center justify-center text-indigo-700 font-bold mr-3 transition-all duration-300">
                 <?php echo strtoupper(substr($user['full_name'] ?? 'U', 0, 1)); ?>
@@ -144,7 +144,7 @@
 </aside>
 
 <div class="md:hidden bg-white border-b border-slate-100 px-4 py-2 flex justify-between items-center fixed top-0 left-0 w-full z-[40] shadow-sm h-16">
-    <h2 class="text-xl font-black text-indigo-600 tracking-tighter">สมาร์ทสูท</h2>
+    <h2 class="text-xl font-black text-indigo-600 tracking-tighter">ระบบจัดการงาน</h2>
     <button id="mobileMenuBtn" class="p-2 text-slate-500 hover:text-indigo-600 focus:outline-none transition-colors bg-slate-50 rounded-xl">
         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"/> 

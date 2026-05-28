@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เข้าสู่ระบบ - สมาร์ทสูท</title>
+    <title>เข้าสู่ระบบ - ระบบจัดการงาน</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="glass w-full max-w-md p-8 rounded-[2rem] text-white">
         <div class="text-center mb-6">
             <div class="w-16 h-16 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-3xl">🚀</span></div>
-            <h1 class="text-2xl font-black mb-1">สมาร์ทสูท</h1>
+            <h1 class="text-2xl font-black mb-1">ระบบจัดการงาน</h1>
         </div>
 
         <?php if ($error): ?>

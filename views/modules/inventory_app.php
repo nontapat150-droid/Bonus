@@ -329,7 +329,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         <div class="p-6 overflow-y-auto">
             <div id="printBillArea" class="space-y-4">
                 <div class="text-center mb-6 border-b pb-4 border-dashed border-gray-300">
-                    <h2 class="text-xl font-bold uppercase text-gray-800">คลังสินค้า สมาร์ทสูท</h2>
+                    <h2 class="text-xl font-bold uppercase text-gray-800">คลังสินค้า </h2>
                     <p class="text-gray-500 text-sm">ใบเบิกสินค้า (Outbound Slip)</p>    
                     <p class="text-gray-500 text-sm mt-1" id="billDate"></p>
                 </div>
