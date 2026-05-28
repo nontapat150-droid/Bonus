@@ -404,8 +404,24 @@ async function runOptimizeRoute() {
 }
 
 function showJobPopup(job, color) {
-    const gmapsLink = `https://www.google.com/maps/dir/?api=1&destination=$${job.lat},${job.lng}`;
+    // แก้ไข Link นำทางให้ถูกต้อง
+    const gmapsLink = `https://www.google.com/maps/search/?api=1&query=${job.lat},${job.lng}`;
     
+    // เพิ่มปุ่มกด จบงาน / ไม่สำเร็จ สำหรับช่าง (ถ้าไม่ใช่ Admin ถึงจะเห็นปุ่มนี้)
+    let actionButtons = '';
+    if (!IS_ADMIN) {
+        actionButtons = `
+            <div class="grid grid-cols-2 gap-3 mt-4">
+                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'completed')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-xl shadow-md transition-all text-xs uppercase tracking-wider">
+                    ✅ จบงาน
+                </button>
+                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'failed')" class="bg-rose-500 hover:bg-rose-600 text-white font-black py-3 rounded-xl shadow-md transition-all text-xs uppercase tracking-wider">
+                    ❌ ไม่สำเร็จ
+                </button>
+            </div>
+        `;
+    }
+
     Swal.fire({
         title: `<div class="text-indigo-600 font-black tracking-tight">${job.access_no}</div>`,
         html: `
@@ -439,6 +455,7 @@ function showJobPopup(job, color) {
                         </div>
                     </div>
                 </div>
+                ${actionButtons}
             </div>
         `,
         showCancelButton: true,
@@ -878,3 +895,53 @@ function exportDataToExcel(filterType) {
         customClass: { popup: 'rounded-[2rem]', confirmButton: 'rounded-xl px-6 py-3 font-black tracking-widest' }
     });
 }
+window.updateJobStatus = async function(jobId, status) {
+    let remark = '';
+
+    if (status === 'failed') {
+        const { value: text } = await Swal.fire({
+            title: 'ระบุสาเหตุที่ไม่สำเร็จ',
+            input: 'textarea',
+            inputPlaceholder: 'กรอกหมายเหตุที่นี่...',
+            showCancelButton: true,
+            confirmButtonText: 'ยืนยัน',
+            cancelButtonText: 'ยกเลิก'
+        });
+
+        if (!text) {
+            if(text !== undefined) Swal.fire('แจ้งเตือน', 'กรุณาระบุหมายเหตุ', 'warning');
+            return;
+        }
+        remark = text;
+    } else {
+        const confirm = await Swal.fire({
+            title: 'ยืนยันจบงาน?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'ใช่, จบงาน',
+            cancelButtonText: 'ยกเลิก'
+        });
+        if (!confirm.isConfirmed) return;
+    }
+
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        const res = await fetch('api/dispatch/update_job_status.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job_id: jobId, status: status, remark: remark })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            Swal.fire('สำเร็จ', 'อัปเดตสถานะเรียบร้อย', 'success');
+            loadJobs(); // โหลดข้อมูลใหม่ (งานที่เสร็จแล้วจะหายไปจากจอ)
+        } else {
+            Swal.fire('ข้อผิดพลาด', data.error, 'error');
+        }
+    } catch (e) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', 'error');
+    }
+};
