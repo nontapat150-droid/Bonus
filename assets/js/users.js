@@ -77,7 +77,8 @@ function renderUserTable(users) {
     const roleBadges = {
         'super_admin': '<span class="px-3 py-1 bg-rose-50 text-rose-600 rounded-full font-bold text-[10px] border border-rose-100">SUPER ADMIN</span>',
         'admin': '<span class="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full font-bold text-[10px] border border-indigo-100">ADMIN</span>',
-        'technician': '<span class="px-3 py-1 bg-slate-50 text-slate-500 rounded-full font-bold text-[10px] border border-slate-100">TECHNICIAN</span>'
+        'technician': '<span class="px-3 py-1 bg-slate-50 text-slate-500 rounded-full font-bold text-[10px] border border-slate-100">TECHNICIAN</span>',
+        'sales': '<span class="px-3 py-1 bg-green-50 text-green-600 rounded-full font-bold text-[10px] border border-green-100">SALES</span>'
     };
 
     users.forEach((u, index) => {
@@ -161,6 +162,13 @@ function editUser(index) {
     document.getElementById('username_field').value = u.username;
     document.getElementById('role').value = u.role;
     
+    // ตั้งค่าเวลามาสาย
+    if (u.allow_late_time) {
+        document.getElementById('allow_late_time').value = u.allow_late_time.substring(0, 5);
+    }
+    
+    toggleLateTimeField();
+    
     // ตั้งค่าทีม/ป้ายทะเบียน
     populateTeamDropdown(u.team_id || '');
 }
@@ -215,5 +223,17 @@ async function deleteUser(id) {
         Toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
         Loader.hide();
+    }
+}
+
+function toggleLateTimeField() {
+    const role = document.getElementById('role').value;
+    const lateTimeField = document.getElementById('lateTimeField');
+    
+    // แสดงช่องเวลามาสายสำหรับ Sales และ Technician
+    if (role === 'sales' || role === 'technician') {
+        lateTimeField.classList.remove('hidden');
+    } else {
+        lateTimeField.classList.add('hidden');
     }
 }
