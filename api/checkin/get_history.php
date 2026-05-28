@@ -10,12 +10,8 @@ $user_id = $_SESSION['user_id'];
 $filter_date = $_GET['date'] ?? '';
 $filter_month = $_GET['month'] ?? ''; 
 
-// ดึงเวลาเข้างานที่ตั้งไว้
-$pdo->exec("CREATE TABLE IF NOT EXISTS system_settings (setting_key VARCHAR(50) PRIMARY KEY, setting_value VARCHAR(255) NOT NULL)");
-$pdo->exec("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES ('late_time', '08:30:00')");
-$late_time = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'late_time'")->fetchColumn() ?: '08:30:00';
-
-$sql = "SELECT c.id, c.checkin_time, c.image_path, u.full_name, t.team_name, TIME(c.checkin_time) as time_only
+// ดึงข้อมูลเช็คอิน พร้อมกับ allow_late_time ของแต่ละผู้ใช้
+$sql = "SELECT c.id, c.checkin_time, c.image_path, u.full_name, u.allow_late_time, t.team_name, TIME(c.checkin_time) as time_only
         FROM checkins c
         JOIN users u ON c.user_id = u.id
         LEFT JOIN teams t ON u.team_id = t.id
@@ -41,10 +37,13 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// คำนวณ Dashboard 
+// คำนวณ Dashboard โดยใช้ allow_late_time ของแต่ละผู้ใช้
 $dashboard = ['total' => 0, 'on_time' => 0, 'late' => 0];
 foreach($records as &$r) {
-    if ($r['time_only'] > $late_time) {
+    // ใช้ allow_late_time ของผู้ใช้นั้น ๆ เป็นเกณฑ์
+    $user_late_time = $r['allow_late_time'] ?: '08:30:00';
+    
+    if ($r['time_only'] > $user_late_time) {
         $r['status_code'] = 'late';
         $r['status_text'] = 'มาสาย';
         $dashboard['late']++;
@@ -59,6 +58,5 @@ foreach($records as &$r) {
 echo json_encode([
     'success' => true, 
     'records' => $records, 
-    'late_time' => date('H:i', strtotime($late_time)),
     'dashboard' => $dashboard
 ]);

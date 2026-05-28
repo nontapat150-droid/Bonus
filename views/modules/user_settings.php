@@ -79,11 +79,18 @@ if (!hasRole('super_admin')) {
 
             <div>
                 <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">ตำแหน่งในระบบ</label>
-                <select id="role" name="role" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-bold transition-all">
+                <select id="role" name="role" onchange="toggleLateTimeField()" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-bold transition-all">
                     <option value="technician">ช่างเทคนิค (Technician)</option>
+                    <option value="sales">เซล (Sales)</option>
                     <option value="admin">ผู้ดูแลระบบ (Admin)</option>
                     <option value="super_admin">ผู้ดูแลระบบสูงสุด (Super Admin)</option>
                 </select>
+            </div>
+
+            <div id="lateTimeField" class="hidden">
+                <label class="block text-[10px] font-black uppercase tracking-widest text-orange-600 mb-2 ml-1">⏰ เวลามาสายที่อนุมัติ (สำหรับ Sales & Technician)</label>
+                <input type="time" id="allow_late_time" name="allow_late_time" value="08:30" class="w-full px-5 py-3.5 rounded-2xl bg-orange-50 border-transparent focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 font-bold transition-all">
+                <p class="text-[10px] text-slate-400 mt-2 ml-1 italic">* ตั้งเวลาที่อนุญาตให้มาสายได้ (เช่น 08:30 = อนุญาตให้มาตั้งแต่ 08:30 ให้ถือว่า "มาตรงเวลา")</p>
             </div>
 
             <div>

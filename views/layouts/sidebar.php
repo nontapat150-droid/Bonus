@@ -71,6 +71,7 @@
                             'super_admin' => 'ผู้ดูแลระบบสูงสุด',
                             'admin' => 'ผู้ดูแลระบบ',
                             'technician' => 'ช่างเทคนิค',
+                            'sales' => 'เซล',
                             'user' => 'ผู้ใช้งานทั่วไป'
                         ];
                         $role = $user['role'] ?? 'Guest';
@@ -94,6 +95,7 @@
             <span class="sidebar-text whitespace-nowrap">ระบบเช็คอิน</span>
         </a>
 
+        <?php if (!hasRole('sales')): ?>
         <a href="index.php?page=oil" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all <?php echo ($page === 'oil') ? 'bg-blue-50 text-blue-600 font-bold' : ''; ?>">
             <span class="nav-icon mr-3 text-xl opacity-70">⛽</span>
             <span class="sidebar-text whitespace-nowrap">น้ำมันและยานพาหนะ</span>
@@ -103,6 +105,9 @@
             <span class="nav-icon mr-3 text-xl opacity-70">🗺️</span>
             <span class="sidebar-text whitespace-nowrap">ระบบจัดส่งอัจฉริยะ</span>
         </a>
+        <?php else: ?>
+        <div class="px-4 py-3 text-slate-400 text-sm italic">💼 เซล (Check-in เท่านั้น)</div>
+        <?php endif; ?>
 
         <?php if (hasRole(['admin', 'super_admin'])): ?>
         <a href="index.php?page=inventory" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-purple-50 hover:text-purple-600 rounded-xl transition-all <?php echo ($page === 'inventory') ? 'bg-purple-50 text-purple-600 font-bold' : ''; ?>">
