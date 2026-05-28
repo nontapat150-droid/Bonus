@@ -6,6 +6,7 @@ require_once '../../config/auth.php';
 header('Content-Type: application/json');
 requireLogin();
 
+// เฉพาะ Admin หรือ Super Admin เท่านั้นที่นำเข้างานได้
 if (!hasRole(['admin', 'super_admin'])) {
     echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
@@ -15,61 +16,43 @@ $input = json_decode(file_get_contents('php://input'), true);
 $jobs = $input['jobs'] ?? [];
 
 if (empty($jobs)) {
-    echo json_encode(['success' => false, 'error' => 'ไม่มีข้อมูลงาน']);
+    echo json_encode(['success' => false, 'error' => 'ไม่มีข้อมูลสำหรับนำเข้า']);
     exit;
 }
 
 try {
-    // 1. ย้าย TRUNCATE มาไว้ก่อนเริ่ม Transaction
-    // เพราะ TRUNCATE จะทำให้เกิด Implicit Commit อัตโนมัติใน MySQL
-    $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
-    $pdo->exec("TRUNCATE TABLE jobs");
-    $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
-
-    // 2. เริ่ม Transaction สำหรับการ Insert ข้อมูลรวดเดียว
     $pdo->beginTransaction();
 
-    $stmt = $pdo->prepare("
-        INSERT INTO jobs (
-            plan_arrival_date, access_no, customer, phone, package,
-            address, status, product, lat, lng, order_no,
-            task_order, task_type, remark
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ");
+    // เตรียม SQL สำหรับเพิ่มข้อมูลงาน
+    $stmt = $pdo->prepare("INSERT INTO jobs (access_no, customer, phone, address, plan_arrival_date, package, remark, lat, lng, status) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
 
     $imported = 0;
     foreach ($jobs as $job) {
-        if (empty($job['access_no']) || empty($job['lat']) || empty($job['lng'])) {
-            continue;
-        }
+        // ข้ามบรรทัดที่ไม่มีรหัสงาน (Access No)
+        if (empty($job['access_no'])) continue;
+
+        $date = !empty($job['date']) ? $job['date'] : null;
 
         $stmt->execute([
-            $job['plan_arrival_date'] ?? null, 
             $job['access_no'],
             $job['customer'] ?? null,
             $job['phone'] ?? null,
-            $job['package'] ?? null,
             $job['address'] ?? null,
-            $job['status'] ?? null,
-            $job['product'] ?? null,
-            $job['lat'],
-            $job['lng'],
-            $job['order_no'] ?? null,
-            $job['task_order'] ?? null,
-            $job['task_type'] ?? null,
-            $job['remark'] ?? null
+            $date,
+            $job['package'] ?? null,
+            $job['remark'] ?? null,
+            $job['lat'] ?? null,
+            $job['lng'] ?? null
         ]);
         $imported++;
     }
 
-    // 3. ยืนยันการบันทึกข้อมูล (Commit)
     $pdo->commit();
     echo json_encode(['success' => true, 'imported' => $imported]);
 
 } catch (Exception $e) {
-    // 4. หากเกิด error ในระหว่าง insert ให้ย้อนกลับข้อมูล (Rollback)
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
+    $pdo->rollBack();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
+?>
