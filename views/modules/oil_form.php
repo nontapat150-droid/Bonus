@@ -9,10 +9,10 @@ if (!defined('PDO::ATTR_ERRMODE')) {
 $isAdmin = hasRole(['admin', 'super_admin']);
 ?>
 
-<div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+<div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden z-[90]">
     <div class="bg-blue-600 px-6 py-4">
         <h2 class="text-2xl font-bold text-white flex items-center">
-            <span class="mr-2 text-3xl">⛽</span> บันทึกการใช้น้ำมัน
+            <span class="mr-2 text-3xl"><i data-lucide="fuel" class="w-5 h-5 inline-block"></i></span> บันทึกการใช้น้ำมัน
         </h2>
         <p class="text-blue-100 text-sm mt-1">กรอกข้อมูลการใช้รถและอัปเดตหลักฐาน (สูงสุด 10 รูป)</p>
     </div>
@@ -23,7 +23,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             <div id="alertBox" class="hidden rounded-lg p-4 mb-4 text-sm"></div>
 
             <div class="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-2xl p-5 border border-indigo-100">
-                <p class="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-3">👤 ผู้บันทึกข้อมูล</p>
+                <p class="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-3"><i data-lucide="user" class="w-5 h-5 inline-block"></i> ผู้บันทึกข้อมูล</p>
                 <div class="flex items-center space-x-4">
                     <div class="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 font-black text-lg" id="userAvatar">
                         <?= mb_substr($_SESSION['full_name'] ?? 'U', 0, 1) ?>
@@ -44,7 +44,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                         <input type="datetime-local" id="date_recorded" name="date_recorded"
                             class="w-full pl-10 pr-4 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors font-medium text-slate-700">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span class="text-amber-500">⏰</span>
+                            <span class="text-amber-500"><i data-lucide="clock" class="w-5 h-5 inline-block"></i></span>
                         </div>
                     </div>
                     <p class="text-xs text-amber-600 mt-2 font-medium">* หากปล่อยว่างไว้ ระบบจะใช้ <span class="font-bold underline">วันและเวลาปัจจุบัน</span> โดยอัตโนมัติ</p>
@@ -55,16 +55,16 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <label class="block text-sm font-medium text-gray-700 mb-1">ป้ายทะเบียนรถ <span class="text-red-500">*</span></label>
                     <div class="relative">
                         <select id="license_plate" name="license_plate" required
-                            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-bold appearance-none bg-white">
+                            class="input">
                             <option value="">-- กำลังโหลดป้ายทะเบียน... --</option>
                         </select>
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span class="text-gray-400">🚗</span>
+                            <span class="text-gray-400"><i data-lucide="car" class="w-5 h-5 inline-block"></i></span>
                         </div>
                     </div>
                     <p class="text-xs text-amber-600 mt-1 font-medium">* แสดงป้ายทะเบียนที่ลงทะเบียนในระบบแล้ว (จากทีมงาน)</p>
                     <div id="teamJobCount" class="hidden mt-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 text-sm">
-                        <span class="font-bold text-emerald-700">📋 เคสงานของทีมนี้:</span>
+                        <span class="font-bold text-emerald-700"><i data-lucide="clipboard" class="w-5 h-5 inline-block"></i> เคสงานของทีมนี้:</span>
                         <span id="jobCountValue" class="font-black text-emerald-600 ml-1">0</span> <span class="text-emerald-600">งาน</span>
                     </div>
                 </div>
@@ -73,10 +73,10 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <label class="block text-sm font-medium text-gray-700 mb-1">เลขไมล์ปัจจุบัน <span class="text-red-500">*</span></label>
                     <div class="relative">
                         <input type="number" id="mileage" name="mileage" required min="0"
-                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            class="input"
                             placeholder="0">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">      
-                            <span class="text-gray-400">📊</span>
+                            <span class="text-gray-400"><i data-lucide="bar-chart-2" class="w-5 h-5 inline-block"></i></span>
                         </div>
                     </div>
                 </div>
@@ -85,10 +85,10 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <label class="block text-sm font-medium text-gray-700 mb-1">จำนวนลิตร <span class="text-red-500">*</span></label>
                     <div class="relative">
                         <input type="number" id="liters" name="liters" required min="0.01" step="0.01"
-                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            class="input"
                             placeholder="0.00">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">      
-                            <span class="text-gray-400">💧</span>
+                            <span class="text-gray-400"><i data-lucide="droplet" class="w-5 h-5 inline-block"></i></span>
                         </div>
                     </div>
                 </div>
@@ -97,7 +97,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <label class="block text-sm font-medium text-gray-700 mb-1">ราคา/ลิตร <span class="text-red-500">*</span></label>
                     <div class="relative">
                         <input type="number" id="price_per_liter" name="price_per_liter" required min="0.01" step="0.01"
-                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                            class="input"
                             placeholder="0.00">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">      
                             <span class="text-gray-400">฿</span>
@@ -112,7 +112,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                             class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-lg font-bold text-gray-700 cursor-not-allowed"
                             placeholder="0.00">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">      
-                            <span class="text-gray-400">💰</span>
+                            <span class="text-gray-400"><i data-lucide="dollar-sign" class="w-5 h-5 inline-block"></i></span>
                         </div>
                     </div>
                 </div>
