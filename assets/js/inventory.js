@@ -524,35 +524,74 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
+            if (!json || json.length === 0) {
+                Toast.error('ไฟล์ Excel ว่างเปล่า');
+                return;
+            }
+
             excelDataPayload = [];
             let skipped = 0;
 
-            const headerRow = json[0] ? json[0].map(h => String(h).toLowerCase().replace(/\s/g, '')) : [];
-            let cI = headerRow.findIndex(h => h.includes('code') || h.includes('รหัส'));
-            let nI = headerRow.findIndex(h => h.includes('name') || h.includes('ชื่อ'));
-            let mI = headerRow.findIndex(h => h.includes('model') || h.includes('รุ่น'));
-            let sI = headerRow.findIndex(h => h.includes('sn') || h.includes('ซีเรียล') || h.includes('serial'));
+            // ฟังก์ชันตรวจสอบว่าเป็นคอลัมน์ที่ต้องการหรือไม่
+            const isSNCol = (h) => {
+                const s = String(h).toLowerCase().trim();
+                return s.includes('sn') || s.includes('ซีเรียล') || s.includes('serial') || s.includes('หมายเลข');
+            };
+            const isModelCol = (h) => {
+                const s = String(h).toLowerCase().trim();
+                return s.includes('model') || s.includes('รุ่น') || s.includes('รูป');
+            };
+            const isNameCol = (h) => {
+                const s = String(h).toLowerCase().trim();
+                return s.includes('name') || s.includes('ชื่อ') || s.includes('product');
+            };
+            const isCodeCol = (h) => {
+                const s = String(h).toLowerCase().trim();
+                return s.includes('code') || s.includes('รหัส') || s.includes('product_code');
+            };
 
-            if (cI === -1 && nI === -1 && mI === -1) { cI = 0; nI = 1; mI = 2; sI = 3; }
-            if (cI === 0 && nI === -1 && json[0][0] && String(json[0][0]).toLowerCase().includes('name')) { cI = -1; nI = 0; mI = 1; sI = 2; }
+            // ตรวจสอบคอลัมน์จากแถวแรก (Header)
+            const headerRow = json[0] || [];
+            let cI = -1, nI = -1, mI = -1, sI = -1;
 
+            headerRow.forEach((cell, idx) => {
+                const header = String(cell).trim();
+                if (isCodeCol(header)) cI = idx;
+                if (isNameCol(header)) nI = idx;
+                if (isModelCol(header)) mI = idx;
+                if (isSNCol(header)) sI = idx;
+            });
+
+            // ถ้าไม่พบ Name หรือ Model จากการแสกน ให้ใช้ตำแหน่งเริ่มต้น
+            if (nI === -1) nI = 0;  // คอลัมน์แรกคือ ชื่อสินค้า
+            if (mI === -1) mI = 1;  // คอลัมน์ที่สอง คือ รุ่น
+            if (sI === -1) sI = 2;  // คอลัมน์ที่สาม คือ SN
+            if (cI === -1) cI = -1; // ไม่มีรหัสสินค้า (ไม่บังคับ)
+
+            console.log('Column Detection:', { productCode: cI, productName: nI, model: mI, sn: sI });
+
+            // ประมวลผลข้อมูล (ข้ามแถวแรก - Header)
             json.forEach((row, index) => {
                 if (index === 0) return;
+                if (!row || row.length === 0) return;
 
-                const pCode = cI !== -1 ? row[cI] : '';
-                const pName = nI !== -1 ? row[nI] : '';
-                const mName = mI !== -1 ? row[mI] : '';
-                const sn = sI !== -1 ? row[sI] : '';
+                const pCode = cI !== -1 && row[cI] ? String(row[cI]).trim() : '';
+                const pName = nI !== -1 && row[nI] ? String(row[nI]).trim() : '';
+                const mName = mI !== -1 && row[mI] ? String(row[mI]).trim() : '';
+                const sn = sI !== -1 && row[sI] ? String(row[sI]).trim() : '';
 
+                // ตรวจสอบว่ามี ชื่อสินค้า และ รุ่น
                 if (pName && mName) {
                     excelDataPayload.push({
-                        product_code: pCode ? String(pCode).trim() : '',
-                        product_name: String(pName).trim(),
-                        model_name: String(mName).trim(),
-                        sn: sn ? String(sn).trim() : ''
+                        product_code: pCode,
+                        product_name: pName,
+                        model_name: mName,
+                        sn: sn
                     });
                 } else {
-                    skipped++;
+                    if (pName || mName || sn) { // มีข้อมูลบางส่วน แต่ไม่สมบูรณ์
+                        skipped++;
+                    }
                 }
             });
 
@@ -560,16 +599,18 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
             const countP = document.getElementById('excelCount');
 
             if (excelDataPayload.length > 0) {
-                countP.textContent = `พบข้อมูลพร้อมนำเข้า ${excelDataPayload.length} รายการ (ข้ามข้อมูลไม่สมบูรณ์ ${skipped} แถว)`;
+                countP.textContent = `✓ พบข้อมูลพร้อมนำเข้า ${excelDataPayload.length} รายการ (ข้ามข้อมูลไม่สมบูรณ์ ${skipped} แถว)`;
                 previewDiv.classList.remove('hidden');
                 previewDiv.classList.add('animate__animated', 'animate__bounceIn');
                 Toast.success('โหลดไฟล์สำเร็จ! กรุณากดปุ่มยืนยัน');
             } else {
-                Toast.error('ไม่พบข้อมูลที่ถูกต้องในไฟล์');
+                Toast.error(`ไม่พบข้อมูลที่ถูกต้องในไฟล์ (ข้ามแล้ว ${skipped} แถว)\n\nตรวจสอบว่าไฟล์มีคอลัมน์: ชื่อสินค้า | รุ่น | ซีเรียล`);
                 previewDiv.classList.add('hidden');
+                console.log('Raw file data:', json);
             }
         } catch (err) {
-            Toast.error('ไฟล์ Excel รูปแบบไม่ถูกต้อง');
+            console.error('Error:', err);
+            Toast.error('ไฟล์ Excel รูปแบบไม่ถูกต้อง: ' + err.message);
         }
     };
     reader.readAsArrayBuffer(file);
@@ -606,6 +647,44 @@ document.getElementById('confirmExcelBtn')?.addEventListener('click', async (e) 
         btn.disabled = false;
     }
 });
+
+
+// ====================================================
+// ฟังก์ชันดาวน์โหลด Template ไฟล์ Excel
+// ====================================================
+function downloadTemplate() {
+    // สร้าง CSV data ตามรูปแบบที่ถูกต้อง
+    const headers = ['ชื่อสินค้า', 'รุ่น (Model)', 'ซีเรียล (SN)', 'หมายเหตุ'];
+    const rows = [
+        ['iPhone 15 Pro', 'A3001', 'SN12345678', 'จากซัพพลายเออร์ A'],
+        ['Samsung Galaxy S24', 'SM-S921B', 'SN87654321', 'จากซัพพลายเออร์ B'],
+        ['MacBook Pro', 'MBP16-2024', 'SN11111111', 'ครื่องใหม่'],
+        ['iPad Air', 'iPad-Air-6', 'SN22222222', '']
+    ];
+
+    let csvContent = headers.join('\t') + '\n';
+    rows.forEach(row => {
+        csvContent += row.join('\t') + '\n';
+    });
+
+    // สร้าง Blob และดาวน์โหลด
+    const BOM = '\uFEFF'; // UTF-8 BOM สำหรับ Excel
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    const fileName = `template_import_${new Date().toISOString().split('T')[0]}.csv`;
+    link.setAttribute('href', url);
+    link.setAttribute('download', fileName);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    Toast.success('ดาวน์โหลด Template สำเร็จ! ใช้ Excel เปิดและกรอกข้อมูล');
+}
+
 
 
 // ====================================================

@@ -54,11 +54,14 @@ try {
         $mName = trim($item['model_name'] ?? '');
         $sn = trim($item['sn'] ?? '');
 
+        // ตรวจสอบข้อมูลที่บังคับ
         if (empty($pName) || empty($mName)) {
-            $errors[] = "แถวที่ " . ($index + 1) . ": จำเป็นต้องระบุชื่อสินค้าและรุ่น";
+            $rowNum = $index + 2; // +2 เพราะ row 0 = header, index 0 = row 1
+            $errors[] = "แถวที่ $rowNum: ข้อมูลไม่สมบูรณ์ (ชื่อสินค้า: '$pName', รุ่น: '$mName')";
             continue;
         }
 
+        // ถ้าไม่มี SN ให้สร้างอัตโนมัติ
         if (empty($sn)) {
             $sn = 'SYS-' . strtoupper(uniqid());
         }

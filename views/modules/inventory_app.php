@@ -138,15 +138,32 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         </div>
 
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col items-center">
-            <h3 class="font-bold text-gray-700 mb-2">นำเข้าสินค้าทีละหลายรายการ (Excel)</h3>  
-            <p class="text-sm text-gray-500 mb-4">ไฟล์ต้องมีคอลัมน์เรียงตามลำดับ: <b>ชื่อสินค้า | รุ่น (Model) | ซีเรียล (SN)</b></p>
-            <input type="file" id="excelImport" accept=".xlsx, .xls" class="hidden">
-            <button onclick="document.getElementById('excelImport').click()" class="bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold py-2 px-6 rounded-lg text-sm transition-colors flex items-center">
-                <span class="mr-2 text-lg">📄</span> เลือกไฟล์ Excel
-            </button>
+            <h3 class="font-bold text-gray-700 mb-4 text-lg">📊 นำเข้าสินค้าทีละหลายรายการ (Excel)</h3>  
+            
+            <div class="w-full max-w-md mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p class="text-sm font-semibold text-blue-900 mb-2">📋 รูปแบบไฟล์ที่ถูกต้อง:</p>
+                <ul class="text-xs text-blue-800 space-y-1 ml-4 list-disc">
+                    <li>ไฟล์ต้องเป็น Excel (.xlsx หรือ .xls)</li>
+                    <li>คอลัมน์ที่ 1: <b>ชื่อสินค้า</b> (บังคับ)</li>
+                    <li>คอลัมน์ที่ 2: <b>รุ่น / Model</b> (บังคับ)</li>
+                    <li>คอลัมน์ที่ 3: <b>ซีเรียล / SN</b> (ตัวเลือก - ถ้าไม่มีจะสร้างอัตโนมัติ)</li>
+                    <li>คอลัมน์ที่ 4: รหัสสินค้า (ตัวเลือก)</li>
+                </ul>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                <input type="file" id="excelImport" accept=".xlsx, .xls" class="hidden">
+                <button onclick="document.getElementById('excelImport').click()" class="flex-1 bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold py-2 px-6 rounded-lg text-sm transition-colors flex items-center justify-center">
+                    <span class="mr-2 text-lg">📁</span> เลือกไฟล์ Excel
+                </button>
+                <button onclick="downloadTemplate()" class="flex-1 bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold py-2 px-6 rounded-lg text-sm transition-colors flex items-center justify-center">
+                    <span class="mr-2 text-lg">⬇️</span> ดาวน์โหลด Template
+                </button>
+            </div>
+
             <div id="excelPreview" class="mt-4 w-full hidden max-w-md">
                 <p class="text-sm text-green-600 font-bold text-center mb-2" id="excelCount"></p>
-                <button id="confirmExcelBtn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors">ยืนยันนำเข้าข้อมูลทั้งหมด</button>
+                <button id="confirmExcelBtn" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors">✓ ยืนยันนำเข้าข้อมูลทั้งหมด</button>
             </div>
         </div>
     </div>
