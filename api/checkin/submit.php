@@ -39,9 +39,24 @@ try {
     $target_file = $upload_dir . $filename;
 
     if (move_uploaded_file($file['tmp_name'], $target_file)) {
-        // บันทึกลงฐานข้อมูล (checkin_time จะถูกบันทึกอัตโนมัติตาม CURRENT_TIMESTAMP)
-        $stmt = $pdo->prepare("INSERT INTO checkins (user_id, image_path) VALUES (?, ?)");
-        $stmt->execute([$user_id, $filename]);
+        
+        // 1. ดึงข้อมูลเวลาเข้างานของ user คนนี้ (allow_late_time)
+        $stmtUser = $pdo->prepare("SELECT allow_late_time FROM users WHERE id = ?");
+        $stmtUser->execute([$user_id]);
+        $allow_late_time = $stmtUser->fetchColumn();
+
+        // ค่าเริ่มต้นหากไม่ได้ตั้งไว้ (เผื่อไว้)
+        if (!$allow_late_time) {
+            $allow_late_time = '08:30:00'; 
+        }
+
+        // 2. คำนวณสถานะสาย
+        $current_time = date('H:i:s');
+        $is_late = ($current_time > $allow_late_time) ? 1 : 0;
+
+        // 3. บันทึกลงฐานข้อมูล (เพิ่ม is_late)
+        $stmt = $pdo->prepare("INSERT INTO checkins (user_id, image_path, is_late) VALUES (?, ?, ?)");
+        $stmt->execute([$user_id, $filename, $is_late]);
     } else {
         throw new Exception("เกิดข้อผิดพลาดในการบันทึกไฟล์รูปภาพ");
     }
@@ -53,3 +68,4 @@ try {
     $pdo->rollBack();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
+?>
