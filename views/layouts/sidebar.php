@@ -56,14 +56,6 @@
     .drawer-open {
         transform: translateX(0) !important;
     }
-
-    /* 🟢 เพิ่มเติม: ดันเนื้อหาลงมาไม่ให้ Navbar มือถือบัง */
-    @media (max-width: 767px) {
-        main {
-            /* ความสูง Navbar คือ 5rem + ระยะห่าง 1.5rem = 6.5rem */
-            padding-top: 6.5rem !important; 
-        }
-    }
 </style>
 
 <aside id="desktopSidebar" class="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col h-full sticky top-0 shadow-sm relative z-40" style="height: 100vh;">
