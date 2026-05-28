@@ -102,87 +102,120 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เข้าสู่ระบบ - ระบบจัดการงาน</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>เข้าสู่ระบบ - Bonus. Smart Business Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Sarabun', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .glass { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3); }
-        .tab-active { border-bottom: 2px solid white; color: white; font-weight: 800; }
-        .tab-inactive { color: rgba(255,255,255,0.6); }
+        :root {
+            --c-bg:            #ECEEF5;
+            --c-surface:       #FFFFFF;
+            --c-surface-2:     #F7F8FC;
+            --c-primary:       #6C5CE7;
+            --c-primary-hover: #5A4BD1;
+            --c-primary-faint: #EDE9FF;
+            --c-text-1:        #0D0D1A;
+            --c-text-2:        #4B4F6A;
+            --c-text-3:        #9499B5;
+            --c-text-inv:      #FFFFFF;
+            --c-border:        #E2E5F0;
+            --c-border-focus:  #6C5CE7;
+            
+            --shadow-1: 0 1px 2px rgba(10,10,30, 0.04), 0 2px 8px rgba(10,10,30, 0.06);
+            --shadow-4: 0 8px 16px rgba(10,10,30, 0.06), 0 32px 64px rgba(10,10,30, 0.16), 0 0 0 1px rgba(10,10,30, 0.05);
+            --shadow-btn: 0 4px 14px rgba(108,92,231, 0.40);
+        }
+        body { font-family: 'Inter', 'Sarabun', sans-serif; background-color: var(--c-bg); color: var(--c-text-2); min-height: 100vh; }
+        .auth-card { background: var(--c-surface); border-radius: 24px; padding: 40px; box-shadow: var(--shadow-4); border: 1px solid var(--c-border); width: 100%; max-width: 420px; }
+        .input { background: var(--c-surface-2); border: 1.5px solid var(--c-border); border-radius: 12px; padding: 12px 16px; font-size: 15px; color: var(--c-text-1); transition: all 0.2s ease; width: 100%; }
+        .input:focus { border-color: var(--c-border-focus); box-shadow: 0 0 0 3px rgba(108,92,231, 0.22); outline: none; background: var(--c-surface); }
+        .btn-primary { background: var(--c-primary); color: var(--c-text-inv); border-radius: 12px; padding: 14px 20px; font-weight: 700; font-size: 15px; text-align: center; width: 100%; transition: all 0.2s ease; box-shadow: var(--shadow-btn); cursor: pointer; }
+        .btn-primary:hover { background: var(--c-primary-hover); transform: translateY(-1px); }
+        .tab-btn { font-weight: 700; font-size: 14px; padding-bottom: 12px; transition: all 0.2s ease; border-bottom: 2px solid transparent; color: var(--c-text-3); flex: 1; text-align: center; cursor: pointer; }
+        .tab-btn.active { color: var(--c-primary); border-bottom-color: var(--c-primary); }
     </style>
 </head>
-<body class="flex items-center justify-center p-6">
+<body class="flex items-center justify-center p-4 sm:p-6">
 
-    <div class="glass w-full max-w-md p-8 rounded-[2rem] text-white">
-        <div class="text-center mb-6">
-            <div class="w-16 h-16 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-3xl">🚀</span></div>
-            <h1 class="text-2xl font-black mb-1">ระบบจัดการงาน</h1>
+    <div class="auth-card">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-[var(--c-primary)] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-btn text-white font-black text-3xl">B</div>
+            <h1 class="text-2xl font-black text-[var(--c-text-1)] tracking-tight">Bonus<span class="text-[var(--c-primary)]">.</span></h1>
+            <p class="text-sm font-medium text-[var(--c-text-3)] mt-1">Smart Business Suite</p>
         </div>
 
         <?php if ($error): ?>
-            <div class="bg-rose-500/40 border border-rose-400 text-white p-3 rounded-xl mb-4 text-center text-xs font-bold">⚠️ <?php echo htmlspecialchars($error); ?></div>
+            <div class="bg-[#FEF2F2] border border-[#F87171] text-[#991B1B] p-3 rounded-xl mb-6 text-center text-xs font-bold">⚠️ <?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
         <?php if ($success): ?>
-            <div class="bg-emerald-500/40 border border-emerald-400 text-white p-3 rounded-xl mb-4 text-center text-xs font-bold">✅ <?php echo htmlspecialchars($success); ?></div>
+            <div class="bg-[#ECFDF5] border border-[#34D399] text-[#065F46] p-3 rounded-xl mb-6 text-center text-xs font-bold">✅ <?php echo htmlspecialchars($success); ?></div>
         <?php endif; ?>
 
-        <div class="flex mb-6 border-b border-white/20">
-            <button onclick="showTab('login')" id="tabLogin" class="flex-1 pb-2 tab-active transition-all">เข้าสู่ระบบ</button>
-            <button onclick="showTab('register')" id="tabRegister" class="flex-1 pb-2 tab-inactive transition-all">ลงทะเบียนใหม่</button>
+        <div class="flex mb-8 border-b border-[var(--c-border)]">
+            <button onclick="showTab('login')" id="tabLogin" class="tab-btn active">เข้าสู่ระบบ</button>
+            <button onclick="showTab('register')" id="tabRegister" class="tab-btn">ลงทะเบียนใหม่</button>
         </div>
 
-        <form id="formLogin" method="POST" action="" class="space-y-4">
+        <form id="formLogin" method="POST" action="" class="space-y-5">
             <input type="hidden" name="action" value="login">
             <div>
-                <label class="block text-[10px] font-bold mb-1 uppercase tracking-widest text-indigo-100">ชื่อผู้ใช้</label>
-                <input class="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 focus:outline-none focus:ring-1 focus:ring-white text-sm" type="text" name="username" required>
+                <label class="block text-xs font-bold mb-2 text-[var(--c-text-2)] uppercase tracking-wider">ชื่อผู้ใช้ (Username)</label>
+                <input class="input" type="text" name="username" placeholder="กรอกชื่อผู้ใช้งาน..." required>
             </div>
             <div>
-                <label class="block text-[10px] font-bold mb-1 uppercase tracking-widest text-indigo-100">รหัสผ่าน</label>   
-                <input class="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 focus:outline-none focus:ring-1 focus:ring-white text-sm" type="password" name="password" required>
+                <label class="block text-xs font-bold mb-2 text-[var(--c-text-2)] uppercase tracking-wider">รหัสผ่าน (Password)</label>   
+                <input class="input" type="password" name="password" placeholder="••••••••" required>
             </div>
-            <button class="w-full py-3 bg-white text-indigo-700 font-black rounded-xl hover:bg-opacity-90 mt-2 shadow-lg" type="submit">เข้าสู่ระบบ</button>
+            <div class="pt-2">
+                <button class="btn-primary" type="submit">ลงชื่อเข้าใช้งาน <i data-lucide="arrow-right" class="w-4 h-4 inline-block ml-1"></i></button>
+            </div>
         </form>
 
-        <form id="formRegister" method="POST" action="" class="space-y-4 hidden">
+        <form id="formRegister" method="POST" action="" class="space-y-5 hidden">
             <input type="hidden" name="action" value="register">
             <div>
-                <label class="block text-[10px] font-bold mb-1 uppercase text-indigo-100">ชื่อ-นามสกุลจริง</label>
-                <input class="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 focus:outline-none text-sm" type="text" name="reg_fullname" required>
+                <label class="block text-xs font-bold mb-2 text-[var(--c-text-2)] uppercase tracking-wider">ชื่อ-นามสกุลจริง</label>
+                <input class="input" type="text" name="reg_fullname" required>
             </div>
             <div>
-                <label class="block text-[10px] font-bold mb-1 uppercase text-indigo-100">ชื่อผู้ใช้ (สำหรับ Login)</label>
-                <input class="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 focus:outline-none text-sm" type="text" name="reg_username" required>
+                <label class="block text-xs font-bold mb-2 text-[var(--c-text-2)] uppercase tracking-wider">ชื่อผู้ใช้ (สำหรับ Login)</label>
+                <input class="input" type="text" name="reg_username" required>
             </div>
             <div>
-                <label class="block text-[10px] font-bold mb-1 uppercase text-indigo-100">รหัสผ่าน</label>
-                <input class="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 focus:outline-none text-sm" type="password" name="reg_password" required>
+                <label class="block text-xs font-bold mb-2 text-[var(--c-text-2)] uppercase tracking-wider">รหัสผ่าน</label>
+                <input class="input" type="password" name="reg_password" required>
             </div>
             <div>
-                <label class="block text-[10px] font-bold mb-1 uppercase text-amber-300">* ทะเบียนรถที่ใช้งาน (ผูกทีมงาน)</label>
-                <input class="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-amber-300/50 focus:border-amber-300 focus:outline-none text-sm placeholder-white/30" type="text" name="reg_license" placeholder="เช่น กท 1234 สุราษฎร์ธานี" required>
-                <p class="text-[9px] text-amber-200 mt-1">ทะเบียนรถเดียวกัน จะถูกจัดให้อยู่ทีมเดียวกันอัตโนมัติ</p>
+                <label class="block text-xs font-bold mb-2 text-[#D97706] uppercase tracking-wider">* ทะเบียนรถที่ใช้งาน (ผูกทีมงาน)</label>
+                <input class="input !border-[#FCD34D]" type="text" name="reg_license" placeholder="เช่น กท 1234 สุราษฎร์ธานี" required>
+                <p class="text-[9px] text-[var(--c-text-3)] mt-1">ทะเบียนรถเดียวกัน จะถูกจัดให้อยู่ทีมเดียวกันอัตโนมัติ</p>
             </div>
-            <button class="w-full py-3 bg-indigo-500 text-white font-black rounded-xl hover:bg-indigo-600 mt-2 shadow-lg" type="submit">ส่งคำขอลงทะเบียน</button>
+            <div class="pt-2">
+                <button class="btn-primary" type="submit">ส่งคำขอลงทะเบียน</button>
+            </div>
         </form>
-
     </div>
 
     <script>
+        lucide.createIcons();
         function showTab(tab) {
-            document.getElementById('formLogin').classList.add('hidden');
-            document.getElementById('formRegister').classList.add('hidden');
-            document.getElementById('tabLogin').className = 'flex-1 pb-2 tab-inactive transition-all';
-            document.getElementById('tabRegister').className = 'flex-1 pb-2 tab-inactive transition-all';
-            
+            const fLogin = document.getElementById('formLogin');
+            const fReg = document.getElementById('formRegister');
+            const tLogin = document.getElementById('tabLogin');
+            const tReg = document.getElementById('tabRegister');
+
             if (tab === 'login') {
-                document.getElementById('formLogin').classList.remove('hidden');
-                document.getElementById('tabLogin').className = 'flex-1 pb-2 tab-active transition-all';
+                fLogin.classList.remove('hidden');
+                fReg.classList.add('hidden');
+                tLogin.classList.add('active');
+                tReg.classList.remove('active');
             } else {
-                document.getElementById('formRegister').classList.remove('hidden');
-                document.getElementById('tabRegister').className = 'flex-1 pb-2 tab-active transition-all';
+                fLogin.classList.add('hidden');
+                fReg.classList.remove('hidden');
+                tLogin.classList.remove('active');
+                tReg.classList.add('active');
             }
         }
     </script>
