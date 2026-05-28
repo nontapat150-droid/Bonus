@@ -1,6 +1,8 @@
 <?php
 // config/db.php
 
+date_default_timezone_set('Asia/Bangkok');
+
 $host = 'sql207.infinityfree.com';
 $db   = 'if0_42036532_ro';
 $user = 'if0_42036532'; // Adjust based on XAMPP default
@@ -12,6 +14,7 @@ $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES   => false,
+    PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone = '+07:00'",
 ];
 
 try {

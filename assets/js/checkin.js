@@ -8,6 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadPrompt = document.getElementById('uploadPrompt');
     const timeDisplay = document.getElementById('currentTime');
     const submitBtn = document.getElementById('submitBtn');
+    const editImageInput = document.getElementById('edit_checkin_image');
+    const editImagePreview = document.getElementById('editImagePreview');
+    const editImagePlaceholder = document.getElementById('editImagePlaceholder');
+    const deleteImageBtn = document.getElementById('deleteImageBtn');
 
     const now = new Date();
     const currMonth = now.toISOString().slice(0, 7);
@@ -69,6 +73,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    if (editImageInput) {
+        editImageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                editImagePreview.src = '';
+                editImagePreview.classList.add('hidden');
+                editImagePlaceholder.classList.remove('hidden');
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                Toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+                editImageInput.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                editImagePreview.src = event.target.result;
+                editImagePreview.classList.remove('hidden');
+                editImagePlaceholder.classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     document.getElementById('filterDate').addEventListener('change', function() { document.getElementById('filterMonth').value = ''; });
     document.getElementById('filterMonth').addEventListener('change', function() { document.getElementById('filterDate').value = ''; });
 });
@@ -125,6 +153,10 @@ function renderTable(records) {
             ? `<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-bold border border-orange-200">มาสาย</span>`
             : `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">ตรงเวลา</span>`;
 
+        const imageCell = item.image_path
+            ? `<a href="assets/uploads/checkins/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/checkins/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence"></a>`
+            : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`;
+
         // สิทธิ์การมองเห็นปุ่ม (ตัวแปร USER_ROLE ถูกส่งมาจากไฟล์ checkin.php)
         const canEdit = ['super_admin', 'admin', 'technician', 'sales'].includes(window.USER_ROLE);
         const canDelete = window.USER_ROLE === 'super_admin';
@@ -151,9 +183,7 @@ function renderTable(records) {
             </td>
             <td class="flex justify-between items-center md:table-cell px-2 md:px-4 py-3 border-b border-dashed border-slate-100 md:border-none md:text-center">
                 <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">รูปถ่าย</span>
-                <a href="assets/uploads/checkins/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform">
-                    <img src="assets/uploads/checkins/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence">
-                </a>
+                ${imageCell}
             </td>
             <td class="flex justify-between items-center md:table-cell px-2 md:px-4 py-3 border-b border-dashed border-slate-100 md:border-none">
                 <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">พนักงาน</span>
@@ -186,12 +216,38 @@ window.openEditCheckin = function(index) {
     const formattedTime = item.checkin_time.replace(' ', 'T').substring(0, 16);
     document.getElementById('edit_checkin_time').value = formattedTime;
 
+    if (editImageInput) editImageInput.value = '';
+    if (item.image_path) {
+        editImagePreview.src = `assets/uploads/checkins/${item.image_path}`;
+        editImagePreview.classList.remove('hidden');
+        editImagePlaceholder.classList.add('hidden');
+        if (deleteImageBtn) {
+            if (window.USER_ROLE === 'super_admin') {
+                deleteImageBtn.classList.remove('hidden');
+            } else {
+                deleteImageBtn.classList.add('hidden');
+            }
+        }
+    } else {
+        editImagePreview.src = '';
+        editImagePreview.classList.add('hidden');
+        editImagePlaceholder.classList.remove('hidden');
+        if (deleteImageBtn) deleteImageBtn.classList.add('hidden');
+    }
+
     const modal = document.getElementById('editCheckinModal');
     modal.classList.remove('hidden');
 };
 
 window.closeEditCheckinModal = function() {
     document.getElementById('editCheckinModal').classList.add('hidden');
+    if (editImagePreview) {
+        editImagePreview.src = '';
+        editImagePreview.classList.add('hidden');
+    }
+    if (editImagePlaceholder) editImagePlaceholder.classList.remove('hidden');
+    if (editImageInput) editImageInput.value = '';
+    if (deleteImageBtn) deleteImageBtn.classList.add('hidden');
 };
 
 window.saveEditCheckin = async function() {
@@ -200,17 +256,23 @@ window.saveEditCheckin = async function() {
 
     if(!newTime) return Toast.error('กรุณาระบุเวลาที่ต้องการแก้');
 
+    const formData = new FormData();
+    formData.append('id', id);
+    formData.append('checkin_time', newTime);
+    if (editImageInput && editImageInput.files[0]) {
+        formData.append('checkin_image', editImageInput.files[0]);
+    }
+
     Loader.show();
     try {
         const res = await fetch('api/checkin/edit.php', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ id: id, checkin_time: newTime })
+            body: formData
         });
         const data = await res.json();
         
         if(data.success) {
-            Toast.success('แก้ไขเวลาเช็คอินเรียบร้อยแล้ว');
+            Toast.success('แก้ไขข้อมูลเช็คอินเรียบร้อยแล้ว');
             closeEditCheckinModal();
             loadCheckinHistory(); // รีโหลดตารางใหม่เพื่อคำนวณสถานะใหม่
         } else {
@@ -221,6 +283,45 @@ window.saveEditCheckin = async function() {
     } finally {
         Loader.hide();
     }
+};
+
+window.deleteCheckinImage = async function(id) {
+    if (!id) id = document.getElementById('edit_checkin_id').value;
+    if (!id) return Toast.error('ไม่พบข้อมูลที่ต้องการลบรูป');
+
+    Swal.fire({
+        title: 'ยืนยันการลบรูปภาพ?',
+        text: 'รูปภาพจะถูกลบออกจากระบบ แต่ข้อมูลเช็คอินจะยังอยู่',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'ใช่, ลบรูป',
+        cancelButtonText: 'ยกเลิก'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Loader.show();
+            try {
+                const res = await fetch('api/checkin/delete_image.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ id: id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    Toast.success('ลบรูปภาพเรียบร้อยแล้ว');
+                    closeEditCheckinModal();
+                    loadCheckinHistory();
+                } else {
+                    Toast.error(data.error);
+                }
+            } catch(e) {
+                Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+            } finally {
+                Loader.hide();
+            }
+        }
+    });
 };
 
 window.deleteCheckin = async function(id) {
