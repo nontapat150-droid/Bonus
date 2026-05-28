@@ -4,89 +4,102 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 ?>
 
 <div class="space-y-6">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between card">
+    <div class="card flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                <span class="mr-2 text-3xl"><i data-lucide="bar-chart-2" class="w-5 h-5 inline-block"></i></span> รายงานการใช้น้ำมัน   
+            <h2 class="text-3xl font-black text-[var(--c-text-1)] tracking-tight flex items-center">
+                <span class="mr-3 p-2 bg-[var(--c-primary-faint)] text-[var(--c-primary)] rounded-xl shadow-inner text-2xl"><i data-lucide="bar-chart-2" class="w-6 h-6"></i></span>
+                รายงานการใช้น้ำมัน   
             </h2>
-            <p class="text-gray-500 text-sm mt-1">ตรวจสอบประวัติการเบิกค่าน้ำมันและดูสถิติ</p>
+            <p class="text-[var(--c-text-3)] text-sm mt-1 font-medium">ตรวจสอบประวัติการเบิกค่าน้ำมันและดูสถิติ</p>
         </div>
         <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
             <div class="flex items-center space-x-2">
-                <input type="date" id="start_date" class="px-3 py-2 input w-full sm:w-auto">
-                <span class="text-gray-500">ถึง</span>
-                <input type="date" id="end_date" class="px-3 py-2 input w-full sm:w-auto">
+                <input type="date" id="start_date" class="input w-full sm:w-auto text-xs font-bold">
+                <span class="text-[var(--c-text-3)] text-xs font-bold">ถึง</span>
+                <input type="date" id="end_date" class="input w-full sm:w-auto text-xs font-bold">
             </div>
-            <button id="filterBtn" class="btn-primary shadow-sm w-full sm:w-auto">
+            <button id="filterBtn" class="btn-primary w-full sm:w-auto text-xs">
                 ค้นหา
             </button>
             <input type="file" id="importOilExcel" accept=".xlsx, .xls" class="hidden">
-            <button onclick="document.getElementById('importOilExcel').click()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center w-full sm:w-auto">
-                <span class="mr-2"><i data-lucide="download" class="w-5 h-5 inline-block"></i></span> นำเข้า Excel
+            <button onclick="document.getElementById('importOilExcel').click()" class="btn-primary w-full sm:w-auto text-xs" style="background: var(--c-warning); box-shadow: 0 4px 14px rgba(245,158,11, 0.40);">
+                <span class="mr-1"><i data-lucide="download" class="w-4 h-4"></i></span> นำเข้า Excel
             </button>
-            <button onclick="exportOilExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center w-full sm:w-auto">
-                <span class="mr-2"><i data-lucide="download" class="w-5 h-5 inline-block"></i></span> ส่งออก Excel
+            <button onclick="exportOilExcel()" class="btn-primary w-full sm:w-auto text-xs" style="background: var(--c-success); box-shadow: 0 4px 14px rgba(16,185,129, 0.40);">
+                <span class="mr-1"><i data-lucide="download" class="w-4 h-4"></i></span> ส่งออก Excel
             </button>
             
             <?php if (hasRole('super_admin')): ?>
-            <a href="index.php?page=oil_test_form" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm text-center w-full sm:w-auto">
+            <a href="index.php?page=oil_test_form" class="bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text-2)] hover:bg-[var(--c-border)] px-4 py-2 rounded-lg text-xs font-bold transition-colors text-center w-full sm:w-auto">
                 + บันทึก (ทดสอบ)
             </a>
             <?php endif; ?>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md p-6 text-white">
-            <h3 class="text-blue-100 text-sm font-medium">ค่าใช้จ่ายรวม</h3>
-            <p class="text-3xl font-bold mt-2">฿ <span id="stat_total_cost">0.00</span></p>
+    <div class="kpi-grid">
+        <div class="card relative group">
+            <div class="flex justify-between items-start mb-4">
+                <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-info-bg)] !text-[var(--c-info)]"><i data-lucide="dollar-sign" class="w-5 h-5"></i></div>
+            </div>
+            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">ค่าใช้จ่ายรวม (บาท)</p>
+            <h3 class="text-kpi"><span class="text-2xl text-[var(--c-text-3)]">฿</span><span id="stat_total_cost">0.00</span></h3>
         </div>
-        <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-md p-6 text-white">
-            <h3 class="text-emerald-100 text-sm font-medium">ปริมาณรวม (ลิตร)</h3>
-            <p class="text-3xl font-bold mt-2"><span id="stat_total_liters">0.00</span> ลิตร</p>
+        <div class="card relative group">
+            <div class="flex justify-between items-start mb-4">
+                <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-success-bg)] !text-[var(--c-success)]"><i data-lucide="droplet" class="w-5 h-5"></i></div>
+            </div>
+            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">ปริมาณรวม (ลิตร)</p>
+            <h3 class="text-kpi"><span id="stat_total_liters">0.00</span></h3>
         </div>
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-md p-6 text-white">
-            <h3 class="text-purple-100 text-sm font-medium">รายการเบิกทั้งหมด</h3>
-            <p class="text-3xl font-bold mt-2"><span id="stat_total_records">0</span> รายการ</p>
+        <div class="card relative group">
+            <div class="flex justify-between items-start mb-4">
+                <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[#FDF2F8] !text-[#EC4899]"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+            </div>
+            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">รายการเบิกทั้งหมด</p>
+            <h3 class="text-kpi"><span id="stat_total_records">0</span></h3>
         </div>
-        <div class="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl shadow-md p-6 text-white">
-            <h3 class="text-amber-100 text-sm font-medium"><i data-lucide="clipboard" class="w-5 h-5 inline-block"></i> เคสงานทุกทีม</h3>
-            <p class="text-3xl font-bold mt-2"><span id="stat_total_jobs">0</span> งาน</p>
+        <div class="card relative group">
+            <div class="flex justify-between items-start mb-4">
+                <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-warning-bg)] !text-[var(--c-warning)]"><i data-lucide="clipboard" class="w-5 h-5"></i></div>
+            </div>
+            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">เคสงานทุกทีม</p>
+            <h3 class="text-kpi"><span id="stat_total_jobs">0</span></h3>
         </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="card">
-            <h3 class="font-bold text-gray-700 mb-4">เปรียบเทียบค่าใช้จ่ายรายวัน (บาท)</h3>
+            <h3 class="font-bold text-[var(--c-text-1)] mb-4">เปรียบเทียบค่าใช้จ่ายรายวัน (บาท)</h3>
             <div class="relative h-64 w-full"><canvas id="costChart"></canvas></div>
         </div>
         <div class="card">
-            <h3 class="font-bold text-gray-700 mb-4">แนวโน้มปริมาณการใช้น้ำมัน (ลิตร)</h3>
+            <h3 class="font-bold text-[var(--c-text-1)] mb-4">แนวโน้มปริมาณการใช้น้ำมัน (ลิตร)</h3>
             <div class="relative h-64 w-full"><canvas id="litersChart"></canvas></div>
         </div>
     </div>
 
-    <div class="card overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-            <h3 class="font-bold text-gray-700">ประวัติการเบิก และการคำนวณต้นทุน</h3>
+    <div class="card !p-0 overflow-hidden">
+        <div class="px-6 py-4 border-b border-[var(--c-border)] bg-[var(--c-surface-2)] flex justify-between items-center">
+            <h3 class="font-black text-[var(--c-text-1)] tracking-tight">ประวัติการเบิก และการคำนวณต้นทุน</h3>
         </div>
         <div class="overflow-x-auto w-full">
-            <table class="w-full text-sm text-left text-gray-500 whitespace-nowrap">
-                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+            <table class="w-full text-sm text-left text-[var(--c-text-2)] whitespace-nowrap">
+                <thead class="text-[10px] text-[var(--c-text-3)] uppercase tracking-[0.1em] font-black bg-[var(--c-surface-3)]">
                     <tr>
-                        <th class="px-4 py-3">วันที่/เวลา</th>
-                        <th class="px-4 py-3">ช่าง (ผู้เบิก)</th>
-                        <th class="px-4 py-3">ทีม/ป้ายทะเบียน</th>
-                        <th class="px-4 py-3 text-center">ระยะทาง (กม.)</th>
-                        <th class="px-4 py-3 text-center">เคสงาน (รอบ)</th>
-                        <th class="px-4 py-3 text-right">ต้นทุน/กม.</th>
-                        <th class="px-4 py-3 text-right">ต้นทุน/งาน</th>
-                        <th class="px-4 py-3 text-right text-gray-800">ยอดรวม (บาท)</th>
-                        <th class="px-4 py-3 text-center">จัดการ</th>
+                        <th class="px-4 py-4">วันที่/เวลา</th>
+                        <th class="px-4 py-4">ช่าง (ผู้เบิก)</th>
+                        <th class="px-4 py-4">ทีม/ป้ายทะเบียน</th>
+                        <th class="px-4 py-4 text-center">ระยะทาง (กม.)</th>
+                        <th class="px-4 py-4 text-center">เคสงาน (รอบ)</th>
+                        <th class="px-4 py-4 text-right">ต้นทุน/กม.</th>
+                        <th class="px-4 py-4 text-right">ต้นทุน/งาน</th>
+                        <th class="px-4 py-4 text-right text-[var(--c-text-1)]">ยอดรวม (บาท)</th>
+                        <th class="px-4 py-4 text-center">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody id="oilTableBody" class="divide-y divide-gray-100">
-                    <tr><td colspan="9" class="px-6 py-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
+                <tbody id="oilTableBody" class="divide-y divide-[var(--c-border)]">
+                    <tr><td colspan="9" class="px-6 py-12 text-center text-[var(--c-text-3)] font-bold">กำลังโหลดข้อมูล...</td></tr>
                 </tbody>
             </table>
         </div>
