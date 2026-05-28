@@ -252,12 +252,12 @@ if ($page === 'home') {
             }
 
             .mobile-drawer {
-                position: fixed; top: 0; left: 0; bottom: 0; width: 280px; background: var(--c-surface); z-index: 70; box-shadow: var(--shadow-drawer); transform: translateX(-100%); transition: transform var(--dur-slow) var(--ease-snap); overflow-y: auto; overscroll-behavior: contain; padding-bottom: env(safe-area-inset-bottom);
+                position: fixed; top: 0; left: 0; bottom: 0; width: 280px; background: var(--c-surface); z-index: 75; box-shadow: var(--shadow-drawer); transform: translateX(-100%); transition: transform var(--dur-slow) var(--ease-snap); overflow-y: auto; overscroll-behavior: contain; padding-bottom: env(safe-area-inset-bottom);
             }
             .mobile-drawer.open { transform: translateX(0); }
 
             .mobile-drawer-backdrop {
-                position: fixed; inset: 0; background: var(--c-overlay); z-index: 75; transition: opacity var(--dur-slow) ease; opacity: 0; pointer-events: none;
+                position: fixed; inset: 0; background: var(--c-overlay); z-index: 70; transition: opacity var(--dur-slow) ease; opacity: 0; pointer-events: none;
             }
             .mobile-drawer-backdrop.visible { opacity: 1; pointer-events: all; }
 
@@ -544,6 +544,39 @@ if ($page === 'home') {
             if(shouldEnhance) enhanceTablesForMobile();
         });
         observer.observe(document.body, { childList: true, subtree: true });
+
+        // --- UI Overlap Detector (Debug) ---
+        window.checkUIOverlaps = function() {
+            const all = Array.from(document.querySelectorAll('body *'));
+            let warnings = 0;
+            
+            all.forEach(el => {
+                const style = window.getComputedStyle(el);
+                const zIndex = parseInt(style.zIndex);
+                if (!isNaN(zIndex) && zIndex >= 50) {
+                    // Ignore known high z-index containers
+                    const isKnown = el.id === 'toast-container' || 
+                                    el.closest('.mobile-drawer') || 
+                                    el.closest('.mobile-drawer-backdrop') || 
+                                    el.closest('[id$="Modal"]') ||
+                                    el.classList.contains('topbar');
+                    if (!isKnown && !el.classList.contains('hidden')) {
+                        console.warn('⚠️ [Overlap Detector] พบ Z-Index สูงผิดปกติ:', zIndex, el);
+                        el.style.outline = '3px dashed red';
+                        el.style.outlineOffset = '-3px';
+                        warnings++;
+                    }
+                }
+            });
+            
+            if(warnings > 0) {
+                console.log(`🚨 ตรวจพบ UI อาจทับซ้อนกัน ${warnings} จุด`);
+                if(window.IS_ADMIN) Toast.show(`ดักจับพบ Z-Index ผิดปกติ ${warnings} จุด (ดู Console)`, 'error');
+            }
+        };
+        
+        // รันตรวจสอบหลักจากโหลดเสร็จ 2 วินาที
+        setTimeout(window.checkUIOverlaps, 2000);
 
     </script>
 
