@@ -5,7 +5,6 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 $isAdmin = hasRole(['admin', 'super_admin']);
 ?>
 
-<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
@@ -54,7 +53,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
 <div class="h-[calc(100vh-120px)] flex flex-col space-y-4">
     
-    <!-- Top Controls (Admin Only) -->
     <?php if ($isAdmin): ?>
     <div class="bg-white/70 backdrop-blur-md p-5 rounded-[2rem] shadow-sm border border-white flex flex-wrap gap-4 items-center justify-between z-20 relative">
         <div class="flex items-center space-x-4">
@@ -65,7 +63,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             </div>
         </div>
 
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-2 flex-wrap gap-y-2">
             <input type="file" id="jobExcelFile" accept=".xlsx, .xls" class="hidden">
             <button onclick="document.getElementById('jobExcelFile').click()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2.5 rounded-2xl text-[10px] font-black transition-all flex items-center shadow-sm">
                 📥 นำเข้า Excel
@@ -83,7 +81,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 📍 เรียงคิวเส้นทาง
             </button>
 
-            <div class="w-px h-8 bg-slate-200 mx-2"></div>
+            <div class="w-px h-8 bg-slate-200 mx-2 hidden sm:block"></div>
 
             <button id="clearAssignmentsBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-2xl text-[10px] font-black shadow-lg shadow-amber-100 transition-all flex items-center">
                 🔄 ล้างการจ่ายงาน
@@ -96,10 +94,8 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
     <?php endif; ?>
 
-    <!-- Main Content: Horizontal Split -->
     <div class="flex flex-col lg:flex-row flex-1 gap-4 min-h-0">
 
-        <!-- Left: Detailed Table Section (40%) -->
         <div class="w-full lg:w-[40%] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 flex flex-col overflow-hidden h-full">
             
             <div class="p-5 border-b border-slate-50 bg-slate-50/50 space-y-4">
@@ -144,8 +140,8 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             </div>
 
             <div class="flex-1 overflow-hidden flex flex-col bg-slate-50/20">
-                <div class="table-container flex-1 overflow-auto">
-                    <table class="job-table w-full">
+                <div class="table-container flex-1 overflow-auto w-full">
+                    <table class="job-table w-full whitespace-nowrap">
                         <thead>
                             <tr class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
                                 <th class="col-checkbox px-4 py-3 text-center">#</th>
@@ -159,14 +155,12 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                             </tr>
                         </thead>
                         <tbody id="jobTableBody" class="text-[11px] font-bold text-slate-600">
-                            <!-- Job Rows injected via JS -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- Right: Map Section (60%) -->
         <div class="w-full lg:w-[60%] bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-50 overflow-hidden relative h-full min-h-[400px]">
             <div id="map" class="w-full h-full z-0"></div>
             <div id="mapLoader" class="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 hidden">
@@ -180,9 +174,8 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 </div>
 
-<!-- Dispatch Distribution Modal -->
 <div id="dispatchModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-4">
-    <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden animate__animated animate__zoomIn">
+    <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-[95%] md:max-w-lg overflow-hidden animate__animated animate__zoomIn">
         <div class="p-8 bg-gradient-to-br from-indigo-600 to-violet-700 text-white">
             <h3 class="text-xl font-black italic tracking-tight uppercase">Smart Auto-Dispatch</h3>
             <p class="text-indigo-100 text-xs mt-1 font-bold">ระบุจำนวนงานที่ต้องการกระจายให้แต่ละทีม (งานที่รอจ่าย: <span id="unassignedCount">0</span>)</p>
@@ -195,7 +188,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 </div>
 
-<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>

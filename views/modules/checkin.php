@@ -77,12 +77,12 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <input type="month" id="filterMonth" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                     <button onclick="loadCheckinHistory()" class="bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-indigo-100">ค้นหา</button>
                     <?php if($isAdmin): ?>
-                    <button onclick="exportCheckin()" class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-emerald-600">Excel</button>
+                    <button onclick="exportCheckin()" class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-emerald-100">Excel</button>
                     <?php endif; ?>
                 </div>
             </div>
-            <div class="overflow-x-auto flex-1">
-                <table class="w-full text-sm text-left">
+            <div class="overflow-x-auto flex-1 w-full">
+                <table class="w-full text-sm text-left whitespace-nowrap">
                     <thead class="text-xs text-slate-500 uppercase bg-slate-50 rounded-lg">
                         <tr>
                             <th class="px-4 py-3 rounded-l-lg">วันที่ - เวลา</th>

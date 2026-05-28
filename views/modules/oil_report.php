@@ -13,23 +13,23 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
         </div>
         <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
             <div class="flex items-center space-x-2">
-                <input type="date" id="start_date" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                <input type="date" id="start_date" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
                 <span class="text-gray-500">ถึง</span>
-                <input type="date" id="end_date" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                <input type="date" id="end_date" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-full sm:w-auto">
             </div>
-            <button id="filterBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+            <button id="filterBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm w-full sm:w-auto">
                 ค้นหา
             </button>
             <input type="file" id="importOilExcel" accept=".xlsx, .xls" class="hidden">
-            <button onclick="document.getElementById('importOilExcel').click()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm flex items-center">
+            <button onclick="document.getElementById('importOilExcel').click()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center w-full sm:w-auto">
                 <span class="mr-2">📥</span> นำเข้า Excel
             </button>
-            <button onclick="exportOilExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm flex items-center">
+            <button onclick="exportOilExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center w-full sm:w-auto">
                 <span class="mr-2">📥</span> ส่งออก Excel
             </button>
             
             <?php if (hasRole('super_admin')): ?>
-            <a href="index.php?page=oil_test_form" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm text-center">
+            <a href="index.php?page=oil_test_form" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm text-center w-full sm:w-auto">
                 + บันทึก (ทดสอบ)
             </a>
             <?php endif; ?>
@@ -68,14 +68,10 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-            <h3 class="font-bold text-gray-700">ประวัติการเบิก</h3>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
             <h3 class="font-bold text-gray-700">ประวัติการเบิก และการคำนวณต้นทุน</h3>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-500">
+        <div class="overflow-x-auto w-full">
+            <table class="w-full text-sm text-left text-gray-500 whitespace-nowrap">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                     <tr>
                         <th class="px-4 py-3">วันที่/เวลา</th>
@@ -95,11 +91,10 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             </table>
         </div>
     </div>
-    </div>
 </div>
 
 <div id="imageModal" class="fixed inset-0 z-[100] hidden bg-black bg-opacity-80 flex justify-center items-center p-4">
-    <div class="bg-white rounded-xl overflow-hidden max-w-4xl w-full flex flex-col max-h-[90vh]">
+    <div class="bg-white rounded-xl overflow-hidden w-full max-w-[95%] md:max-w-4xl flex flex-col max-h-[90vh]">
         <div class="p-4 border-b flex justify-between items-center bg-gray-50">
             <h3 class="font-bold text-gray-800">รูปภาพหลักฐานการเติมน้ำมัน</h3>
             <button onclick="closeImageModal()" class="text-gray-500 hover:text-red-500 text-xl font-bold">&times;</button>
@@ -109,7 +104,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 </div>
 
 <div id="editOilModal" class="fixed inset-0 z-[100] hidden bg-slate-900 bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-[2rem] shadow-2xl overflow-hidden max-w-md w-full animate__animated animate__zoomIn">
+    <div class="bg-white rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-md animate__animated animate__zoomIn">
         <div class="bg-indigo-600 p-5 border-b flex justify-between items-center text-white">
             <h3 class="font-black text-lg">✏️ แก้ไขข้อมูลผู้เติม / ทะเบียนรถ</h3>
             <button onclick="closeEditOilModal()" class="text-indigo-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
