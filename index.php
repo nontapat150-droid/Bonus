@@ -79,6 +79,7 @@ if ($page === 'home') {
             --c-warning:  #F59E0B;  --c-warning-bg: #FFFBEB;  --c-warning-text: #78350F;
             --c-danger:   #EF4444;  --c-danger-bg:  #FEF2F2;  --c-danger-text:  #991B1B;
             --c-info:     #3B82F6;  --c-info-bg:    #EFF6FF;  --c-info-text:    #1E40AF;
+            --c-neutral:  #6B7280;  --c-neutral-bg: #F3F4F6;  --c-neutral-text: #374151;
         }
 
         /* === 2. SHADOW SYSTEM === */
