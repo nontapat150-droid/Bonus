@@ -111,6 +111,20 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         </div>
         <div class="p-6">
             <input type="hidden" id="edit_checkin_id">
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">รูปภาพหลักฐาน</label>
+                <div id="editImagePreviewWrapper" class="relative">
+                    <img id="editImagePreview" class="w-full h-48 object-cover rounded-xl border border-slate-200 hidden" src="" alt="Preview">
+                    <div id="editImagePlaceholder" class="w-full h-48 rounded-xl border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-sm text-slate-500">
+                        ไม่มีรูปภาพแนบ หรือเลือกไฟล์ใหม่เพื่อแทนที่
+                    </div>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <button type="button" onclick="document.getElementById('edit_checkin_image').click()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all">เลือกไฟล์รูปใหม่</button>
+                    <button type="button" id="deleteImageBtn" onclick="deleteCheckinImage()" class="px-4 py-2 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600 transition-all hidden">ลบรูปภาพ</button>
+                </div>
+                <input type="file" id="edit_checkin_image" name="checkin_image" accept="image/*" class="hidden">
+            </div>
             <label class="block text-sm font-bold text-gray-700 mb-2">เวลาเข้างานที่ต้องการแก้</label>
             <input type="datetime-local" id="edit_checkin_time" class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 font-bold text-gray-800">
             <p class="text-xs text-slate-400 mt-2">* ระบบจะบันทึกเวลาใหม่ และคำนวณสถานะสาย/ตรงเวลา ใหม่อัตโนมัติ</p>
