@@ -97,7 +97,7 @@ if (!hasRole(['admin', 'super_admin'])) {
                 <label class="block text-[10px] font-black uppercase tracking-widest text-amber-500 mb-2 ml-1"><i data-lucide="car" class="w-5 h-5 inline-block"></i> ทีม / ป้ายทะเบียนรถ</label>
                 <select id="team_id" name="team_id" class="input">
                     <option value="">-- ไม่มีทีม --</option>
-                    </select>
+                </select>
                 <p class="text-[10px] text-slate-400 mt-2 ml-1 italic">* เลือกป้ายทะเบียนที่เคยลงทะเบียนในระบบ เพื่อย้ายทีม</p>
             </div>
 
@@ -115,6 +115,7 @@ if (!hasRole(['admin', 'super_admin'])) {
         </form>
     </div>
 </div>
+
 <div id="pendingModal" class="fixed inset-0 z-[80] hidden bg-[var(--c-overlay)] backdrop-blur-sm flex justify-center items-center p-4">
     <div class="bg-[var(--c-surface)] rounded-2xl w-full max-w-[95%] md:max-w-3xl overflow-hidden animate__animated animate__zoomIn z-[90]" style="box-shadow: var(--shadow-4);">
         <div class="p-6 bg-[var(--c-warning)] text-white flex justify-between items-center">
@@ -132,7 +133,7 @@ if (!hasRole(['admin', 'super_admin'])) {
                     </tr>
                 </thead>
                 <tbody id="pendingTableBody" class="divide-y divide-[var(--c-border)]">
-                    </tbody>
+                </tbody>
             </table>
         </div>
     </div>
@@ -140,7 +141,6 @@ if (!hasRole(['admin', 'super_admin'])) {
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-// ฟังก์ชันเช็คและอัปเดตตัวเลขแจ้งเตือนรออนุมัติ
 async function updatePendingBadge() {
     try {
         const res = await fetch('api/users/get_pending.php');
@@ -158,7 +158,6 @@ async function updatePendingBadge() {
     } catch (e) {}
 }
 
-// อัปเดตตัวเลขทันทีที่เปิดหน้าเว็บ
 document.addEventListener('DOMContentLoaded', updatePendingBadge);
 
 async function loadPendingUsers() {
@@ -195,9 +194,8 @@ async function loadPendingUsers() {
 
 async function approveUser(id, status) {
     const actionText = status === 'approved' ? 'อนุมัติการเข้าใช้งาน' : 'ปฏิเสธคำขอ';
-    const confirmColor = status === 'approved' ? '#10B981' : '#EF4444'; // สีเขียวหรือแดง
+    const confirmColor = status === 'approved' ? '#10B981' : '#EF4444';
 
-    // 1. ถามยืนยันด้วย SweetAlert ก่อน
     const result = await Swal.fire({
         title: `ยืนยันการ${actionText}?`,
         text: `คุณต้องการ${actionText}ของผู้ใช้นี้ใช่หรือไม่`,
@@ -212,7 +210,17 @@ async function approveUser(id, status) {
 
     if(!result.isConfirmed) return;
     
-    // 2. ส่งข้อมูลไป API
+    // เรียก Loading SweetAlert2
+    Swal.fire({
+        title: 'กำลังดำเนินการ...',
+        text: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        },
+        customClass: { popup: 'rounded-3xl' }
+    });
+
     try {
         const res = await fetch('api/users/approve.php', {
             method: 'POST',
@@ -221,8 +229,10 @@ async function approveUser(id, status) {
         });
         const data = await res.json();
 
+        // ดีเลย์ 0.6 วิ ให้ผู้ใช้เห็นการโหลด
+        await new Promise(resolve => setTimeout(resolve, 600)); 
+
         if(data.success) {
-            // 3. แจ้งเตือนสำเร็จสวยๆ
             Swal.fire({
                 title: 'สำเร็จ!',
                 text: `ทำรายการ${actionText}เรียบร้อยแล้ว`,
@@ -231,9 +241,9 @@ async function approveUser(id, status) {
                 customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
             });
 
-            loadPendingUsers(); // โหลดตารางใน Modal ใหม่
-            updatePendingBadge(); // อัปเดตตัวเลขแจ้งเตือนสีแดงด้านนอกใหม่
-            if (typeof loadUsers === "function") loadUsers(); // รีเฟรชตารางหลักด้านหลัง
+            loadPendingUsers(); 
+            updatePendingBadge(); 
+            if (typeof loadUsers === "function") loadUsers(); 
         } else {
             Swal.fire('ข้อผิดพลาด', data.error, 'error');
         }
