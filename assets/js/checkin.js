@@ -181,11 +181,12 @@ function renderTable(records) {
 
         let actionHtml = `<div class="flex justify-end md:justify-center gap-2">`;
         if (canEdit) {
-            // ปรับตรงนี้ให้ส่ง item.id แทนลำดับ Index ของ Array กันข้อมูลคลาดเคลื่อน
-            actionHtml += `<button onclick="openEditCheckin(${item.id})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">🖼️ แก้ไขรูป</button>`;
+            // เติม Single Quote ครอบ ${item.id} และเพิ่ม type="button"
+            actionHtml += `<button type="button" onclick="openEditCheckin('${item.id}')" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">🖼️ แก้ไขรูป</button>`;
         }
         if (canDelete) {
-            actionHtml += `<button onclick="deleteCheckin(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบข้อมูล</button>`;
+            // เติม Single Quote ครอบ ${item.id} และเพิ่ม type="button"
+            actionHtml += `<button type="button" onclick="deleteCheckin('${item.id}')" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบข้อมูล</button>`;
         }
         if (!canEdit && !canDelete) {
             actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
