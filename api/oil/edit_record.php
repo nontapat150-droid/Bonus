@@ -29,31 +29,57 @@ if (!$id || !$tech_id || !$license_plate || !$date_recorded || $mileage <= 0 || 
 $date_recorded_mysql = date('Y-m-d H:i:s', strtotime($date_recorded));
 $total_price = isset($input['total_price']) && $input['total_price'] !== '' ? round(floatval($input['total_price'])) : round($liters * $price_per_liter);
 
-// คำนวณระยะทางจากรอบก่อนหน้า (ไม่รวมตัวเอง)
-$distance = 0;
-$stmtLastMile = $pdo->prepare("SELECT mileage FROM oil_records WHERE license_plate = ? AND date_recorded < ? AND id != ? ORDER BY date_recorded DESC LIMIT 1");
-$stmtLastMile->execute([$license_plate, $date_recorded_mysql, $id]);
-$lastMileage = $stmtLastMile->fetchColumn();
-if ($lastMileage && $mileage >= $lastMileage) {
-    $distance = $mileage - $lastMileage;
-}
-
 try {
+    $pdo->beginTransaction();
+
+    // ดึงทะเบียนรถเดิมมาตรวจสอบ เผื่อว่ามีการแก้ไขเปลี่ยนทะเบียนรถ
+    $stmtOld = $pdo->prepare("SELECT license_plate FROM oil_records WHERE id = ?");
+    $stmtOld->execute([$id]);
+    $old_plate = $stmtOld->fetchColumn();
+
     $stmtUser = $pdo->prepare("SELECT full_name FROM users WHERE id = ? LIMIT 1");
     $stmtUser->execute([$tech_id]);
     $fullName = $stmtUser->fetchColumn();
 
     $stmt = $pdo->prepare("UPDATE oil_records SET 
         tech_id = ?, license_plate = ?, filler_name = ?, date_recorded = ?, mileage = ?,
-        liters = ?, price_per_liter = ?, total_price = ?, distance = ?, job_count = ?
+        liters = ?, price_per_liter = ?, total_price = ?, job_count = ?
         WHERE id = ?");
     $stmt->execute([
         $tech_id, $license_plate, $fullName ?: null, $date_recorded_mysql, $mileage,
-        $liters, $price_per_liter, $total_price, $distance, $job_count, $id
+        $liters, $price_per_liter, $total_price, $job_count, $id
     ]);
     
+    // 🚀 --- ระบบคำนวณระยะทางใหม่ทั้งหมด ---
+    // ทำให้คำนวณทั้งทะเบียนรถใหม่และทะเบียนรถเดิม(หากมีการเปลี่ยน)
+    $platesToRecalc = array_unique([$license_plate, $old_plate]);
+    
+    foreach ($platesToRecalc as $plateToRecalc) {
+        if (empty($plateToRecalc)) continue;
+        
+        $stmtRecalc = $pdo->prepare("SELECT id, mileage FROM oil_records WHERE license_plate = ? ORDER BY mileage ASC, date_recorded ASC");
+        $stmtRecalc->execute([$plateToRecalc]);
+        $recordsForRecalc = $stmtRecalc->fetchAll(PDO::FETCH_ASSOC);
+        
+        $prev_mileage = null;
+        $updateDistStmt = $pdo->prepare("UPDATE oil_records SET distance = ? WHERE id = ?");
+        
+        foreach ($recordsForRecalc as $rRow) {
+            $curr_m = (int)$rRow['mileage'];
+            $dist = 0;
+            if ($prev_mileage !== null && $curr_m >= $prev_mileage) {
+                $dist = $curr_m - $prev_mileage;
+            }
+            $updateDistStmt->execute([$dist, $rRow['id']]);
+            $prev_mileage = $curr_m;
+        }
+    }
+    // -------------------------------------------------------------
+
+    $pdo->commit();
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
+    $pdo->rollBack();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>

@@ -12,60 +12,63 @@ if (!hasRole(['admin', 'super_admin'])) {
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
-$ids = $input['ids'] ?? $input['id'] ?? null;
+$id = $input['id'] ?? null;
 
-if (!$ids) {
-    echo json_encode(['success' => false, 'error' => 'ต้องระบุ id ของรายการที่ต้องการลบ']);
-    exit;
-}
-
-if (!is_array($ids)) $ids = [$ids];
-$ids = array_map('intval', $ids);
-$ids = array_filter($ids, function($v){ return $v > 0; });
-
-if (empty($ids)) {
-    echo json_encode(['success' => false, 'error' => 'id ไม่ถูกต้อง']);
+if (!$id) {
+    echo json_encode(['success' => false, 'error' => 'รหัสไม่ถูกต้อง']);
     exit;
 }
 
 try {
     $pdo->beginTransaction();
 
-    // Fetch image paths to delete files
-    $in = implode(',', array_fill(0, count($ids), '?'));
-    $getImgs = $pdo->prepare("SELECT image_path FROM oil_images WHERE record_id IN ($in)");
-    $getImgs->execute($ids);
-    $paths = $getImgs->fetchAll(PDO::FETCH_COLUMN);
+    // ดึง license_plate ก่อนลบ เพื่อเอาไปใช้คำนวณไมล์ที่เหลือใหม่
+    $stmtGet = $pdo->prepare("SELECT license_plate FROM oil_records WHERE id = ?");
+    $stmtGet->execute([$id]);
+    $plate = $stmtGet->fetchColumn();
 
-    // Delete image rows
-    $delImgs = $pdo->prepare("DELETE FROM oil_images WHERE record_id IN ($in)");
-    $delImgs->execute($ids);
-
-    // Delete records
-    $del = $pdo->prepare("DELETE FROM oil_records WHERE id IN ($in)");
-    $del->execute($ids);
-
-    $pdo->commit();
-
-    // Remove files from disk after commit
-    foreach ($paths as $p) {
-        $full = __DIR__ . '/../../assets/uploads/oil_receipts/' . $p;
-        if (file_exists($full)) {
-            @unlink($full);
+    // ลบรูปภาพที่เกี่ยวข้อง
+    $stmtImg = $pdo->prepare("SELECT image_path FROM oil_images WHERE record_id = ?");
+    $stmtImg->execute([$id]);
+    $images = $stmtImg->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($images as $img) {
+        $filePath = '../../assets/uploads/oil_receipts/' . $img['image_path'];
+        if (file_exists($filePath)) {
+            unlink($filePath);
         }
     }
 
-    echo json_encode(['success' => true, 'deleted' => count($ids)]);
-} catch (Exception $e) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
-    // log
-    try {
-        $logDir = __DIR__ . '/../../uploads/import_logs';
-        if (!is_dir($logDir)) mkdir($logDir, 0755, true);
-        $errFile = $logDir . '/delete_exception_' . date('Ymd_His') . '.log';
-        $details = ['message' => $e->getMessage(), 'code' => $e->getCode(), 'trace' => $e->getTraceAsString()];
-        file_put_contents($errFile, json_encode($details, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . PHP_EOL, FILE_APPEND | LOCK_EX);
-    } catch (Exception $le) {}
+    $stmt = $pdo->prepare("DELETE FROM oil_images WHERE record_id = ?");
+    $stmt->execute([$id]);
 
-    echo json_encode(['success' => false, 'error' => $e->getMessage(), 'log' => isset($errFile) ? basename($errFile) : null]);
+    $stmt = $pdo->prepare("DELETE FROM oil_records WHERE id = ?");
+    $stmt->execute([$id]);
+
+    // 🚀 --- ระบบคำนวณระยะทางใหม่ทั้งหมด ---
+    if ($plate) {
+        $stmtRecalc = $pdo->prepare("SELECT id, mileage FROM oil_records WHERE license_plate = ? ORDER BY mileage ASC, date_recorded ASC");
+        $stmtRecalc->execute([$plate]);
+        $recordsForRecalc = $stmtRecalc->fetchAll(PDO::FETCH_ASSOC);
+        
+        $prev_mileage = null;
+        $updateDistStmt = $pdo->prepare("UPDATE oil_records SET distance = ? WHERE id = ?");
+        
+        foreach ($recordsForRecalc as $rRow) {
+            $curr_m = (int)$rRow['mileage'];
+            $dist = 0;
+            if ($prev_mileage !== null && $curr_m >= $prev_mileage) {
+                $dist = $curr_m - $prev_mileage;
+            }
+            $updateDistStmt->execute([$dist, $rRow['id']]);
+            $prev_mileage = $curr_m;
+        }
+    }
+    // -------------------------------------------------------------
+
+    $pdo->commit();
+    echo json_encode(['success' => true]);
+} catch (Exception $e) {
+    $pdo->rollBack();
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
+?>
