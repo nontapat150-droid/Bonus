@@ -1,5 +1,5 @@
 <?php
-// api/announcements/manage.php
+// Bonus/api/announcements/manage.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
 
@@ -25,6 +25,7 @@ if ($action === 'save') {
     }
 
     $expires_at = null;
+    // คำนวณเวลาหมดอายุ
     if ($duration_unit !== 'never' && $duration_val > 0) {
         $unit_map = ['minutes' => 'minutes', 'hours' => 'hours', 'days' => 'days'];
         if (isset($unit_map[$duration_unit])) {
@@ -33,10 +34,9 @@ if ($action === 'save') {
     }
 
     try {
-        // เคลียร์ประกาศเก่าทิ้งทั้งหมด ให้เหลือแค่ 1 แถวเสมอ
+        // ล้างข้อมูลเก่าเพื่อให้มีประกาศวิ่งแค่ 1 อันเสมอ
         $pdo->exec("TRUNCATE TABLE announcements");
         
-        // เพิ่มประกาศใหม่
         $stmt = $pdo->prepare("INSERT INTO announcements (message, expires_at) VALUES (?, ?)");
         $stmt->execute([$message, $expires_at]);
         

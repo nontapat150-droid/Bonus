@@ -16,6 +16,8 @@ $stats = [
     'total_staff' => 0
 ];
 
+$announcement = null;
+
 if ($page === 'home') {
     try {
         $stmt = $pdo->query("SELECT COUNT(*) FROM jobs WHERE DATE(created_at) = CURDATE() OR plan_arrival_date = CURDATE()");
@@ -29,6 +31,14 @@ if ($page === 'home') {
 
         $stmt = $pdo->query("SELECT COUNT(*) FROM users");
         $stats['total_staff'] = $stmt->fetchColumn();
+        
+        // --- 🚀 จัดการและดึงข้อมูลประกาศ (Marquee) ---
+        // 1. ลบประกาศที่หมดอายุอัตโนมัติ
+        $pdo->exec("DELETE FROM announcements WHERE expires_at IS NOT NULL AND expires_at < NOW()");
+        // 2. ดึงประกาศล่าสุดที่ยังไม่หมดอายุ
+        $stmtAnn = $pdo->query("SELECT message, expires_at FROM announcements ORDER BY id DESC LIMIT 1");
+        $announcement = $stmtAnn->fetch();
+        
     } catch (PDOException $e) {}
 }
 
@@ -177,6 +187,28 @@ if ($page === 'home') {
         .icon-box-primary { width: 40px; height: 40px; border-radius: 10px; background: var(--c-primary-faint); color: var(--c-primary); display: flex; align-items: center; justify-content: center; }
         .icon-box-success { width: 40px; height: 40px; border-radius: 10px; background: var(--c-success-bg); color: var(--c-success); display: flex; align-items: center; justify-content: center; }
         
+        /* 🚨 --- MARQUEE CSS --- */
+        .marquee-wrapper {
+            position: relative; display: flex; align-items: center; overflow: hidden;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed); color: #ffffff;
+            border-radius: 12px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3); height: 48px;
+        }
+        .marquee-badge {
+            position: absolute; left: 0; top: 0; bottom: 0; z-index: 10;
+            background: #4338ca; padding: 0 16px; display: flex; align-items: center;
+            font-weight: 800; font-size: 14px; letter-spacing: 0.5px;
+            box-shadow: 4px 0 12px rgba(0,0,0,0.15);
+        }
+        .marquee-content {
+            padding-left: 100%; display: inline-block; white-space: nowrap;
+            font-weight: 600; font-size: 15px; animation: marqueeScroll 25s linear infinite;
+        }
+        .marquee-content:hover { animation-play-state: paused; }
+        @keyframes marqueeScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
         /* === 6. SIDEBAR & MAIN CONTENT LAYOUT === */
         .sidebar {
             position: fixed; top: 0; left: 0; bottom: 0; z-index: 30;
@@ -318,8 +350,8 @@ if ($page === 'home') {
                 text-align: left;
                 flex-shrink: 0;
             }
-            .data-table td:empty { display: none; } /* Hide empty cells */
-            .data-table td > * { text-align: right; } /* Ensure content like buttons is right-aligned */
+            .data-table td:empty { display: none; }
+            .data-table td > * { text-align: right; }
         }
         @media (min-width: 768px) {
             .mobile-drawer, .mobile-drawer-backdrop, .bottom-tabs { display: none !important; }
@@ -415,9 +447,27 @@ if ($page === 'home') {
             <?php if ($page === 'home'): ?>
                 <div class="max-w-7xl mx-auto space-y-8">
                     
-                    <div class="flex flex-col gap-1">
-                        <h1 class="text-2xl font-bold tracking-tight">Welcome back, <?= htmlspecialchars($user['full_name']) ?> 👋</h1>
-                        <p class="text-sm text-[var(--c-text-3)]">Here's what's happening with your operations today, <?= date('d M Y') ?>.</p>
+                    <?php if ($announcement): ?>
+                    <div class="marquee-wrapper animate__animated animate__fadeInDown">
+                        <div class="marquee-badge">
+                            <i data-lucide="megaphone" class="w-4 h-4 mr-2 text-yellow-300"></i> ประกาศ
+                        </div>
+                        <div class="marquee-content">
+                            <?= htmlspecialchars($announcement['message']) ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex flex-col gap-1">
+                            <h1 class="text-2xl font-bold tracking-tight">Welcome back, <?= htmlspecialchars($user['full_name']) ?> 👋</h1>
+                            <p class="text-sm text-[var(--c-text-3)]">Here's what's happening with your operations today, <?= date('d M Y') ?>.</p>
+                        </div>
+                        <?php if (hasRole(['admin', 'super_admin'])): ?>
+                        <button onclick="manageAnnouncement()" class="btn-primary shrink-0 !bg-amber-500 hover:!bg-amber-600" style="--shadow-btn: 0 4px 14px rgba(245,158,11, 0.40); --shadow-btn-hover: 0 6px 24px rgba(245,158,11, 0.55);">
+                            <i data-lucide="monitor-play" class="w-4 h-4"></i> จัดการประกาศวิ่ง
+                        </button>
+                        <?php endif; ?>
                     </div>
 
                     <div class="kpi-grid">
@@ -618,12 +668,104 @@ if ($page === 'home') {
         observer.observe(document.body, { childList: true, subtree: true });
     </script>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         window.NOTIFICATIONS_CONFIG = {
             isAdmin: <?php echo hasRole(['admin', 'super_admin']) ? 'true' : 'false'; ?>
         };
+
+        // 🚨 สคริปต์จัดการป้ายประกาศวิ่ง (Admin เท่านั้น) 🚨
+        window.manageAnnouncement = function() {
+            Swal.fire({
+                title: 'ตั้งค่าประกาศหน้าเว็บ',
+                html: `
+                    <div class="text-left mt-2">
+                        <label class="block text-sm font-bold mb-2 text-slate-700">ข้อความประกาศ:</label>
+                        <textarea id="swal_ann_msg" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" rows="3" placeholder="พิมพ์ข้อความที่ต้องการให้วิ่งบนหน้าเว็บ..."></textarea>
+                    </div>
+                    <div class="text-left mt-4">
+                        <label class="block text-sm font-bold mb-2 text-slate-700">ระยะเวลาที่แสดง:</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="swal_ann_val" class="w-1/2 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-100" placeholder="ตัวเลข" min="1">
+                            <select id="swal_ann_unit" class="w-1/2 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option value="never">ตลอดไป (จนกว่าจะกดลบ)</option>
+                                <option value="minutes">นาที</option>
+                                <option value="hours">ชั่วโมง</option>
+                                <option value="days">วัน</option>
+                            </select>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonText: 'บันทึกประกาศ',
+                denyButtonText: 'ลบประกาศปัจจุบัน',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#4f46e5',
+                denyButtonColor: '#ef4444',
+                didOpen: () => {
+                    const unit = document.getElementById('swal_ann_unit');
+                    const val = document.getElementById('swal_ann_val');
+                    unit.addEventListener('change', () => {
+                        val.disabled = unit.value === 'never';
+                        if(unit.value === 'never') val.value = '';
+                    });
+                    val.disabled = unit.value === 'never';
+                },
+                preConfirm: () => {
+                    const msg = document.getElementById('swal_ann_msg').value;
+                    const val = document.getElementById('swal_ann_val').value;
+                    const unit = document.getElementById('swal_ann_unit').value;
+                    
+                    if (!msg.trim()) {
+                        Swal.showValidationMessage('กรุณากรอกข้อความประกาศ');
+                        return false;
+                    }
+                    if (unit !== 'never' && (!val || val <= 0)) {
+                        Swal.showValidationMessage('กรุณาระบุตัวเลขเวลาให้ถูกต้อง');
+                        return false;
+                    }
+                    return { msg, val, unit, action: 'save' };
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    submitAnnouncement(result.value);
+                } else if (result.isDenied) {
+                    submitAnnouncement({ action: 'delete' });
+                }
+            });
+        };
+
+        async function submitAnnouncement(data) {
+            Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            const formData = new FormData();
+            formData.append('action', data.action);
+            
+            if (data.action === 'save') {
+                formData.append('message', data.msg);
+                formData.append('duration_val', data.val);
+                formData.append('duration_unit', data.unit);
+            }
+
+            try {
+                const res = await fetch('api/announcements/manage.php', { method: 'POST', body: formData });
+                const result = await res.json();
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success', 
+                        title: 'สำเร็จ', 
+                        text: 'อัปเดตประกาศเรียบร้อยแล้ว',
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => location.reload()); // รีเฟรชหน้าเว็บเพื่อให้ประกาศวิ่งทันที
+                } else {
+                    Swal.fire('ข้อผิดพลาด', result.error, 'error');
+                }
+            } catch (e) {
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+            }
+        }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="assets/js/common.js"></script>
     <script src="assets/js/notifications.js"></script>
 </body>
