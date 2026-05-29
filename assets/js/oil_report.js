@@ -52,20 +52,44 @@ window.toggleCompareMode = function() {
     isCompareMode = !isCompareMode;
     const section = document.getElementById('compareSection');
     const btn = document.getElementById('compareBtn');
+    const btnText = document.getElementById('compareBtnText');
+    const selectorWrapper = document.getElementById('vehicleSelectorWrapper');
     
     if (isCompareMode) {
         section.classList.remove('hidden');
-        btn.innerHTML = '<span class="mr-1"><i data-lucide="layout" class="w-4 h-4"></i></span> ดูรายงานปกติ';
+        selectorWrapper.classList.remove('hidden');
+        btnText.textContent = 'ดูรายงานปกติ';
         btn.style.background = 'var(--c-indigo)';
+        
+        // Fill vehicle selector
+        fillVehicleCompareSelector();
         renderComparisonCharts();
         renderMonthlyCompareChart();
     } else {
         section.classList.add('hidden');
-        btn.innerHTML = '<span class="mr-1"><i data-lucide="users" class="w-4 h-4"></i></span> เปรียบเทียบรถ';
-        btn.style.background = 'var(--c-secondary)';
+        selectorWrapper.classList.add('hidden');
+        btnText.textContent = 'เปรียบเทียบรถ';
+        btn.style.background = ''; // Reset to default (slate-800 from class)
     }
     lucide.createIcons();
 };
+
+function fillVehicleCompareSelector() {
+    const selector = document.getElementById('vehicleCompareSelector');
+    const uniqueVehicles = [...new Set(allRecords.map(r => r.team_name || r.license_plate))].sort();
+    
+    // Check if it's already filled to avoid resetting selection on every click
+    if (selector.options.length > 0) return;
+
+    selector.innerHTML = '';
+    uniqueVehicles.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = '🚗 ' + v;
+        opt.selected = true; // Default select all
+        selector.appendChild(opt);
+    });
+}
 
 async function loadEditOptions() {
     try {
@@ -77,7 +101,11 @@ async function loadEditOptions() {
         // ดึงรายชื่อทะเบียนรถ
         const resT = await fetch('api/oil/get_team_plates.php');
         const dataT = await resT.json();
-        if(dataT.success) editTeamsList = dataT.data;
+        if(dataT.success) {
+            editTeamsList = dataT.data;
+            // Also update comparison selector if already in compare mode
+            if (isCompareMode) fillVehicleCompareSelector();
+        }
     } catch(e) { console.error('Failed to load edit options', e); }
 }
 
@@ -95,6 +123,14 @@ async function fetchData() {
             updateStats(data.stats);
             allRecords = data.records;
             monthlyData = data.monthly || [];
+            
+            // Re-fill comparison selector when new data is fetched
+            if (isCompareMode) {
+                const selector = document.getElementById('vehicleCompareSelector');
+                selector.innerHTML = ''; // Reset to re-fill with potentially new vehicles
+                fillVehicleCompareSelector();
+            }
+
             renderTrendCharts(data.chart, data.records);
             if (isCompareMode) {
                 renderComparisonCharts();
@@ -198,9 +234,20 @@ function renderTrendCharts(dailyData, records) {
 }
 
 function renderComparisonCharts() {
+    const selector = document.getElementById('vehicleCompareSelector');
+    if (!selector) return;
+    const selectedVehicles = Array.from(selector.selectedOptions).map(opt => opt.value);
+    
+    if (selectedVehicles.length === 0) {
+        [compareCostChartInstance, compareLitersChartInstance, compareDistanceChartInstance, compareJobsChartInstance].forEach(inst => inst && inst.destroy());
+        return;
+    }
+
     const vehicleStats = {};
     allRecords.forEach(r => {
         const plate = r.team_name || r.license_plate;
+        if (!selectedVehicles.includes(plate)) return;
+
         if (!vehicleStats[plate]) {
             vehicleStats[plate] = { cost: 0, liters: 0, distance: 0, jobs: 0, count: 0 };
         }
@@ -230,6 +277,7 @@ function renderComparisonCharts() {
         const canvas = document.getElementById(config.id);
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
+        
         if (idx === 0 && compareCostChartInstance) compareCostChartInstance.destroy();
         else if (idx === 1 && compareLitersChartInstance) compareLitersChartInstance.destroy();
         else if (idx === 2 && compareDistanceChartInstance) compareDistanceChartInstance.destroy();
