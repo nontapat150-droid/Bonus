@@ -64,7 +64,7 @@ try {
             }
         }
 
-        // อัปเดตเฉพาะรูปภาพในฐานข้อมูล (ไม่มีการอัปเดตเวลาแล้ว)
+        // อัปเดตเฉพาะรูปภาพในฐานข้อมูล (ลบเรื่องการอัปเดตเวลาออกแล้ว)
         $sql = 'UPDATE checkins SET image_path = ? WHERE id = ?';
         $pdo->prepare($sql)->execute([$filename, $id]);
 
