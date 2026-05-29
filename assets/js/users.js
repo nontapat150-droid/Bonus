@@ -70,7 +70,7 @@ function renderUserTable(users) {
     tbody.innerHTML = '';
 
     if (users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-8 py-10 text-center text-slate-400 italic">ไม่พบรายชื่อพนักงาน</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="px-8 py-10 text-center text-slate-400 italic">ไม่พบรายชื่อพนักงาน</td></tr>';
         return;
     }
 
@@ -104,6 +104,11 @@ function renderUserTable(users) {
                 </div>
             </td>
             <td class="px-8 py-5 font-mono text-xs text-slate-400">@${u.username}</td>
+            
+            <td class="px-8 py-5">
+                <span class="bg-slate-100 text-slate-500 px-2 py-1 rounded text-xs tracking-widest font-mono cursor-help" title="รหัสผ่านถูกเข้ารหัสทางเดียวเพื่อความปลอดภัย หากลืมสามารถกดแก้ไขเพื่อตั้งใหม่ได้">********</span>
+            </td>
+
             <td class="px-8 py-5">${roleBadges[u.role] || u.role}</td>
             <td class="px-8 py-5 text-slate-400 text-xs">${date}</td>
             <td class="px-8 py-5 text-center">
@@ -136,7 +141,7 @@ function openUserModal(isEdit = false) {
     } else {
         title.innerText = 'เพิ่มพนักงานใหม่';
         help.classList.add('hidden');
-        populateTeamDropdown(''); // รีเซ็ต dropdown ทีม
+        populateTeamDropdown(''); 
     }
 
     modal.classList.remove('hidden');
@@ -162,14 +167,11 @@ function editUser(index) {
     document.getElementById('username_field').value = u.username;
     document.getElementById('role').value = u.role;
     
-    // ตั้งค่าเวลามาสาย
     if (u.allow_late_time) {
         document.getElementById('allow_late_time').value = u.allow_late_time.substring(0, 5);
     }
     
     toggleLateTimeField();
-    
-    // ตั้งค่าทีม/ป้ายทะเบียน
     populateTeamDropdown(u.team_id || '');
 }
 
@@ -188,21 +190,41 @@ async function handleSaveUser(e) {
         const data = await res.json();
 
         if (data.success) {
-            Toast.success(data.message);
+            // แจ้งเตือนด้วย SweetAlert2 แทน Toast
+            Swal.fire({
+                title: 'สำเร็จ!',
+                text: data.message,
+                icon: 'success',
+                confirmButtonColor: '#4f46e5',
+                customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+            });
             closeUserModal();
             loadUsers();
         } else {
-            Toast.error(data.error);
+            Swal.fire('เกิดข้อผิดพลาด', data.error, 'error');
         }
     } catch (err) {
-        Toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+        Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
     } finally {
         Loader.hide();
     }
 }
 
 async function deleteUser(id) {
-    if (!confirm('ยืนยันว่าต้องการลบพนักงานท่านนี้ออกจากระบบ?')) return;
+    // ถามยืนยันลบด้วย SweetAlert2
+    const result = await Swal.fire({
+        title: 'ยืนยันการลบพนักงาน?',
+        text: "ข้อมูลของพนักงานคนนี้จะถูกลบออกจากระบบอย่างถาวร",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'ใช่, ลบเลย',
+        cancelButtonText: 'ยกเลิก',
+        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md', cancelButton: 'rounded-xl px-6 py-2.5 font-bold' }
+    });
+
+    if (!result.isConfirmed) return;
 
     Loader.show();
     try {
@@ -214,13 +236,19 @@ async function deleteUser(id) {
         const data = await res.json();
 
         if (data.success) {
-            Toast.success(data.message);
+            Swal.fire({
+                title: 'ลบสำเร็จ!',
+                text: data.message,
+                icon: 'success',
+                confirmButtonColor: '#4f46e5',
+                customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+            });
             loadUsers();
         } else {
-            Toast.error(data.error);
+            Swal.fire('เกิดข้อผิดพลาด', data.error, 'error');
         }
     } catch (err) {
-        Toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+        Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
     } finally {
         Loader.hide();
     }
@@ -230,7 +258,6 @@ function toggleLateTimeField() {
     const role = document.getElementById('role').value;
     const lateTimeField = document.getElementById('lateTimeField');
     
-    // แสดงช่องเวลามาสายสำหรับ Sales และ Technician
     if (role === 'sales' || role === 'technician') {
         lateTimeField.classList.remove('hidden');
     } else {
