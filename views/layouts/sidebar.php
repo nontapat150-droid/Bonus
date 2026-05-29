@@ -29,7 +29,6 @@
             <div class="icon"><i data-lucide="gauge"></i></div>
             <span class="nav-label">ค่าแรกเข้า</span>
         </a>
-        
         <a href="index.php?page=oil" class="nav-item <?= $page === 'oil' ? 'active' : '' ?>" data-label="น้ำมันและยานพาหนะ">
             <div class="icon"><i data-lucide="fuel"></i></div>
             <span class="nav-label">น้ำมันและยานพาหนะ</span>
@@ -49,6 +48,10 @@
 
         <?php if (hasRole(['admin', 'super_admin'])): ?>
         <div class="nav-label px-3 py-2 text-[10px] font-bold text-[var(--c-text-3)] uppercase tracking-widest mt-2 whitespace-nowrap">ตั้งค่าระบบ</div>
+        <a href="index.php?page=system_history" class="nav-item <?= $page === 'system_history' ? 'active' : '' ?>" data-label="ประวัติรวมทั้งหมด">
+            <div class="icon"><i data-lucide="database"></i></div>
+            <span class="nav-label">ประวัติรวมทั้งหมด</span>
+        </a>
         <a href="index.php?page=users" class="nav-item <?= $page === 'users' ? 'active' : '' ?>" data-label="จัดการผู้ใช้">
             <div class="icon"><i data-lucide="users"></i></div>
             <span class="nav-label">จัดการผู้ใช้</span>
@@ -124,6 +127,10 @@
 
         <?php if (hasRole(['admin', 'super_admin'])): ?>
         <div class="nav-label px-3 py-2 text-[10px] font-bold text-[var(--c-text-3)] uppercase tracking-widest mt-2">ตั้งค่าระบบ</div>
+        <a href="index.php?page=system_history" class="nav-item <?= $page === 'system_history' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="database"></i></div>
+            <span class="nav-label">ประวัติรวมทั้งหมด</span>
+        </a>
         <a href="index.php?page=users" class="nav-item <?= $page === 'users' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="users"></i></div>
             <span class="nav-label">จัดการผู้ใช้</span>
@@ -171,8 +178,6 @@
 </nav>
 
 <script>
-    lucide.createIcons();
-
     // Desktop Sidebar Toggle Logic
     const sidebar = document.getElementById('sidebar-desktop');
     const toggleBtn = document.getElementById('sidebarToggle');

@@ -333,14 +333,10 @@ if ($page === 'home') {
 
     <div id="main-content-area">
         
-        <!-- Top Bar -->
         <header class="topbar">
-            <!-- Mobile Menu Toggle -->
             <button id="mobileMenuBtn" class="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-800">
                 <i data-lucide="menu" class="w-6 h-6"></i>
             </button>
-
-            
 
             <div class="flex items-center gap-3">
                 <button id="notificationBell" class="relative p-2 text-[var(--c-text-2)] hover:bg-[var(--c-surface-2)] rounded-full transition-colors">
@@ -399,13 +395,11 @@ if ($page === 'home') {
             <?php if ($page === 'home'): ?>
                 <div class="max-w-7xl mx-auto space-y-8">
                     
-                    <!-- Welcome Section -->
                     <div class="flex flex-col gap-1">
                         <h1 class="text-2xl font-bold tracking-tight">Welcome back, <?= htmlspecialchars($user['full_name']) ?> 👋</h1>
                         <p class="text-sm text-[var(--c-text-3)]">Here's what's happening with your operations today, <?= date('d M Y') ?>.</p>
                     </div>
 
-                    <!-- KPI Grid -->
                     <div class="kpi-grid">
                         <div class="card relative group">
                             <div class="flex justify-between items-start mb-4">
@@ -444,7 +438,6 @@ if ($page === 'home') {
                         </div>
                     </div>
 
-                    <!-- Main Actions -->
                     <h2 class="text-lg font-bold mt-8 mb-4">เมนูด่วน</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <?php if (!hasRole('sales')): ?>
@@ -479,9 +472,11 @@ if ($page === 'home') {
             <?php else: ?>
                 <div class="page-view">
                 <?php
+                // ผูกหน้าให้ตรงกับตัวแปร URL
                 $routes = [
                     'oil' => hasRole(['technician']) ? 'views/modules/oil_form.php' : 'views/modules/oil_report.php',
-                    'start_day' => 'views/modules/start_day.php', /* 👈 เพิ่มบรรทัดนี้ลงไป */
+                    'start_day' => 'views/modules/start_day.php',
+                    'system_history' => 'views/modules/system_history.php',
                     'dispatch' => 'views/modules/dispatch_map.php',
                     'inventory' => 'views/modules/inventory_app.php',
                     'users' => 'views/modules/user_settings.php',
@@ -489,7 +484,13 @@ if ($page === 'home') {
                 ];
 
                 $accessDenied = false;
-                if (in_array($page, ['oil', 'dispatch'], true) && hasRole('sales')) {
+                
+                // สิทธิ์เซลห้ามเข้าหน้านี้
+                if (in_array($page, ['oil', 'dispatch', 'start_day'], true) && hasRole('sales')) {
+                    $accessDenied = true;
+                }
+                // สิทธิ์อื่นๆห้ามเข้าหน้าประวัติรวม ยกเว้นแอดมิน
+                if ($page === 'system_history' && !hasRole(['admin', 'super_admin'])) {
                     $accessDenied = true;
                 }
 
@@ -517,7 +518,6 @@ if ($page === 'home') {
         </main>
     </div>
 
-    <!-- Toast Container z-100 -->
     <div id="toast-container" class="fixed top-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"></div>
     
     <script>
@@ -596,41 +596,6 @@ if ($page === 'home') {
             if(shouldEnhance) enhanceTablesForMobile();
         });
         observer.observe(document.body, { childList: true, subtree: true });
-
-        // --- UI Overlap Detector (Debug) ---
-        window.checkUIOverlaps = function() {
-            const all = Array.from(document.querySelectorAll('body *'));
-            let warnings = 0;
-            
-            all.forEach(el => {
-                const style = window.getComputedStyle(el);
-                const zIndex = parseInt(style.zIndex);
-                if (!isNaN(zIndex) && zIndex >= 50) {
-                    // Ignore known high z-index containers
-                    const isKnown = el.id === 'toast-container' || 
-                                    el.closest('.mobile-drawer') || 
-                                    el.closest('.mobile-drawer-backdrop') || 
-                                    el.closest('[id$="Modal"]') ||
-                                    el.classList.contains('topbar') ||
-                                    el.classList.contains('hidden-tooltip');
-                    if (!isKnown && !el.classList.contains('hidden')) {
-                        console.warn('⚠️ [Overlap Detector] พบ Z-Index สูงผิดปกติ:', zIndex, el);
-                        el.style.outline = '3px dashed red';
-                        el.style.outlineOffset = '-3px';
-                        warnings++;
-                    }
-                }
-            });
-            
-            if(warnings > 0) {
-                console.log(`🚨 ตรวจพบ UI อาจทับซ้อนกัน ${warnings} จุด`);
-                if(window.IS_ADMIN) Toast.show(`ดักจับพบ Z-Index ผิดปกติ ${warnings} จุด (ดู Console)`, 'error');
-            }
-        };
-        
-        // รันตรวจสอบหลักจากโหลดเสร็จ 2 วินาที
-        setTimeout(window.checkUIOverlaps, 2000);
-
     </script>
 
     <script>
