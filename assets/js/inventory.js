@@ -451,7 +451,12 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
             };
             const isModelCol = (h) => {
                 const s = String(h).toLowerCase().trim();
-                return s.includes('model') || s.includes('รุ่น') || s.includes('รูป');
+                // รวมรูปแบบชื่อคอลัมน์ที่นิยมใช้สำหรับรุ่น/โมเดล
+                if (!s) return false;
+                const include = ['model', 'รุ่น', 'model name', 'model_name', 'model_no', 'รุ่นสินค้า', 'รุ่น (model)'];
+                const exclude = ['รูป', 'รูปภาพ', 'image', 'picture'];
+                for (const ex of exclude) if (s.includes(ex)) return false;
+                return include.some(k => s.includes(k));
             };
             const isNameCol = (h) => {
                 const s = String(h).toLowerCase().trim();
@@ -486,6 +491,31 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
                 // ถ้าไม่เจอ Header เลย อาจเป็นไฟล์ไม่มี Header ให้ใช้ 0, 1, 2
                 nI = 0; mI = 1; sI = 2;
                 startRow = 0; // เริ่มอ่านตั้งแต่แถวแรก
+            }
+
+            // ถ้าไม่พบคอลัมน์ model ให้พยายามเดาจากข้อมูลแถว (fallback heuristic)
+            if (mI === -1) {
+                // หา column ที่มีค่าไม่ว่างมากที่สุดซึ่งไม่ใช่ SN หรือ ชื่อสินค้า
+                const colCounts = {};
+                for (let r = 1; r < Math.min(json.length, 30); r++) {
+                    const row = json[r] || [];
+                    for (let ci = 0; ci < row.length; ci++) {
+                        const val = String(row[ci] || '').trim();
+                        if (!val) continue;
+                        colCounts[ci] = (colCounts[ci] || 0) + 1;
+                    }
+                }
+                // เลือกคอลัมน์ที่มีค่าสูงสุด แต่ไม่ใช่ index ของ name หรือ sn หรือ code
+                let bestCol = -1, bestCount = 0;
+                Object.keys(colCounts).forEach(k => {
+                    const idx = parseInt(k);
+                    if (idx === nI || idx === sI || idx === cI) return;
+                    if (colCounts[k] > bestCount) {
+                        bestCount = colCounts[k];
+                        bestCol = idx;
+                    }
+                });
+                if (bestCol !== -1) mI = bestCol;
             }
 
             console.log('Column Detection:', { productCode: cI, productName: nI, model: mI, sn: sI, remark: rI, startFrom: startRow });
