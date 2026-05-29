@@ -1,16 +1,18 @@
 // assets/js/oil_report.js
 
-// 🚀 บังคับสร้างระบบแจ้งเตือน (Toast) ในไฟล์นี้เลย เพื่อตัดปัญหา Cache จากไฟล์ common.js 100%
-window.Toast = {
-    success: (msg) => Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true }),
-    error: (msg) => Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true }),
-    info: (msg) => Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true }),
-    warning: (msg) => Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true })
+// 🚀 สร้างระบบแจ้งเตือนและโหลดแยกอิสระ ตัดปัญหาการชนกันของไฟล์ common.js
+const showToast = (icon, msg) => {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({ toast: true, position: 'top-end', icon: icon, title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true });
+    } else alert(msg);
 };
 
-window.Loader = {
-    show: () => Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }),
-    hide: () => Swal.close()
+const showLoader = () => {
+    if (typeof Swal !== 'undefined') Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+};
+
+const hideLoader = () => {
+    if (typeof Swal !== 'undefined') Swal.close();
 };
 
 let combinedTrendChartInstance = null;
@@ -38,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadEditOptions();
 
     document.getElementById('filterBtn')?.addEventListener('click', () => {
-        Toast.info('กำลังอัปเดตข้อมูลตามวันที่เลือก...');
+        showToast('info', 'กำลังอัปเดตข้อมูลตามวันที่เลือก...');
         fetchData();
     });
 
@@ -118,7 +120,7 @@ window.autoFillVehicle = function(techId) {
     const user = editUsersList.find(u => u.id == techId);
     if (user && user.team_name) {
         plateInput.value = user.team_name;
-        Toast.info(`แสดงทะเบียนรถ ${user.team_name} สำหรับ ${user.full_name}`);
+        showToast('info', `แสดงทะเบียนรถ ${user.team_name} สำหรับ ${user.full_name}`);
     }
 };
 
@@ -192,11 +194,11 @@ async function fetchData(silent = false) {
             renderTable(data.records);
             
             if (!silent) {
-                if (data.records.length > 0) Toast.success(`โหลดข้อมูลสำเร็จ พบทั้งหมด ${data.records.length} รายการ`);
-                else Toast.info('ไม่พบข้อมูลในช่วงเวลาที่เลือก');
+                if (data.records.length > 0) showToast('success', `โหลดข้อมูลสำเร็จ พบทั้งหมด ${data.records.length} รายการ`);
+                else showToast('info', 'ไม่พบข้อมูลในช่วงเวลาที่เลือก');
             }
         } else {
-            if(!silent) Toast.error(`เกิดข้อผิดพลาด: ${data.error}`);
+            if(!silent) showToast('error', `เกิดข้อผิดพลาด: ${data.error}`);
             if(tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-rose-500 font-bold">ไม่สามารถดึงข้อมูลได้: ${data.error}</td></tr>`;
         }
     } catch (error) {
@@ -535,10 +537,10 @@ window.saveManageOil = async function() {
     const job_count = document.getElementById('manage_job_count').value;
 
     if (!tech_id || !license_plate || !date_recorded || !mileage || !liters || !price_per_liter) {
-        return Toast.error('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน (ที่มีเครื่องหมาย *)');
+        return showToast('error', 'กรุณากรอกข้อมูลสำคัญให้ครบถ้วน (ที่มีเครื่องหมาย *)');
     }
 
-    Loader.show();
+    showLoader();
     try {
         let isSuccess = false;
         let successMessage = '';
@@ -609,7 +611,7 @@ window.saveManageOil = async function() {
     } catch(e) { 
         Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error'); 
     } finally { 
-        Loader.hide(); 
+        hideLoader(); 
     }
 };
 
@@ -618,7 +620,7 @@ window.deleteOilRecord = function(id) {
         title: 'ยืนยันการลบข้อมูล?', text: "คุณแน่ใจหรือไม่ที่จะลบรายการค่าน้ำมันนี้? การลบจะไม่สามารถกู้คืนได้", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'ลบข้อมูล', cancelButtonText: 'ยกเลิก', reverseButtons: true
     }).then(async (result) => {
         if (result.isConfirmed) {
-            Loader.show();
+            showLoader();
             try {
                 const res = await fetch('api/oil/delete_record.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id }) });
                 const data = await res.json();
@@ -628,14 +630,14 @@ window.deleteOilRecord = function(id) {
                 } else { 
                     Swal.fire('เกิดข้อผิดพลาด', data.error, 'error'); 
                 }
-            } catch(e) { Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error'); } finally { Loader.hide(); }
+            } catch(e) { Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error'); } finally { hideLoader(); }
         }
     });
 };
 
 window.exportOilExcel = function() {
-    if (allRecords.length === 0) return Toast.warning('ไม่มีข้อมูลสำหรับส่งออก');
-    Toast.info('กำลังเตรียมไฟล์ Excel ต้นทุนรายรอบ...');
+    if (allRecords.length === 0) return showToast('warning', 'ไม่มีข้อมูลสำหรับส่งออก');
+    showToast('info', 'กำลังเตรียมไฟล์ Excel ต้นทุนรายรอบ...');
     let sortedRecords = [...allRecords].sort((a, b) => new Date(a.date_recorded) - new Date(b.date_recorded));
     let exportData = sortedRecords.map(row => {
         const d = new Date(row.date_recorded);
@@ -656,7 +658,7 @@ window.exportOilExcel = function() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "ต้นทุนค่าน้ำมัน");
     XLSX.writeFile(wb, `รายงานต้นทุนน้ำมัน_${new Date().toISOString().split('T')[0]}.xlsx`);
-    Toast.success('ดาวน์โหลดไฟล์ Excel เรียบร้อย!');
+    showToast('success', 'ดาวน์โหลดไฟล์ Excel เรียบร้อย!');
 };
 
 document.getElementById('importOilExcel')?.addEventListener('change', function(e) {
