@@ -151,11 +151,15 @@ async function loadEditOptions() {
     } catch(e) { console.error('Failed to load edit options', e); }
 }
 
-async function fetchData() {
+// เพิ่มตัวแปร silent เพื่อเวลาโหลดซ้ำหลังบันทึก จะได้ไม่เด้ง Toast รบกวน
+async function fetchData(silent = false) {
     const startDate = document.getElementById('start_date').value;
     const endDate = document.getElementById('end_date').value;
     const tbody = document.getElementById('oilTableBody');
-    if(tbody) tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-12 text-center text-slate-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดข้อมูลรายงาน...</div></td></tr>';
+    
+    if(tbody && !silent) {
+        tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-12 text-center text-slate-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดข้อมูลรายงาน...</div></td></tr>';
+    }
 
     try {
         const response = await fetch(`api/oil/get_records.php?start_date=${startDate}&end_date=${endDate}`);    
@@ -182,16 +186,20 @@ async function fetchData() {
             }
             renderTable(data.records);
             
-            if (data.records.length > 0) {
-                Toast.success(`โหลดข้อมูลสำเร็จ พบทั้งหมด ${data.records.length} รายการ`);
+            if (!silent) {
+                if (data.records.length > 0) {
+                    Toast.success(`โหลดข้อมูลสำเร็จ พบทั้งหมด ${data.records.length} รายการ`);
+                } else {
+                    Toast.info('ไม่พบข้อมูลในช่วงเวลาที่เลือก');
+                }
             }
         } else {
-            Toast.error(`เกิดข้อผิดพลาด: ${data.error}`);
+            if(!silent) Toast.error(`เกิดข้อผิดพลาด: ${data.error}`);
             if(tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-rose-500 font-bold">ไม่สามารถดึงข้อมูลได้: ${data.error}</td></tr>`;
         }
     } catch (error) {
         console.error("Error fetching data:", error);
-        Toast.error('ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้');
+        if(!silent) Toast.error('ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้');
         if(tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-rose-500 font-bold">ไม่สามารถโหลดข้อมูลได้ กรุณาตรวจสอบคอนโซล</td></tr>`;
     }
 }
@@ -524,6 +532,9 @@ window.saveManageOil = async function() {
 
     Loader.show();
     try {
+        let isSuccess = false;
+        let successMessage = '';
+
         if (id) {
             const res = await fetch('api/oil/edit_record.php', {
                 method: 'POST',
@@ -531,8 +542,12 @@ window.saveManageOil = async function() {
                 body: JSON.stringify({ id, tech_id, license_plate, date_recorded, mileage, liters, price_per_liter, total_price, job_count })
             });
             const data = await res.json();
-            if(data.success) { Toast.success('แก้ไขข้อมูลน้ำมันเรียบร้อย'); closeManageOilModal(); fetchData(); }
-            else { Toast.error('เกิดข้อผิดพลาด: ' + data.error); }
+            if(data.success) { 
+                isSuccess = true;
+                successMessage = 'แก้ไขข้อมูลและคำนวณระยะทางใหม่เรียบร้อยแล้ว';
+            } else { 
+                Swal.fire('เกิดข้อผิดพลาด', data.error, 'error'); 
+            }
         } else {
             const formData = new FormData();
             formData.append('tech_id', tech_id);
@@ -550,10 +565,52 @@ window.saveManageOil = async function() {
             }
             const res = await fetch('api/oil/submit_record.php', { method: 'POST', body: formData });
             const data = await res.json();
-            if(data.success) { Toast.success('เพิ่มข้อมูลน้ำมันย้อนหลังเรียบร้อย'); closeManageOilModal(); fetchData(); }
-            else { Toast.error('เกิดข้อผิดพลาด: ' + data.error); }
+            if(data.success) { 
+                isSuccess = true;
+                successMessage = 'เพิ่มข้อมูลและคำนวณระยะทางเรียบร้อยแล้ว';
+            } else { 
+                Swal.fire('เกิดข้อผิดพลาด', data.error, 'error'); 
+            }
         }
-    } catch(e) { Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'); } finally { Loader.hide(); }
+
+        if (isSuccess) {
+            closeManageOilModal();
+            
+            // ขยายขอบเขตการ Filter วันที่ให้อัตโนมัติ หากวันที่เพิ่งบันทึกหลุดออกนอกช่วงการแสดงผล
+            const recordDate = new Date(date_recorded);
+            const startInput = document.getElementById('start_date');
+            const endInput = document.getElementById('end_date');
+            
+            if (startInput && endInput) {
+                const currentStart = new Date(startInput.value);
+                const currentEnd = new Date(endInput.value);
+                const recordDateStr = recordDate.toISOString().split('T')[0];
+                
+                if (recordDate < currentStart) {
+                    startInput.value = recordDateStr;
+                }
+                if (recordDate > currentEnd) {
+                    endInput.value = recordDateStr;
+                }
+            }
+
+            // สั่งดึงข้อมูลใหม่แบบปิดแจ้งเตือน(silent) เพื่อมารวมกับการแจ้งเตือนอันใหญ่ด้านล่าง
+            await fetchData(true); 
+            
+            // แจ้งเตือนแบบกล่องใหญ่ให้ผู้ใช้ทราบว่าบันทึกสำเร็จและดึงข้อมูลลงตารางแล้ว
+            Swal.fire({
+                icon: 'success',
+                title: 'บันทึกสำเร็จ!',
+                text: successMessage,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+    } catch(e) { 
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error'); 
+    } finally { 
+        Loader.hide(); 
+    }
 };
 
 window.deleteOilRecord = function(id) {
@@ -565,9 +622,13 @@ window.deleteOilRecord = function(id) {
             try {
                 const res = await fetch('api/oil/delete_record.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id }) });
                 const data = await res.json();
-                if(data.success) { Toast.success('ลบข้อมูลเรียบร้อยแล้ว'); fetchData(); }
-                else { Toast.error('ลบข้อมูลไม่สำเร็จ: ' + data.error); }
-            } catch(e) { Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'); } finally { Loader.hide(); }
+                if(data.success) { 
+                    Swal.fire({ icon: 'success', title: 'ลบข้อมูลสำเร็จ', timer: 1500, showConfirmButton: false });
+                    fetchData(true); 
+                } else { 
+                    Swal.fire('เกิดข้อผิดพลาด', data.error, 'error'); 
+                }
+            } catch(e) { Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error'); } finally { Loader.hide(); }
         }
     });
 };
@@ -623,7 +684,7 @@ document.getElementById('importOilExcel')?.addEventListener('change', function(e
             }).filter(item => item.license_plate !== '' && item.liters > 0);
             const res = await fetch('api/oil/import_records.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ records: payload }) });
             const result = await res.json();
-            if (result.success) { Swal.fire('สำเร็จ!', `นำเข้าข้อมูลน้ำมันสำเร็จ ${result.imported} รายการ`, 'success'); fetchData(); }
+            if (result.success) { Swal.fire('สำเร็จ!', `นำเข้าข้อมูลน้ำมันสำเร็จ ${result.imported} รายการ`, 'success'); fetchData(true); }
             else { Swal.fire('เกิดข้อผิดพลาด', result.error, 'error'); }
         } catch (err) { Swal.fire('ข้อผิดพลาด', 'ไฟล์ Excel รูปแบบไม่ถูกต้อง', 'error'); }
         finally { document.getElementById('importOilExcel').value = ''; }
