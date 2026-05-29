@@ -5,6 +5,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 
 <div class="max-w-4xl mx-auto space-y-6 animate__animated animate__fadeIn">
     
+    <!-- ส่วนฟอร์มบันทึก -->
     <div class="max-w-2xl mx-auto card overflow-hidden">
         <div class="bg-emerald-600 px-6 py-4">
             <h2 class="text-2xl font-bold text-white flex items-center">
@@ -41,7 +42,8 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                         <label class="block text-sm font-bold text-slate-700 mb-2">ค่าแรกเข้า <span class="text-red-500">*</span></label>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <label class="cursor-pointer">
-                                <input type="radio" name="has_initial_fee" value="1" required class="peer sr-only">
+                                <!-- ตั้งค่า checked ให้ตัวเลือกแรกเป็นค่าเริ่มต้น ป้องกันบั๊กการส่งฟอร์ม -->
+                                <input type="radio" name="has_initial_fee" value="1" checked class="peer sr-only">
                                 <div class="p-3 text-center border-2 border-slate-200 rounded-xl peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 font-bold transition-all shadow-sm">
                                     ✅ มีค่าแรกเข้า
                                 </div>
@@ -70,7 +72,8 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                                 <i data-lucide="camera" class="w-8 h-8 mb-3 text-emerald-400 group-hover:scale-110 transition-transform"></i>
                                 <p class="mb-1 text-sm text-emerald-600 font-bold">คลิกเพื่อถ่ายรูปหรือแนบไฟล์</p>
                             </div>
-                            <input id="start_day_images" name="start_day_images[]" type="file" class="hidden" multiple accept="image/*" capture="environment" required />
+                            <!-- แก้ไข: เอา required ออกจาก input hidden ป้องกันเว็บบราวเซอร์บล็อกปุ่ม Submit -->
+                            <input id="start_day_images" name="start_day_images[]" type="file" class="hidden" multiple accept="image/*" capture="environment" />
                         </label>
                     </div>
                     <div id="imagePreviewContainer" class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-4"></div>
@@ -85,6 +88,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
         </div>
     </div>
 
+    <!-- ตารางประวัติของฉัน -->
     <div class="card overflow-hidden mt-8">
         <div class="p-6 border-b border-slate-100 flex items-center justify-between">
             <h3 class="text-lg font-bold text-slate-800"><i data-lucide="history" class="w-5 h-5 inline-block mr-2 text-indigo-500"></i> ประวัติการบันทึกของฉัน</h3>

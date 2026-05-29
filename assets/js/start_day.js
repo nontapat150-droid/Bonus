@@ -112,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         records.forEach(item => {
-            // จัดการสีป้ายสถานะ
             let statusHtml = '';
             if (item.has_initial_fee == 1) {
                 statusHtml = '<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">✅ มีค่าแรกเข้า</span>';
@@ -122,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusHtml = '<span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-lg text-xs font-bold border border-rose-200">❌ ไม่มี</span>';
             }
 
-            // จัดการรูปภาพ
             let imgHtml = item.evidence_image
                 ? `<a href="assets/uploads/start_day/${item.evidence_image}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/start_day/${item.evidence_image}" class="w-12 h-12 object-cover rounded-xl shadow-sm border border-slate-200"></a>`
                 : '<div class="w-12 h-12 flex items-center justify-center mx-auto rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>';
@@ -162,7 +160,30 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        if (selectedFiles.length === 0) return Toast.error('กรุณาถ่ายรูปหรือแนบรูปภาพอย่างน้อย 1 รูป');
+        // เช็คการอัปโหลดรูปภาพที่เราถอด required ออกไป
+        if (selectedFiles.length === 0) {
+            return Toast.error('กรุณาถ่ายรูปหรือแนบรูปภาพอย่างน้อย 1 รูป ก่อนกดบันทึก');
+        }
+
+        // ระบบเด้งถามยืนยันอีกรอบก่อนส่งข้อมูล (SweetAlert2)
+        const confirmResult = await Swal.fire({
+            title: 'ยืนยันการบันทึก?',
+            text: "ตรวจสอบข้อมูลชื่อลูกค้าและเลข Non ให้ถูกต้องก่อนยืนยัน",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#059669', // สีเขียวให้เข้ากับธีมหน้าแรกเข้า
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: '✅ ยืนยันบันทึก',
+            cancelButtonText: 'ยกเลิก',
+            customClass: {
+                popup: 'rounded-3xl',
+                confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md',
+                cancelButton: 'rounded-xl px-6 py-2.5 font-bold'
+            }
+        });
+
+        // ถ้ายกเลิก ก็ให้หยุดการทำงานตรงนี้เลย
+        if (!confirmResult.isConfirmed) return;
 
         const formData = new FormData(form);
         formData.delete('start_day_images[]');
@@ -178,14 +199,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (result.success) {
+                // แจ้งเตือนเครื่องหมายถูกสวยๆ เมื่อบันทึกสำเร็จ
                 Swal.fire({
                     title: 'สำเร็จ!',
-                    text: 'บันทึกข้อมูลเรียบร้อยแล้ว',
+                    text: 'บันทึกข้อมูลเรียบร้อยแล้ว (ระบบบันทึกเวลาให้คุณอัตโนมัติ)',
                     icon: 'success',
                     confirmButtonText: 'ตกลง',
                     confirmButtonColor: '#059669',
                     customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
                 });
+                
                 form.reset();
                 selectedFiles = [];
                 previewContainer.innerHTML = '';
