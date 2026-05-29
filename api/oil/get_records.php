@@ -13,15 +13,22 @@ if (!hasRole(['admin', 'super_admin'])) {
 
 $start_date = $_GET['start_date'] ?? null;
 $end_date = $_GET['end_date'] ?? null;
+// รับค่าป้ายทะเบียนเพื่อใช้ในการกรอง
+$license_plate = $_GET['license_plate'] ?? 'all';
 
 $params = [];
 $whereClause = "WHERE 1=1";
 
 if ($start_date && $end_date) {
-    // กรองวันที่สำหรับสถิติภาพรวม
     $whereClause .= " AND DATE(o.date_recorded) BETWEEN ? AND ?";
     $params[] = $start_date;
     $params[] = $end_date;
+}
+
+// กรองป้ายทะเบียนรถ (ถ้าผู้ใช้เลือกรถเฉพาะคัน)
+if ($license_plate !== 'all' && !empty($license_plate)) {
+    $whereClause .= " AND o.license_plate = ?";
+    $params[] = $license_plate;
 }
 
 try {
@@ -49,9 +56,10 @@ try {
     $stmtChart->execute($params);
     $chartData = $stmtChart->fetchAll(PDO::FETCH_ASSOC);
 
-    // 3. ดึงข้อมูลทั้งหมด และเรียงจากเก่าไปใหม่ เพื่อคำนวณระยะทางและช่วงเวลา
+    // 3. ดึงข้อมูลตาราง (ใช้ข้อมูล distance และ job_count จากฐานข้อมูลโดยตรง)
     $tableSql = "SELECT
-                    o.id, o.tech_id, o.license_plate, o.liters, o.mileage, o.price_per_liter, o.total_price, o.date_recorded, o.job_count as stored_job_count,
+                    o.id, o.tech_id, o.license_plate, o.liters, o.mileage, o.price_per_liter, o.total_price, o.date_recorded, 
+                    o.job_count as stored_job_count, o.distance,
                     u.full_name as tech_name, u.team_id,
                     t.id as record_team_id,
                     t.team_name,
@@ -62,73 +70,30 @@ try {
                  LEFT JOIN oil_images i ON o.id = i.record_id
                  $whereClause
                  GROUP BY o.id
-                 ORDER BY o.license_plate ASC, o.date_recorded ASC"; // ต้องเรียงเก่าไปใหม่เพื่อคำนวณไมล์
+                 ORDER BY o.date_recorded DESC"; 
     
     $stmtTable = $pdo->prepare($tableSql);
     $stmtTable->execute($params);
     $rawRecords = $stmtTable->fetchAll(PDO::FETCH_ASSOC);
 
-    $last_record = [];
     $processed_records = [];
     $total_jobs_period = 0;
 
     foreach ($rawRecords as $row) {
-        $plate = $row['license_plate'];
-        $team_id = $row['record_team_id'] ?: $row['team_id'];
-        $current_date = $row['date_recorded'];
-        $current_mileage = (int)$row['mileage'];
-
-        $prev_date = $last_record[$plate]['date_recorded'] ?? null;
-        $prev_mileage = $last_record[$plate]['mileage'] ?? $current_mileage;
-
-        // คำนวณระยะทางที่วิ่ง
-        $distance = $current_mileage - $prev_mileage;
-        if ($distance < 0) $distance = 0; // กันพิมพ์เลขไมล์ผิด
-
-        $job_count = (int)($row['stored_job_count'] ?? 0);
-
-        // หากไม่มีข้อมูลในฐานข้อมูล (เป็น 0) ให้คำนวณเคสงาน (Jobs) อัตโนมัติ (Backward compatibility)
-        if ($job_count <= 0 && $team_id) {
-            if ($prev_date) {
-                // มีการเติมครั้งที่แล้ว: หางานที่เกิดขึ้นระหว่างรอบที่แล้ว ถึง รอบนี้
-                $jobStmt = $pdo->prepare("
-                    SELECT COUNT(*) FROM jobs 
-                    WHERE team_id = ? 
-                    AND DATE(COALESCE(plan_arrival_date, created_at)) > DATE(?) 
-                    AND DATE(COALESCE(plan_arrival_date, created_at)) <= DATE(?)
-                ");
-                $jobStmt->execute([$team_id, $prev_date, $current_date]);
-            } else {
-                // ครั้งแรก: หางานเฉพาะของวันนั้น
-                $jobStmt = $pdo->prepare("
-                    SELECT COUNT(*) FROM jobs 
-                    WHERE team_id = ? 
-                    AND DATE(COALESCE(plan_arrival_date, created_at)) = DATE(?)
-                ");
-                $jobStmt->execute([$team_id, $current_date]);
-            }
-            $job_count = (int)$jobStmt->fetchColumn();
-        }
+        $distance = (float)$row['distance'];
+        $job_count = (int)$row['stored_job_count'];
         $total_jobs_period += $job_count;
 
-        // คำนวณต้นทุน
         $cost_per_job = $job_count > 0 ? ($row['total_price'] / $job_count) : 0;
         $cost_per_km = $distance > 0 ? ($row['total_price'] / $distance) : 0;
 
-        // แนบค่ากลับไปให้ Frontend
         $row['distance'] = $distance;
         $row['job_count'] = $job_count;
         $row['cost_per_job'] = round($cost_per_job, 2);
         $row['cost_per_km'] = round($cost_per_km, 2);
 
-        $last_record[$plate] = $row;
         $processed_records[] = $row;
     }
-
-    // เรียงกลับจาก วันใหม่สุด -> เก่าสุด เพื่อแสดงบนตาราง
-    usort($processed_records, function($a, $b) {
-        return strtotime($b['date_recorded']) - strtotime($a['date_recorded']);
-    });
 
     // 4. Monthly Summary for Comparison
     $monthlySql = "SELECT
