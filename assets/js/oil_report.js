@@ -1,6 +1,6 @@
 // assets/js/oil_report.js
 
-// 🚀 สร้างระบบแจ้งเตือนและโหลดแยกอิสระ
+// 🚀 ระบบแจ้งเตือน (Toast) เล็กๆ มุมขวาบน สำหรับสถานะที่ไม่สำคัญมาก
 const showToast = (icon, msg) => {
     if (typeof Swal !== 'undefined') {
         Swal.fire({ toast: true, position: 'top-end', icon: icon, title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true });
@@ -534,7 +534,15 @@ window.saveManageOil = async function() {
     const job_count = document.getElementById('manage_job_count').value;
 
     if (!tech_id || !license_plate || !date_recorded || !mileage || !liters || !price_per_liter) {
-        return showToast('error', 'กรุณากรอกข้อมูลสำคัญให้ครบถ้วน (ที่มีเครื่องหมาย *)');
+        // 🚨 บังคับให้รอกด 'ตกลง' เมื่อกรอกข้อมูลไม่ครบ
+        return Swal.fire({
+            icon: 'warning',
+            title: 'ข้อมูลไม่ครบถ้วน',
+            text: 'กรุณากรอกข้อมูลสำคัญให้ครบถ้วน (ที่มีเครื่องหมาย *)',
+            showConfirmButton: true,
+            confirmButtonText: 'ตกลง',
+            confirmButtonColor: '#f59e0b'
+        });
     }
 
     showLoader();
@@ -553,7 +561,15 @@ window.saveManageOil = async function() {
                 isSuccess = true;
                 successMessage = 'แก้ไขข้อมูลและคำนวณระยะทางใหม่เรียบร้อยแล้ว';
             } else { 
-                Swal.fire('เกิดข้อผิดพลาด', data.error, 'error'); 
+                // 🚨 กรณีเกิดข้อผิดพลาด (เช่นข้อมูลซ้ำ) ระบบจะค้างรอให้กดยืนยันเสมอ
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: data.error,
+                    showConfirmButton: true,
+                    confirmButtonText: 'รับทราบ',
+                    confirmButtonColor: '#ef4444'
+                }); 
             }
         } else {
             const formData = new FormData();
@@ -576,45 +592,73 @@ window.saveManageOil = async function() {
                 isSuccess = true;
                 successMessage = 'เพิ่มข้อมูลและคำนวณระยะทางเรียบร้อยแล้ว';
             } else { 
-                Swal.fire('เกิดข้อผิดพลาด', data.error, 'error'); 
+                // 🚨 กรณีพบข้อมูลซ้ำ (Error จาก PHP) ให้บังคับรอกดยืนยัน
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: data.error,
+                    showConfirmButton: true,
+                    confirmButtonText: 'รับทราบ',
+                    confirmButtonColor: '#ef4444'
+                }); 
             }
         }
 
+        // 🚨 กรณีบันทึกสำเร็จ: โชว์ POP-UP ค้างไว้ให้กดตกลง -> จากนั้นหน่วงเวลา 0.25 วินาที -> แล้วค่อยปิดและรีเฟรชตาราง
         if (isSuccess) {
-            closeManageOilModal();
-            const recordDate = new Date(date_recorded);
-            const startInput = document.getElementById('start_date');
-            const endInput = document.getElementById('end_date');
-            
-            if (startInput && endInput) {
-                const currentStart = new Date(startInput.value);
-                const currentEnd = new Date(endInput.value);
-                const recordDateStr = recordDate.toISOString().split('T')[0];
-                
-                if (recordDate < currentStart) startInput.value = recordDateStr;
-                if (recordDate > currentEnd) endInput.value = recordDateStr;
-            }
-
-            await fetchData(true); 
-            
             Swal.fire({
                 icon: 'success',
                 title: 'บันทึกสำเร็จ!',
                 text: successMessage,
-                timer: 2000,
-                showConfirmButton: false
+                showConfirmButton: true,
+                confirmButtonText: 'ตกลง',
+                confirmButtonColor: '#10b981'
+            }).then(() => {
+                // หน่วงเวลา (Delay) 0.25 วินาที (250 ms) ค่อยทำงานต่อ
+                setTimeout(() => {
+                    closeManageOilModal();
+                    const recordDate = new Date(date_recorded);
+                    const startInput = document.getElementById('start_date');
+                    const endInput = document.getElementById('end_date');
+                    
+                    if (startInput && endInput) {
+                        const currentStart = new Date(startInput.value);
+                        const currentEnd = new Date(endInput.value);
+                        const recordDateStr = recordDate.toISOString().split('T')[0];
+                        
+                        if (recordDate < currentStart) startInput.value = recordDateStr;
+                        if (recordDate > currentEnd) endInput.value = recordDateStr;
+                    }
+
+                    fetchData(true); 
+                }, 250); 
             });
         }
     } catch(e) { 
-        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error'); 
+        Swal.fire({
+            icon: 'error',
+            title: 'ข้อผิดพลาดเครือข่าย',
+            text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้',
+            showConfirmButton: true,
+            confirmButtonText: 'รับทราบ',
+            confirmButtonColor: '#ef4444'
+        });
     } finally { 
-        hideLoader(); 
+        if (!document.querySelector('.swal2-container')) hideLoader(); 
     }
 };
 
 window.deleteOilRecord = function(id) {
     Swal.fire({
-        title: 'ยืนยันการลบข้อมูล?', text: "คุณแน่ใจหรือไม่ที่จะลบรายการค่าน้ำมันนี้? การลบจะไม่สามารถกู้คืนได้", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#94a3b8', confirmButtonText: 'ลบข้อมูล', cancelButtonText: 'ยกเลิก', reverseButtons: true
+        title: 'ยืนยันการลบข้อมูล?', 
+        text: "คุณแน่ใจหรือไม่ที่จะลบรายการค่าน้ำมันนี้? การลบจะไม่สามารถกู้คืนได้", 
+        icon: 'warning', 
+        showCancelButton: true, 
+        confirmButtonColor: '#ef4444', 
+        cancelButtonColor: '#94a3b8', 
+        confirmButtonText: 'ลบข้อมูล', 
+        cancelButtonText: 'ยกเลิก', 
+        reverseButtons: true
     }).then(async (result) => {
         if (result.isConfirmed) {
             showLoader();
@@ -622,12 +666,37 @@ window.deleteOilRecord = function(id) {
                 const res = await fetch('api/oil/delete_record.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id }) });
                 const data = await res.json();
                 if(data.success) { 
-                    Swal.fire({ icon: 'success', title: 'ลบข้อมูลสำเร็จ', timer: 1500, showConfirmButton: false });
-                    fetchData(true); 
+                    Swal.fire({ 
+                        icon: 'success', 
+                        title: 'ลบข้อมูลสำเร็จ', 
+                        showConfirmButton: true,
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#10b981'
+                    }).then(() => {
+                        setTimeout(() => fetchData(true), 250);
+                    });
                 } else { 
-                    Swal.fire('เกิดข้อผิดพลาด', data.error, 'error'); 
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: data.error,
+                        showConfirmButton: true,
+                        confirmButtonText: 'รับทราบ',
+                        confirmButtonColor: '#ef4444'
+                    }); 
                 }
-            } catch(e) { Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error'); } finally { hideLoader(); }
+            } catch(e) { 
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ข้อผิดพลาดเครือข่าย',
+                    text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้',
+                    showConfirmButton: true,
+                    confirmButtonText: 'รับทราบ',
+                    confirmButtonColor: '#ef4444'
+                });
+            } finally { 
+                if (!document.querySelector('.swal2-container')) hideLoader(); 
+            }
         }
     });
 };
@@ -685,7 +754,14 @@ window.exportOilExcel = async function() {
 
             if (!data.success) {
                 hideLoader();
-                return showToast('error', `ดึงข้อมูลล้มเหลว: ${data.error}`);
+                return Swal.fire({
+                    icon: 'error',
+                    title: 'ดึงข้อมูลล้มเหลว',
+                    text: data.error,
+                    showConfirmButton: true,
+                    confirmButtonText: 'รับทราบ',
+                    confirmButtonColor: '#ef4444'
+                });
             }
 
             let recordsToExport = data.records;
@@ -696,7 +772,14 @@ window.exportOilExcel = async function() {
             if (recordsToExport.length === 0) {
                 hideLoader();
                 let vName = formValues.vehicle === 'all' ? 'ทุกคัน' : `รถทะเบียน ${formValues.vehicle}`;
-                return Swal.fire('ไม่พบข้อมูล', `ไม่มีประวัติการเติมน้ำมันของ ${vName} ในเดือน ${formValues.month}`, 'info');
+                return Swal.fire({
+                    icon: 'info',
+                    title: 'ไม่พบข้อมูล',
+                    text: `ไม่มีประวัติการเติมน้ำมันของ ${vName} ในเดือน ${formValues.month}`,
+                    showConfirmButton: true,
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#3b82f6'
+                });
             }
 
             showToast('info', 'กำลังสร้างไฟล์ Excel พร้อมคำนวณยอดรวม...');
@@ -790,16 +873,124 @@ window.exportOilExcel = async function() {
             XLSX.writeFile(wb, `รายงานน้ำมัน_${safeVehicleName}_${formValues.month}.xlsx`);
             
             hideLoader();
-            showToast('success', 'ดาวน์โหลดไฟล์ Excel เรียบร้อย!');
+            Swal.fire({
+                icon: 'success',
+                title: 'ส่งออกสำเร็จ!',
+                text: 'ดาวน์โหลดไฟล์ Excel เรียบร้อยแล้ว',
+                showConfirmButton: true,
+                confirmButtonText: 'ตกลง',
+                confirmButtonColor: '#10b981'
+            });
         } catch (error) {
             hideLoader();
             console.error("Export Error:", error);
-            showToast('error', 'เกิดข้อผิดพลาดในการสร้างไฟล์ Excel');
+            Swal.fire({
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาด',
+                text: 'มีข้อผิดพลาดในการสร้างไฟล์ Excel',
+                showConfirmButton: true,
+                confirmButtonText: 'รับทราบ',
+                confirmButtonColor: '#ef4444'
+            });
         }
     }
 };
 
-// 🚀 --- ฟังก์ชันนี้คือปุ่มคำนวณไมล์ใหม่ ---
+document.getElementById('importOilExcel')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    Swal.fire({ title: 'กำลังอ่านไฟล์ Excel...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const reader = new FileReader();
+    reader.onload = async function(event) {
+        try {
+            const data = new Uint8Array(event.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+            if (jsonData.length === 0) {
+                return Swal.fire({
+                    icon: 'error',
+                    title: 'ข้อผิดพลาด',
+                    text: 'ไม่พบข้อมูลในไฟล์ Excel',
+                    showConfirmButton: true,
+                    confirmButtonText: 'รับทราบ',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+            const payload = jsonData.map(row => {
+                let dateVal = row['วันที่'] || row['Date'] || '';
+                return {
+                    date: formatExcelDate(dateVal),
+                    license_plate: String(row['ทะเบียนรถ'] || '').trim(),
+                    tech_name: String(row['ชื่อผู้เติม'] || '').trim(),
+                    mileage: parseInt(row['เลขไมล์']) || 0,
+                    liters: parseFloat(row['ลิตร']) || 0,
+                    price_per_liter: parseFloat(row['ราคา/ลิตร']) || 0,
+                    total_price: parseFloat(row['ยอดเงิน(บาท)']) || (parseFloat(row['ลิตร']) * parseFloat(row['ราคา/ลิตร'])) || 0
+                };
+            }).filter(item => item.license_plate !== '' && item.liters > 0);
+            const res = await fetch('api/oil/import_records.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ records: payload }) });
+            const result = await res.json();
+            if (result.success) { 
+                Swal.fire({
+                    icon: 'success',
+                    title: 'สำเร็จ!',
+                    text: `นำเข้าข้อมูลน้ำมันสำเร็จ ${result.imported} รายการ`,
+                    showConfirmButton: true,
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#10b981'
+                }).then(() => {
+                    setTimeout(() => fetchData(true), 250);
+                });
+            } else { 
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: result.error,
+                    showConfirmButton: true,
+                    confirmButtonText: 'รับทราบ',
+                    confirmButtonColor: '#ef4444'
+                }); 
+            }
+        } catch (err) { 
+            Swal.fire({
+                icon: 'error',
+                title: 'ข้อผิดพลาด',
+                text: 'ไฟล์ Excel รูปแบบไม่ถูกต้อง',
+                showConfirmButton: true,
+                confirmButtonText: 'รับทราบ',
+                confirmButtonColor: '#ef4444'
+            }); 
+        } finally { 
+            document.getElementById('importOilExcel').value = ''; 
+        }
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+function formatExcelDate(excelDate) {
+    if (!excelDate) return null;
+    if (typeof excelDate === 'number') {
+        const date = new Date((excelDate - (25567 + 2)) * 86400 * 1000);
+        return date.toISOString().split('T')[0] + ' 12:00:00';
+    } else if (typeof excelDate === 'string') {
+        let parts = excelDate.split(/[\/\- ]/);
+        if (parts.length >= 3) {
+            const day = parts[0].padStart(2, '0');
+            const month = parts[1].padStart(2, '0');
+            let year = parts[2];
+            if (parseInt(year) > 2500) year = (parseInt(year) - 543).toString();
+            let time = '12:00:00'; 
+            if (excelDate.includes(':')) {
+                const timeMatch = excelDate.match(/\d{2}:\d{2}(:\d{2})?/);
+                if(timeMatch) time = timeMatch[0];
+                if(time.length === 5) time += ':00';
+            }
+            return `${year}-${month}-${day} ${time}`;
+        }
+    }
+    return excelDate;
+}
+
 window.recalculateAllMileage = function() {
     Swal.fire({
         title: 'จัดเรียงและคำนวณไมล์ใหม่?',
@@ -815,19 +1006,40 @@ window.recalculateAllMileage = function() {
         if (result.isConfirmed) {
             showLoader();
             try {
-                // โปรดตรวจสอบว่าไฟล์ api/oil/recalculate.php มีอยู่ในโฟลเดอร์ตามที่คุณได้สร้างไว้ก่อนหน้านี้
                 const res = await fetch('api/oil/recalculate.php');
                 const data = await res.json();
                 if (data.success) {
-                    showToast('success', 'เรียงวันที่และคำนวณระยะทางใหม่เรียบร้อยแล้ว!');
-                    fetchData(true); 
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'สำเร็จ!',
+                        text: 'เรียงวันที่และคำนวณระยะทางใหม่เรียบร้อยแล้ว!',
+                        showConfirmButton: true,
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#10b981'
+                    }).then(() => {
+                        setTimeout(() => fetchData(true), 250);
+                    });
                 } else {
-                    Swal.fire('เกิดข้อผิดพลาด', data.error, 'error');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: data.error,
+                        showConfirmButton: true,
+                        confirmButtonText: 'รับทราบ',
+                        confirmButtonColor: '#ef4444'
+                    });
                 }
             } catch (e) {
-                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อกับ api/oil/recalculate.php ได้ กรุณาตรวจสอบว่ามีไฟล์นี้อยู่จริง', 'error');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ข้อผิดพลาดเครือข่าย',
+                    text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้',
+                    showConfirmButton: true,
+                    confirmButtonText: 'รับทราบ',
+                    confirmButtonColor: '#ef4444'
+                });
             } finally {
-                hideLoader();
+                if (!document.querySelector('.swal2-container')) hideLoader(); 
             }
         }
     });
