@@ -414,6 +414,7 @@ if ($page === 'home') {
                     <!-- Main Actions -->
                     <h2 class="text-lg font-bold mt-8 mb-4">เมนูด่วน</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <?php if (!hasRole('sales')): ?>
                         <a href="index.php?page=dispatch" class="card flex flex-col justify-between hover:border-[var(--c-primary)] transition-colors group text-inherit no-underline">
                             <div class="flex items-start justify-between">
                                 <div class="w-12 h-12 rounded-xl bg-[var(--c-primary)] text-white flex items-center justify-center shadow-btn group-hover:scale-105 transition-transform"><i data-lucide="map-pin"></i></div>
@@ -424,7 +425,9 @@ if ($page === 'home') {
                                 <p class="text-sm text-[var(--c-text-3)] mt-1">คำนวณเส้นทางอัตโนมัติและจัดคิวงานให้ทีมช่างเทคนิค</p>
                             </div>
                         </a>
+                        <?php endif; ?>
 
+                        <?php if (hasRole(['admin', 'super_admin'])): ?>
                         <a href="index.php?page=inventory" class="card flex flex-col justify-between hover:border-[var(--c-success)] transition-colors group text-inherit no-underline">
                             <div class="flex items-start justify-between">
                                 <div class="w-12 h-12 rounded-xl bg-[var(--c-success)] text-white flex items-center justify-center shadow-btn group-hover:scale-105 transition-transform" style="--shadow-btn: 0 4px 14px rgba(16,185,129, 0.40);"><i data-lucide="box"></i></div>
@@ -435,6 +438,7 @@ if ($page === 'home') {
                                 <p class="text-sm text-[var(--c-text-3)]">ตรวจสอบระดับสต็อก สแกนรับเข้า และดูประวัติการเบิกจ่าย</p>
                             </div>
                         </a>
+                        <?php endif; ?>
                     </div>
 
                 </div>
@@ -449,8 +453,21 @@ if ($page === 'home') {
                     'users' => 'views/modules/user_settings.php',
                     'checkin' => 'views/modules/checkin.php'
                 ];
-                if (array_key_exists($page, $routes) && file_exists($routes[$page])) {
+
+                $accessDenied = false;
+                if (in_array($page, ['oil', 'dispatch'], true) && hasRole('sales')) {
+                    $accessDenied = true;
+                }
+
+                if (!$accessDenied && array_key_exists($page, $routes) && file_exists($routes[$page])) {
                     include $routes[$page];
+                } elseif ($accessDenied) {
+                    echo '<div class="card text-center py-16">
+                            <div class="w-20 h-20 bg-[var(--c-surface-2)] rounded-full flex items-center justify-center mx-auto mb-6"><i data-lucide="slash" class="w-10 h-10 text-[var(--c-text-3)]"></i></div>
+                            <h2 class="text-xl font-bold text-[var(--c-text-1)] mb-2">ไม่มีสิทธิ์เข้าถึงหน้านี้</h2>
+                            <p class="text-sm text-[var(--c-text-3)] max-w-sm mx-auto">คุณไม่มีสิทธิ์ดูหน้านี้ด้วยบทบาทปัจจุบัน</p>
+                            <a href="index.php?page=home" class="btn-primary mt-8 inline-block w-auto">กลับสู่หน้าแรก</a>
+                          </div>';
                 } else {
                     echo '<div class="card text-center py-16">
                             <div class="w-20 h-20 bg-[var(--c-surface-2)] rounded-full flex items-center justify-center mx-auto mb-6"><i data-lucide="settings" class="w-10 h-10 text-[var(--c-text-3)] animate-spin-slow" style="animation-duration: 4s;"></i></div>

@@ -50,9 +50,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reg_username = trim($_POST['reg_username'] ?? '');
         $reg_password = $_POST['reg_password'] ?? '';
         $reg_fullname = trim($_POST['reg_fullname'] ?? '');
+        $reg_role = $_POST['reg_role'] ?? 'technician';
         $reg_license = trim($_POST['reg_license'] ?? '');
 
-        if ($reg_username && $reg_password && $reg_fullname && $reg_license) {
+        $validRoles = ['technician', 'sales', 'admin'];
+        if (!in_array($reg_role, $validRoles, true)) {
+            $reg_role = 'technician';
+        }
+
+        if ($reg_username && $reg_password && $reg_fullname && ($reg_role !== 'technician' || $reg_license)) {
             // เช็คว่ามี username นี้หรือยัง
             $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
             $stmt->execute([$reg_username]);
@@ -62,28 +68,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     $pdo->beginTransaction();
 
-                    // 1. จัดการทีม (ใช้ป้ายทะเบียนเป็นชื่อทีมเพื่อรวมกลุ่ม)
-                    $stmt = $pdo->prepare("SELECT id FROM teams WHERE team_name = ?");
-                    $stmt->execute([$reg_license]);
-                    $team = $stmt->fetch();
-                    
-                    if ($team) {
-                        $team_id = $team['id'];
-                    } else {
-                        // ถ้ายังไม่มีทีมนี้ ให้สร้างใหม่
-                        $stmt = $pdo->prepare("INSERT INTO teams (team_name) VALUES (?)");
+                    $team_id = null;
+                    if ($reg_role === 'technician') {
+                        // 1. จัดการทีม (ใช้ป้ายทะเบียนเป็นชื่อทีมเพื่อรวมกลุ่ม)
+                        $stmt = $pdo->prepare("SELECT id FROM teams WHERE team_name = ?");
                         $stmt->execute([$reg_license]);
-                        $team_id = $pdo->lastInsertId();
+                        $team = $stmt->fetch();
+                        
+                        if ($team) {
+                            $team_id = $team['id'];
+                        } else {
+                            // ถ้ายังไม่มีทีมนี้ ให้สร้างใหม่
+                            $stmt = $pdo->prepare("INSERT INTO teams (team_name) VALUES (?)");
+                            $stmt->execute([$reg_license]);
+                            $team_id = $pdo->lastInsertId();
+                        }
+
+                        // 2. จัดการยานพาหนะ (เพิ่มรูปรถเข้าระบบถ้ายังไม่มี)
+                        $stmt = $pdo->prepare("INSERT IGNORE INTO vehicles (license_plate) VALUES (?)");
+                        $stmt->execute([$reg_license]);
                     }
 
-                    // 2. จัดการยานพาหนะ (เพิ่มรูปรถเข้าระบบถ้ายังไม่มี)
-                    $stmt = $pdo->prepare("INSERT IGNORE INTO vehicles (license_plate) VALUES (?)");
-                    $stmt->execute([$reg_license]);
-
-                    // 3. สร้าง User และผูกเข้ากับทีมนี้ โดยตั้งสถานะเป็น pending
+                    // 3. สร้าง User โดยตั้งสถานะเป็น pending
                     $hash = password_hash($reg_password, PASSWORD_DEFAULT);
-                    $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role, full_name, status, team_id) VALUES (?, ?, 'technician', ?, 'pending', ?)");
-                    $stmt->execute([$reg_username, $hash, $reg_fullname, $team_id]);
+                    $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role, full_name, status, team_id) VALUES (?, ?, ?, ?, 'pending', ?)");
+                    $stmt->execute([$reg_username, $hash, $reg_role, $reg_fullname, $team_id]);
 
                     $pdo->commit();
                     $success = 'ลงทะเบียนสำเร็จ! กรุณารอผู้ดูแลระบบอนุมัติการเข้าใช้งาน';
@@ -185,11 +194,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div>
                 <label class="block text-xs font-bold mb-2 text-[var(--c-text-2)] uppercase tracking-wider">รหัสผ่าน</label>
-                <input class="input" type="password" name="reg_password" required>
+                <input class="input" type="password" name="reg_password" placeholder="กรอกรหัสผ่านสำหรับเข้าใช้งาน" required>
             </div>
             <div>
+                <label class="block text-xs font-bold mb-2 text-[var(--c-text-2)] uppercase tracking-wider">ตำแหน่งที่สมัคร</label>
+                <select id="reg_role" name="reg_role" class="input" onchange="toggleRegLicenseField()" required>
+                    <option value="technician">ช่าง</option>
+                    <option value="sales">เซล</option>
+                    <option value="admin">แอดมิน</option>
+                </select>
+            </div>
+            <div id="regLicenseArea">
                 <label class="block text-xs font-bold mb-2 text-[#D97706] uppercase tracking-wider">* ทะเบียนรถที่ใช้งาน (ผูกทีมงาน)</label>
-                <input class="input !border-[#FCD34D]" type="text" name="reg_license" placeholder="เช่น กท 1234 สุราษฎร์ธานี" required>
+                <input class="input !border-[#FCD34D]" type="text" name="reg_license" id="reg_license" placeholder="เช่น กท 1234 สุราษฎร์ธานี" required>
                 <p class="text-[9px] text-[var(--c-text-3)] mt-1">ทะเบียนรถเดียวกัน จะถูกจัดให้อยู่ทีมเดียวกันอัตโนมัติ</p>
             </div>
             <div class="pt-2">
@@ -218,6 +235,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 tReg.classList.add('active');
             }
         }
+
+        function toggleRegLicenseField() {
+            const role = document.getElementById('reg_role').value;
+            const licenseArea = document.getElementById('regLicenseArea');
+            const licenseInput = document.getElementById('reg_license');
+            if (role === 'technician') {
+                licenseArea.classList.remove('hidden');
+                licenseInput.required = true;
+            } else {
+                licenseArea.classList.add('hidden');
+                licenseInput.required = false;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            toggleRegLicenseField();
+        });
     </script>
 </body>
 </html>

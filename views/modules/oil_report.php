@@ -29,11 +29,6 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                 <span class="mr-1"><i data-lucide="download" class="w-4 h-4"></i></span> ส่งออก Excel
             </button>
             
-            <?php if (hasRole('super_admin')): ?>
-            <a href="index.php?page=oil_test_form" class="bg-[var(--c-surface-2)] border border-[var(--c-border)] text-[var(--c-text-2)] hover:bg-[var(--c-border)] px-4 py-2 rounded-lg text-xs font-bold transition-colors text-center w-full sm:w-auto">
-                + บันทึก (ทดสอบ)
-            </a>
-            <?php endif; ?>
         </div>
     </div>
 

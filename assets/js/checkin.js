@@ -162,7 +162,7 @@ function renderTable(records) {
             : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`;
 
         // สิทธิ์การมองเห็นปุ่ม (ตัวแปร USER_ROLE ถูกส่งมาจากไฟล์ checkin.php)
-        const canEdit = ['super_admin', 'admin', 'technician', 'sales'].includes(window.USER_ROLE);
+        const canEdit = ['super_admin', 'admin'].includes(window.USER_ROLE);
         const canDelete = window.USER_ROLE === 'super_admin';
 
         let actionHtml = `<div class="flex justify-end md:justify-center gap-2">`;
