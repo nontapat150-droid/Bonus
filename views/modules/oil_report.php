@@ -4,56 +4,97 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 ?>
 
 <div class="space-y-6">
-    <div class="card flex flex-col md:flex-row md:items-center md:justify-between">
-        <div>
-            <h2 class="text-3xl font-black text-[var(--c-text-1)] tracking-tight flex items-center">
-                <span class="mr-3 p-2 bg-[var(--c-primary-faint)] text-[var(--c-primary)] rounded-xl shadow-inner text-2xl"><i data-lucide="bar-chart-2" class="w-6 h-6"></i></span>
-                รายงานการใช้น้ำมัน   
-            </h2>
-            <p class="text-[var(--c-text-3)] text-sm mt-1 font-medium">ตรวจสอบประวัติการเบิกค่าน้ำมันและดูสถิติ</p>
-        </div>
-        <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
-            <div class="flex items-center space-x-2">
-                <select id="dateRangePreset" class="input text-xs font-bold" onchange="applyDatePreset(this.value)">
-                    <option value="custom">กำหนดเอง</option>
-                    <option value="this_month">เดือนนี้</option>
-                    <option value="last_month">เดือนที่แล้ว</option>
-                </select>
-                <input type="date" id="start_date" class="input w-full sm:w-auto text-xs font-bold">
-                <span class="text-[var(--c-text-3)] text-xs font-bold">ถึง</span>
-                <input type="date" id="end_date" class="input w-full sm:w-auto text-xs font-bold">
+    <!-- Header & Filter Group -->
+    <div class="flex flex-col gap-6">
+        <div class="card !p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div class="flex items-center">
+                <div class="mr-4 p-3 bg-[var(--c-primary-faint)] text-[var(--c-primary)] rounded-2xl shadow-inner">
+                    <i data-lucide="bar-chart-2" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-black text-[var(--c-text-1)] tracking-tight">รายงานการใช้น้ำมัน</h2>
+                    <p class="text-[var(--c-text-3)] text-xs font-medium uppercase tracking-wider">Fleet Oil Consumption & Analytics</p>
+                </div>
             </div>
-            <button id="filterBtn" class="btn-primary w-full sm:w-auto text-xs">
-                ค้นหา
+
+            <!-- Filter Controls -->
+            <div class="flex flex-wrap items-center gap-3 bg-[var(--c-surface-2)] p-2 rounded-2xl border border-[var(--c-border)]">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-4 h-4 text-[var(--c-text-3)] ml-2"></i>
+                    <select id="dateRangePreset" class="bg-transparent border-none text-xs font-bold focus:ring-0 cursor-pointer py-1" onchange="applyDatePreset(this.value)">
+                        <option value="custom">กำหนดเอง</option>
+                        <option value="this_month">เดือนนี้</option>
+                        <option value="last_month">เดือนที่แล้ว</option>
+                    </select>
+                </div>
+                <div class="h-4 w-px bg-[var(--c-border)] hidden sm:block"></div>
+                <div class="flex items-center gap-2">
+                    <input type="date" id="start_date" class="bg-transparent border-none text-xs font-bold focus:ring-0 p-0 w-28">
+                    <span class="text-[var(--c-text-3)] text-[10px] font-black uppercase">to</span>
+                    <input type="date" id="end_date" class="bg-transparent border-none text-xs font-bold focus:ring-0 p-0 w-28">
+                </div>
+                <button id="filterBtn" class="bg-[var(--c-primary)] text-white px-4 py-1.5 rounded-xl text-xs font-bold hover:brightness-110 transition-all shadow-sm">
+                    ตกลง
+                </button>
+            </div>
+        </div>
+
+        <!-- Action Buttons Group -->
+        <div class="flex flex-wrap gap-3">
+            <button onclick="toggleCompareMode()" id="compareBtn" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-700 transition-all shadow-lg shadow-slate-200">
+                <i data-lucide="bar-chart-horizontal" class="w-4 h-4"></i>
+                <span>เปรียบเทียบรถ</span>
             </button>
-            <button onclick="toggleCompareMode()" id="compareBtn" class="btn-primary w-full sm:w-auto text-xs" style="background: var(--c-secondary); box-shadow: 0 4px 14px rgba(107, 114, 128, 0.40);">
-                <span class="mr-1"><i data-lucide="users" class="w-4 h-4"></i></span> เปรียบเทียบรถ
+            
+            <button onclick="openAddOilModal()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-100">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>เพิ่มข้อมูล</span>
             </button>
-            <button onclick="openAddOilModal()" class="btn-primary w-full sm:w-auto text-xs" style="background: var(--c-info); box-shadow: 0 4px 14px rgba(59,130,246, 0.40);">
-                <span class="mr-1"><i data-lucide="plus" class="w-4 h-4"></i></span> เพิ่มข้อมูลย้อนหลัง
-            </button>
-            <input type="file" id="importOilExcel" accept=".xlsx, .xls" class="hidden">
-            <button onclick="document.getElementById('importOilExcel').click()" class="btn-primary w-full sm:w-auto text-xs" style="background: var(--c-warning); box-shadow: 0 4px 14px rgba(245,158,11, 0.40);">
-                <span class="mr-1"><i data-lucide="download" class="w-4 h-4"></i></span> นำเข้า Excel
-            </button>
-            <button onclick="exportOilExcel()" class="btn-primary w-full sm:w-auto text-xs" style="background: var(--c-success); box-shadow: 0 4px 14px rgba(16,185,129, 0.40);">
-                <span class="mr-1"><i data-lucide="download" class="w-4 h-4"></i></span> ส่งออก Excel
-            </button>
+
+            <div class="flex-1 sm:flex-none flex gap-2">
+                <input type="file" id="importOilExcel" accept=".xlsx, .xls" class="hidden">
+                <button onclick="document.getElementById('importOilExcel').click()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-400 transition-all shadow-lg shadow-amber-100">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">นำเข้า</span>
+                </button>
+                <button onclick="exportOilExcel()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-100">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">ส่งออก</span>
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- Comparison Section (Hidden by default) -->
-    <div id="compareSection" class="hidden space-y-6">
-        <div class="card">
-            <h3 class="font-bold text-[var(--c-text-1)] mb-4 flex items-center">
-                <i data-lucide="pie-chart" class="w-5 h-5 mr-2 text-indigo-500"></i>
-                เปรียบเทียบสถิติระหว่างรถแต่ละคัน
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="h-80"><canvas id="compareCostChart"></canvas></div>
-                <div class="h-80"><canvas id="compareLitersChart"></canvas></div>
-                <div class="h-80"><canvas id="compareDistanceChart"></canvas></div>
-                <div class="h-80"><canvas id="compareJobsChart"></canvas></div>
+    <!-- Comparison Section -->
+    <div id="compareSection" class="hidden animate__animated animate__fadeIn">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="card !p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><i data-lucide="dollar-sign" class="w-5 h-5"></i></div>
+                    <h3 class="font-bold text-[var(--c-text-1)]">ยอดเงินที่เติม (บาท)</h3>
+                </div>
+                <div class="h-64"><canvas id="compareCostChart"></canvas></div>
+            </div>
+            <div class="card !p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><i data-lucide="droplet" class="w-5 h-5"></i></div>
+                    <h3 class="font-bold text-[var(--c-text-1)]">ปริมาณน้ำมัน (ลิตร)</h3>
+                </div>
+                <div class="h-64"><canvas id="compareLitersChart"></canvas></div>
+            </div>
+            <div class="card !p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-sky-50 text-sky-600 rounded-lg"><i data-lucide="navigation" class="w-5 h-5"></i></div>
+                    <h3 class="font-bold text-[var(--c-text-1)]">ระยะทางวิ่งสะสม (กม.)</h3>
+                </div>
+                <div class="h-64"><canvas id="compareDistanceChart"></canvas></div>
+            </div>
+            <div class="card !p-6">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-amber-50 text-amber-600 rounded-lg"><i data-lucide="briefcase" class="w-5 h-5"></i></div>
+                    <h3 class="font-bold text-[var(--c-text-1)]">จำนวนรอบงาน (เคส)</h3>
+                </div>
+                <div class="h-64"><canvas id="compareJobsChart"></canvas></div>
             </div>
         </div>
     </div>
