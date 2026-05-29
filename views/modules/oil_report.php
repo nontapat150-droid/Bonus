@@ -253,8 +253,12 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                     <input type="number" step="0.01" id="manage_price_per_liter" class="input w-full" placeholder="Ex: 35.50">
                 </div>
                 <div>
+                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ราคารวม (บาท) <span class="text-rose-500">*</span></label>
+                    <input type="number" step="1" id="manage_total_price" class="input w-full font-bold text-indigo-700 bg-slate-50" placeholder="Ex: 1000">
+                </div>
+                <div class="md:col-span-2">
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ระยะทาง (กม.)</label>
-                    <input type="number" step="0.01" id="manage_distance" class="input w-full" placeholder="Ex: 300 (เว้นว่างไว้เพื่อคำนวณอัตโนมัติจากไมล์ก่อนหน้า)">
+                    <input type="text" id="manage_distance" class="input w-full bg-slate-100 text-slate-400 cursor-not-allowed" readonly placeholder="คำนวณอัตโนมัติจากเลขไมล์รอบก่อนหน้า">
                 </div>
                 <div>
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">จำนวนเคสงาน (รอบ)</label>

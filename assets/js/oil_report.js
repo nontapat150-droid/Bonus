@@ -28,6 +28,18 @@ document.addEventListener('DOMContentLoaded', () => {
         Toast.info('กำลังอัปเดตข้อมูลตามวันที่เลือก...');
         fetchData();
     });
+
+    // Auto calculate Total Price & Rounding
+    const calcManageTotal = () => {
+        const liters = parseFloat(document.getElementById('manage_liters').value) || 0;
+        const price = parseFloat(document.getElementById('manage_price_per_liter').value) || 0;
+        const totalPriceEl = document.getElementById('manage_total_price');
+        if (liters && price && totalPriceEl) {
+            totalPriceEl.value = Math.round(liters * price);
+        }
+    };
+    document.getElementById('manage_liters')?.addEventListener('input', calcManageTotal);
+    document.getElementById('manage_price_per_liter')?.addEventListener('input', calcManageTotal);
 });
 
 window.applyDatePreset = function(preset) {
@@ -415,11 +427,11 @@ window.openAddOilModal = function() {
     const now = new Date();
     const tzOffset = now.getTimezoneOffset() * 60000;
     document.getElementById('manage_date_recorded').value = (new Date(now - tzOffset)).toISOString().slice(0,16);
+    
     const selTech = document.getElementById('manage_tech_id');
     const selPlate = document.getElementById('manage_license_plate');
     if(selTech) {
         selTech.innerHTML = '<option value="">-- เลือกผู้เติมน้ำมัน --</option>';
-        // กรองเอาเฉพาะผู้ใช้ที่มี role เป็น 'technician'
         editUsersList.filter(u => u.role === 'technician').forEach(u => {
             selTech.innerHTML += `<option value="${u.id}">${u.full_name}</option>`;
         });
@@ -431,7 +443,13 @@ window.openAddOilModal = function() {
     document.getElementById('manage_mileage').value = '';
     document.getElementById('manage_liters').value = '';
     document.getElementById('manage_price_per_liter').value = '';
-    document.getElementById('manage_distance').value = '';
+    
+    const manageTotalPrice = document.getElementById('manage_total_price');
+    if (manageTotalPrice) manageTotalPrice.value = '';
+    
+    const manageDistance = document.getElementById('manage_distance');
+    if (manageDistance) manageDistance.value = '';
+
     document.getElementById('manage_job_count').value = '0';
     document.getElementById('manage_images').value = '';
     document.getElementById('manage_image_section').style.display = 'block';
@@ -446,11 +464,11 @@ window.openManageOilModal = function(index) {
     if(!modal) return;
     document.getElementById('manageOilModalTitle').innerHTML = '<i data-lucide="edit-2" class="w-5 h-5 inline-block"></i> แก้ไขข้อมูลน้ำมัน';
     document.getElementById('btnSaveManageOil').textContent = 'บันทึกการแก้ไข';
+    
     const selTech = document.getElementById('manage_tech_id');
     const selPlate = document.getElementById('manage_license_plate');
     if(selTech) {
         selTech.innerHTML = '<option value="">-- เลือกผู้เติมน้ำมัน --</option>';
-        // กรองเอาเฉพาะผู้ใช้ที่มี role เป็น 'technician'
         editUsersList.filter(u => u.role === 'technician').forEach(u => {
             selTech.innerHTML += `<option value="${u.id}">${u.full_name}</option>`;
         });
@@ -461,6 +479,7 @@ window.openManageOilModal = function(index) {
         editTeamsList.forEach(t => selPlate.innerHTML += `<option value="${t.team_name}">${t.team_name}</option>`);
         selPlate.value = record.license_plate;
     }
+    
     document.getElementById('manage_record_id').value = record.id;
     const d = new Date(record.date_recorded);
     const tzOffset = d.getTimezoneOffset() * 60000;
@@ -468,7 +487,13 @@ window.openManageOilModal = function(index) {
     document.getElementById('manage_mileage').value = record.mileage;
     document.getElementById('manage_liters').value = record.liters;
     document.getElementById('manage_price_per_liter').value = record.price_per_liter;
-    document.getElementById('manage_distance').value = record.distance;
+    
+    const manageTotalPrice = document.getElementById('manage_total_price');
+    if (manageTotalPrice) manageTotalPrice.value = Math.round(record.total_price);
+    
+    const manageDistance = document.getElementById('manage_distance');
+    if (manageDistance) manageDistance.value = record.distance ? record.distance + ' กม.' : '';
+
     document.getElementById('manage_job_count').value = record.job_count;
     document.getElementById('manage_images').value = '';
     document.getElementById('manage_image_section').style.display = 'none';
@@ -486,7 +511,11 @@ window.saveManageOil = async function() {
     const mileage = document.getElementById('manage_mileage').value;
     const liters = document.getElementById('manage_liters').value;
     const price_per_liter = document.getElementById('manage_price_per_liter').value;
-    const distance = document.getElementById('manage_distance').value;
+    
+    let total_price = '';
+    const totalPriceEl = document.getElementById('manage_total_price');
+    if(totalPriceEl) total_price = totalPriceEl.value;
+
     const job_count = document.getElementById('manage_job_count').value;
 
     if (!tech_id || !license_plate || !date_recorded || !mileage || !liters || !price_per_liter) {
@@ -499,7 +528,7 @@ window.saveManageOil = async function() {
             const res = await fetch('api/oil/edit_record.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ id, tech_id, license_plate, date_recorded, mileage, liters, price_per_liter, distance, job_count })
+                body: JSON.stringify({ id, tech_id, license_plate, date_recorded, mileage, liters, price_per_liter, total_price, job_count })
             });
             const data = await res.json();
             if(data.success) { Toast.success('แก้ไขข้อมูลน้ำมันเรียบร้อย'); closeManageOilModal(); fetchData(); }
@@ -512,8 +541,9 @@ window.saveManageOil = async function() {
             formData.append('mileage', mileage);
             formData.append('liters', liters);
             formData.append('price_per_liter', price_per_liter);
-            formData.append('distance', distance);
+            formData.append('total_price', total_price);
             formData.append('job_count', job_count);
+            
             const fileInput = document.getElementById('manage_images');
             if (fileInput && fileInput.files.length > 0) {
                 for (let i = 0; i < fileInput.files.length; i++) { formData.append('oil_images[]', fileInput.files[i]); }
