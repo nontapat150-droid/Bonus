@@ -114,20 +114,70 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
         <!-- ... existing KPIs ... -->
     </div>
 
+    <!-- Charts Section -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="card">
-            <h3 class="font-bold text-[var(--c-text-1)] mb-4 flex items-center">
-                <i data-lucide="trending-up" class="w-5 h-5 mr-2 text-indigo-500"></i>
-                แนวโน้มค่าใช้จ่ายและปริมาณน้ำมัน
-            </h3>
-            <div class="relative h-64 w-full"><canvas id="combinedTrendChart"></canvas></div>
+        <!-- 1. Cost Chart -->
+        <div class="card !p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><i data-lucide="dollar-sign" class="w-5 h-5"></i></div>
+                    <h3 class="font-bold text-[var(--c-text-1)] text-sm uppercase tracking-wider">ค่าใช้จ่ายรายวัน (บาท)</h3>
+                </div>
+                <select onchange="updateChartType('combinedTrendChart', this.value, 0)" class="input !py-1 !px-2 text-[10px] font-bold bg-slate-50 border-none focus:ring-0 w-24">
+                    <option value="line" selected>กราฟเส้น</option>
+                    <option value="bar">กราฟแท่ง</option>
+                    <option value="area">พื้นที่ (Area)</option>
+                </select>
+            </div>
+            <div class="h-64"><canvas id="combinedTrendChart"></canvas></div>
         </div>
-        <div class="card">
-            <h3 class="font-bold text-[var(--c-text-1)] mb-4 flex items-center">
-                <i data-lucide="gauge" class="w-5 h-5 mr-2 text-sky-500"></i>
-                แนวโน้มระยะทางวิ่ง (กม.)
-            </h3>
-            <div class="relative h-64 w-full"><canvas id="distanceTrendChart"></canvas></div>
+
+        <!-- 2. Liters Chart -->
+        <div class="card !p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><i data-lucide="droplet" class="w-5 h-5"></i></div>
+                    <h3 class="font-bold text-[var(--c-text-1)] text-sm uppercase tracking-wider">ปริมาณน้ำมัน (ลิตร)</h3>
+                </div>
+                <select onchange="updateChartType('litersTrendChart', this.value)" class="input !py-1 !px-2 text-[10px] font-bold bg-slate-50 border-none focus:ring-0 w-24">
+                    <option value="line" selected>กราฟเส้น</option>
+                    <option value="bar">กราฟแท่ง</option>
+                    <option value="area">พื้นที่ (Area)</option>
+                </select>
+            </div>
+            <div class="h-64"><canvas id="litersTrendChart"></canvas></div>
+        </div>
+
+        <!-- 3. Distance Chart -->
+        <div class="card !p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-sky-50 text-sky-600 rounded-lg"><i data-lucide="gauge" class="w-5 h-5"></i></div>
+                    <h3 class="font-bold text-[var(--c-text-1)] text-sm uppercase tracking-wider">ระยะทางวิ่งรายวัน (กม.)</h3>
+                </div>
+                <select onchange="updateChartType('distanceTrendChart', this.value)" class="input !py-1 !px-2 text-[10px] font-bold bg-slate-50 border-none focus:ring-0 w-24">
+                    <option value="bar" selected>กราฟแท่ง</option>
+                    <option value="line">กราฟเส้น</option>
+                    <option value="area">พื้นที่ (Area)</option>
+                </select>
+            </div>
+            <div class="h-64"><canvas id="distanceTrendChart"></canvas></div>
+        </div>
+
+        <!-- 4. Job Cost Efficiency Chart -->
+        <div class="card !p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-amber-50 text-amber-600 rounded-lg"><i data-lucide="pie-chart" class="w-5 h-5"></i></div>
+                    <h3 class="font-bold text-[var(--c-text-1)] text-sm uppercase tracking-wider">ประสิทธิภาพต้นทุนต่อรอบ</h3>
+                </div>
+                <select onchange="updateChartType('efficiencyChart', this.value)" class="input !py-1 !px-2 text-[10px] font-bold bg-slate-50 border-none focus:ring-0 w-24">
+                    <option value="line" selected>กราฟเส้น</option>
+                    <option value="bar">กราฟแท่ง</option>
+                    <option value="area">พื้นที่ (Area)</option>
+                </select>
+            </div>
+            <div class="h-64"><canvas id="efficiencyChart"></canvas></div>
         </div>
     </div>
 
