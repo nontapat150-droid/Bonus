@@ -59,7 +59,6 @@ window.toggleCompareMode = function() {
         section.classList.remove('hidden');
         selectorWrapper.classList.remove('hidden');
         btnText.textContent = 'ดูรายงานปกติ';
-        btn.style.background = 'var(--c-indigo)';
         
         // Fill vehicle selector
         fillVehicleCompareSelector();
@@ -69,7 +68,6 @@ window.toggleCompareMode = function() {
         section.classList.add('hidden');
         selectorWrapper.classList.add('hidden');
         btnText.textContent = 'เปรียบเทียบรถ';
-        btn.style.background = ''; // Reset to default (slate-800 from class)
     }
     lucide.createIcons();
 };
