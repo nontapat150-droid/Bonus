@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const calculateTotal = () => {
         const liters = parseFloat(litersInput.value) || 0;
         const price = parseFloat(priceInput.value) || 0;
-        totalInput.value = (liters * price).toFixed(2);
+        totalInput.value = Math.round(liters * price);
     };
 
     const updateTeamInfo = (teamName) => {

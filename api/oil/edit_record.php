@@ -19,7 +19,7 @@ $date_recorded = $input['date_recorded'] ?? null;
 $mileage = intval($input['mileage'] ?? 0);
 $liters = floatval($input['liters'] ?? 0);
 $price_per_liter = floatval($input['price_per_liter'] ?? 0);
-$distance = floatval($input['distance'] ?? 0);
+$distance = 0; // บังคับคำนวณใหม่
 $job_count = intval($input['job_count'] ?? 0);
 
 if (!$id || !$tech_id || !$license_plate || !$date_recorded || $mileage <= 0 || $liters <= 0 || $price_per_liter <= 0) {
@@ -27,7 +27,21 @@ if (!$id || !$tech_id || !$license_plate || !$date_recorded || $mileage <= 0 || 
     exit;
 }
 
-$total_price = $liters * $price_per_liter;
+// รับค่า total_price และปัดเศษอัตโนมัติ
+$total_price = isset($input['total_price']) && $input['total_price'] !== '' ? round(floatval($input['total_price'])) : round($liters * $price_per_liter);
+
+// แปลงวันที่กลับเป็นรูปแบบ MySQL
+$date_recorded_mysql = date('Y-m-d H:i:s', strtotime($date_recorded));
+
+// คำนวณระยะทางจากรอบก่อนหน้า (ไม่รวมตัวเอง)
+if ($mileage > 0) {
+    $stmtLastMile = $pdo->prepare("SELECT mileage FROM oil_records WHERE license_plate = ? AND date_recorded < ? AND id != ? ORDER BY date_recorded DESC LIMIT 1");
+    $stmtLastMile->execute([$license_plate, $date_recorded_mysql, $id]);
+    $lastMileage = $stmtLastMile->fetchColumn();
+    if ($lastMileage && $mileage >= $lastMileage) {
+        $distance = $mileage - $lastMileage;
+    }
+}
 
 // แปลงวันที่กลับเป็นรูปแบบ MySQL
 $date_recorded_mysql = date('Y-m-d H:i:s', strtotime($date_recorded));

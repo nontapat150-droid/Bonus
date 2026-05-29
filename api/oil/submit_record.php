@@ -20,9 +20,11 @@ try {
     $mileage = intval($_POST['mileage'] ?? 0);
     $liters = floatval($_POST['liters'] ?? 0);
     $price_per_liter = floatval($_POST['price_per_liter'] ?? 0);
-    $distance = floatval($_POST['distance'] ?? 0);
+    $distance = 0; // บังคับเป็น 0 เพื่อคำนวณใหม่เสมอ
     $job_count = intval($_POST['job_count'] ?? 0);
-    $total_price = $liters * $price_per_liter;
+    
+    // รับค่า total_price และปัดเศษอัตโนมัติ (หากไม่มีให้คูณและปัดเศษ)
+    $total_price = isset($_POST['total_price']) && $_POST['total_price'] !== '' ? round(floatval($_POST['total_price'])) : round($liters * $price_per_liter);
     $filler_name = trim($_SESSION['full_name'] ?? '');
 
     // แอดมินสามารถกำหนด tech_id ได้เอง แทนที่จะเป็นตัวเอง (คนคีย์)
@@ -66,7 +68,17 @@ try {
             $job_count = (int)$jobStmt->fetchColumn();
         }
     }
+// --- ส่วนเพิ่มเติม: คำนวณระยะทาง (กม.) อัตโนมัติจากไมล์รอบก่อนหน้า ---
+    if ($mileage > 0) {
+        $stmtLastMile = $pdo->prepare("SELECT mileage FROM oil_records WHERE license_plate = ? AND date_recorded < ? ORDER BY date_recorded DESC LIMIT 1");
+        $stmtLastMile->execute([$license_plate, $date_recorded]);
+        $lastMileage = $stmtLastMile->fetchColumn();
+        if ($lastMileage && $mileage >= $lastMileage) {
+            $distance = $mileage - $lastMileage;
+        }
+    }
 
+    // 1. Check and Lock Vehicle
     // 1. Check and Lock Vehicle
     $stmt = $pdo->prepare("SELECT id, last_tech_id FROM vehicles WHERE license_plate = ?");
     $stmt->execute([$license_plate]);
