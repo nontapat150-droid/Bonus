@@ -141,6 +141,7 @@
         <div class="tab-icon"><i data-lucide="camera" class="w-6 h-6"></i></div>
         <span class="tab-label">Scan</span>
     </a>
+    <?php if (!hasRole('sales')): ?>
     <a href="index.php?page=oil" class="tab-item <?= $page === 'oil' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="fuel" class="w-6 h-6"></i></div>
         <span class="tab-label">Oil</span>
@@ -149,6 +150,7 @@
         <div class="tab-icon"><i data-lucide="map" class="w-6 h-6"></i></div>
         <span class="tab-label">Map</span>
     </a>
+    <?php endif; ?>
 </nav>
 
 <script>
