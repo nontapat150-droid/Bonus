@@ -178,36 +178,46 @@
 </nav>
 
 <script>
-    // Desktop Sidebar Toggle Logic
-    const sidebar = document.getElementById('sidebar-desktop');
-    const toggleBtn = document.getElementById('sidebarToggle');
-    const mainContent = document.getElementById('main-content-area');
+    // สั่งให้รอโหลดหน้าเว็บทั้งหมด (ทั้งจาก index.php และ sidebar.php) ก่อนค่อยทำงาน
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // Desktop Sidebar Toggle Logic
+        const sidebar = document.getElementById('sidebar-desktop');
+        const toggleBtn = document.getElementById('sidebarToggle');
+        const mainContent = document.getElementById('main-content-area');
 
-    if (sidebar && toggleBtn) {
-        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            sidebar.classList.add('collapsed');
-            if(mainContent) mainContent.classList.add('sidebar-collapsed');
+        // ตอนนี้จะหาเจอแล้วแน่นอน
+        if (sidebar && toggleBtn && mainContent) {
+            
+            // อ่านค่าจาก LocalStorage ว่าเคยพับไว้ไหม
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('sidebar-collapsed');
+            }
+
+            // เวลากดปุ่ม พับ/ขยาย ให้สลับ class ให้ครบทั้งสองฝั่ง
+            toggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+            });
         }
 
-        toggleBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
-            if(mainContent) mainContent.classList.toggle('sidebar-collapsed');
-            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-        });
-    }
-
-    const userSect = document.querySelector('.sidebar-user');
-    const userTooltip = document.querySelector('.hidden-tooltip');
-    if(userSect && userTooltip) {
-        userSect.addEventListener('mouseenter', () => {
-            if(sidebar.classList.contains('collapsed')) {
-                userTooltip.style.opacity = '1';
-                userTooltip.style.pointerEvents = 'auto';
-            }
-        });
-        userSect.addEventListener('mouseleave', () => {
-            userTooltip.style.opacity = '0';
-            userTooltip.style.pointerEvents = 'none';
-        });
-    }
+        // Tooltip แสดงชื่อเวลาพับ Sidebar
+        const userSect = document.querySelector('.sidebar-user');
+        const userTooltip = document.querySelector('.hidden-tooltip');
+        
+        if (userSect && userTooltip && sidebar) {
+            userSect.addEventListener('mouseenter', () => {
+                if (sidebar.classList.contains('collapsed')) {
+                    userTooltip.style.opacity = '1';
+                    userTooltip.style.pointerEvents = 'auto';
+                }
+            });
+            userSect.addEventListener('mouseleave', () => {
+                userTooltip.style.opacity = '0';
+                userTooltip.style.pointerEvents = 'none';
+            });
+        }
+    });
 </script>
