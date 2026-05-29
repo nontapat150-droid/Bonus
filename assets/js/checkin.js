@@ -162,7 +162,7 @@ function renderTable(records) {
         return;
     }
 
-    records.forEach((item, index) => {
+    records.forEach((item) => {
         const dateObj = new Date(item.checkin_time);
         const tr = document.createElement('tr');
         
@@ -181,7 +181,8 @@ function renderTable(records) {
 
         let actionHtml = `<div class="flex justify-end md:justify-center gap-2">`;
         if (canEdit) {
-            actionHtml += `<button onclick="openEditCheckin(${index})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">🖼️ แก้ไขรูป</button>`;
+            // ปรับตรงนี้ให้ส่ง item.id แทนลำดับ Index ของ Array กันข้อมูลคลาดเคลื่อน
+            actionHtml += `<button onclick="openEditCheckin(${item.id})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">🖼️ แก้ไขรูป</button>`;
         }
         if (canDelete) {
             actionHtml += `<button onclick="deleteCheckin(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบข้อมูล</button>`;
@@ -225,46 +226,57 @@ function renderTable(records) {
 
 // ---------------- ระบบแก้ไข (สำหรับรูปภาพ) และ ลบ ----------------
 
-// เปิดหน้าต่าง Modal 
-window.openEditCheckin = function(index) {
-    const item = checkinData[index];
-    if(!item) return;
-
-    // เติมข้อมูลลง DOM
-    document.getElementById('edit_checkin_id').value = item.id;
-    
-    const editInput = document.getElementById('edit_checkin_image');
-    const preview = document.getElementById('editImagePreview');
-    const placeholder = document.getElementById('editImagePlaceholder');
-    const delBtn = document.getElementById('deleteImageBtn');
-    const modal = document.getElementById('editCheckinModal');
-
-    if (editInput) editInput.value = '';
-
-    if (item.image_path) {
-        if(preview) {
-            preview.src = `assets/uploads/checkins/${item.image_path}`;
-            preview.classList.remove('hidden');
-        }
-        if(placeholder) placeholder.classList.add('hidden');
+// เปิดหน้าต่าง Modal อย่างปลอดภัยด้วย ID
+window.openEditCheckin = function(id) {
+    try {
+        // ค้นหาข้อมูลจาก ID แทน Index ป้องกันปัญหาตารางคลาดเคลื่อน
+        const item = checkinData.find(r => r.id == id);
         
-        if (delBtn) {
-            if (window.USER_ROLE === 'super_admin') {
-                delBtn.classList.remove('hidden');
-            } else {
-                delBtn.classList.add('hidden');
-            }
+        if(!item) {
+            Toast.error('ไม่พบข้อมูล กรุณารีเฟรชหน้าเว็บ');
+            return;
         }
-    } else {
-        if(preview) {
-            preview.src = '';
-            preview.classList.add('hidden');
-        }
-        if(placeholder) placeholder.classList.remove('hidden');
-        if(delBtn) delBtn.classList.add('hidden');
-    }
 
-    if(modal) modal.classList.remove('hidden');
+        const idInput = document.getElementById('edit_checkin_id');
+        const editInput = document.getElementById('edit_checkin_image');
+        const preview = document.getElementById('editImagePreview');
+        const placeholder = document.getElementById('editImagePlaceholder');
+        const delBtn = document.getElementById('deleteImageBtn');
+        const modal = document.getElementById('editCheckinModal');
+
+        if(idInput) idInput.value = item.id;
+        if(editInput) editInput.value = '';
+
+        if (item.image_path) {
+            if(preview) {
+                preview.src = `assets/uploads/checkins/${item.image_path}`;
+                preview.classList.remove('hidden');
+            }
+            if(placeholder) placeholder.classList.add('hidden');
+            
+            if (delBtn) {
+                if (window.USER_ROLE === 'super_admin') {
+                    delBtn.classList.remove('hidden');
+                } else {
+                    delBtn.classList.add('hidden');
+                }
+            }
+        } else {
+            if(preview) {
+                preview.src = '';
+                preview.classList.add('hidden');
+            }
+            if(placeholder) placeholder.classList.remove('hidden');
+            if(delBtn) delBtn.classList.add('hidden');
+        }
+
+        if(modal) {
+            modal.classList.remove('hidden');
+        }
+    } catch (err) {
+        console.error("Error modal:", err);
+        alert('เกิดข้อผิดพลาดในการเปิดหน้าต่างแก้ไข');
+    }
 };
 
 // ปิดหน้าต่าง Modal
@@ -291,10 +303,9 @@ window.saveEditCheckin = async function() {
     const editInput = document.getElementById('edit_checkin_image');
 
     if (!idInput || !idInput.value) {
-        return Toast.error('ไม่พบ ID');
+        return Toast.error('ไม่พบ ID ข้อมูล');
     }
 
-    // บังคับให้เลือกรูปภาพ เพราะระบบให้อัปเดตแค่รูปเท่านั้น
     if (!editInput || !editInput.files || editInput.files.length === 0) {
         return Toast.error('กรุณาเลือกรูปภาพใหม่ก่อนทำการบันทึก');
     }

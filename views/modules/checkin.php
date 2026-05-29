@@ -96,7 +96,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="block md:table-row-group divide-y divide-gray-100">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
