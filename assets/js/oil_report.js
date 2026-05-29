@@ -419,7 +419,10 @@ window.openAddOilModal = function() {
     const selPlate = document.getElementById('manage_license_plate');
     if(selTech) {
         selTech.innerHTML = '<option value="">-- เลือกผู้เติมน้ำมัน --</option>';
-        editUsersList.forEach(u => selTech.innerHTML += `<option value="${u.id}">${u.full_name}</option>`);
+        // กรองเอาเฉพาะผู้ใช้ที่มี role เป็น 'technician'
+        editUsersList.filter(u => u.role === 'technician').forEach(u => {
+            selTech.innerHTML += `<option value="${u.id}">${u.full_name}</option>`;
+        });
     }
     if(selPlate) {
         selPlate.innerHTML = '<option value="">-- เลือกทะเบียนรถ --</option>';
@@ -447,7 +450,10 @@ window.openManageOilModal = function(index) {
     const selPlate = document.getElementById('manage_license_plate');
     if(selTech) {
         selTech.innerHTML = '<option value="">-- เลือกผู้เติมน้ำมัน --</option>';
-        editUsersList.forEach(u => selTech.innerHTML += `<option value="${u.id}">${u.full_name}</option>`);
+        // กรองเอาเฉพาะผู้ใช้ที่มี role เป็น 'technician'
+        editUsersList.filter(u => u.role === 'technician').forEach(u => {
+            selTech.innerHTML += `<option value="${u.id}">${u.full_name}</option>`;
+        });
         selTech.value = record.tech_id;
     }
     if(selPlate) {
