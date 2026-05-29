@@ -1,5 +1,18 @@
 // assets/js/oil_report.js
 
+// 🚀 บังคับสร้างระบบแจ้งเตือน (Toast) ในไฟล์นี้เลย เพื่อตัดปัญหา Cache จากไฟล์ common.js 100%
+window.Toast = {
+    success: (msg) => Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true }),
+    error: (msg) => Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true }),
+    info: (msg) => Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true }),
+    warning: (msg) => Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true })
+};
+
+window.Loader = {
+    show: () => Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }),
+    hide: () => Swal.close()
+};
+
 let combinedTrendChartInstance = null;
 let litersTrendChartInstance = null;
 let distanceTrendChartInstance = null;
@@ -115,12 +128,9 @@ window.updateChartType = function(chartId, type, datasetIndex = null) {
     else if (chartId === 'litersTrendChart') instance = litersTrendChartInstance;
     else if (chartId === 'distanceTrendChart') instance = distanceTrendChartInstance;
     else if (chartId === 'efficiencyChart') instance = efficiencyChartInstance;
-
     if (!instance) return;
-
     const chartType = type === 'area' ? 'line' : type;
     const fill = type === 'area';
-
     if (datasetIndex !== null) {
         instance.data.datasets[datasetIndex].type = chartType;
         instance.data.datasets[datasetIndex].fill = fill;
@@ -136,7 +146,6 @@ async function loadEditOptions() {
         const resU = await fetch('api/inventory/get_outbound_targets.php');
         const dataU = await resU.json();
         if(dataU.success) editUsersList = dataU.users;
-
         const resT = await fetch('api/oil/get_team_plates.php');
         const dataT = await resT.json();
         if(dataT.success) {
@@ -157,16 +166,13 @@ async function fetchData(silent = false) {
 
     try {
         const response = await fetch(`api/oil/get_records.php?start_date=${startDate}&end_date=${endDate}`);    
-        
-        // อ่านข้อมูลที่เซิร์ฟเวอร์ตอบกลับมาก่อน (เพื่อดักจับ Error กรณี PHP พัง)
         const textData = await response.text(); 
         
         let data;
         try {
             data = JSON.parse(textData);
         } catch (err) {
-            // หาก PHP ส่งข้อความแปลกๆ กลับมาที่ไม่ใช่ JSON ให้โชว์ในตาราง
-            if(tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-left text-rose-500 bg-rose-50 border border-rose-200"><b>รูปแบบข้อมูลจากเซิร์ฟเวอร์ผิดปกติ:</b><br><br><code>${textData.substring(0, 800).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></td></tr>`;
+            if(tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-left text-rose-500 bg-rose-50 border border-rose-200"><b>พบข้อผิดพลาดจากฝั่งเซิร์ฟเวอร์ (PHP Error):</b><br><br><code>${textData.substring(0, 800).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></td></tr>`;
             return;
         }
 
@@ -194,14 +200,12 @@ async function fetchData(silent = false) {
             if(tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-rose-500 font-bold">ไม่สามารถดึงข้อมูลได้: ${data.error}</td></tr>`;
         }
     } catch (error) {
-        // 🚨 กรณี JavaScript พัง หรือ เน็ตเวิร์กมีปัญหา ให้โชว์แจ้งเตือนโค้ดที่พังในตารางเลย
         console.error("Error Detail:", error);
         if(tbody) tbody.innerHTML = `
             <tr>
                 <td colspan="9" class="px-6 py-6 text-left text-rose-600 bg-rose-50 border border-rose-200">
                     <h3 class="font-black text-lg mb-2">🚨 พบข้อผิดพลาด (JS Error)</h3>
                     <pre class="text-xs whitespace-pre-wrap"><code>${error.stack || error.message}</code></pre>
-                    <p class="mt-4 font-bold text-slate-700">รบกวนแคปหน้าจอนี้ส่งให้ผมดูหน่อยครับ ผมจะบอกได้ทันทีว่าพังตรงไหน!</p>
                 </td>
             </tr>`;
     }
@@ -394,7 +398,6 @@ function renderTable(records) {
         tr.className = 'hover:bg-slate-50 transition-colors animate__animated animate__fadeIn';
         tr.style.animationDelay = `${index * 0.03}s`;
         
-        // Wrap number to prevent string type error from breaking table render
         tr.innerHTML = `
             <td class="px-4 py-4 whitespace-nowrap">${formattedDate}</td>
             <td class="px-4 py-4 font-medium text-slate-800">${row.tech_name}${fillerLine}</td>
