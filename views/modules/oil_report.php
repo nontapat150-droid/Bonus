@@ -236,10 +236,12 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ชื่อผู้เติม (ช่างเทคนิค) <span class="text-rose-500">*</span></label>
                     <select id="manage_tech_id" class="input w-full" onchange="autoFillVehicle(this.value)"></select>
                 </div>
+                
                 <div>
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ป้ายทะเบียนรถ (ทีม) <span class="text-rose-500">*</span></label>
-                    <input type="text" id="manage_license_plate" class="input w-full bg-slate-100 cursor-not-allowed" readonly placeholder="เลือกช่างเพื่อแสดงทะเบียนรถ">
+                    <select id="manage_license_plate" class="input w-full"></select>
                 </div>
+                
                 <div>
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">เลขไมล์รถ <span class="text-rose-500">*</span></label>
                     <input type="number" id="manage_mileage" class="input w-full" placeholder="Ex: 75000">
@@ -279,6 +281,13 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script src="assets/js/common.js?v=<?= time(); ?>"></script>
+<script src="assets/js/oil_report.js?v=<?= time(); ?>"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
