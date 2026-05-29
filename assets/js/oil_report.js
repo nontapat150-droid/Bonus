@@ -36,6 +36,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+window.autoFillVehicle = function(techId) {
+    if (!techId) return;
+    
+    // Find user in editUsersList
+    const user = editUsersList.find(u => u.id == techId);
+    if (user && user.team_name) {
+        const plateSelector = document.getElementById('manage_license_plate');
+        // Check if team_name exists in plate options
+        const exists = Array.from(plateSelector.options).some(opt => opt.value === user.team_name);
+        if (exists) {
+            plateSelector.value = user.team_name;
+            Toast.info(`เลือกทะเบียนรถ ${user.team_name} ให้อัตโนมัติสำหรับ ${user.full_name}`);
+        }
+    }
+};
+
 window.updateChartType = function(chartId, type, datasetIndex = null) {
     let instance = null;
     if (chartId === 'combinedTrendChart') instance = combinedTrendChartInstance;

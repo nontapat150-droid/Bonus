@@ -238,7 +238,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                 </div>
                 <div>
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ชื่อผู้เติม (ช่างเทคนิค) <span class="text-rose-500">*</span></label>
-                    <select id="manage_tech_id" class="input w-full"></select>
+                    <select id="manage_tech_id" class="input w-full" onchange="autoFillVehicle(this.value)"></select>
                 </div>
                 <div>
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">เลขไมล์รถ <span class="text-rose-500">*</span></label>
