@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     Swal.fire({
                         title: 'สำเร็จ!',
-                        text: 'ส่งแจ้งเตือนเรียบร้อยแล้ว',
+                        text: 'เพิ่มการแจ้งเตือนเรียบร้อยแล้ว',
                         icon: 'success',
                         confirmButtonColor: '#0ea5e9',
                         customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
@@ -114,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     notificationType.dispatchEvent(new Event('change'));
                     if (notificationCreateCard) notificationCreateCard.classList.add('hidden');
                     
-                    // บังคับให้โหลดแจ้งเตือนแบบกระชากขึ้นมาแสดงทันที
                     await loadNotifications(false);
                 } else {
                     Toast.error(data.error || 'ส่งแจ้งเตือนล้มเหลว');
@@ -167,13 +166,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (!data.success) return;
 
-            // จัดการตัวเลขตรงไอคอนกระดิ่งแบบไม่ต้องแก้ HTML
+            // จัดการแสดงตัวเลขลงไปบนกระดิ่ง
             notificationCount.textContent = data.unread_count || 0;
             if (data.unread_count > 0) {
                 unreadDot.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
-                unreadDot.className = "absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[9px] font-black rounded-full border-2 border-white shadow-sm animate__animated animate__heartBeat";
+                unreadDot.classList.remove('hidden');
+                unreadDot.classList.add('animate__animated', 'animate__heartBeat');
+                // ลบ animation ทิ้งหลังจากเล่นเสร็จเพื่อให้ครั้งหน้าเล่นใหม่ได้
+                setTimeout(() => {
+                    unreadDot.classList.remove('animate__heartBeat');
+                }, 1000);
             } else {
-                unreadDot.className = "hidden";
+                unreadDot.classList.add('hidden');
             }
 
             if (isBackground) return;
@@ -194,7 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     targetBadge = `<span class="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-lg">🔒 ${notification.target_name}</span>`;
                 }
 
-                // ปุ่มลบ (แสดงเฉพาะแอดมิน และซ่อนในพวกแจ้งเตือน AI)
                 const delBtnHtml = (isAdmin && !isSmartAlert) 
                     ? `<button onclick="window.deleteNotification(event, ${notification.id})" class="text-rose-400 hover:text-white hover:bg-rose-500 bg-rose-50 px-2 py-1.5 rounded-lg transition-all shadow-sm" title="ลบการแจ้งเตือนนี้"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`
                     : '';
@@ -209,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span class="text-slate-300">•</span> ${targetBadge}
                             </div>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 shrink-0">
                             ${delBtnHtml}
                             <div class="text-[10px] font-bold ${notification.is_read ? 'text-slate-400' : 'text-rose-500 px-2 py-1 bg-rose-50 rounded-lg shadow-sm'}">${notification.is_read ? 'อ่านแล้ว' : 'ใหม่'}</div>
                         </div>
@@ -264,9 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ระบบปุ่มลบ
     window.deleteNotification = async function(event, id) {
-        event.stopPropagation(); // หยุกการกดแล้วทะลุไปอ่านแจ้งเตือน
+        event.stopPropagation(); 
 
         const confirmResult = await Swal.fire({
             title: 'ยืนยันการลบ?',
@@ -291,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (data.success) {
                     Toast.success('ลบการแจ้งเตือนสำเร็จ');
-                    await loadNotifications(false); // โหลดตารางใหม่
+                    await loadNotifications(false); 
                 } else {
                     Toast.error(data.error || 'ไม่สามารถลบได้');
                 }
