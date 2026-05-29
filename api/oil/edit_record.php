@@ -26,6 +26,18 @@ if (!$id || !$tech_id || !$license_plate || !$date_recorded || $mileage <= 0 || 
     exit;
 }
 
+// 🚨 --- ระบบตรวจจับข้อมูลซ้ำสำหรับการแก้ไข (ต้องไม่ซ้ำกับ ID อื่น) ---
+$stmtCheckDup = $pdo->prepare("SELECT date_recorded FROM oil_records WHERE license_plate = ? AND mileage = ? AND id != ? LIMIT 1");
+$stmtCheckDup->execute([$license_plate, $mileage, $id]);
+$dupRecord = $stmtCheckDup->fetch(PDO::FETCH_ASSOC);
+
+if ($dupRecord) {
+    $dupDate = date('d/m/Y H:i', strtotime($dupRecord['date_recorded']));
+    echo json_encode(['success' => false, 'error' => "แก้ไขข้อมูลล้มเหลว: ตรวจพบข้อมูลซ้ำ! รถทะเบียน [{$license_plate}] มีเลขไมล์ [{$mileage}] ถูกบันทึกไว้ในรายการอื่นแล้ว (เมื่อ {$dupDate})"]);
+    exit;
+}
+// ----------------------------------------------------------
+
 $date_recorded_mysql = date('Y-m-d H:i:s', strtotime($date_recorded));
 $total_price = isset($input['total_price']) && $input['total_price'] !== '' ? round(floatval($input['total_price'])) : round($liters * $price_per_liter);
 
@@ -50,8 +62,7 @@ try {
         $liters, $price_per_liter, $total_price, $job_count, $id
     ]);
     
-    // 🚀 --- ระบบคำนวณระยะทางใหม่ทั้งหมดตามวันที่ ---
-    // ทำให้คำนวณทั้งทะเบียนรถใหม่และทะเบียนรถเดิม(หากมีการเปลี่ยน)
+    // ระบบคำนวณระยะทางใหม่ทั้งหมดตามวันที่
     $platesToRecalc = array_unique([$license_plate, $old_plate]);
     
     foreach ($platesToRecalc as $plateToRecalc) {
@@ -69,13 +80,12 @@ try {
             $dist = 0;
             if ($prev_mileage !== null) {
                 $dist = $curr_m - $prev_mileage;
-                if ($dist < 0) $dist = 0; // ป้องกันระยะทางติดลบกรณีคีย์เลขไมล์ผิด
+                if ($dist < 0) $dist = 0;
             }
             $updateDistStmt->execute([$dist, $rRow['id']]);
             $prev_mileage = $curr_m;
         }
     }
-    // -------------------------------------------------------------
 
     $pdo->commit();
     echo json_encode(['success' => true]);
