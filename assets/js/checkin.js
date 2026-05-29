@@ -12,11 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadPrompt = document.getElementById('uploadPrompt');
     const timeDisplay = document.getElementById('currentTime');
     const submitBtn = document.getElementById('submitBtn');
+    
+    // ผูกตัวแปรสำหรับ Modal แก้ไขรูปภาพ
     editImageInput = document.getElementById('edit_checkin_image');
     editImagePreview = document.getElementById('editImagePreview');
     editImagePlaceholder = document.getElementById('editImagePlaceholder');
     deleteImageBtn = document.getElementById('deleteImageBtn');
 
+    // ตั้งค่าเดือนปัจจุบันให้ตัวกรอง
     const now = new Date();
     const currMonth = now.toISOString().slice(0, 7);
     document.getElementById('filterMonth').value = currMonth;
@@ -24,10 +27,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     loadCheckinHistory();
 
+    // อัปเดตนาฬิกาแบบ Real-time
     setInterval(() => {
         timeDisplay.textContent = new Date().toLocaleTimeString('th-TH');
     }, 1000);
 
+    // แสดง Preview เมื่อเลือกรูปตอนเช็คอิน
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -45,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ยืนยันการเช็คอิน
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!fileInput.files[0]) return Toast.error('กรุณาถ่ายรูปเช็คอิน');
@@ -64,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 imagePreview.src = '';
                 imagePreview.classList.add('hidden');
                 uploadPrompt.classList.remove('hidden');
-                loadCheckinHistory();
+                loadCheckinHistory(); // โหลดตารางใหม่
             } else {
                 Toast.error(result.error);
             }
@@ -77,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // แสดง Preview รูปในหน้าต่างแก้ไขรูปภาพ
     if (editImageInput) {
         editImageInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -101,10 +108,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // เคลียร์ค่าตัวกรองเมื่อสลับการค้นหา
     document.getElementById('filterDate').addEventListener('change', function() { document.getElementById('filterMonth').value = ''; });
     document.getElementById('filterMonth').addEventListener('change', function() { document.getElementById('filterDate').value = ''; });
 });
 
+// ดึงข้อมูลตารางและ Dashboard
 async function loadCheckinHistory() {
     const fDate = document.getElementById('filterDate').value;
     const fMonth = document.getElementById('filterMonth').value;
@@ -137,6 +146,7 @@ async function loadCheckinHistory() {
     }
 }
 
+// สร้างตารางประวัติเช็คอิน
 function renderTable(records) {
     const tbody = document.getElementById('historyTableBody');
     tbody.innerHTML = '';
@@ -150,7 +160,6 @@ function renderTable(records) {
         const dateObj = new Date(item.checkin_time);
         const tr = document.createElement('tr');
         
-        // สไตล์สำหรับการ์ดบนมือถือ
         tr.className = 'block md:table-row bg-white border border-slate-100 md:border-b md:border-x-0 md:border-t-0 rounded-[1.5rem] md:rounded-none shadow-sm md:shadow-none mb-4 md:mb-0 hover:bg-slate-50 transition-all p-4 md:p-0';
         
         const badge = item.status_code === 'late' 
@@ -161,16 +170,15 @@ function renderTable(records) {
             ? `<a href="assets/uploads/checkins/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/checkins/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence"></a>`
             : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`;
 
-        // สิทธิ์การมองเห็นปุ่ม (ตัวแปร USER_ROLE ถูกส่งมาจากไฟล์ checkin.php)
-        const canEdit = ['super_admin', 'admin'].includes(window.USER_ROLE);
+        const canEdit = ['super_admin', 'admin', 'technician', 'sales'].includes(window.USER_ROLE);
         const canDelete = window.USER_ROLE === 'super_admin';
 
         let actionHtml = `<div class="flex justify-end md:justify-center gap-2">`;
         if (canEdit) {
-            actionHtml += `<button onclick="openEditCheckin(${index})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">✏️ แก้ไข</button>`;
+            actionHtml += `<button onclick="openEditCheckin(${index})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">🖼️ แก้ไขรูป</button>`;
         }
         if (canDelete) {
-            actionHtml += `<button onclick="deleteCheckin(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบ</button>`;
+            actionHtml += `<button onclick="deleteCheckin(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบข้อมูล</button>`;
         }
         if (!canEdit && !canDelete) {
             actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
@@ -211,20 +219,20 @@ function renderTable(records) {
 
 // ---------------- ระบบแก้ไข และ ลบ ----------------
 
+// เปิดหน้าต่างสำหรับอัปเดต/เปลี่ยนรูปภาพเท่านั้น
 window.openEditCheckin = function(index) {
     const item = checkinData[index];
     if(!item) return;
 
     document.getElementById('edit_checkin_id').value = item.id;
-    // แปลงเวลาให้เข้ากับ input type="datetime-local" (YYYY-MM-DDThh:mm)
-    const formattedTime = item.checkin_time.replace(' ', 'T').substring(0, 16);
-    document.getElementById('edit_checkin_time').value = formattedTime;
 
     if (editImageInput) editImageInput.value = '';
     if (item.image_path) {
         editImagePreview.src = `assets/uploads/checkins/${item.image_path}`;
         editImagePreview.classList.remove('hidden');
         editImagePlaceholder.classList.add('hidden');
+        
+        // ถ้าเป็น super_admin จะมีปุ่มลบรูปภาพอย่างเดียวขึ้นมา
         if (deleteImageBtn) {
             if (window.USER_ROLE === 'super_admin') {
                 deleteImageBtn.classList.remove('hidden');
@@ -243,6 +251,7 @@ window.openEditCheckin = function(index) {
     modal.classList.remove('hidden');
 };
 
+// ปิดหน้าต่าง Modal
 window.closeEditCheckinModal = function() {
     document.getElementById('editCheckinModal').classList.add('hidden');
     if (editImagePreview) {
@@ -254,18 +263,18 @@ window.closeEditCheckinModal = function() {
     if (deleteImageBtn) deleteImageBtn.classList.add('hidden');
 };
 
+// บันทึกการอัปเดตรูปภาพ
 window.saveEditCheckin = async function() {
     const id = document.getElementById('edit_checkin_id').value;
-    const newTime = document.getElementById('edit_checkin_time').value;
 
-    if(!newTime) return Toast.error('กรุณาระบุเวลาที่ต้องการแก้');
+    // บังคับให้เลือกรูปภาพ เพราะระบบให้อัปเดตแค่รูปเท่านั้น
+    if (!editImageInput || !editImageInput.files[0]) {
+        return Toast.error('กรุณาเลือกรูปภาพใหม่ก่อนทำการบันทึก');
+    }
 
     const formData = new FormData();
     formData.append('id', id);
-    formData.append('checkin_time', newTime);
-    if (editImageInput && editImageInput.files[0]) {
-        formData.append('checkin_image', editImageInput.files[0]);
-    }
+    formData.append('checkin_image', editImageInput.files[0]);
 
     Loader.show();
     try {
@@ -276,9 +285,9 @@ window.saveEditCheckin = async function() {
         const data = await res.json();
         
         if(data.success) {
-            Toast.success('แก้ไขข้อมูลเช็คอินเรียบร้อยแล้ว');
+            Toast.success('อัปเดตรูปภาพเรียบร้อยแล้ว');
             closeEditCheckinModal();
-            loadCheckinHistory(); // รีโหลดตารางใหม่เพื่อคำนวณสถานะใหม่
+            loadCheckinHistory(); 
         } else {
             Toast.error(data.error);
         }
@@ -289,13 +298,14 @@ window.saveEditCheckin = async function() {
     }
 };
 
+// ระบบลบเฉพาะรูปภาพอย่างเดียว (ทำงานผ่าน Modal สำหรับ Super Admin)
 window.deleteCheckinImage = async function(id) {
     if (!id) id = document.getElementById('edit_checkin_id').value;
     if (!id) return Toast.error('ไม่พบข้อมูลที่ต้องการลบรูป');
 
     Swal.fire({
         title: 'ยืนยันการลบรูปภาพ?',
-        text: 'รูปภาพจะถูกลบออกจากระบบ แต่ข้อมูลเช็คอินจะยังอยู่',
+        text: 'รูปภาพจะถูกลบออกจากระบบ แต่ข้อมูลบันทึกเวลาเช็คอินจะยังอยู่',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
@@ -328,15 +338,16 @@ window.deleteCheckinImage = async function(id) {
     });
 };
 
+// ระบบลบข้อมูลเช็คอินทั้งรายการพร้อมรูป (ทำงานที่ปุ่มของตารางหลัก)
 window.deleteCheckin = async function(id) {
     Swal.fire({
         title: 'ยืนยันการลบข้อมูล?',
-        text: "ข้อมูลนี้และรูปภาพจะถูกลบออกจากระบบอย่างถาวร!",
+        text: "ข้อมูลการเช็คอินนี้และรูปภาพจะถูกลบออกจากระบบอย่างถาวร!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
         cancelButtonColor: '#94a3b8',
-        confirmButtonText: 'ใช่, ลบเลย',
+        confirmButtonText: 'ใช่, ลบข้อมูลเลย',
         cancelButtonText: 'ยกเลิก'
     }).then(async (result) => {
         if (result.isConfirmed) {

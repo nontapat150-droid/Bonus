@@ -116,16 +116,16 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 </div>
 
-<div id="editCheckinModal" class="hidden fixed inset-0 bg-[var(--c-overlay)] z-[80] flex justify-center items-center p-4 backdrop-blur-sm">
-    <div class="bg-[var(--c-surface)] rounded-2xl w-full max-w-[95%] md:max-w-sm overflow-hidden animate__animated animate__zoomIn z-[90]" style="box-shadow: var(--shadow-4);">
-        <div class="bg-[var(--c-primary)] p-4 flex justify-between items-center text-white">
-            <h3 class="font-bold"><i data-lucide="edit-2" class="w-5 h-5 inline-block"></i> แก้ไขเวลาเช็คอิน</h3>
-            <button onclick="closeEditCheckinModal()" class="text-white/70 hover:text-white font-black text-xl">&times;</button>
+<div id="editCheckinModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-[95%] md:max-w-sm overflow-hidden shadow-2xl animate__animated animate__zoomIn">
+        <div class="bg-indigo-600 p-4 flex justify-between items-center text-white">
+            <h3 class="font-bold">✏️ แก้ไขรูปภาพเช็คอิน</h3>
+            <button onclick="closeEditCheckinModal()" class="text-white hover:text-rose-300 font-black text-xl">&times;</button>
         </div>
         <div class="p-6">
             <input type="hidden" id="edit_checkin_id">
-            <div class="mb-4">
-                <label class="block text-sm font-bold text-gray-700 mb-2">รูปภาพหลักฐาน</label>
+            <div class="mb-2">
+                <label class="block text-sm font-bold text-gray-700 mb-2">อัปโหลดรูปภาพใหม่</label>
                 <div id="editImagePreviewWrapper" class="relative">
                     <img id="editImagePreview" class="w-full h-48 object-cover rounded-xl border border-slate-200 hidden" src="" alt="Preview">
                     <div id="editImagePlaceholder" class="w-full h-48 rounded-xl border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-sm text-slate-500">
@@ -133,18 +133,15 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     </div>
                 </div>
                 <div class="mt-3 flex flex-wrap gap-2">
-                    <button type="button" onclick="document.getElementById('edit_checkin_image').click()" class="btn-primary px-4 py-2">เลือกไฟล์รูปใหม่</button>
+                    <button type="button" onclick="document.getElementById('edit_checkin_image').click()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all">เลือกไฟล์รูปใหม่</button>
                     <button type="button" id="deleteImageBtn" onclick="deleteCheckinImage()" class="px-4 py-2 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600 transition-all hidden">ลบรูปภาพ</button>
                 </div>
                 <input type="file" id="edit_checkin_image" name="checkin_image" accept="image/*" class="hidden">
             </div>
-            <label class="block text-sm font-bold text-gray-700 mb-2">เวลาเข้างานที่ต้องการแก้</label>
-            <input type="datetime-local" id="edit_checkin_time" class="w-full input">
-            <p class="text-xs text-slate-400 mt-2">* ระบบจะบันทึกเวลาใหม่ และคำนวณสถานะสาย/ตรงเวลา ใหม่อัตโนมัติ</p>
         </div>
         <div class="p-4 bg-slate-50 border-t flex justify-end gap-2">
             <button onclick="closeEditCheckinModal()" class="px-4 py-2 bg-white text-slate-600 rounded-xl font-bold border border-slate-200">ยกเลิก</button>
-            <button onclick="saveEditCheckin()" class="px-4 py-2 btn-primary">บันทึกเวลา</button>
+            <button onclick="saveEditCheckin()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700">อัปเดตรูปภาพ</button>
         </div>
     </div>
 </div>
