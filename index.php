@@ -338,34 +338,34 @@ if ($page === 'home') {
                 <i data-lucide="menu" class="w-6 h-6"></i>
             </button>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 ml-auto">
                 <button id="notificationBell" class="relative p-2 text-[var(--c-text-2)] hover:bg-[var(--c-surface-2)] rounded-full transition-colors">
-                    <i data-lucide="bell" class="w-5 h-5"></i>
-                    <span id="notificationUnreadDot" class="absolute top-1 right-1 w-2.5 h-2.5 bg-[var(--c-danger)] rounded-full border-2 border-[var(--c-surface)]"></span>
+                    <i data-lucide="bell" class="w-6 h-6"></i>
+                    <span id="notificationUnreadDot" class="hidden absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[9px] font-black rounded-full border-2 border-white shadow-sm">0</span>
                 </button>
             </div>
         </header>
 
-        <div id="notificationModal" class="hidden fixed inset-0 z-50 bg-black/40 p-4 backdrop-blur-sm">
-            <div class="mx-auto w-full max-w-3xl rounded-[32px] bg-white shadow-2xl overflow-hidden border border-slate-200">
-                <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-200">
+        <div id="notificationModal" class="hidden fixed inset-0 z-50 bg-black/40 p-4 backdrop-blur-sm flex justify-center items-center">
+            <div class="w-full max-w-3xl rounded-[32px] bg-white shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+                <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-200 shrink-0 bg-white z-10">
                     <div>
                         <h2 class="text-lg font-bold text-slate-900">แจ้งเตือนจากระบบ</h2>
                         <p class="text-slate-500 text-sm">ข้อความระบบและจากแอดมินให้ทีมของคุณ</p>
                     </div>
                     <button id="closeNotificationModal" class="text-slate-400 hover:text-slate-700 text-xl font-bold">&times;</button>
                 </div>
-                <div class="px-5 py-4 space-y-5">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+                <div class="px-5 py-4 space-y-5 overflow-y-auto custom-scrollbar flex-1 relative">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
                         <div class="text-slate-600 text-sm">แจ้งเตือนใหม่: <span id="notificationCount" class="font-semibold">0</span></div>
                         <?php if (hasRole(['admin', 'super_admin'])): ?>
-                        <button id="openNotificationCreate" class="inline-flex items-center justify-center rounded-2xl bg-sky-600 text-white px-4 py-2 text-sm font-bold hover:bg-sky-700 transition">ส่งแจ้งเตือน</button>
+                        <button id="openNotificationCreate" class="inline-flex items-center justify-center rounded-2xl bg-sky-600 text-white px-4 py-2 text-sm font-bold hover:bg-sky-700 transition">เพิ่มการแจ้งเตือน</button>
                         <?php endif; ?>
                     </div>
-                    <div id="notificationList" class="space-y-3 max-h-[calc(65vh-120px)] overflow-y-auto pr-2"></div>
 
                     <?php if (hasRole(['admin', 'super_admin'])): ?>
-                    <div id="notificationCreateCard" class="hidden rounded-3xl bg-slate-50 border border-slate-200 p-5 space-y-4">
+                    <div id="notificationCreateCard" class="hidden rounded-3xl bg-slate-50 border border-slate-200 p-5 space-y-4 shrink-0">
                         <div class="space-y-2">
                             <label class="text-sm font-semibold text-slate-700">หัวเรื่อง</label>
                             <input id="notificationTitle" type="text" placeholder="กรอกหัวเรื่อง" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none" />
@@ -400,10 +400,12 @@ if ($page === 'home') {
 
                         <div class="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
                             <button id="cancelNotificationCreate" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition">ยกเลิก</button>
-                            <button id="sendNotificationBtn" class="rounded-2xl bg-sky-600 text-white px-4 py-3 text-sm font-bold hover:bg-sky-700 transition shadow-md">ส่งแจ้งเตือน</button>
+                            <button id="sendNotificationBtn" class="rounded-2xl bg-sky-600 text-white px-4 py-3 text-sm font-bold hover:bg-sky-700 transition shadow-md">เพิ่มการแจ้งเตือน</button>
                         </div>
                     </div>
                     <?php endif; ?>
+
+                    <div id="notificationList" class="space-y-3 pb-4"></div>
                 </div>
             </div>
         </div>
