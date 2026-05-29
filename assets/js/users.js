@@ -104,11 +104,9 @@ function renderUserTable(users) {
                 </div>
             </td>
             <td class="px-8 py-5 font-mono text-xs text-slate-400">@${u.username}</td>
-            
             <td class="px-8 py-5">
                 <span class="bg-slate-100 text-slate-500 px-2 py-1 rounded text-xs tracking-widest font-mono cursor-help" title="รหัสผ่านถูกเข้ารหัสทางเดียวเพื่อความปลอดภัย หากลืมสามารถกดแก้ไขเพื่อตั้งใหม่ได้">********</span>
             </td>
-
             <td class="px-8 py-5">${roleBadges[u.role] || u.role}</td>
             <td class="px-8 py-5 text-slate-400 text-xs">${date}</td>
             <td class="px-8 py-5 text-center">
@@ -180,7 +178,17 @@ async function handleSaveUser(e) {
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData.entries());
 
-    Loader.show();
+    // 1. เรียกป๊อปอัปโหลดแบบ SweetAlert
+    Swal.fire({
+        title: 'กำลังบันทึกข้อมูล...',
+        text: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        },
+        customClass: { popup: 'rounded-3xl' }
+    });
+
     try {
         const res = await fetch('api/users/save_user.php', {
             method: 'POST',
@@ -189,8 +197,10 @@ async function handleSaveUser(e) {
         });
         const data = await res.json();
 
+        // สร้างดีเลย์จำลองนิดนึงเพื่อให้เห็น Loading ชัดเจน (600ms)
+        await new Promise(resolve => setTimeout(resolve, 600));
+
         if (data.success) {
-            // แจ้งเตือนด้วย SweetAlert2 แทน Toast
             Swal.fire({
                 title: 'สำเร็จ!',
                 text: data.message,
@@ -201,17 +211,19 @@ async function handleSaveUser(e) {
             closeUserModal();
             loadUsers();
         } else {
-            Swal.fire('เกิดข้อผิดพลาด', data.error, 'error');
+            Swal.fire({
+                title: 'เกิดข้อผิดพลาด',
+                text: data.error,
+                icon: 'error',
+                customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold' }
+            });
         }
     } catch (err) {
         Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
-    } finally {
-        Loader.hide();
     }
 }
 
 async function deleteUser(id) {
-    // ถามยืนยันลบด้วย SweetAlert2
     const result = await Swal.fire({
         title: 'ยืนยันการลบพนักงาน?',
         text: "ข้อมูลของพนักงานคนนี้จะถูกลบออกจากระบบอย่างถาวร",
@@ -226,7 +238,17 @@ async function deleteUser(id) {
 
     if (!result.isConfirmed) return;
 
-    Loader.show();
+    // เรียก Loading
+    Swal.fire({
+        title: 'กำลังลบข้อมูล...',
+        text: 'กรุณารอสักครู่',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        },
+        customClass: { popup: 'rounded-3xl' }
+    });
+
     try {
         const res = await fetch('api/users/delete_user.php', {
             method: 'POST',
@@ -234,6 +256,8 @@ async function deleteUser(id) {
             body: JSON.stringify({ id })
         });
         const data = await res.json();
+
+        await new Promise(resolve => setTimeout(resolve, 600)); // Delay 0.6s
 
         if (data.success) {
             Swal.fire({
@@ -249,8 +273,6 @@ async function deleteUser(id) {
         }
     } catch (err) {
         Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
-    } finally {
-        Loader.hide();
     }
 }
 
