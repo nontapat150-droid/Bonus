@@ -50,14 +50,14 @@ try {
         $liters, $price_per_liter, $total_price, $job_count, $id
     ]);
     
-    // 🚀 --- ระบบคำนวณระยะทางใหม่ทั้งหมด ---
+    // 🚀 --- ระบบคำนวณระยะทางใหม่ทั้งหมดตามวันที่ ---
     // ทำให้คำนวณทั้งทะเบียนรถใหม่และทะเบียนรถเดิม(หากมีการเปลี่ยน)
     $platesToRecalc = array_unique([$license_plate, $old_plate]);
     
     foreach ($platesToRecalc as $plateToRecalc) {
         if (empty($plateToRecalc)) continue;
         
-        $stmtRecalc = $pdo->prepare("SELECT id, mileage FROM oil_records WHERE license_plate = ? ORDER BY mileage ASC, date_recorded ASC");
+        $stmtRecalc = $pdo->prepare("SELECT id, mileage FROM oil_records WHERE license_plate = ? ORDER BY date_recorded ASC, id ASC");
         $stmtRecalc->execute([$plateToRecalc]);
         $recordsForRecalc = $stmtRecalc->fetchAll(PDO::FETCH_ASSOC);
         
@@ -67,8 +67,9 @@ try {
         foreach ($recordsForRecalc as $rRow) {
             $curr_m = (int)$rRow['mileage'];
             $dist = 0;
-            if ($prev_mileage !== null && $curr_m >= $prev_mileage) {
+            if ($prev_mileage !== null) {
                 $dist = $curr_m - $prev_mileage;
+                if ($dist < 0) $dist = 0; // ป้องกันระยะทางติดลบกรณีคีย์เลขไมล์ผิด
             }
             $updateDistStmt->execute([$dist, $rRow['id']]);
             $prev_mileage = $curr_m;
