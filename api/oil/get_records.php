@@ -51,7 +51,7 @@ try {
 
     // 3. ดึงข้อมูลทั้งหมด และเรียงจากเก่าไปใหม่ เพื่อคำนวณระยะทางและช่วงเวลา
     $tableSql = "SELECT
-                    o.id, o.tech_id, o.license_plate, o.liters, o.mileage, o.price_per_liter, o.total_price, o.date_recorded,
+                    o.id, o.tech_id, o.license_plate, o.liters, o.mileage, o.price_per_liter, o.total_price, o.date_recorded, o.job_count as stored_job_count,
                     u.full_name as tech_name, u.team_id,
                     t.id as record_team_id,
                     t.team_name,
@@ -85,10 +85,10 @@ try {
         $distance = $current_mileage - $prev_mileage;
         if ($distance < 0) $distance = 0; // กันพิมพ์เลขไมล์ผิด
 
-        $job_count = 0;
+        $job_count = (int)($row['stored_job_count'] ?? 0);
 
-        // คำนวณเคสงาน (Jobs) ที่ได้รับมอบหมายเฉพาะใน "ช่วงเวลานี้"
-        if ($team_id) {
+        // หากไม่มีข้อมูลในฐานข้อมูล (เป็น 0) ให้คำนวณเคสงาน (Jobs) อัตโนมัติ (Backward compatibility)
+        if ($job_count <= 0 && $team_id) {
             if ($prev_date) {
                 // มีการเติมครั้งที่แล้ว: หางานที่เกิดขึ้นระหว่างรอบที่แล้ว ถึง รอบนี้
                 $jobStmt = $pdo->prepare("
@@ -108,8 +108,8 @@ try {
                 $jobStmt->execute([$team_id, $current_date]);
             }
             $job_count = (int)$jobStmt->fetchColumn();
-            $total_jobs_period += $job_count;
         }
+        $total_jobs_period += $job_count;
 
         // คำนวณต้นทุน
         $cost_per_job = $job_count > 0 ? ($row['total_price'] / $job_count) : 0;
@@ -130,6 +130,20 @@ try {
         return strtotime($b['date_recorded']) - strtotime($a['date_recorded']);
     });
 
+    // 4. Monthly Summary for Comparison
+    $monthlySql = "SELECT
+                    DATE_FORMAT(o.date_recorded, '%Y-%m') as month_label,
+                    SUM(o.total_price) as monthly_cost,
+                    SUM(o.liters) as monthly_liters,
+                    SUM(o.job_count) as monthly_jobs
+                 FROM oil_records o
+                 WHERE YEAR(o.date_recorded) = YEAR(CURRENT_DATE)
+                 GROUP BY DATE_FORMAT(o.date_recorded, '%Y-%m')
+                 ORDER BY month_label ASC";
+    $stmtMonthly = $pdo->prepare($monthlySql);
+    $stmtMonthly->execute();
+    $monthlySummary = $stmtMonthly->fetchAll(PDO::FETCH_ASSOC);
+
     echo json_encode([
         'success' => true,
         'stats' => [
@@ -139,6 +153,7 @@ try {
             'total_jobs' => $total_jobs_period
         ],
         'chart' => $chartData,
+        'monthly' => $monthlySummary,
         'records' => $processed_records
     ]);
 

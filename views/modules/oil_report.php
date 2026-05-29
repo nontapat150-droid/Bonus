@@ -14,12 +14,23 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
         </div>
         <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
             <div class="flex items-center space-x-2">
+                <select id="dateRangePreset" class="input text-xs font-bold" onchange="applyDatePreset(this.value)">
+                    <option value="custom">กำหนดเอง</option>
+                    <option value="this_month">เดือนนี้</option>
+                    <option value="last_month">เดือนที่แล้ว</option>
+                </select>
                 <input type="date" id="start_date" class="input w-full sm:w-auto text-xs font-bold">
                 <span class="text-[var(--c-text-3)] text-xs font-bold">ถึง</span>
                 <input type="date" id="end_date" class="input w-full sm:w-auto text-xs font-bold">
             </div>
             <button id="filterBtn" class="btn-primary w-full sm:w-auto text-xs">
                 ค้นหา
+            </button>
+            <button onclick="toggleCompareMode()" id="compareBtn" class="btn-primary w-full sm:w-auto text-xs" style="background: var(--c-secondary); box-shadow: 0 4px 14px rgba(107, 114, 128, 0.40);">
+                <span class="mr-1"><i data-lucide="users" class="w-4 h-4"></i></span> เปรียบเทียบรถ
+            </button>
+            <button onclick="openAddOilModal()" class="btn-primary w-full sm:w-auto text-xs" style="background: var(--c-info); box-shadow: 0 4px 14px rgba(59,130,246, 0.40);">
+                <span class="mr-1"><i data-lucide="plus" class="w-4 h-4"></i></span> เพิ่มข้อมูลย้อนหลัง
             </button>
             <input type="file" id="importOilExcel" accept=".xlsx, .xls" class="hidden">
             <button onclick="document.getElementById('importOilExcel').click()" class="btn-primary w-full sm:w-auto text-xs" style="background: var(--c-warning); box-shadow: 0 4px 14px rgba(245,158,11, 0.40);">
@@ -28,49 +39,43 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             <button onclick="exportOilExcel()" class="btn-primary w-full sm:w-auto text-xs" style="background: var(--c-success); box-shadow: 0 4px 14px rgba(16,185,129, 0.40);">
                 <span class="mr-1"><i data-lucide="download" class="w-4 h-4"></i></span> ส่งออก Excel
             </button>
-            
+        </div>
+    </div>
+
+    <!-- Comparison Section (Hidden by default) -->
+    <div id="compareSection" class="hidden space-y-6">
+        <div class="card">
+            <h3 class="font-bold text-[var(--c-text-1)] mb-4 flex items-center">
+                <i data-lucide="pie-chart" class="w-5 h-5 mr-2 text-indigo-500"></i>
+                เปรียบเทียบสถิติระหว่างรถแต่ละคัน
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="h-80"><canvas id="compareCostChart"></canvas></div>
+                <div class="h-80"><canvas id="compareLitersChart"></canvas></div>
+                <div class="h-80"><canvas id="compareDistanceChart"></canvas></div>
+                <div class="h-80"><canvas id="compareJobsChart"></canvas></div>
+            </div>
         </div>
     </div>
 
     <div class="kpi-grid">
-        <div class="card relative group">
-            <div class="flex justify-between items-start mb-4">
-                <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-info-bg)] !text-[var(--c-info)]"><i data-lucide="dollar-sign" class="w-5 h-5"></i></div>
-            </div>
-            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">ค่าใช้จ่ายรวม (บาท)</p>
-            <h3 class="text-kpi"><span class="text-2xl text-[var(--c-text-3)]">฿</span><span id="stat_total_cost">0.00</span></h3>
-        </div>
-        <div class="card relative group">
-            <div class="flex justify-between items-start mb-4">
-                <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-success-bg)] !text-[var(--c-success)]"><i data-lucide="droplet" class="w-5 h-5"></i></div>
-            </div>
-            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">ปริมาณรวม (ลิตร)</p>
-            <h3 class="text-kpi"><span id="stat_total_liters">0.00</span></h3>
-        </div>
-        <div class="card relative group">
-            <div class="flex justify-between items-start mb-4">
-                <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[#FDF2F8] !text-[#EC4899]"><i data-lucide="file-text" class="w-5 h-5"></i></div>
-            </div>
-            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">รายการเบิกทั้งหมด</p>
-            <h3 class="text-kpi"><span id="stat_total_records">0</span></h3>
-        </div>
-        <div class="card relative group">
-            <div class="flex justify-between items-start mb-4">
-                <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-warning-bg)] !text-[var(--c-warning)]"><i data-lucide="clipboard" class="w-5 h-5"></i></div>
-            </div>
-            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">เคสงานทุกทีม</p>
-            <h3 class="text-kpi"><span id="stat_total_jobs">0</span></h3>
-        </div>
+        <!-- ... existing KPIs ... -->
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="card">
-            <h3 class="font-bold text-[var(--c-text-1)] mb-4">เปรียบเทียบค่าใช้จ่ายรายวัน (บาท)</h3>
-            <div class="relative h-64 w-full"><canvas id="costChart"></canvas></div>
+            <h3 class="font-bold text-[var(--c-text-1)] mb-4 flex items-center">
+                <i data-lucide="trending-up" class="w-5 h-5 mr-2 text-indigo-500"></i>
+                แนวโน้มค่าใช้จ่ายและปริมาณน้ำมัน
+            </h3>
+            <div class="relative h-64 w-full"><canvas id="combinedTrendChart"></canvas></div>
         </div>
         <div class="card">
-            <h3 class="font-bold text-[var(--c-text-1)] mb-4">แนวโน้มปริมาณการใช้น้ำมัน (ลิตร)</h3>
-            <div class="relative h-64 w-full"><canvas id="litersChart"></canvas></div>
+            <h3 class="font-bold text-[var(--c-text-1)] mb-4 flex items-center">
+                <i data-lucide="gauge" class="w-5 h-5 mr-2 text-sky-500"></i>
+                แนวโน้มระยะทางวิ่ง (กม.)
+            </h3>
+            <div class="relative h-64 w-full"><canvas id="distanceTrendChart"></canvas></div>
         </div>
     </div>
 
@@ -111,28 +116,59 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
     </div>
 </div>
 
-<div id="editOilModal" class="fixed inset-0 z-[80] hidden bg-slate-900 bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-md animate__animated animate__zoomIn z-[90]">
+<div id="manageOilModal" class="fixed inset-0 z-[80] hidden bg-slate-900 bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm overflow-y-auto">
+    <div class="bg-white rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-2xl my-auto animate__animated animate__zoomIn z-[90]">
         <div class="bg-indigo-600 p-5 border-b flex justify-between items-center text-white">
-            <h3 class="font-black text-lg"><i data-lucide="edit-2" class="w-5 h-5 inline-block"></i> แก้ไขข้อมูลผู้เติม / ทะเบียนรถ</h3>
-            <button onclick="closeEditOilModal()" class="text-indigo-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
+            <h3 id="manageOilModalTitle" class="font-black text-lg"><i data-lucide="edit-2" class="w-5 h-5 inline-block"></i> จัดการข้อมูลน้ำมัน</h3>
+            <button onclick="closeManageOilModal()" class="text-indigo-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
         </div>
-        <div class="p-6 space-y-5 bg-slate-50">
-            <input type="hidden" id="edit_record_id">
+        <div class="p-6 space-y-4 bg-slate-50 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <input type="hidden" id="manage_record_id">
             
-            <div>
-                <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ชื่อผู้เติม (ช่างเทคนิค)</label>
-                <select id="edit_tech_id" class="input"></select>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">วันที่บันทึก <span class="text-rose-500">*</span></label>
+                    <input type="datetime-local" id="manage_date_recorded" class="input w-full">
+                </div>
+                <div>
+                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ป้ายทะเบียนรถ (ทีม) <span class="text-rose-500">*</span></label>
+                    <select id="manage_license_plate" class="input w-full"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ชื่อผู้เติม (ช่างเทคนิค) <span class="text-rose-500">*</span></label>
+                    <select id="manage_tech_id" class="input w-full"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">เลขไมล์รถ <span class="text-rose-500">*</span></label>
+                    <input type="number" id="manage_mileage" class="input w-full" placeholder="Ex: 75000">
+                </div>
+                <div>
+                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">จำนวนลิตร <span class="text-rose-500">*</span></label>
+                    <input type="number" step="0.01" id="manage_liters" class="input w-full" placeholder="Ex: 30.50">
+                </div>
+                <div>
+                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ราคาต่อลิตร <span class="text-rose-500">*</span></label>
+                    <input type="number" step="0.01" id="manage_price_per_liter" class="input w-full" placeholder="Ex: 35.50">
+                </div>
+                <div>
+                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ระยะทาง (กม.)</label>
+                    <input type="number" step="0.01" id="manage_distance" class="input w-full" placeholder="Ex: 300 (เว้นว่างไว้เพื่อคำนวณอัตโนมัติจากไมล์ก่อนหน้า)">
+                </div>
+                <div>
+                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">จำนวนเคสงาน (รอบ)</label>
+                    <input type="number" id="manage_job_count" class="input w-full" placeholder="Ex: 5" value="0">
+                </div>
             </div>
             
-            <div>
-                <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ป้ายทะเบียนรถ (ทีม)</label>
-                <select id="edit_license_plate" class="input"></select>
+            <div id="manage_image_section" class="mt-4 pt-4 border-t border-slate-200">
+                <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">อัปโหลดสลิป/ใบเสร็จ (ถ้ามี)</label>
+                <input type="file" id="manage_images" multiple accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                <p class="text-[10px] text-slate-400 mt-1">อัปโหลดรูปภาพใหม่เพื่อแนบกับรายการเพิ่มใหม่ (แก้ไขไม่รองรับอัปโหลดรูปใหม่ ณ ตอนนี้)</p>
             </div>
         </div>
         <div class="p-4 border-t bg-white flex justify-end space-x-3">
-            <button onclick="closeEditOilModal()" class="px-6 py-2.5 rounded-xl text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 transition-colors">ยกเลิก</button>
-            <button onclick="saveEditOil()" class="btn-primary">บันทึกการแก้ไข</button>
+            <button onclick="closeManageOilModal()" class="px-6 py-2.5 rounded-xl text-slate-600 font-bold bg-slate-100 hover:bg-slate-200 transition-colors">ยกเลิก</button>
+            <button onclick="saveManageOil()" class="btn-primary" id="btnSaveManageOil">บันทึกข้อมูล</button>
         </div>
     </div>
 </div>

@@ -313,13 +313,97 @@ window.handleMainProductChange = function() {
             unitInput.value = matched.unit || 'ชิ้น';
         }
     }
-
     checkScanReady();
 };
 
 window.handleMainModelChange = function() {
     checkScanReady();
 };
+
+window.renderProductDropdown = function(filter = '') {
+    const dropdown = document.getElementById('productDropdown');
+    if (!dropdown) return;
+    
+    let items = [];
+    if (currentInboundMode === 'SN') {
+        items = Object.keys(masterOptions.sn_products || {});
+    } else {
+        items = (masterOptions.consumables || []).map(c => c.name);
+    }
+    
+    items = items.filter(i => i.toLowerCase().includes(filter.toLowerCase()));
+    
+    if (items.length === 0) {
+        dropdown.innerHTML = '<div class="p-3 text-sm text-slate-400 italic">พิมพ์เพื่อสร้างรายการใหม่...</div>';
+    } else {
+        dropdown.innerHTML = items.map(item => `
+            <div class="px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm font-semibold text-slate-700 border-b border-slate-100 last:border-0" 
+                 onclick="selectMainProduct('${item.replace(/'/g, "\\'")}')">
+                ${item}
+            </div>
+        `).join('');
+    }
+    dropdown.classList.remove('hidden');
+};
+
+window.selectMainProduct = function(name) {
+    const pInput = document.getElementById('mainProductInput');
+    pInput.value = name;
+    document.getElementById('productDropdown').classList.add('hidden');
+    handleMainProductChange();
+    
+    if (currentInboundMode === 'SN') {
+        const mInput = document.getElementById('mainModelInput');
+        mInput.value = '';
+        mInput.focus();
+        renderModelDropdown('');
+    }
+};
+
+window.renderModelDropdown = function(filter = '') {
+    const dropdown = document.getElementById('modelDropdown');
+    const pName = document.getElementById('mainProductInput')?.value.trim();
+    if (!dropdown || currentInboundMode !== 'SN') return;
+    
+    let items = [];
+    if (pName && masterOptions.sn_products && masterOptions.sn_products[pName]) {
+        items = masterOptions.sn_products[pName];
+    }
+    
+    items = items.filter(i => i.toLowerCase().includes(filter.toLowerCase()));
+    
+    if (items.length === 0) {
+        if (!pName) {
+             dropdown.innerHTML = '<div class="p-3 text-sm text-slate-400 italic">กรุณาเลือกชื่อสินค้าก่อน...</div>';
+        } else {
+             dropdown.innerHTML = '<div class="p-3 text-sm text-slate-400 italic">พิมพ์เพื่อสร้างรุ่นใหม่...</div>';
+        }
+    } else {
+        dropdown.innerHTML = items.map(item => `
+            <div class="px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm font-semibold text-slate-700 border-b border-slate-100 last:border-0" 
+                 onclick="selectMainModel('${item.replace(/'/g, "\\'")}')">
+                ${item}
+            </div>
+        `).join('');
+    }
+    dropdown.classList.remove('hidden');
+};
+
+window.selectMainModel = function(name) {
+    const mInput = document.getElementById('mainModelInput');
+    mInput.value = name;
+    document.getElementById('modelDropdown').classList.add('hidden');
+    handleMainModelChange();
+};
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#mainProductInput') && !e.target.closest('#productDropdown')) {
+        document.getElementById('productDropdown')?.classList.add('hidden');
+    }
+    if (!e.target.closest('#mainModelInput') && !e.target.closest('#modelDropdown')) {
+        document.getElementById('modelDropdown')?.classList.add('hidden');
+    }
+});
 
 window.checkScanReady = function() {
     const productValue = document.getElementById('mainProductInput')?.value.trim();
@@ -349,8 +433,21 @@ window.checkScanReady = function() {
     }
 };
 
-document.getElementById('mainProductInput')?.addEventListener('input', checkScanReady);
-document.getElementById('mainModelInput')?.addEventListener('input', checkScanReady);
+document.getElementById('mainProductInput')?.addEventListener('focus', function(e) {
+    renderProductDropdown(this.value.trim());
+});
+document.getElementById('mainProductInput')?.addEventListener('input', function(e) {
+    renderProductDropdown(this.value.trim());
+    checkScanReady();
+});
+
+document.getElementById('mainModelInput')?.addEventListener('focus', function(e) {
+    renderModelDropdown(this.value.trim());
+});
+document.getElementById('mainModelInput')?.addEventListener('input', function(e) {
+    renderModelDropdown(this.value.trim());
+    checkScanReady();
+});
 
 document.getElementById('scanInput')?.addEventListener('input', function(e) {
     clearTimeout(typingTimerIn);

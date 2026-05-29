@@ -15,7 +15,8 @@ $queries = [
     "ALTER TABLE `products` ADD UNIQUE KEY IF NOT EXISTS `unique_product_name` (`name`)",
     "ALTER TABLE `inventory_logs` MODIFY `target_user_id` int(11) DEFAULT NULL",
     "ALTER TABLE `inventory_logs` MODIFY `receiver_id` int(11) DEFAULT NULL",
-    "ALTER TABLE `inventory_items` ADD COLUMN IF NOT EXISTS `remark` TEXT DEFAULT NULL AFTER `status`"
+    "ALTER TABLE `inventory_items` ADD COLUMN IF NOT EXISTS `remark` TEXT DEFAULT NULL AFTER `status`",
+    "ALTER TABLE `oil_records` ADD COLUMN IF NOT EXISTS `job_count` INT DEFAULT 0 AFTER `distance`"
 ];
 
 foreach ($queries as $sql) {

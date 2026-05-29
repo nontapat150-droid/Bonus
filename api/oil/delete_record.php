@@ -49,7 +49,7 @@ try {
 
     // Remove files from disk after commit
     foreach ($paths as $p) {
-        $full = __DIR__ . '/../../' . ltrim($p, '/\\');
+        $full = __DIR__ . '/../../assets/uploads/oil_receipts/' . $p;
         if (file_exists($full)) {
             @unlink($full);
         }

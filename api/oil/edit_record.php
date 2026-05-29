@@ -15,20 +15,54 @@ $input = json_decode(file_get_contents('php://input'), true);
 $id = $input['id'] ?? null;
 $tech_id = $input['tech_id'] ?? null;
 $license_plate = trim($input['license_plate'] ?? '');
+$date_recorded = $input['date_recorded'] ?? null;
+$mileage = intval($input['mileage'] ?? 0);
+$liters = floatval($input['liters'] ?? 0);
+$price_per_liter = floatval($input['price_per_liter'] ?? 0);
+$distance = floatval($input['distance'] ?? 0);
+$job_count = intval($input['job_count'] ?? 0);
 
-if (!$id || !$tech_id || !$license_plate) {
+if (!$id || !$tech_id || !$license_plate || !$date_recorded || $mileage <= 0 || $liters <= 0 || $price_per_liter <= 0) {
     echo json_encode(['success' => false, 'error' => 'ข้อมูลไม่ครบถ้วน']);
     exit;
 }
 
+$total_price = $liters * $price_per_liter;
+
+// แปลงวันที่กลับเป็นรูปแบบ MySQL
+$date_recorded_mysql = date('Y-m-d H:i:s', strtotime($date_recorded));
+
 try {
-    // ดึงชื่อผู้เติมจาก users และอัปเดต tech_id, license_plate และ filler_name
     $stmtUser = $pdo->prepare("SELECT full_name FROM users WHERE id = ? LIMIT 1");
     $stmtUser->execute([$tech_id]);
     $fullName = $stmtUser->fetchColumn();
 
-    $stmt = $pdo->prepare("UPDATE oil_records SET tech_id = ?, license_plate = ?, filler_name = ? WHERE id = ?");
-    $stmt->execute([$tech_id, $license_plate, $fullName ?: null, $id]);
+    $stmt = $pdo->prepare("UPDATE oil_records SET 
+        tech_id = ?, 
+        license_plate = ?, 
+        filler_name = ?,
+        date_recorded = ?,
+        mileage = ?,
+        liters = ?,
+        price_per_liter = ?,
+        total_price = ?,
+        distance = ?,
+        job_count = ?
+        WHERE id = ?");
+    $stmt->execute([
+        $tech_id, 
+        $license_plate, 
+        $fullName ?: null,
+        $date_recorded_mysql,
+        $mileage,
+        $liters,
+        $price_per_liter,
+        $total_price,
+        $distance,
+        $job_count,
+        $id
+    ]);
+    
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
