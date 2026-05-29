@@ -10,14 +10,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const notificationCreateCard = document.getElementById('notificationCreateCard');
     const cancelNotificationCreate = document.getElementById('cancelNotificationCreate');
     const sendNotificationBtn = document.getElementById('sendNotificationBtn');
+    
+    // Form Elements
     const notificationTitle = document.getElementById('notificationTitle');
     const notificationMessage = document.getElementById('notificationMessage');
+    const notificationType = document.getElementById('notificationType');
+    const notificationTeamContainer = document.getElementById('notificationTeamContainer');
+    const notificationUserContainer = document.getElementById('notificationUserContainer');
     const notificationTeam = document.getElementById('notificationTeam');
+    const notificationUser = document.getElementById('notificationUser');
+    
     const isAdmin = window.NOTIFICATIONS_CONFIG?.isAdmin === true;
 
     if (!bellButton || !notificationModal) return;
 
-    // เช็คแจ้งเตือนทันทีตอนเปิดเว็บเพื่อแสดงจุดแดง
     loadNotifications(true);
 
     bellButton.addEventListener('click', async () => {
@@ -27,17 +33,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeNotificationModal.addEventListener('click', () => {
         notificationModal.classList.add('hidden');
-        if (notificationCreateCard) {
-            notificationCreateCard.classList.add('hidden');
-        }
+        if (notificationCreateCard) notificationCreateCard.classList.add('hidden');
     });
 
-    notificationModal.addEventListener('click', (event) => {
-        if (event.target === notificationModal) {
-            notificationModal.classList.add('hidden');
-            if (notificationCreateCard) notificationCreateCard.classList.add('hidden');
-        }
-    });
+    // สลับโหมดการส่ง (ทุกคน / ทีม / บุคคล)
+    if (notificationType) {
+        notificationType.addEventListener('change', () => {
+            if (notificationType.value === 'all') {
+                notificationTeamContainer.classList.add('hidden');
+                notificationUserContainer.classList.add('hidden');
+            } else if (notificationType.value === 'team') {
+                notificationTeamContainer.classList.remove('hidden');
+                notificationUserContainer.classList.add('hidden');
+            } else if (notificationType.value === 'user') {
+                notificationTeamContainer.classList.add('hidden');
+                notificationUserContainer.classList.remove('hidden');
+            }
+        });
+    }
 
     if (openCreateBtn) {
         openCreateBtn.addEventListener('click', async () => {
@@ -45,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 notificationCreateCard.classList.toggle('hidden');
                 if (!notificationCreateCard.classList.contains('hidden')) {
                     await loadNotificationTeams();
+                    await loadNotificationUsers();
                 }
             }
         });
@@ -60,37 +74,44 @@ document.addEventListener('DOMContentLoaded', () => {
         sendNotificationBtn.addEventListener('click', async () => {
             const title = notificationTitle.value.trim();
             const message = notificationMessage.value.trim();
+            const type = notificationType.value;
             const teamId = notificationTeam.value;
+            const targetUserId = notificationUser.value;
 
-            if (!title || !message) {
-                Toast.error('กรุณากรอกหัวเรื่องและข้อความแจ้งเตือน');
-                return;
-            }
+            if (!title || !message) return Toast.error('กรุณากรอกหัวเรื่องและข้อความ');
+            if (type === 'team' && !teamId) return Toast.error('กรุณาเลือกทีมเป้าหมาย');
+            if (type === 'user' && !targetUserId) return Toast.error('กรุณาเลือกพนักงานเป้าหมาย');
 
             sendNotificationBtn.disabled = true;
             try {
                 const formData = new FormData();
                 formData.append('title', title);
                 formData.append('message', message);
+                formData.append('type', type);
                 formData.append('team_id', teamId);
+                formData.append('target_user_id', targetUserId);
 
-                const res = await fetch('api/notifications/save_notification.php', {
-                    method: 'POST',
-                    body: formData
-                });
+                const res = await fetch('api/notifications/save_notification.php', { method: 'POST', body: formData });
                 const data = await res.json();
+                
                 if (data.success) {
-                    Toast.success('ส่งแจ้งเตือนเรียบร้อยแล้ว');
+                    Swal.fire({
+                        title: 'สำเร็จ!',
+                        text: 'ส่งแจ้งเตือนเรียบร้อยแล้ว',
+                        icon: 'success',
+                        confirmButtonColor: '#0ea5e9',
+                        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                    });
                     notificationTitle.value = '';
                     notificationMessage.value = '';
-                    notificationTeam.value = '';
+                    notificationType.value = 'all';
+                    notificationType.dispatchEvent(new Event('change')); // Reset dropdowns
                     if (notificationCreateCard) notificationCreateCard.classList.add('hidden');
                     await loadNotifications(false);
                 } else {
                     Toast.error(data.error || 'ส่งแจ้งเตือนล้มเหลว');
                 }
             } catch (error) {
-                console.error('save notification error', error);
                 Toast.error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
             } finally {
                 sendNotificationBtn.disabled = false;
@@ -100,25 +121,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadNotificationTeams() {
         if (!isAdmin || !notificationTeam) return;
-
         try {
             const res = await fetch('api/notifications/get_teams.php');
             const data = await res.json();
-            if (!data.success) {
-                Toast.error(data.error || 'ไม่สามารถโหลดทีมได้');
-                return;
+            if (data.success) {
+                notificationTeam.innerHTML = '<option value="">-- เลือกรถ/ทีม --</option>';
+                data.data.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id;
+                    option.textContent = `🚗 ${team.team_name}`;
+                    notificationTeam.appendChild(option);
+                });
             }
-            notificationTeam.innerHTML = '<option value="">ทุกทีม</option>';
-            data.data.forEach(team => {
-                const option = document.createElement('option');
-                option.value = team.id;
-                option.textContent = team.team_name;
-                notificationTeam.appendChild(option);
-            });
-        } catch (error) {
-            console.error('load teams error', error);
-            Toast.error('ไม่สามารถโหลดทีมได้');
-        }
+        } catch (error) {}
+    }
+
+    async function loadNotificationUsers() {
+        if (!isAdmin || !notificationUser) return;
+        try {
+            const res = await fetch('api/users/get_users.php');
+            const data = await res.json();
+            if (data.success) {
+                notificationUser.innerHTML = '<option value="">-- เลือกพนักงาน --</option>';
+                data.data.forEach(u => {
+                    const option = document.createElement('option');
+                    option.value = u.id;
+                    option.textContent = `👤 ${u.full_name} (@${u.username})`;
+                    notificationUser.appendChild(option);
+                });
+            }
+        } catch (error) {}
     }
 
     async function loadNotifications(isBackground = false) {
@@ -130,7 +162,6 @@ document.addEventListener('DOMContentLoaded', () => {
             notificationCount.textContent = data.unread_count || 0;
             unreadDot.classList.toggle('hidden', !(data.unread_count > 0));
 
-            // ถ้ารันอยู่เบื้องหลัง (เช่นตอนเปิดเว็บครั้งแรก) ไม่ต้องเรนเดอร์รายการ
             if (isBackground) return;
 
             notificationList.innerHTML = '';
@@ -142,66 +173,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
             data.notifications.forEach(notification => {
                 const item = document.createElement('div');
-                const isSmartAlert = typeof notification.id === 'string'; // เช็คว่าเป็นการเตือนอัตโนมัติหรือไม่
+                const isSmartAlert = typeof notification.id === 'string'; 
                 
+                // จัดสีป้ายกำกับเป้าหมาย
+                let targetBadge = `<span class="text-sky-600 font-bold bg-sky-50 px-2 py-0.5 rounded-lg">${notification.target_name}</span>`;
+                if(notification.target_name.includes('เฉพาะคุณ')) {
+                    targetBadge = `<span class="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-lg">🔒 เฉพาะคุณ</span>`;
+                }
+
                 item.className = `rounded-3xl border ${isSmartAlert ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'} p-4 shadow-sm cursor-pointer hover:border-indigo-400 transition-all`;
                 item.innerHTML = `
                     <div class="flex items-start justify-between gap-3">
                         <div>
-                            <div class="font-bold ${isSmartAlert ? 'text-amber-900' : 'text-slate-900'}">${escapeHtml(notification.title)}</div>
-                            <div class="text-[11px] text-slate-500 mt-1">
-                                <span class="font-bold ${isSmartAlert ? 'text-amber-700' : 'text-indigo-600'}">ส่งจาก: ${escapeHtml(notification.creator_name)}</span> • ${notification.team_name}
+                            <div class="font-bold text-base ${isSmartAlert ? 'text-amber-900' : 'text-slate-900'}">${escapeHtml(notification.title)}</div>
+                            <div class="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1 flex-wrap">
+                                <span class="font-bold ${isSmartAlert ? 'text-amber-700' : 'text-indigo-600'}">ส่งจาก: ${escapeHtml(notification.creator_name)}</span> 
+                                <span class="text-slate-300">•</span> ${targetBadge}
                             </div>
                         </div>
-                        <div class="text-xs font-bold ${notification.is_read ? 'text-slate-400' : 'text-red-600'}">${notification.is_read ? 'อ่านแล้ว' : 'ใหม่'}</div>
+                        <div class="text-xs font-bold ${notification.is_read ? 'text-slate-300' : 'text-rose-500 px-2 py-1 bg-rose-50 rounded-lg shadow-sm'}">${notification.is_read ? 'อ่านแล้ว' : 'ใหม่'}</div>
                     </div>
-                    <div class="mt-2 text-slate-700 text-sm line-clamp-2">
-                        <span class="font-bold">เนื้อหา:</span> ${escapeHtml(notification.message)}
+                    <div class="mt-3 text-slate-700 text-sm line-clamp-2 bg-slate-50/50 p-2 rounded-xl">
+                        ${escapeHtml(notification.message)}
                     </div>
                     <div class="text-[10px] text-slate-400 mt-2 text-right">${formatDate(notification.created_at)}</div>
                 `;
 
                 item.addEventListener('click', async () => {
-                    // มาร์คว่าอ่านแล้วเฉพาะรหัสที่เป็นตัวเลข (ดึงจากฐานข้อมูล) 
-                    // ส่วนรหัสที่ตั้งขึ้นมาเองเช่น alert_job จะไม่ถูกส่งไปเซิร์ฟเวอร์
-                    if (!isSmartAlert) {
-                        await markNotificationRead(notification.id);
-                    }
-                    openNotificationDetail(notification, isSmartAlert);
+                    if (!isSmartAlert) await markNotificationRead(notification.id);
+                    openNotificationDetail(notification, isSmartAlert, targetBadge);
                     await loadNotifications(false);
                 });
 
                 notificationList.appendChild(item);
             });
-        } catch (error) {
-            console.error('load notifications error', error);
-            if(!isBackground) Toast.error('ไม่สามารถโหลดการแจ้งเตือนได้');
-        }
+        } catch (error) {}
     }
 
     async function markNotificationRead(notificationId) {
         try {
-            await fetch('api/notifications/mark_read.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `notification_id=${encodeURIComponent(notificationId)}`
-            });
-        } catch (error) {
-            console.error('mark read error', error);
-        }
+            await fetch('api/notifications/mark_read.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `notification_id=${encodeURIComponent(notificationId)}` });
+        } catch (error) {}
     }
 
-    function openNotificationDetail(notification, isSmartAlert) {
+    function openNotificationDetail(notification, isSmartAlert, targetBadge) {
         const detailHtml = `
             <div class="space-y-4 text-left">
                 <div class="text-xl font-bold ${isSmartAlert ? 'text-amber-600' : 'text-slate-900'}">${escapeHtml(notification.title)}</div>
-                <div class="text-xs text-slate-500 border-b border-slate-100 pb-3">
+                <div class="text-xs text-slate-500 border-b border-slate-100 pb-3 leading-loose">
                     <span class="font-bold text-indigo-600">ผู้ส่ง: ${escapeHtml(notification.creator_name)}</span><br>
-                    กลุ่มเป้าหมาย: ${notification.team_name} <br>
+                    เป้าหมาย: ${targetBadge} <br>
                     เวลา: ${formatDate(notification.created_at)}
                 </div>
-                <div class="text-slate-700 whitespace-pre-line text-sm leading-relaxed p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span class="font-black text-slate-800">💬 ข้อความ:</span><br><br>
+                <div class="text-slate-700 whitespace-pre-line text-sm leading-relaxed p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
                     ${escapeHtml(notification.message)}
                 </div>
             </div>
@@ -212,9 +236,9 @@ document.addEventListener('DOMContentLoaded', () => {
             showCloseButton: true,
             showConfirmButton: true,
             confirmButtonText: 'ปิดหน้าต่าง',
-            confirmButtonColor: '#4f46e5',
+            confirmButtonColor: '#0ea5e9',
             width: '600px',
-            customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl font-bold px-6 py-2' }
+            customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl font-bold px-6 py-2 shadow-md' }
         });
     }
 
@@ -225,11 +249,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function escapeHtml(text) {
-        return String(text)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
+        return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 });
