@@ -25,11 +25,11 @@
         </a>
 
         <?php if (!hasRole('sales')): ?>
-        <a href="index.php?page=oil" class="nav-item <?= $page === 'oil' ? 'active' : '' ?>" data-label="ค่าแรกเข้า">
+        <a href="index.php?page=start_day" class="nav-item <?= $page === 'start_day' ? 'active' : '' ?>" data-label="ค่าแรกเข้า">
             <div class="icon"><i data-lucide="gauge"></i></div>
             <span class="nav-label">ค่าแรกเข้า</span>
         </a>
-
+        
         <a href="index.php?page=oil" class="nav-item <?= $page === 'oil' ? 'active' : '' ?>" data-label="น้ำมันและยานพาหนะ">
             <div class="icon"><i data-lucide="fuel"></i></div>
             <span class="nav-label">น้ำมันและยานพาหนะ</span>
@@ -102,7 +102,7 @@
             <span class="nav-label">ระบบเช็คอิน</span>
         </a>
         <?php if (!hasRole('sales')): ?>
-        <a href="index.php?page=oil" class="nav-item <?= $page === 'oil' ? 'active' : '' ?>">
+        <a href="index.php?page=start_day" class="nav-item <?= $page === 'start_day' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="gauge"></i></div>
             <span class="nav-label">ค่าแรกเข้า</span>
         </a>
@@ -149,7 +149,7 @@
         <span class="tab-label">Scan</span>
     </a>
     <?php if (!hasRole('sales')): ?>
-    <a href="index.php?page=oil" class="tab-item <?= $page === 'oil' ? 'active' : '' ?>">
+    <a href="index.php?page=start_day" class="tab-item <?= $page === 'start_day' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="gauge" class="w-6 h-6"></i></div>
         <span class="tab-label">แรกเข้า</span>
     </a>
@@ -176,10 +176,9 @@
     // Desktop Sidebar Toggle Logic
     const sidebar = document.getElementById('sidebar-desktop');
     const toggleBtn = document.getElementById('sidebarToggle');
-    const mainContent = document.getElementById('main-content-area'); // Need to ensure this ID is in index.php
+    const mainContent = document.getElementById('main-content-area');
 
     if (sidebar && toggleBtn) {
-        // Load state
         if (localStorage.getItem('sidebarCollapsed') === 'true') {
             sidebar.classList.add('collapsed');
             if(mainContent) mainContent.classList.add('sidebar-collapsed');
@@ -192,7 +191,6 @@
         });
     }
 
-    // Tooltip logic for user profile when collapsed
     const userSect = document.querySelector('.sidebar-user');
     const userTooltip = document.querySelector('.hidden-tooltip');
     if(userSect && userTooltip) {
