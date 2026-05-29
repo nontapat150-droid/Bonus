@@ -152,12 +152,31 @@ async function fetchData(silent = false) {
     const tbody = document.getElementById('oilTableBody');
     
     if(tbody && !silent) {
-        tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-12 text-center text-slate-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดข้อมูลรายงาน...</div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-12 text-center text-slate-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดข้อมูล...</div></td></tr>';
     }
 
     try {
         const response = await fetch(`api/oil/get_records.php?start_date=${startDate}&end_date=${endDate}`);    
-        const data = await response.json();
+        
+        // อ่านค่าที่เซิร์ฟเวอร์ส่งมาเป็น "ข้อความดิบ" ก่อน เพื่อดักจับปัญหา
+        const textData = await response.text(); 
+        
+        let data;
+        try {
+            data = JSON.parse(textData); // พยายามแปลงเป็น JSON
+        } catch (err) {
+            console.error("JSON Parse Error:", err);
+            console.error("Raw Server Response:", textData);
+            if(tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-rose-500 font-bold">เซิร์ฟเวอร์ส่งข้อมูลกลับมาผิดรูปแบบ (ดูรายละเอียดที่ Popup)</td></tr>`;
+            
+            // แจ้งเตือน Popup พร้อมโชว์โค้ด Error ที่แท้จริงออกมา
+            Swal.fire({
+                icon: 'error',
+                title: 'เซิร์ฟเวอร์ตอบกลับผิดพลาด',
+                html: '<div class="text-left text-sm mb-2 text-rose-600">คาดว่าเกิด Error ที่ฝั่ง PHP หรือ Session หมดอายุ</div><div class="bg-slate-100 p-3 rounded-lg overflow-auto max-h-40 text-xs text-left border border-slate-300"><code>' + textData.replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</code></div>'
+            });
+            return;
+        }
 
         if (data.success) {
             updateStats(data.stats);
@@ -167,25 +186,16 @@ async function fetchData(silent = false) {
             
             if (isCompareMode) {
                 const selector = document.getElementById('vehicleCompareSelector');
-                if(selector) {
-                    selector.innerHTML = ''; 
-                    fillVehicleCompareSelector();
-                }
+                if(selector) { selector.innerHTML = ''; fillVehicleCompareSelector(); }
             }
 
             renderAnalyticsCharts();
-            if (isCompareMode) {
-                renderComparisonCharts();
-                renderMonthlyCompareChart();
-            }
+            if (isCompareMode) { renderComparisonCharts(); renderMonthlyCompareChart(); }
             renderTable(data.records);
             
             if (!silent) {
-                if (data.records.length > 0) {
-                    Toast.success(`โหลดข้อมูลสำเร็จ พบทั้งหมด ${data.records.length} รายการ`);
-                } else {
-                    Toast.info('ไม่พบข้อมูลในช่วงเวลาที่เลือก');
-                }
+                if (data.records.length > 0) Toast.success(`โหลดข้อมูลสำเร็จ พบทั้งหมด ${data.records.length} รายการ`);
+                else Toast.info('ไม่พบข้อมูลในช่วงเวลาที่เลือก');
             }
         } else {
             if(!silent) Toast.error(`เกิดข้อผิดพลาด: ${data.error}`);
@@ -193,8 +203,8 @@ async function fetchData(silent = false) {
         }
     } catch (error) {
         console.error("Error fetching data:", error);
-        if(!silent) Toast.error('ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้');
-        if(tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-rose-500 font-bold">ไม่สามารถโหลดข้อมูลได้ กรุณาตรวจสอบคอนโซล</td></tr>`;
+        if(!silent) Toast.error('ไม่สามารถเชื่อมต่อกับระบบได้');
+        if(tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-rose-500 font-bold">การเชื่อมต่อล้มเหลว กรุณาตรวจสอบอินเทอร์เน็ต</td></tr>`;
     }
 }
 
