@@ -391,7 +391,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 </div>
 
 <div id="snListModal" class="fixed inset-0 z-[80] hidden bg-black bg-opacity-60 flex justify-center items-center p-4 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-lg flex flex-col max-h-[90vh] transform transition-all animate__animated animate__zoomIn z-[90]">
+    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-[95%] md:max-w-4xl flex flex-col max-h-[90vh] transform transition-all animate__animated animate__zoomIn z-[90]">
         <div class="bg-indigo-600 p-4 border-b flex justify-between items-center text-white">
             <h3 class="font-bold text-lg flex items-center"><span class="mr-2"><i data-lucide="tag" class="w-5 h-5 inline-block"></i></span> รายการหมายเลขซีเรียล</h3>
             <button onclick="closeSnModal()" class="text-indigo-200 hover:text-white text-2xl font-bold leading-none">&times;</button>
@@ -400,12 +400,12 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             <h4 id="snModalProductName" class="text-lg font-black text-slate-800">ชื่อสินค้า</h4>
             <p id="snModalModelName" class="text-sm text-slate-500 mb-4">รุ่น: -</p>
             <div class="relative w-full">
-                <input type="text" id="searchSnInModal" placeholder="ค้นหาหมายเลข SN ภายในรุ่นนี้..." class="w-full pl-10 pr-4 py-2 input font-mono">
-                <span class="absolute left-3 top-2.5 text-slate-400"><i data-lucide="search" class="w-5 h-5 inline-block"></i></span>
+                <input type="text" id="searchSnInModal" placeholder="ค้นหาหมายเลข SN ภายในรุ่นนี้..." class="w-full pl-10 pr-4 py-3 border-2 border-indigo-100 rounded-xl focus:border-indigo-500 focus:ring-0 font-mono text-base transition-colors shadow-sm">
+                <span class="absolute left-4 top-3.5 text-indigo-400"><i data-lucide="search" class="w-5 h-5 inline-block"></i></span>
             </div>
         </div>
         <div class="p-5 overflow-y-auto bg-white flex-1 custom-scrollbar">
-            <div id="snModalListContainer" class="grid grid-cols-2 gap-3">
+            <div id="snModalListContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 </div>
         </div>
         <div class="p-4 border-t bg-slate-50 flex justify-between items-center">
