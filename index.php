@@ -374,15 +374,33 @@ if ($page === 'home') {
                             <label class="text-sm font-semibold text-slate-700">ข้อความ</label>
                             <textarea id="notificationMessage" rows="4" placeholder="กรอกข้อความแจ้งเตือน" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none"></textarea>
                         </div>
+                        
                         <div class="space-y-2">
-                            <label class="text-sm font-semibold text-slate-700">ส่งถึงทีม</label>
-                            <select id="notificationTeam" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none">
-                                <option value="">ทุกทีม</option>
+                            <label class="text-sm font-semibold text-slate-700">รูปแบบการส่ง</label>
+                            <select id="notificationType" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none font-bold text-sky-700">
+                                <option value="all">📢 ส่งให้ทุกคน</option>
+                                <option value="team">🚗 ส่งเป็นทีม</option>
+                                <option value="user">👤 ส่งรายบุคคล</option>
                             </select>
                         </div>
-                        <div class="flex flex-col sm:flex-row sm:justify-end gap-3">
+
+                        <div id="notificationTeamContainer" class="space-y-2 hidden">
+                            <label class="text-sm font-semibold text-slate-700">ส่งถึงทีม</label>
+                            <select id="notificationTeam" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none">
+                                <option value="">กำลังโหลด...</option>
+                            </select>
+                        </div>
+
+                        <div id="notificationUserContainer" class="space-y-2 hidden">
+                            <label class="text-sm font-semibold text-slate-700">ส่งถึงพนักงาน</label>
+                            <select id="notificationUser" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none">
+                                <option value="">กำลังโหลด...</option>
+                            </select>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
                             <button id="cancelNotificationCreate" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition">ยกเลิก</button>
-                            <button id="sendNotificationBtn" class="rounded-2xl bg-sky-600 text-white px-4 py-3 text-sm font-bold hover:bg-sky-700 transition">ส่งแจ้งเตือน</button>
+                            <button id="sendNotificationBtn" class="rounded-2xl bg-sky-600 text-white px-4 py-3 text-sm font-bold hover:bg-sky-700 transition shadow-md">ส่งแจ้งเตือน</button>
                         </div>
                     </div>
                     <?php endif; ?>

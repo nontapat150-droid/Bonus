@@ -1,4 +1,5 @@
 <?php
+// api/notifications/save_notification.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
 header('Content-Type: application/json');
@@ -9,7 +10,10 @@ if (!hasRole(['admin', 'super_admin'])) {
     exit;
 }
 
+// รับค่าจาก Form
+$type = $_POST['type'] ?? 'all'; 
 $team_id = $_POST['team_id'] ?? null;
+$target_user_id = $_POST['target_user_id'] ?? null;
 $title = trim($_POST['title'] ?? '');
 $message = trim($_POST['message'] ?? '');
 
@@ -18,25 +22,31 @@ if ($title === '' || $message === '') {
     exit;
 }
 
-$team_id = ($team_id === '' || $team_id === 'all') ? null : (int)$team_id;
+if ($type === 'team' && empty($team_id)) {
+    echo json_encode(['success' => false, 'error' => 'กรุณาเลือกทีมเป้าหมาย']);
+    exit;
+}
+if ($type === 'user' && empty($target_user_id)) {
+    echo json_encode(['success' => false, 'error' => 'กรุณาเลือกพนักงานเป้าหมาย']);
+    exit;
+}
+
+$final_team_id = ($type === 'team') ? (int)$team_id : null;
+$final_target_user_id = ($type === 'user') ? (int)$target_user_id : null;
 $created_by = $_SESSION['user_id'];
 
 try {
-    $pdo->exec("CREATE TABLE IF NOT EXISTS notifications (
-        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        message TEXT NOT NULL,
-        team_id INT DEFAULT NULL,
-        created_by INT NOT NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE SET NULL,
-        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    // อัปเดตตารางฐานข้อมูลอัตโนมัติให้รองรับ "รายบุคคล" (ทำครั้งเดียวจบ)
+    try {
+        $pdo->exec("ALTER TABLE notifications ADD COLUMN target_user_id INT DEFAULT NULL AFTER team_id");
+        $pdo->exec("ALTER TABLE notifications ADD CONSTRAINT fk_notif_target_user FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE");
+    } catch (Exception $e) { }
 
-    $stmt = $pdo->prepare("INSERT INTO notifications (title, message, team_id, created_by) VALUES (?, ?, ?, ?)");
-    $stmt->execute([$title, $message, $team_id, $created_by]);
+    $stmt = $pdo->prepare("INSERT INTO notifications (title, message, team_id, target_user_id, created_by) VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute([$title, $message, $final_team_id, $final_target_user_id, $created_by]);
 
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
+?>
