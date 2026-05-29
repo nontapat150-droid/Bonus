@@ -340,26 +340,59 @@ if ($page === 'home') {
                 <i data-lucide="menu" class="w-6 h-6"></i>
             </button>
 
-            <!-- Search Desktop -->
-            <div class="hidden md:flex items-center gap-4 flex-1">
-                <div class="relative group">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--c-text-3)] group-focus-within:text-[var(--c-primary)] transition-colors"></i>
-                    <input type="text" placeholder="Search anything... (⌘K)" class="input pl-9 w-80">
-                    <span class="absolute right-3 top-1/2 -translate-y-1/2 bg-[var(--c-surface)] border border-[var(--c-border)] rounded text-[10px] px-1.5 py-0.5 text-[var(--c-text-3)] font-bold">⌘K</span>
-                </div>
-            </div>
+            
 
             <div class="flex items-center gap-3">
-                <button class="relative p-2 text-[var(--c-text-2)] hover:bg-[var(--c-surface-2)] rounded-full transition-colors">
+                <button id="notificationBell" class="relative p-2 text-[var(--c-text-2)] hover:bg-[var(--c-surface-2)] rounded-full transition-colors">
                     <i data-lucide="bell" class="w-5 h-5"></i>
-                    <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-[var(--c-danger)] rounded-full border-2 border-[var(--c-surface)]"></span>
+                    <span id="notificationUnreadDot" class="absolute top-1 right-1 w-2.5 h-2.5 bg-[var(--c-danger)] rounded-full border-2 border-[var(--c-surface)]"></span>
                 </button>
-                <a href="index.php?page=checkin" class="btn-primary">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    <span class="hidden md:inline">New Request</span>
-                </a>
             </div>
         </header>
+
+        <div id="notificationModal" class="hidden fixed inset-0 z-50 bg-black/40 p-4 backdrop-blur-sm">
+            <div class="mx-auto w-full max-w-3xl rounded-[32px] bg-white shadow-2xl overflow-hidden border border-slate-200">
+                <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-200">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">แจ้งเตือนจากระบบ</h2>
+                        <p class="text-slate-500 text-sm">ข้อความระบบและจากแอดมินให้ทีมของคุณ</p>
+                    </div>
+                    <button id="closeNotificationModal" class="text-slate-400 hover:text-slate-700 text-xl font-bold">&times;</button>
+                </div>
+                <div class="px-5 py-4 space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div class="text-slate-600 text-sm">แจ้งเตือนใหม่: <span id="notificationCount" class="font-semibold">0</span></div>
+                        <?php if (hasRole(['admin', 'super_admin'])): ?>
+                        <button id="openNotificationCreate" class="inline-flex items-center justify-center rounded-2xl bg-sky-600 text-white px-4 py-2 text-sm font-bold hover:bg-sky-700 transition">ส่งแจ้งเตือน</button>
+                        <?php endif; ?>
+                    </div>
+                    <div id="notificationList" class="space-y-3 max-h-[calc(65vh-120px)] overflow-y-auto pr-2"></div>
+
+                    <?php if (hasRole(['admin', 'super_admin'])): ?>
+                    <div id="notificationCreateCard" class="hidden rounded-3xl bg-slate-50 border border-slate-200 p-5 space-y-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">หัวเรื่อง</label>
+                            <input id="notificationTitle" type="text" placeholder="กรอกหัวเรื่อง" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">ข้อความ</label>
+                            <textarea id="notificationMessage" rows="4" placeholder="กรอกข้อความแจ้งเตือน" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none"></textarea>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">ส่งถึงทีม</label>
+                            <select id="notificationTeam" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none">
+                                <option value="">ทุกทีม</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-end gap-3">
+                            <button id="cancelNotificationCreate" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition">ยกเลิก</button>
+                            <button id="sendNotificationBtn" class="rounded-2xl bg-sky-600 text-white px-4 py-3 text-sm font-bold hover:bg-sky-700 transition">ส่งแจ้งเตือน</button>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
 
         <main class="p-4 md:p-6 page-view">
             
@@ -598,5 +631,13 @@ if ($page === 'home') {
 
     </script>
 
+    <script>
+        window.NOTIFICATIONS_CONFIG = {
+            isAdmin: <?php echo hasRole(['admin', 'super_admin']) ? 'true' : 'false'; ?>
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="assets/js/common.js"></script>
+    <script src="assets/js/notifications.js"></script>
 </body>
 </html>

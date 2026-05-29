@@ -1,31 +1,6 @@
 // assets/js/inventory.js
 
-// ====================================================
-// 1. ตั้งค่าระบบแจ้งเตือน (Toast & Loader)
-// ====================================================
-const Toast = Swal.mixin({
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-    didOpen: (toast) => {
-        toast.addEventListener('mouseenter', Swal.stopTimer)
-        toast.addEventListener('mouseleave', Swal.resumeTimer)
-    }
-});
-
-// Helper Function เรียกใช้ Toast ให้ง่ายขึ้น
-Toast.success = (msg) => Toast.fire({ icon: 'success', title: msg });
-Toast.error = (msg) => Toast.fire({ icon: 'error', title: msg });
-Toast.info = (msg) => Toast.fire({ icon: 'info', title: msg });
-Toast.warning = (msg) => Toast.fire({ icon: 'warning', title: msg });
-
-const Loader = {
-    show: () => Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }),
-    hide: () => Swal.close()
-};
-
+// Shared Toast and Loader utilities are defined in assets/js/common.js
 
 // ====================================================
 // 2. ระบบนำทาง Tabs
@@ -317,101 +292,40 @@ window.setInboundMode = function(mode) {
 };
 
 window.buildMainDropdowns = function(selectedProd = '', selectedModel = '') {
-    const pSelect = document.getElementById('mainProductSelect');
-    if (!pSelect) return;
-    
-    let html = `<option value="">-- เลือกสินค้า --</option>`;
-    
-    if (currentInboundMode === 'SN') {
-        Object.keys(masterOptions.sn_products).forEach(p => {
-            html += `<option value="${p}" ${p === selectedProd ? 'selected' : ''}>${p}</option>`;
-        });
-        html += `<option value="_NEW_" class="text-emerald-600 font-bold">+ เพิ่มชื่อสินค้าใหม่</option>`;
-    } else {
-        masterOptions.consumables.forEach(c => {
-            html += `<option value="${c.name}" data-unit="${c.unit}" ${c.name === selectedProd ? 'selected' : ''}>${c.name}</option>`;
-        });
-        html += `<option value="_NEW_" class="text-yellow-600 font-bold">+ เพิ่มวัสดุใหม่</option>`;
-    }
-    
-    pSelect.innerHTML = html;
-    handleMainProductChange();
-    
-    if (selectedModel && currentInboundMode === 'SN') {
-        setTimeout(() => { 
-            const mSelect = document.getElementById('mainModelSelect');
-            if(mSelect) mSelect.value = selectedModel; 
-            checkScanReady(); 
-        }, 50);
-    }
+    const productInput = document.getElementById('mainProductInput');
+    const modelInput = document.getElementById('mainModelInput');
+    if (productInput && selectedProd) productInput.value = selectedProd;
+    if (modelInput && selectedModel) modelInput.value = selectedModel;
+    checkScanReady();
 };
 
 window.handleMainProductChange = function() {
-    const val = document.getElementById('mainProductSelect').value;
     const pInput = document.getElementById('mainProductInput');
-    const mSelect = document.getElementById('mainModelSelect');
-    const mInput = document.getElementById('mainModelInput');
-    
-    if (val === '_NEW_') {
-        pInput?.classList.remove('hidden'); 
-        if(pInput) pInput.value = '';
-        
-        if (currentInboundMode === 'SN' && mSelect) {
-            mSelect.innerHTML = `<option value="_NEW_">+ สร้างรุ่นใหม่</option>`;
-            mInput?.classList.remove('hidden'); 
-            if(mInput) mInput.value = '';
-        }
-        const unitInput = document.getElementById('inboundUnit');
-        if(unitInput) unitInput.value = 'ชิ้น';
-    } else {
-        pInput?.classList.add('hidden');
-        if (currentInboundMode === 'SN' && val && mSelect) {
-            let mHtml = `<option value="">-- เลือกรุ่น --</option>`;
-            if(masterOptions.sn_products[val]) {
-                masterOptions.sn_products[val].forEach(m => mHtml += `<option value="${m}">${m}</option>`);
-            }
-            mHtml += `<option value="_NEW_" class="text-emerald-600 font-bold">+ เพิ่มรุ่นใหม่</option>`;
-            mSelect.innerHTML = mHtml;
-        }
-        
-        if (currentInboundMode === 'QTY' && val) {
-            const pSel = document.getElementById('mainProductSelect');
-            const opt = pSel.options[pSel.selectedIndex];
-            const unitInput = document.getElementById('inboundUnit');
-            if(unitInput) unitInput.value = opt.getAttribute('data-unit') || 'ชิ้น';
+    const productValue = pInput ? pInput.value.trim() : '';
+    const unitInput = document.getElementById('inboundUnit');
+
+    if (currentInboundMode === 'QTY' && productValue && masterOptions.consumables.length > 0) {
+        const matched = masterOptions.consumables.find(c => c.name.toLowerCase() === productValue.toLowerCase());
+        if (matched && unitInput) {
+            unitInput.value = matched.unit || 'ชิ้น';
         }
     }
-    handleMainModelChange();
+
+    checkScanReady();
 };
 
 window.handleMainModelChange = function() {
-    const mSelect = document.getElementById('mainModelSelect');
-    const mInput = document.getElementById('mainModelInput');
-    if(!mSelect || !mInput) return;
-    
-    const val = mSelect.value;
-    if (val === '_NEW_') { 
-        mInput.classList.remove('hidden'); 
-        mInput.value = ''; 
-    } else { 
-        mInput.classList.add('hidden'); 
-    }
     checkScanReady();
 };
 
 window.checkScanReady = function() {
-    const pSel = document.getElementById('mainProductSelect');
-    if(!pSel) return;
-    
-    const pVal = pSel.value;
-    const pReady = pVal === '_NEW_' ? document.getElementById('mainProductInput').value.trim() !== '' : pVal !== '';
-    
+    const productValue = document.getElementById('mainProductInput')?.value.trim();
+    const pReady = productValue && productValue.length > 0;
     let isReady = false;
+
     if (currentInboundMode === 'SN') {
-        const mSel = document.getElementById('mainModelSelect');
-        const mVal = mSel ? mSel.value : '';
-        const mReady = mVal === '_NEW_' ? document.getElementById('mainModelInput').value.trim() !== '' : mVal !== '';
-        isReady = pReady && mReady;
+        const modelValue = document.getElementById('mainModelInput')?.value.trim();
+        isReady = pReady && modelValue && modelValue.length > 0;
     } else {
         isReady = pReady;
     }
@@ -456,10 +370,8 @@ async function validateAndSaveSN(sn) {
     const scanInput = document.getElementById('scanInput');
     scanInput.value = '';
     
-    const pSel = document.getElementById('mainProductSelect').value;
-    const pName = pSel === '_NEW_' ? document.getElementById('mainProductInput').value.trim() : pSel;
-    const mSel = document.getElementById('mainModelSelect').value;
-    const mName = mSel === '_NEW_' ? document.getElementById('mainModelInput').value.trim() : mSel;
+    const pName = document.getElementById('mainProductInput')?.value.trim() || '';
+    const mName = document.getElementById('mainModelInput')?.value.trim() || '';
 
     try {
         const res = await fetch('api/inventory/add_sn_fast.php', {
@@ -484,8 +396,7 @@ async function validateAndSaveSN(sn) {
 }
 
 window.saveInboundQty = async function() {
-    const pSel = document.getElementById('mainProductSelect').value;
-    const pName = pSel === '_NEW_' ? document.getElementById('mainProductInput').value.trim() : pSel;
+    const pName = document.getElementById('mainProductInput')?.value.trim() || '';
     const qty = document.getElementById('inboundQty').value;
     const unit = document.getElementById('inboundUnit').value || 'ชิ้น';
 

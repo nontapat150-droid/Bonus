@@ -48,7 +48,7 @@
         </a>
         <?php endif; ?>
 
-        <?php if (hasRole('super_admin')): ?>
+        <?php if (hasRole(['admin', 'super_admin'])): ?>
         <div class="nav-label px-3 py-2 text-[10px] font-bold text-[var(--c-text-3)] uppercase tracking-widest mt-2 whitespace-nowrap">ตั้งค่าระบบ</div>
         <a href="index.php?page=users" class="nav-item <?= $page === 'users' ? 'active' : '' ?>" data-label="จัดการผู้ใช้">
             <div class="icon"><i data-lucide="users"></i></div>
@@ -105,8 +105,20 @@
             <div class="icon"><i data-lucide="layout-dashboard"></i></div>
             <span class="nav-label">หน้าแรก</span>
         </a>
-        
-        <!-- Copy all links here as needed, omitting for brevity since Bottom Tabs cover core nav -->
+        <a href="index.php?page=checkin" class="nav-item <?= $page === 'checkin' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="camera"></i></div>
+            <span class="nav-label">ระบบเช็คอิน</span>
+        </a>
+        <?php if (!hasRole('sales')): ?>
+        <a href="index.php?page=oil" class="nav-item <?= $page === 'oil' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="fuel"></i></div>
+            <span class="nav-label">น้ำมันและยานพาหนะ</span>
+        </a>
+        <a href="index.php?page=dispatch" class="nav-item <?= $page === 'dispatch' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="map"></i></div>
+            <span class="nav-label">ระบบจัดส่งอัจฉริยะ</span>
+        </a>
+        <?php endif; ?>
         <?php if (hasRole(['admin', 'super_admin'])): ?>
         <a href="index.php?page=inventory" class="nav-item <?= $page === 'inventory' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="package"></i></div>
@@ -114,7 +126,7 @@
         </a>
         <?php endif; ?>
 
-        <?php if (hasRole('super_admin')): ?>
+        <?php if (hasRole(['admin', 'super_admin'])): ?>
         <div class="nav-label px-3 py-2 text-[10px] font-bold text-[var(--c-text-3)] uppercase tracking-widest mt-2">ตั้งค่าระบบ</div>
         <a href="index.php?page=users" class="nav-item <?= $page === 'users' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="users"></i></div>
@@ -149,6 +161,12 @@
     <a href="index.php?page=dispatch" class="tab-item <?= $page === 'dispatch' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="map" class="w-6 h-6"></i></div>
         <span class="tab-label">Map</span>
+    </a>
+    <?php endif; ?>
+    <?php if (hasRole(['admin', 'super_admin'])): ?>
+    <a href="index.php?page=inventory" class="tab-item <?= $page === 'inventory' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="package" class="w-6 h-6"></i></div>
+        <span class="tab-label">คลัง</span>
     </a>
     <?php endif; ?>
 </nav>

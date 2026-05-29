@@ -82,6 +82,7 @@ CREATE TABLE `inventory_items` (
   `model_id` int(11) NOT NULL,
   `sn` varchar(100) NOT NULL,
   `status` enum('in_stock','outbound') NOT NULL DEFAULT 'in_stock',
+  `remark` text DEFAULT NULL,
   `added_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

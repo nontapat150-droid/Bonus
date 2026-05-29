@@ -2,8 +2,8 @@
 // views/modules/user_settings.php
 if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรงไม่ได้');
 
-if (!hasRole('super_admin')) {
-    echo "<div class='p-12 text-center'><h2 class='text-2xl font-bold text-rose-500'>ไม่มีสิทธิ์เข้าถึงหน้านี้</h2><p class='text-slate-500 mt-2'>เฉพาะผู้ดูแลระบบสูงสุดเท่านั้นที่สามารถจัดการพนักงานได้</p></div>";
+if (!hasRole(['admin', 'super_admin'])) {
+    echo "<div class='p-12 text-center'><h2 class='text-2xl font-bold text-rose-500'>ไม่มีสิทธิ์เข้าถึงหน้านี้</h2><p class='text-slate-500 mt-2'>เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถจัดการพนักงานได้</p></div>";
     exit;
 }
 ?>
@@ -190,4 +190,6 @@ async function approveUser(id, status) {
     }
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/js/common.js"></script>
 <script src="assets/js/users.js"></script>

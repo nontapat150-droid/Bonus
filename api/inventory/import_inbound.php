@@ -45,7 +45,19 @@ try {
     $stmtInstModel = $pdo->prepare("INSERT INTO product_models (product_id, model_name) VALUES (?, ?)");        
 
     $stmtCheckSN = $pdo->prepare("SELECT id FROM inventory_items WHERE sn = ? LIMIT 1");
-    $stmtInstItem = $pdo->prepare("INSERT INTO inventory_items (model_id, sn, status, remark) VALUES (?, ?, 'in_stock', ?)");
+
+    $hasRemarkColumn = false;
+    try {
+        $hasRemarkColumn = (bool) $pdo->query("SHOW COLUMNS FROM inventory_items LIKE 'remark'")->fetch();
+    } catch (PDOException $e) {
+        $hasRemarkColumn = false;
+    }
+
+    if ($hasRemarkColumn) {
+        $stmtInstItem = $pdo->prepare("INSERT INTO inventory_items (model_id, sn, status, remark) VALUES (?, ?, 'in_stock', ?)");
+    } else {
+        $stmtInstItem = $pdo->prepare("INSERT INTO inventory_items (model_id, sn, status) VALUES (?, ?, 'in_stock')");
+    }
     $stmtLog = $pdo->prepare("INSERT INTO inventory_logs (item_id, action, admin_id) VALUES (?, 'in', ?)");     
 
     foreach ($items as $index => $item) {
@@ -138,7 +150,11 @@ try {
 
         // --- เพิ่ม Item และบันทึก Log ---
         try {
-            $stmtInstItem->execute([$modelId, $sn, $remark]);
+            if ($hasRemarkColumn) {
+                $stmtInstItem->execute([$modelId, $sn, $remark]);
+            } else {
+                $stmtInstItem->execute([$modelId, $sn]);
+            }
             $itemId = $pdo->lastInsertId();
             $stmtLog->execute([$itemId, $admin_id]);
 

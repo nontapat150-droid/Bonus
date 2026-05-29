@@ -118,12 +118,13 @@ function renderTable(records) {
             ? `<span class="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-lg text-xs font-bold">🚗 ${row.team_name}</span>` 
             : `<span class="bg-slate-100 text-slate-800 border border-slate-200 px-3 py-1 rounded-lg text-xs font-bold">${row.license_plate}</span>`;
 
+        const fillerLine = row.filler_name ? `<p class="text-[10px] text-slate-400 mt-1">ผู้บันทึก: ${row.filler_name}</p>` : '';
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition-colors animate__animated animate__fadeIn';
         tr.style.animationDelay = `${index * 0.03}s`;
         tr.innerHTML = `
             <td class="px-4 py-4 whitespace-nowrap">${formattedDate}</td>
-            <td class="px-4 py-4 font-medium text-slate-800">${row.tech_name}</td>
+            <td class="px-4 py-4 font-medium text-slate-800">${row.tech_name}${fillerLine}</td>
             <td class="px-4 py-4">${teamBadge}</td>
             <td class="px-4 py-4 text-center font-bold text-sky-600">${row.distance} กม.</td>
             <td class="px-4 py-4 text-center"><span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-black">📋 ${row.job_count} งาน</span></td>
