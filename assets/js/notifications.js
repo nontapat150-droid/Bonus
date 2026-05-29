@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const notificationUser = document.getElementById('notificationUser');
     
     const isAdmin = window.NOTIFICATIONS_CONFIG?.isAdmin === true;
+    let previousUnreadCount = 0;
 
     if (!bellButton || !notificationModal) return;
 
@@ -103,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     Swal.fire({
                         title: 'สำเร็จ!',
-                        text: 'เพิ่มการแจ้งเตือนเรียบร้อยแล้ว',
+                        text: 'ส่งแจ้งเตือนเรียบร้อยแล้ว',
                         icon: 'success',
                         confirmButtonColor: '#0ea5e9',
                         customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
@@ -166,22 +167,44 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (!data.success) return;
 
-            // จัดการแสดงตัวเลขลงไปบนกระดิ่ง
-            notificationCount.textContent = data.unread_count || 0;
-            if (data.unread_count > 0) {
-                unreadDot.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
+            // ตรวจสอบการอ่านของ Smart Alert ในเครื่องผู้ใช้ (รายวัน)
+            const todayStr = new Date().toISOString().split('T')[0];
+            let readSmartAlerts = JSON.parse(localStorage.getItem('readSmartAlerts_' + todayStr) || '[]');
+            
+            let unreadCount = 0;
+
+            data.notifications.forEach(n => {
+                if (typeof n.id === 'string') {
+                    // ถ้าเป็นแจ้งเตือนอัตโนมัติ (AI) ให้เช็คจาก LocalStorage
+                    if (readSmartAlerts.includes(n.id)) {
+                        n.is_read = 1;
+                    } else {
+                        n.is_read = 0;
+                        unreadCount++;
+                    }
+                } else {
+                    // แจ้งเตือนปกติจากแอดมิน
+                    if (n.is_read == 0) unreadCount++;
+                }
+            });
+
+            // อัปเดตตัวเลขแจ้งเตือน
+            notificationCount.textContent = unreadCount;
+            if (unreadCount > 0) {
+                unreadDot.textContent = unreadCount > 99 ? '99+' : unreadCount;
                 unreadDot.classList.remove('hidden');
-                unreadDot.classList.add('animate__animated', 'animate__heartBeat');
-                // ลบ animation ทิ้งหลังจากเล่นเสร็จเพื่อให้ครั้งหน้าเล่นใหม่ได้
-                setTimeout(() => {
-                    unreadDot.classList.remove('animate__heartBeat');
-                }, 1000);
+                
+                // ให้กระดิ่งเด้งเตือนเฉพาะเวลาที่มียอดเพิ่มขึ้นเท่านั้น
+                if (unreadCount > previousUnreadCount) {
+                    unreadDot.classList.add('animate__animated', 'animate__heartBeat');
+                    setTimeout(() => unreadDot.classList.remove('animate__heartBeat'), 1000);
+                }
             } else {
-                unreadDot.classList.add('hidden');
+                unreadDot.classList.add('hidden'); // ซ่อนถ้าเป็น 0
             }
+            previousUnreadCount = unreadCount;
 
             if (isBackground) return;
-
             notificationList.innerHTML = '';
 
             if (!data.notifications.length) {
@@ -223,10 +246,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="text-[10px] text-slate-400 mt-2 text-right">${formatDate(notification.created_at)}</div>
                 `;
 
+                // เมื่อคลิกอ่านแจ้งเตือน
                 item.addEventListener('click', async () => {
-                    if (!isSmartAlert) await markNotificationRead(notification.id);
+                    if (!isSmartAlert) {
+                        // ส่งคำสั่งบันทึกการอ่านไปที่หลังบ้าน
+                        await markNotificationRead(notification.id);
+                    } else {
+                        // ถ้าเป็นการแจ้งเตือนระบบอัตโนมัติ ให้บันทึกการอ่านลงในเครื่อง
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        let readSA = JSON.parse(localStorage.getItem('readSmartAlerts_' + todayStr) || '[]');
+                        if (!readSA.includes(notification.id)) {
+                            readSA.push(notification.id);
+                            localStorage.setItem('readSmartAlerts_' + todayStr, JSON.stringify(readSA));
+                        }
+                    }
                     openNotificationDetail(notification, isSmartAlert, targetBadge);
-                    await loadNotifications(false);
+                    await loadNotifications(false); // โหลดรีเฟรชตัวเลขใหม่ทันที
                 });
 
                 notificationList.appendChild(item);
