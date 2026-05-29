@@ -1,31 +1,6 @@
 // assets/js/inventory.js
 
-// ====================================================
-// 1. ตั้งค่าระบบแจ้งเตือน (Toast & Loader)
-// ====================================================
-const Toast = Swal.mixin({
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-    didOpen: (toast) => {
-        toast.addEventListener('mouseenter', Swal.stopTimer)
-        toast.addEventListener('mouseleave', Swal.resumeTimer)
-    }
-});
-
-// Helper Function เรียกใช้ Toast ให้ง่ายขึ้น
-Toast.success = (msg) => Toast.fire({ icon: 'success', title: msg });
-Toast.error = (msg) => Toast.fire({ icon: 'error', title: msg });
-Toast.info = (msg) => Toast.fire({ icon: 'info', title: msg });
-Toast.warning = (msg) => Toast.fire({ icon: 'warning', title: msg });
-
-const Loader = {
-    show: () => Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }),
-    hide: () => Swal.close()
-};
-
+// Shared Toast and Loader utilities are defined in assets/js/common.js
 
 // ====================================================
 // 2. ระบบนำทาง Tabs

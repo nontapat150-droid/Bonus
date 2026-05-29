@@ -173,4 +173,5 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 <script>
     const IS_ADMIN = <?php echo $isAdmin ? 'true' : 'false'; ?>;
 </script>
+<script src="assets/js/common.js"></script>
 <script src="assets/js/dispatch.js"></script>
