@@ -37,15 +37,6 @@ try {
         throw new Exception("กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง");
     }
 
-    // คำนวณระยะทางจากรอบก่อนหน้าอัตโนมัติ
-    $distance = 0;
-    $stmtLastMile = $pdo->prepare("SELECT mileage FROM oil_records WHERE license_plate = ? AND date_recorded < ? ORDER BY date_recorded DESC LIMIT 1");
-    $stmtLastMile->execute([$license_plate, $date_recorded]);
-    $lastMileage = $stmtLastMile->fetchColumn();
-    if ($lastMileage && $mileage >= $lastMileage) {
-        $distance = $mileage - $lastMileage;
-    }
-
     // ปัดเศษราคารวมอัตโนมัติ
     $total_price = isset($_POST['total_price']) && $_POST['total_price'] !== '' ? round(floatval($_POST['total_price'])) : round($liters * $price_per_liter);
 
@@ -84,9 +75,29 @@ try {
         $stmt->execute([$license_plate, $user_id]);
     }
 
-    $stmt = $pdo->prepare("INSERT INTO oil_records (tech_id, license_plate, liters, mileage, price_per_liter, total_price, date_recorded, filler_name, distance, job_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$tech_id, $license_plate, $liters, $mileage, $price_per_liter, $total_price, $date_recorded, $filler_name, $distance, $job_count]);
+    // เพิ่มข้อมูลลงตาราง โดยกำหนดให้ระยะทางเริ่มต้นเป็น 0 ชั่วคราว
+    $stmt = $pdo->prepare("INSERT INTO oil_records (tech_id, license_plate, liters, mileage, price_per_liter, total_price, date_recorded, filler_name, distance, job_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)");
+    $stmt->execute([$tech_id, $license_plate, $liters, $mileage, $price_per_liter, $total_price, $date_recorded, $filler_name, $job_count]);
     $record_id = $pdo->lastInsertId();
+
+    // 🚀 --- ระบบคำนวณระยะทางใหม่ทั้งหมดแบบอัตโนมัติ (เรียงตามไมล์น้อยไปมาก) ---
+    $stmtRecalc = $pdo->prepare("SELECT id, mileage FROM oil_records WHERE license_plate = ? ORDER BY mileage ASC, date_recorded ASC");
+    $stmtRecalc->execute([$license_plate]);
+    $recordsForRecalc = $stmtRecalc->fetchAll(PDO::FETCH_ASSOC);
+    
+    $prev_mileage = null;
+    $updateDistStmt = $pdo->prepare("UPDATE oil_records SET distance = ? WHERE id = ?");
+    
+    foreach ($recordsForRecalc as $rRow) {
+        $curr_m = (int)$rRow['mileage'];
+        $dist = 0;
+        if ($prev_mileage !== null && $curr_m >= $prev_mileage) {
+            $dist = $curr_m - $prev_mileage;
+        }
+        $updateDistStmt->execute([$dist, $rRow['id']]);
+        $prev_mileage = $curr_m;
+    }
+    // -------------------------------------------------------------
 
     $upload_dir = '../../assets/uploads/oil_receipts/';
     if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
@@ -113,7 +124,7 @@ try {
     }
 
     $pdo->commit();
-    echo json_encode(['success' => true, 'message' => 'บันทึกข้อมูลเรียบร้อยแล้ว']);
+    echo json_encode(['success' => true, 'message' => 'บันทึกข้อมูลและคำนวณไมล์เรียบร้อยแล้ว']);
 
 } catch (Exception $e) {
     $pdo->rollBack();
