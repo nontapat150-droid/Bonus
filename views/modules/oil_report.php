@@ -189,6 +189,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                         <th class="px-4 py-4">วันที่/เวลา</th>
                         <th class="px-4 py-4">ช่าง (ผู้เบิก)</th>
                         <th class="px-4 py-4">ทีม/ป้ายทะเบียน</th>
+                        <th>เลขไมล์</th>
                         <th class="px-4 py-4 text-center">ระยะทาง (กม.)</th>
                         <th class="px-4 py-4 text-center">เคสงาน (รอบ)</th>
                         <th class="px-4 py-4 text-right">ต้นทุน/กม.</th>
@@ -198,7 +199,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                     </tr>
                 </thead>
                 <tbody id="oilTableBody" class="divide-y divide-[var(--c-border)]">
-                    <tr><td colspan="9" class="px-6 py-12 text-center text-[var(--c-text-3)] font-bold">กำลังโหลดข้อมูล...</td></tr>
+                    <tr><td colspan="10" class="px-6 py-12 text-center text-[var(--c-text-3)] font-bold">กำลังโหลดข้อมูล...</td></tr>
                 </tbody>
             </table>
         </div>

@@ -181,7 +181,7 @@ async function fetchData(silent = false) {
     const licensePlate = filterPlate ? filterPlate.value : 'all';
     
     if(tbody && !silent) {
-        tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-12 text-center text-slate-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดข้อมูล...</div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="px-6 py-12 text-center text-slate-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดข้อมูล...</div></td></tr>';
     }
 
     try {
@@ -193,7 +193,7 @@ async function fetchData(silent = false) {
         try {
             data = JSON.parse(textData);
         } catch (err) {
-            if(tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-left text-rose-500 bg-rose-50 border border-rose-200"><b>พบข้อผิดพลาดจากฝั่งเซิร์ฟเวอร์ (PHP Error):</b><br><br><code>${textData.substring(0, 800).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></td></tr>`;
+            if(tbody) tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-4 text-left text-rose-500 bg-rose-50 border border-rose-200"><b>พบข้อผิดพลาดจากฝั่งเซิร์ฟเวอร์ (PHP Error):</b><br><br><code>${textData.substring(0, 800).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></td></tr>`;
             return;
         }
 
@@ -218,7 +218,7 @@ async function fetchData(silent = false) {
             }
         } else {
             if(!silent) showToast('error', `เกิดข้อผิดพลาด: ${data.error}`);
-            if(tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-rose-500 font-bold">ไม่สามารถดึงข้อมูลได้: ${data.error}</td></tr>`;
+            if(tbody) tbody.innerHTML = `<tr><td colspan="10" class="px-6 py-4 text-center text-rose-500 font-bold">ไม่สามารถดึงข้อมูลได้: ${data.error}</td></tr>`;
         }
     } catch (error) {
         console.error("Error Detail:", error);
@@ -407,7 +407,7 @@ function renderTable(records) {
     if(!tbody) return;
     tbody.innerHTML = '';
     if (records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-12 text-center text-slate-400">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="px-6 py-12 text-center text-slate-400">ไม่พบข้อมูลในช่วงเวลาที่เลือก</td></tr>';
         return;
     }
     records.forEach((row, index) => {
@@ -423,6 +423,7 @@ function renderTable(records) {
             <td class="px-4 py-4 whitespace-nowrap">${formattedDate}</td>
             <td class="px-4 py-4 font-medium text-slate-800">${row.tech_name}${fillerLine}</td>
             <td class="px-4 py-4">${teamBadge}</td>
+            <td class="px-4 py-4 text-center font-bold text-slate-600">${Number(row.mileage).toLocaleString('th-TH')}</td>
             <td class="px-4 py-4 text-center font-bold text-sky-600">${row.distance} กม.</td>
             <td class="px-4 py-4 text-center"><span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-black">📋 ${row.job_count} งาน</span></td>
             <td class="px-4 py-4 text-right"><span class="text-xs text-slate-400 block mb-0.5">กม. ละ</span><span class="font-bold text-rose-500">฿${Number(row.cost_per_km).toLocaleString('th-TH', {minimumFractionDigits:2})}</span></td>
