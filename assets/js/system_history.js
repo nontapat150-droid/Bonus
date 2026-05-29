@@ -1,11 +1,32 @@
 // assets/js/system_history.js
 
+let currentType = 'checkin'; // จำหมวดหมู่ปัจจุบันที่กดดูอยู่
+
 document.addEventListener('DOMContentLoaded', () => {
-    // โหลดประวัติเช็คอินเป็นค่าเริ่มต้นทันทีที่เปิดหน้าเว็บ
+    const filterDate = document.getElementById('filterDate');
+    const filterMonth = document.getElementById('filterMonth');
+
+    // ตั้งค่าเริ่มต้นให้โชว์เดือนปัจจุบัน
+    const now = new Date();
+    filterMonth.value = now.toISOString().slice(0, 7);
+
+    // ถ้าผู้ใช้เลือกวัน ให้ล้างค่าช่องเดือน
+    filterDate.addEventListener('change', () => { filterMonth.value = ''; });
+    // ถ้าผู้ใช้เลือกเดือน ให้ล้างค่าช่องวัน
+    filterMonth.addEventListener('change', () => { filterDate.value = ''; });
+
+    // โหลดครั้งแรก
     loadHistory('checkin');
 });
 
+// กดปุ่มค้นหาจะโหลดข้อมูลหมวดหมู่เดิมซ้ำ โดยดึงค่า Filter ใหม่
+function applyFilter() {
+    loadHistory(currentType);
+}
+
 async function loadHistory(type) {
+    currentType = type;
+
     // สลับสีปุ่ม Tabs ให้ชัดเจน
     document.querySelectorAll('.hist-tab').forEach(btn => {
         btn.classList.remove('active-tab', 'bg-indigo-50', 'text-indigo-700');
@@ -19,26 +40,38 @@ async function loadHistory(type) {
 
     const tHead = document.getElementById('tableHead');
     const tBody = document.getElementById('tableBody');
-    tBody.innerHTML = '<tr class="block md:table-row"><td colspan="6" class="text-center py-10 text-slate-400 block md:table-cell">กำลังโหลดข้อมูล...</td></tr>';
+    const badge = document.getElementById('recordCountBadge');
+    
+    tBody.innerHTML = '<tr class="block md:table-row"><td colspan="6" class="text-center py-10 text-slate-400 block md:table-cell"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-500"></i> กำลังดึงข้อมูล...</td></tr>';
+    badge.textContent = 'โหลด...';
+    lucide.createIcons();
+
+    // ดึงค่าตัวกรอง
+    const fDate = document.getElementById('filterDate').value;
+    const fMonth = document.getElementById('filterMonth').value;
 
     try {
-        const res = await fetch(`api/history/get_logs.php?type=${type}`);
+        // ส่งตัวกรองไปให้ API ค้นหา
+        const res = await fetch(`api/history/get_logs.php?type=${type}&date=${fDate}&month=${fMonth}`);
         const data = await res.json();
 
         if (data.success) {
             renderTable(type, data.data, tHead, tBody);
+            badge.textContent = `${data.data.length} รายการ`;
         } else {
             tBody.innerHTML = `<tr class="block md:table-row"><td colspan="6" class="text-center py-10 text-rose-500 block md:table-cell">${data.error}</td></tr>`;
+            badge.textContent = '0 รายการ';
         }
     } catch (e) {
         tBody.innerHTML = '<tr class="block md:table-row"><td colspan="6" class="text-center py-10 text-rose-500 block md:table-cell">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</td></tr>';
+        badge.textContent = 'Error';
     }
 }
 
 function renderTable(type, records, tHead, tBody) {
     if (records.length === 0) {
         tHead.innerHTML = '';
-        tBody.innerHTML = '<tr class="block md:table-row"><td class="text-center py-10 text-slate-400 italic block md:table-cell">ยังไม่มีข้อมูลในหมวดหมู่นี้</td></tr>';
+        tBody.innerHTML = '<tr class="block md:table-row"><td class="text-center py-12 text-slate-400 italic block md:table-cell">ไม่มีประวัติการทำรายการในช่วงเวลานี้</td></tr>';
         return;
     }
 
