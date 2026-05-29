@@ -40,27 +40,38 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
         </div>
 
         <!-- Action Buttons Group -->
-        <div class="flex flex-wrap gap-3">
-            <button onclick="toggleCompareMode()" id="compareBtn" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-700 transition-all shadow-lg shadow-slate-200">
-                <i data-lucide="bar-chart-horizontal" class="w-4 h-4"></i>
-                <span>เปรียบเทียบรถ</span>
-            </button>
+        <div class="flex flex-wrap items-center gap-3">
+            <div id="compareControls" class="flex flex-wrap items-center gap-3">
+                <button onclick="toggleCompareMode()" id="compareBtn" class="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-700 transition-all shadow-lg shadow-slate-200">
+                    <i data-lucide="bar-chart-horizontal" class="w-4 h-4"></i>
+                    <span id="compareBtnText">เปรียบเทียบรถ</span>
+                </button>
+                
+                <div id="vehicleSelectorWrapper" class="hidden animate__animated animate__fadeInLeft">
+                    <select id="vehicleCompareSelector" multiple class="input min-w-[200px] text-xs font-bold py-2.5 rounded-2xl" onchange="renderComparisonCharts()">
+                        <!-- Options filled by JS -->
+                    </select>
+                    <p class="text-[10px] text-[var(--c-text-3)] mt-1 ml-2 font-bold uppercase tracking-tighter">* กด Ctrl ค้างเพื่อเลือกหลายคัน</p>
+                </div>
+            </div>
             
-            <button onclick="openAddOilModal()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-100">
-                <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                <span>เพิ่มข้อมูล</span>
-            </button>
+            <div class="flex flex-wrap items-center gap-3 ml-auto">
+                <button onclick="openAddOilModal()" class="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-100">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>เพิ่มข้อมูล</span>
+                </button>
 
-            <div class="flex-1 sm:flex-none flex gap-2">
-                <input type="file" id="importOilExcel" accept=".xlsx, .xls" class="hidden">
-                <button onclick="document.getElementById('importOilExcel').click()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-400 transition-all shadow-lg shadow-amber-100">
-                    <i data-lucide="upload" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">นำเข้า</span>
-                </button>
-                <button onclick="exportOilExcel()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-100">
-                    <i data-lucide="download" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">ส่งออก</span>
-                </button>
+                <div class="flex gap-2">
+                    <input type="file" id="importOilExcel" accept=".xlsx, .xls" class="hidden">
+                    <button onclick="document.getElementById('importOilExcel').click()" class="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-400 transition-all shadow-lg shadow-amber-100">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">นำเข้า</span>
+                    </button>
+                    <button onclick="exportOilExcel()" class="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-100">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">ส่งออก</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
