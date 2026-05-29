@@ -657,13 +657,10 @@ window.deleteOilRecord = function(id) {
 window.exportOilExcel = async function() {
     // 1. เตรียมรายชื่อรถเพื่อใส่ใน Dropdown
     let vehicleOptions = '<option value="all">-- รวมทุกคัน --</option>';
-    
-    // พยายามดึงรายชื่อรถจาก editTeamsList ก่อน (รายชื่อตั้งต้น) ถ้าไม่มีให้ดึงจากที่แสดงอยู่
     let vehiclesToShow = editTeamsList.map(t => t.team_name);
     if (vehiclesToShow.length === 0) {
         vehiclesToShow = [...new Set(allRecords.map(r => r.team_name || r.license_plate))].sort();
     }
-    
     vehiclesToShow.forEach(v => {
         if(v) vehicleOptions += `<option value="${v}">${v}</option>`;
     });
@@ -672,7 +669,7 @@ window.exportOilExcel = async function() {
     const today = new Date();
     const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-    // 3. แสดงหน้าต่างลอย (Popup) ด้วย SweetAlert2
+    // 3. แสดงหน้าต่างลอย (Popup) เลือกรถและเดือน
     const { value: formValues } = await Swal.fire({
         title: 'ส่งออกรายงาน (Excel)',
         html: `
@@ -710,7 +707,7 @@ window.exportOilExcel = async function() {
             const startDate = `${year}-${month}-01`;
             const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
-            // ดึงข้อมูลใหม่จากฐานข้อมูลตามเดือนที่เลือกแบบตรงๆ
+            // ดึงข้อมูล
             const response = await fetch(`api/oil/get_records.php?start_date=${startDate}&end_date=${endDate}`);
             const data = await response.json();
 
@@ -720,8 +717,6 @@ window.exportOilExcel = async function() {
             }
 
             let recordsToExport = data.records;
-
-            // กรองข้อมูลเฉพาะรถที่เลือก (ถ้าไม่ได้เลือก "รวมทุกคัน")
             if (formValues.vehicle !== 'all') {
                 recordsToExport = recordsToExport.filter(r => (r.team_name || r.license_plate) === formValues.vehicle);
             }
@@ -732,10 +727,21 @@ window.exportOilExcel = async function() {
                 return Swal.fire('ไม่พบข้อมูล', `ไม่มีประวัติการเติมน้ำมันของ ${vName} ในเดือน ${formValues.month}`, 'info');
             }
 
-            // 5. แปลงข้อมูลสร้างเป็นไฟล์ Excel
-            showToast('info', 'กำลังสร้างไฟล์ Excel...');
+            showToast('info', 'กำลังสร้างไฟล์ Excel พร้อมคำนวณยอดรวม...');
             let sortedRecords = [...recordsToExport].sort((a, b) => new Date(a.date_recorded) - new Date(b.date_recorded));
+            
+            // --- ส่วนคำนวณยอดรวม ---
+            let totalLiters = 0;
+            let totalPrice = 0;
+            let totalDistance = 0;
+            let totalJobs = 0;
+            
             let exportData = sortedRecords.map(row => {
+                totalLiters += Number(row.liters);
+                totalPrice += Number(row.total_price);
+                totalDistance += Number(row.distance);
+                totalJobs += Number(row.job_count);
+                
                 const d = new Date(row.date_recorded);
                 return {
                     "วันที่": d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}),
@@ -751,13 +757,69 @@ window.exportOilExcel = async function() {
                 };
             });
 
+            // คำนวณเลขไมล์ที่เพิ่มขึ้น (ถ้าเลือกรถคันเดียว ให้เอา ไมล์ล่าสุด - ไมล์น้อยสุด ของเดือนนั้น)
+            let mileageIncreaseText = totalDistance;
+            if (formValues.vehicle !== 'all' && sortedRecords.length > 0) {
+                let validMileages = sortedRecords.map(r => parseInt(r.mileage)).filter(m => m > 0);
+                if (validMileages.length > 0) {
+                    let minMile = Math.min(...validMileages);
+                    let maxMile = Math.max(...validMileages);
+                    if (maxMile >= minMile) {
+                        mileageIncreaseText = maxMile - minMile;
+                    }
+                }
+            }
+
+            // 5. แนบแถวสรุปข้อมูลลงท้ายตาราง
+            exportData.push({}); // เว้นบรรทัด 1 แถวเพื่อความสวยงาม
+            exportData.push({ "วันที่": "========== สรุปยอดรวมประจำเดือน ==========" });
+            
+            exportData.push({
+                "วันที่": "เลขไมล์เดือนนี้เพิ่มขึ้น",
+                "ทะเบียนรถ (ทีม)": formValues.vehicle !== 'all' ? (mileageIncreaseText.toLocaleString('th-TH') + " กม.") : "ดูที่ 'รวมระยะทางที่ใช้รถ' (เลือกทุกคัน)"
+            });
+
+            exportData.push({
+                "วันที่": "จำนวนลิตรที่เติมไปเดือนนี้",
+                "ทะเบียนรถ (ทีม)": totalLiters.toLocaleString('th-TH', {minimumFractionDigits: 2}) + " ลิตร"
+            });
+            
+            exportData.push({
+                "วันที่": "ยอดเงินที่ใช้ไปของเดือนนี้",
+                "ทะเบียนรถ (ทีม)": totalPrice.toLocaleString('th-TH', {minimumFractionDigits: 2}) + " บาท"
+            });
+            
+            exportData.push({
+                "วันที่": "รวมระยะทางเท่าไหร่ที่ใช้รถ",
+                "ทะเบียนรถ (ทีม)": totalDistance.toLocaleString('th-TH') + " กม."
+            });
+            
+            let avgPricePerLiter = totalLiters > 0 ? (totalPrice / totalLiters) : 0;
+            exportData.push({
+                "วันที่": "ราคา/ลิตร โดยเฉลี่ยเดือนนี้",
+                "ทะเบียนรถ (ทีม)": avgPricePerLiter.toLocaleString('th-TH', {minimumFractionDigits: 2}) + " บาท/ลิตร"
+            });
+            
+            if (totalJobs > 0) {
+                let avgCostPerJob = totalPrice / totalJobs;
+                exportData.push({
+                    "วันที่": "เฉลี่ยต่อเคส (ต้นทุน)",
+                    "ทะเบียนรถ (ทีม)": avgCostPerJob.toLocaleString('th-TH', {minimumFractionDigits: 2}) + " บาท/เคส"
+                });
+            } else {
+                exportData.push({
+                    "วันที่": "เฉลี่ยต่อเคส (ต้นทุน)",
+                    "ทะเบียนรถ (ทีม)": "ไม่มีประวัติการเข้าเคสงาน"
+                });
+            }
+
+            // สร้างและดาวน์โหลด
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "ต้นทุนค่าน้ำมัน");
             
-            // ตั้งชื่อไฟล์ตามเดือนและรถที่เลือก
             let safeVehicleName = formValues.vehicle === 'all' ? 'รวมทุกคัน' : formValues.vehicle;
-            XLSX.writeFile(wb, `รายงานต้นทุนน้ำมัน_${safeVehicleName}_${formValues.month}.xlsx`);
+            XLSX.writeFile(wb, `รายงานน้ำมัน_${safeVehicleName}_${formValues.month}.xlsx`);
             
             hideLoader();
             showToast('success', 'ดาวน์โหลดไฟล์ Excel เรียบร้อย!');
