@@ -5,10 +5,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const previewContainer = document.getElementById('imagePreviewContainer');
     const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
-    let selectedFiles = [];
+    // ระบบจัดการเมนูสลับหน้า (Tabs)
+    const tabFormBtn = document.getElementById('tabFormBtn');
+    const tabHistBtn = document.getElementById('tabHistBtn');
+    const formSection = document.getElementById('formSection');
+    const historySection = document.getElementById('historySection');
 
-    // โหลดประวัติทันทีเมื่อเข้าหน้านี้
-    loadHistory();
+    if (tabFormBtn && tabHistBtn) {
+        // เมื่อคลิกปุ่ม "บันทึกค่าแรกเข้า"
+        tabFormBtn.addEventListener('click', () => {
+            formSection.classList.remove('hidden');
+            historySection.classList.add('hidden');
+            
+            // เปลี่ยนสีปุ่มให้รู้ว่ากำลังอยู่หน้านี้
+            tabFormBtn.className = "px-6 py-2.5 text-sm font-bold rounded-xl transition-all bg-emerald-50 text-emerald-600 shadow-sm";
+            tabHistBtn.className = "px-6 py-2.5 text-sm font-bold rounded-xl transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-700";
+        });
+
+        // เมื่อคลิกปุ่ม "ประวัติของฉัน"
+        tabHistBtn.addEventListener('click', () => {
+            formSection.classList.add('hidden');
+            historySection.classList.remove('hidden');
+            
+            // เปลี่ยนสีปุ่มให้รู้ว่ากำลังอยู่หน้านี้
+            tabHistBtn.className = "px-6 py-2.5 text-sm font-bold rounded-xl transition-all bg-indigo-50 text-indigo-600 shadow-sm";
+            tabFormBtn.className = "px-6 py-2.5 text-sm font-bold rounded-xl transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-700";
+            
+            loadHistory(); // โหลดข้อมูลประวัติทันทีที่กดเข้าหน้านี้
+        });
+    }
+
+    let selectedFiles = [];
 
     fileInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
@@ -160,18 +187,16 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // เช็คการอัปโหลดรูปภาพที่เราถอด required ออกไป
         if (selectedFiles.length === 0) {
             return Toast.error('กรุณาถ่ายรูปหรือแนบรูปภาพอย่างน้อย 1 รูป ก่อนกดบันทึก');
         }
 
-        // ระบบเด้งถามยืนยันอีกรอบก่อนส่งข้อมูล (SweetAlert2)
         const confirmResult = await Swal.fire({
             title: 'ยืนยันการบันทึก?',
             text: "ตรวจสอบข้อมูลชื่อลูกค้าและเลข Non ให้ถูกต้องก่อนยืนยัน",
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#059669', // สีเขียวให้เข้ากับธีมหน้าแรกเข้า
+            confirmButtonColor: '#059669', 
             cancelButtonColor: '#94a3b8',
             confirmButtonText: '✅ ยืนยันบันทึก',
             cancelButtonText: 'ยกเลิก',
@@ -182,7 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // ถ้ายกเลิก ก็ให้หยุดการทำงานตรงนี้เลย
         if (!confirmResult.isConfirmed) return;
 
         const formData = new FormData(form);
@@ -199,22 +223,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (result.success) {
-                // แจ้งเตือนเครื่องหมายถูกสวยๆ เมื่อบันทึกสำเร็จ
+                // แจ้งเตือนเสร็จ แล้วพอกดปุ่ม "ดูประวัติของฉัน" จะสลับหน้าจอให้อัตโนมัติ!
                 Swal.fire({
                     title: 'สำเร็จ!',
                     text: 'บันทึกข้อมูลเรียบร้อยแล้ว (ระบบบันทึกเวลาให้คุณอัตโนมัติ)',
                     icon: 'success',
-                    confirmButtonText: 'ตกลง',
+                    confirmButtonText: 'ดูประวัติของฉัน',
                     confirmButtonColor: '#059669',
                     customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                }).then(() => {
+                    // สลับไปที่แท็บประวัติ
+                    if(tabHistBtn) tabHistBtn.click();
                 });
                 
                 form.reset();
                 selectedFiles = [];
                 previewContainer.innerHTML = '';
-                
-                // สั่งให้รีโหลดตารางประวัติใหม่ทันที
-                loadHistory();
             } else {
                 Toast.error(result.error);
             }
