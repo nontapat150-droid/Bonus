@@ -1,14 +1,18 @@
 <?php
+// api/notifications/get_notifications.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
 header('Content-Type: application/json');
 requireLogin();
+
+date_default_timezone_set('Asia/Bangkok');
 
 $user_id = $_SESSION['user_id'];
 $team_id = $_SESSION['team_id'] ?? null;
 $is_admin = hasRole(['admin', 'super_admin']);
 
 try {
+    // 1. ตารางพื้นฐาน
     $pdo->exec("CREATE TABLE IF NOT EXISTS notifications (
         id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
@@ -30,6 +34,7 @@ try {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // 2. ดึงการแจ้งเตือนจากระบบ (แอดมินส่งมา)
     if ($is_admin) {
         $stmt = $pdo->prepare("SELECT n.id, n.title, n.message, n.team_id, t.team_name, n.created_at,
             COALESCE(u.full_name, 'System') AS creator_name,
@@ -59,17 +64,71 @@ try {
         $stmt->execute($params);
     }
 
-    $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $db_notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // ==========================================
+    // 3. ระบบแจ้งเตือนอัจฉริยะ (Smart Alerts)
+    // ==========================================
+    $smart_notifications = [];
     $unreadCount = 0;
-    foreach ($notifications as &$notification) {
+
+    // A. แจ้งเตือนเช็คอินเข้างาน
+    $stmtUser = $pdo->prepare("SELECT allow_late_time FROM users WHERE id = ?");
+    $stmtUser->execute([$user_id]);
+    $userLateTime = $stmtUser->fetchColumn() ?: '08:30:00';
+
+    $stmtCheckin = $pdo->prepare("SELECT COUNT(*) FROM checkins WHERE user_id = ? AND DATE(checkin_time) = CURDATE()");
+    $stmtCheckin->execute([$user_id]);
+    $hasCheckedIn = $stmtCheckin->fetchColumn() > 0;
+
+    $currentTime = date('H:i:s');
+    // ถ้ายังไม่เช็คอิน และ ยังไม่เลยเวลาเข้างาน (เตือนตั้งแต่ 06:00 ถึง เวลาสาย)
+    if (!$hasCheckedIn && $currentTime >= '06:00:00' && $currentTime <= $userLateTime) {
+        $smart_notifications[] = [
+            'id' => 'alert_checkin',
+            'title' => '⏰ ใกล้ถึงเวลาเช็คอินแล้วนะ!',
+            'message' => "คุณยังไม่ได้ทำการเช็คอินเข้างานในวันนี้ (เวลาเข้างานของคุณคือ $userLateTime) อย่าลืมอัปโหลดรูปเช็คอินนะครับ",
+            'team_name' => 'ระบบอัตโนมัติ',
+            'creator_name' => 'Bonus AI',
+            'created_at' => date('Y-m-d H:i:s'),
+            'is_read' => 0 // แสดงเป็นยังไม่ได้อ่านเสมอจนกว่าจะเช็คอิน
+        ];
+        $unreadCount++;
+    }
+
+    // B. แจ้งเตือนงานที่ได้รับมอบหมาย
+    if ($team_id) {
+        $stmtJob = $pdo->prepare("SELECT COUNT(*) FROM jobs WHERE team_id = ? AND (DATE(created_at) = CURDATE() OR plan_arrival_date = CURDATE())");
+        $stmtJob->execute([$team_id]);
+        $jobCount = $stmtJob->fetchColumn();
+
+        if ($jobCount > 0) {
+            $smart_notifications[] = [
+                'id' => 'alert_job',
+                'title' => '📦 มีงานมอบหมายใหม่',
+                'message' => "วันนี้ทีมของคุณมีงานที่ต้องรับผิดชอบจำนวน $jobCount งาน กรุณาตรวจสอบแผนที่และรายละเอียดในระบบจัดส่งอัจฉริยะ",
+                'team_name' => 'ระบบจัดส่ง',
+                'creator_name' => 'Bonus AI',
+                'created_at' => date('Y-m-d H:i:s'),
+                'is_read' => 0 
+            ];
+            $unreadCount++;
+        }
+    }
+
+    // 4. รวมการแจ้งเตือนทั้งหมด (เอา Smart Alerts ไว้บนสุด)
+    foreach ($db_notifications as &$notification) {
         $notification['team_name'] = $notification['team_name'] ?: 'ทุกทีม';
         $notification['is_read'] = (int)$notification['is_read'];
         if (!$notification['is_read']) {
             $unreadCount++;
         }
     }
+    
+    $final_notifications = array_merge($smart_notifications, $db_notifications);
 
-    echo json_encode(['success' => true, 'notifications' => $notifications, 'unread_count' => $unreadCount]);
+    echo json_encode(['success' => true, 'notifications' => $final_notifications, 'unread_count' => $unreadCount]);
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
+?>
