@@ -1,8 +1,15 @@
 // assets/js/oil_report.js
 
-let costChartInstance = null;
-let litersChartInstance = null;
+let combinedTrendChartInstance = null;
+let distanceTrendChartInstance = null;
+let compareCostChartInstance = null;
+let compareLitersChartInstance = null;
+let compareDistanceChartInstance = null;
+let compareJobsChartInstance = null;
+let monthlyCompareChartInstance = null;
 let allRecords = [];
+let monthlyData = [];
+let isCompareMode = false;
 
 // ตัวแปรเก็บรายชื่อ Dropdown สำหรับการแก้ไข
 let editUsersList = [];
@@ -10,11 +17,7 @@ let editTeamsList = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     // Set default dates (Current month)
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-
-    document.getElementById('start_date').value = firstDay.toISOString().split('T')[0];
-    document.getElementById('end_date').value = today.toISOString().split('T')[0];
+    applyDatePreset('this_month');
 
     // Load initial data
     fetchData();
@@ -27,6 +30,42 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchData();
     });
 });
+
+window.applyDatePreset = function(preset) {
+    const startInput = document.getElementById('start_date');
+    const endInput = document.getElementById('end_date');
+    const today = new Date();
+    
+    if (preset === 'this_month') {
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        startInput.value = firstDay.toISOString().split('T')[0];
+        endInput.value = today.toISOString().split('T')[0];
+    } else if (preset === 'last_month') {
+        const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        startInput.value = firstDayLastMonth.toISOString().split('T')[0];
+        endInput.value = lastDayLastMonth.toISOString().split('T')[0];
+    }
+};
+
+window.toggleCompareMode = function() {
+    isCompareMode = !isCompareMode;
+    const section = document.getElementById('compareSection');
+    const btn = document.getElementById('compareBtn');
+    
+    if (isCompareMode) {
+        section.classList.remove('hidden');
+        btn.innerHTML = '<span class="mr-1"><i data-lucide="layout" class="w-4 h-4"></i></span> ดูรายงานปกติ';
+        btn.style.background = 'var(--c-indigo)';
+        renderComparisonCharts();
+        renderMonthlyCompareChart();
+    } else {
+        section.classList.add('hidden');
+        btn.innerHTML = '<span class="mr-1"><i data-lucide="users" class="w-4 h-4"></i></span> เปรียบเทียบรถ';
+        btn.style.background = 'var(--c-secondary)';
+    }
+    lucide.createIcons();
+};
 
 async function loadEditOptions() {
     try {
@@ -54,9 +93,15 @@ async function fetchData() {
 
         if (data.success) {
             updateStats(data.stats);
-            renderCharts(data.chart);
-            renderTable(data.records);
             allRecords = data.records;
+            monthlyData = data.monthly || [];
+            renderTrendCharts(data.chart, data.records);
+            if (isCompareMode) {
+                renderComparisonCharts();
+                renderMonthlyCompareChart();
+            }
+            renderTable(data.records);
+            
             if (data.records.length > 0) {
                 Toast.success(`โหลดข้อมูลสำเร็จ พบทั้งหมด ${data.records.length} รายการ`);
             }
@@ -78,25 +123,191 @@ function updateStats(stats) {
     document.getElementById('stat_total_jobs').textContent = stats.total_jobs ? stats.total_jobs.toLocaleString('th-TH') : '0';
 }
 
-function renderCharts(chartData) {
-    const labels = chartData.map(item => item.record_date);
-    const costs = chartData.map(item => parseFloat(item.daily_cost));
-    const liters = chartData.map(item => parseFloat(item.daily_liters));
+function renderTrendCharts(dailyData, records) {
+    const labels = dailyData.map(item => item.record_date);
+    const costs = dailyData.map(item => parseFloat(item.daily_cost));
+    const liters = dailyData.map(item => parseFloat(item.daily_liters));
 
-    const ctxCost = document.getElementById('costChart').getContext('2d');
-    if (costChartInstance) costChartInstance.destroy();
-    costChartInstance = new Chart(ctxCost, {
-        type: 'bar',
-        data: { labels, datasets: [{ label: 'ค่าใช้จ่าย (บาท)', data: costs, backgroundColor: 'rgba(99, 102, 241, 0.7)', borderColor: 'rgb(99, 102, 241)', borderWidth: 1, borderRadius: 6 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
+    // คำนวณระยะทางรายวัน
+    const dailyDistanceMap = {};
+    records.forEach(r => {
+        const date = r.date_recorded.split(' ')[0];
+        dailyDistanceMap[date] = (dailyDistanceMap[date] || 0) + parseFloat(r.distance);
+    });
+    const distances = labels.map(date => dailyDistanceMap[date] || 0);
+
+    // 1. Combined Trend Chart (Cost & Liters)
+    const ctxCombined = document.getElementById('combinedTrendChart').getContext('2d');
+    if (combinedTrendChartInstance) combinedTrendChartInstance.destroy();
+    combinedTrendChartInstance = new Chart(ctxCombined, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'ค่าใช้จ่าย (บาท)',
+                    data: costs,
+                    borderColor: 'rgb(99, 102, 241)',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    yAxisID: 'y',
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: 'ปริมาณ (ลิตร)',
+                    data: liters,
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    yAxisID: 'y1',
+                    tension: 0.3,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'บาท' } },
+                y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'ลิตร' } }
+            }
+        }
     });
 
-    const ctxLiters = document.getElementById('litersChart').getContext('2d');
-    if (litersChartInstance) litersChartInstance.destroy();
-    litersChartInstance = new Chart(ctxLiters, {
-        type: 'line',
-        data: { labels, datasets: [{ label: 'ปริมาณน้ำมัน (ลิตร)', data: liters, backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: '#10b981', borderWidth: 3, tension: 0.4, fill: true, pointBackgroundColor: '#10b981', pointRadius: 4 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
+    // 2. Distance Trend Chart
+    const ctxDist = document.getElementById('distanceTrendChart').getContext('2d');
+    if (distanceTrendChartInstance) distanceTrendChartInstance.destroy();
+    distanceTrendChartInstance = new Chart(ctxDist, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'ระยะทางวิ่งรายวัน (กม.)',
+                data: distances,
+                backgroundColor: 'rgba(56, 189, 248, 0.7)',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'กิโลเมตร' } } }
+        }
+    });
+}
+
+function renderComparisonCharts() {
+    const vehicleStats = {};
+    allRecords.forEach(r => {
+        const plate = r.team_name || r.license_plate;
+        if (!vehicleStats[plate]) {
+            vehicleStats[plate] = { cost: 0, liters: 0, distance: 0, jobs: 0, count: 0 };
+        }
+        vehicleStats[plate].cost += parseFloat(r.total_price);
+        vehicleStats[plate].liters += parseFloat(r.liters);
+        vehicleStats[plate].distance += parseFloat(r.distance);
+        vehicleStats[plate].jobs += parseInt(r.job_count);
+        vehicleStats[plate].count++;
+    });
+
+    const labels = Object.keys(vehicleStats);
+    const costs = labels.map(l => vehicleStats[l].cost);
+    const liters = labels.map(l => vehicleStats[l].liters);
+    const distances = labels.map(l => vehicleStats[l].distance);
+    const avgJobs = labels.map(l => vehicleStats[l].jobs);
+
+    const chartConfigs = [
+        { id: 'compareCostChart', label: 'ยอดเงินรวมแต่ละคัน (บาท)', data: costs, color: '#6366f1' },
+        { id: 'compareLitersChart', label: 'ปริมาณน้ำมันรวม (ลิตร)', data: liters, color: '#10b981' },
+        { id: 'compareDistanceChart', label: 'ระยะทางวิ่งรวม (กม.)', data: distances, color: '#0ea5e9' },
+        { id: 'compareJobsChart', label: 'จำนวนเคสงานรวม (รอบ)', data: avgJobs, color: '#f59e0b' }
+    ];
+
+    const instances = [compareCostChartInstance, compareLitersChartInstance, compareDistanceChartInstance, compareJobsChartInstance];
+    
+    chartConfigs.forEach((config, idx) => {
+        const canvas = document.getElementById(config.id);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (idx === 0 && compareCostChartInstance) compareCostChartInstance.destroy();
+        else if (idx === 1 && compareLitersChartInstance) compareLitersChartInstance.destroy();
+        else if (idx === 2 && compareDistanceChartInstance) compareDistanceChartInstance.destroy();
+        else if (idx === 3 && compareJobsChartInstance) compareJobsChartInstance.destroy();
+
+        const newChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: config.label,
+                    data: config.data,
+                    backgroundColor: config.color + 'cc',
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, title: { display: true, text: config.label, font: { size: 14, weight: 'bold' } } }
+            }
+        });
+        if (idx === 0) compareCostChartInstance = newChart;
+        else if (idx === 1) compareLitersChartInstance = newChart;
+        else if (idx === 2) compareDistanceChartInstance = newChart;
+        else if (idx === 3) compareJobsChartInstance = newChart;
+    });
+}
+
+function renderMonthlyCompareChart() {
+    if (monthlyData.length === 0) return;
+
+    const labels = monthlyData.map(m => {
+        const [year, month] = m.month_label.split('-');
+        const date = new Date(year, month - 1);
+        return date.toLocaleDateString('th-TH', { month: 'short', year: '2-digit' });
+    });
+    
+    const costs = monthlyData.map(m => parseFloat(m.monthly_cost));
+    const liters = monthlyData.map(m => parseFloat(m.monthly_liters));
+    const jobs = monthlyData.map(m => parseInt(m.monthly_jobs));
+
+    let canvas = document.getElementById('monthlyCompareChart');
+    if (!canvas) {
+        const container = document.createElement('div');
+        container.className = 'card mt-6';
+        container.innerHTML = `
+            <h3 class="font-bold text-[var(--c-text-1)] mb-4 flex items-center">
+                <i data-lucide="calendar" class="w-5 h-5 mr-2 text-rose-500"></i>
+                สรุปยอดเปรียบเทียบระหว่างเดือน (ปีปัจจุบัน)
+            </h3>
+            <div class="h-80"><canvas id="monthlyCompareChart"></canvas></div>
+        `;
+        document.getElementById('compareSection').appendChild(container);
+        canvas = document.getElementById('monthlyCompareChart');
+        lucide.createIcons();
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (monthlyCompareChartInstance) monthlyCompareChartInstance.destroy();
+    
+    monthlyCompareChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'ยอดเงิน (บาท)', data: costs, backgroundColor: 'rgba(99, 102, 241, 0.8)', borderRadius: 6 },
+                { label: 'น้ำมัน (ลิตร)', data: liters, backgroundColor: 'rgba(16, 185, 129, 0.8)', borderRadius: 6 },
+                { label: 'เคสงาน (รอบ)', data: jobs, backgroundColor: 'rgba(245, 158, 11, 0.8)', borderRadius: 6 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } },
+            plugins: { legend: { position: 'top' } }
+        }
     });
 }
 
@@ -144,7 +355,8 @@ function renderTable(records) {
                   `<button onclick="viewImages(${index})" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all hover:shadow-sm">📷</button>` :
                   `<span class="text-slate-300 text-xs italic mr-2">-</span>`
                 }
-                <button onclick="openEditOilModal(${index})" class="text-amber-600 hover:text-amber-800 bg-amber-50 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all hover:shadow-sm ml-1">✏️</button>
+                <button onclick="deleteOilRecord(${row.id})" class="text-rose-600 hover:text-rose-800 bg-rose-50 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all hover:shadow-sm">🗑️</button>
+                <button onclick="openManageOilModal(${index})" class="text-amber-600 hover:text-amber-800 bg-amber-50 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all hover:shadow-sm ml-1">✏️</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -180,15 +392,53 @@ window.viewImages = function(recordIndex) {
 window.closeImageModal = function() { document.getElementById('imageModal').classList.add('hidden'); };
 
 // ----------------------------------------------------
-// ระบบแก้ไขข้อมูลผู้เติม / ทะเบียนรถ
+// ระบบเพิ่มย้อนหลัง / แก้ไขข้อมูล / ลบข้อมูล (Manage)
 // ----------------------------------------------------
-window.openEditOilModal = function(index) {
+
+window.openAddOilModal = function() {
+    document.getElementById('manageOilModalTitle').innerHTML = '<i data-lucide="plus-circle" class="w-5 h-5 inline-block"></i> เพิ่มข้อมูลค่าน้ำมัน (ย้อนหลัง)';
+    document.getElementById('btnSaveManageOil').textContent = 'บันทึกรายการใหม่';
+    document.getElementById('manage_record_id').value = '';
+    
+    // Clear fields
+    const now = new Date();
+    // Format to YYYY-MM-DDTHH:mm
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(now - tzOffset)).toISOString().slice(0,16);
+    document.getElementById('manage_date_recorded').value = localISOTime;
+    
+    const selTech = document.getElementById('manage_tech_id');
+    const selPlate = document.getElementById('manage_license_plate');
+    
+    selTech.innerHTML = '<option value="">-- เลือกผู้เติมน้ำมัน --</option>';
+    editUsersList.forEach(u => selTech.innerHTML += `<option value="${u.id}">${u.full_name}</option>`);
+    
+    selPlate.innerHTML = '<option value="">-- เลือกทะเบียนรถ --</option>';
+    editTeamsList.forEach(t => selPlate.innerHTML += `<option value="${t.team_name}">${t.team_name}</option>`);
+
+    document.getElementById('manage_mileage').value = '';
+    document.getElementById('manage_liters').value = '';
+    document.getElementById('manage_price_per_liter').value = '';
+    document.getElementById('manage_distance').value = '';
+    document.getElementById('manage_job_count').value = '0';
+    document.getElementById('manage_images').value = '';
+    document.getElementById('manage_image_section').style.display = 'block';
+
+    const modal = document.getElementById('manageOilModal');
+    modal.classList.remove('hidden');
+    lucide.createIcons();
+};
+
+window.openManageOilModal = function(index) {
     const record = allRecords[index];
     if (!record) return;
 
+    document.getElementById('manageOilModalTitle').innerHTML = '<i data-lucide="edit-2" class="w-5 h-5 inline-block"></i> แก้ไขข้อมูลน้ำมัน';
+    document.getElementById('btnSaveManageOil').textContent = 'บันทึกการแก้ไข';
+
     // เติมข้อมูลลง Dropdown
-    const selTech = document.getElementById('edit_tech_id');
-    const selPlate = document.getElementById('edit_license_plate');
+    const selTech = document.getElementById('manage_tech_id');
+    const selPlate = document.getElementById('manage_license_plate');
     
     selTech.innerHTML = '<option value="">-- เลือกผู้เติมน้ำมัน --</option>';
     editUsersList.forEach(u => selTech.innerHTML += `<option value="${u.id}">${u.full_name}</option>`);
@@ -197,37 +447,126 @@ window.openEditOilModal = function(index) {
     editTeamsList.forEach(t => selPlate.innerHTML += `<option value="${t.team_name}">${t.team_name}</option>`);
 
     // Set ค่าปัจจุบัน
-    document.getElementById('edit_record_id').value = record.id;
+    document.getElementById('manage_record_id').value = record.id;
     selTech.value = record.tech_id;
     selPlate.value = record.license_plate;
+    
+    const d = new Date(record.date_recorded);
+    const tzOffset = d.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(d - tzOffset)).toISOString().slice(0,16);
+    document.getElementById('manage_date_recorded').value = localISOTime;
 
-    const modal = document.getElementById('editOilModal');
+    document.getElementById('manage_mileage').value = record.mileage;
+    document.getElementById('manage_liters').value = record.liters;
+    document.getElementById('manage_price_per_liter').value = record.price_per_liter;
+    document.getElementById('manage_distance').value = record.distance;
+    document.getElementById('manage_job_count').value = record.job_count;
+    
+    document.getElementById('manage_images').value = '';
+    document.getElementById('manage_image_section').style.display = 'none'; // ซ่อนส่วนอัปโหลดรูปเวลาแก้ไข
+
+    const modal = document.getElementById('manageOilModal');
     modal.classList.remove('hidden');
+    lucide.createIcons();
 };
 
-window.closeEditOilModal = function() { document.getElementById('editOilModal').classList.add('hidden'); };
+window.closeManageOilModal = function() { document.getElementById('manageOilModal').classList.add('hidden'); };
 
-window.saveEditOil = async function() {
-    const id = document.getElementById('edit_record_id').value;
-    const tech_id = document.getElementById('edit_tech_id').value;
-    const license_plate = document.getElementById('edit_license_plate').value;
+window.saveManageOil = async function() {
+    const id = document.getElementById('manage_record_id').value;
+    const tech_id = document.getElementById('manage_tech_id').value;
+    const license_plate = document.getElementById('manage_license_plate').value;
+    const date_recorded = document.getElementById('manage_date_recorded').value;
+    const mileage = document.getElementById('manage_mileage').value;
+    const liters = document.getElementById('manage_liters').value;
+    const price_per_liter = document.getElementById('manage_price_per_liter').value;
+    const distance = document.getElementById('manage_distance').value;
+    const job_count = document.getElementById('manage_job_count').value;
 
-    if (!tech_id || !license_plate) return Toast.error('กรุณาเลือกข้อมูลให้ครบถ้วน');
+    if (!tech_id || !license_plate || !date_recorded || !mileage || !liters || !price_per_liter) {
+        return Toast.error('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน (ที่มีเครื่องหมาย *)');
+    }
 
     Loader.show();
     try {
-        const res = await fetch('api/oil/edit_record.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ id, tech_id, license_plate })
-        });
-        const data = await res.json();
-        if(data.success) {
-            Toast.success('แก้ไขข้อมูลผู้เติมและทะเบียนเรียบร้อย');
-            closeEditOilModal();
-            fetchData(); // รีเฟรชตารางใหม่
-        } else { Toast.error('เกิดข้อผิดพลาด: ' + data.error); }
+        if (id) {
+            // Edit existing
+            const res = await fetch('api/oil/edit_record.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ 
+                    id, tech_id, license_plate, date_recorded, mileage, liters, price_per_liter, distance, job_count
+                })
+            });
+            const data = await res.json();
+            if(data.success) {
+                Toast.success('แก้ไขข้อมูลน้ำมันเรียบร้อย');
+                closeManageOilModal();
+                fetchData();
+            } else { Toast.error('เกิดข้อผิดพลาด: ' + data.error); }
+        } else {
+            // Add new (using submit_record.php which accepts FormData)
+            const formData = new FormData();
+            formData.append('tech_id', tech_id);
+            formData.append('license_plate', license_plate);
+            formData.append('date_recorded', date_recorded);
+            formData.append('mileage', mileage);
+            formData.append('liters', liters);
+            formData.append('price_per_liter', price_per_liter);
+            formData.append('distance', distance);
+            formData.append('job_count', job_count);
+            
+            const fileInput = document.getElementById('manage_images');
+            if (fileInput.files.length > 0) {
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    formData.append('oil_images[]', fileInput.files[i]);
+                }
+            }
+
+            const res = await fetch('api/oil/submit_record.php', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if(data.success) {
+                Toast.success('เพิ่มข้อมูลน้ำมันย้อนหลังเรียบร้อย');
+                closeManageOilModal();
+                fetchData();
+            } else { Toast.error('เกิดข้อผิดพลาด: ' + data.error); }
+        }
     } catch(e) { Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'); } finally { Loader.hide(); }
+};
+
+window.deleteOilRecord = function(id) {
+    Swal.fire({
+        title: 'ยืนยันการลบข้อมูล?',
+        text: "คุณแน่ใจหรือไม่ที่จะลบรายการค่าน้ำมันนี้? การลบจะไม่สามารถกู้คืนได้",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'ลบข้อมูล',
+        cancelButtonText: 'ยกเลิก',
+        reverseButtons: true
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Loader.show();
+            try {
+                const res = await fetch('api/oil/delete_record.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ id })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    Toast.success('ลบข้อมูลเรียบร้อยแล้ว');
+                    fetchData();
+                } else {
+                    Toast.error('ลบข้อมูลไม่สำเร็จ: ' + data.error);
+                }
+            } catch(e) { Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'); } finally { Loader.hide(); }
+        }
+    });
 };
 
 // ----------------------------------------------------
@@ -280,6 +619,7 @@ window.exportOilExcel = function() {
     
     Toast.success('ดาวน์โหลดไฟล์ Excel เรียบร้อย!');
 };
+
 // ====================================================
 // ระบบนำเข้าข้อมูลน้ำมัน (Import Excel)
 // ====================================================
@@ -305,7 +645,6 @@ document.getElementById('importOilExcel')?.addEventListener('change', function(e
                 return Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลในไฟล์ Excel', 'error');
             }
 
-            // แมปชื่อคอลัมน์จาก Excel ให้ตรงกับฐานข้อมูล (รองรับไฟล์ที่เกิดจาก Export ด้านบน)
             const payload = jsonData.map(row => {
                 let dateVal = row['วันที่'] || row['Date'] || '';
                 return {
@@ -323,7 +662,6 @@ document.getElementById('importOilExcel')?.addEventListener('change', function(e
                 return Swal.fire('ข้อผิดพลาด', 'รูปแบบคอลัมน์ไม่ถูกต้อง (ต้องมีคอลัมน์ ทะเบียนรถ และ ลิตร)', 'error');
             }
 
-            // ส่งข้อมูลไปยัง Backend
             const res = await fetch('api/oil/import_records.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -334,7 +672,7 @@ document.getElementById('importOilExcel')?.addEventListener('change', function(e
             
             if (result.success) {
                 Swal.fire('สำเร็จ!', `นำเข้าข้อมูลน้ำมันสำเร็จ ${result.imported} รายการ`, 'success');
-                fetchData(); // รีเฟรชตารางใหม่
+                fetchData();
             } else {
                 Swal.fire('เกิดข้อผิดพลาด', result.error, 'error');
             }
@@ -342,23 +680,18 @@ document.getElementById('importOilExcel')?.addEventListener('change', function(e
             Swal.fire('ข้อผิดพลาด', 'ไฟล์ Excel รูปแบบไม่ถูกต้อง', 'error');
             console.error(err);
         } finally {
-            document.getElementById('importOilExcel').value = ''; // เคลียร์ช่อง input
+            document.getElementById('importOilExcel').value = '';
         }
     };
     reader.readAsArrayBuffer(file);
 });
 
-// ฟังก์ชันแปลงวันที่จาก Excel ให้เป็นระบบหลังบ้านอ่านได้
 function formatExcelDate(excelDate) {
     if (!excelDate) return null;
-    
-    // กรณีที่ Excel เป็นรูปแบบตัวเลข (Serial Date)
     if (typeof excelDate === 'number') {
         const date = new Date((excelDate - (25567 + 2)) * 86400 * 1000);
         return date.toISOString().split('T')[0] + ' 12:00:00';
-    } 
-    // กรณีเก็บเป็น Text
-    else if (typeof excelDate === 'string') {
+    } else if (typeof excelDate === 'string') {
         let parts = excelDate.split(/[\/\- ]/);
         if (parts.length >= 3) {
             const day = parts[0].padStart(2, '0');
@@ -370,7 +703,7 @@ function formatExcelDate(excelDate) {
             if (excelDate.includes(':')) {
                 const timeMatch = excelDate.match(/\d{2}:\d{2}(:\d{2})?/);
                 if(timeMatch) time = timeMatch[0];
-                if(time.length === 5) time += ':00'; // ทำให้เป็น HH:mm:ss
+                if(time.length === 5) time += ':00';
             }
             return `${year}-${month}-${day} ${time}`;
         }

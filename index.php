@@ -610,7 +610,8 @@ if ($page === 'home') {
                                     el.closest('.mobile-drawer') || 
                                     el.closest('.mobile-drawer-backdrop') || 
                                     el.closest('[id$="Modal"]') ||
-                                    el.classList.contains('topbar');
+                                    el.classList.contains('topbar') ||
+                                    el.classList.contains('hidden-tooltip');
                     if (!isKnown && !el.classList.contains('hidden')) {
                         console.warn('⚠️ [Overlap Detector] พบ Z-Index สูงผิดปกติ:', zIndex, el);
                         el.style.outline = '3px dashed red';
