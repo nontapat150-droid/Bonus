@@ -1,6 +1,6 @@
 // assets/js/oil_report.js
 
-// 🚀 สร้างระบบแจ้งเตือนและโหลดแยกอิสระ ตัดปัญหาการชนกันของไฟล์ common.js
+// 🚀 สร้างระบบแจ้งเตือนและโหลดแยกอิสระ
 const showToast = (icon, msg) => {
     if (typeof Swal !== 'undefined') {
         Swal.fire({ toast: true, position: 'top-end', icon: icon, title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true });
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadEditOptions();
 
     document.getElementById('filterBtn')?.addEventListener('click', () => {
-        showToast('info', 'กำลังอัปเดตข้อมูลตามวันที่เลือก...');
+        showToast('info', 'กำลังอัปเดตข้อมูลตามวันที่และรถที่เลือก...');
         fetchData();
     });
 
@@ -148,13 +148,13 @@ async function loadEditOptions() {
         const resU = await fetch('api/inventory/get_outbound_targets.php');
         const dataU = await resU.json();
         if(dataU.success) editUsersList = dataU.users;
+        
         const resT = await fetch('api/oil/get_team_plates.php');
         const dataT = await resT.json();
         if(dataT.success) {
             editTeamsList = dataT.data;
             if (isCompareMode) fillVehicleCompareSelector();
             
-            // นำรายชื่อรถไปแสดงในกล่องตัวกรอง
             const filterPlate = document.getElementById('filter_license_plate');
             if (filterPlate) {
                 const currentVal = filterPlate.value; 
@@ -162,7 +162,6 @@ async function loadEditOptions() {
                 editTeamsList.forEach(t => {
                     filterPlate.innerHTML += `<option value="${t.team_name}">${t.team_name}</option>`;
                 });
-                // จำค่าเดิมที่เลือกไว้
                 if ([...filterPlate.options].some(o => o.value === currentVal)) {
                     filterPlate.value = currentVal;
                 }
@@ -176,7 +175,6 @@ async function fetchData(silent = false) {
     const endDate = document.getElementById('end_date').value;
     const tbody = document.getElementById('oilTableBody');
     
-    // ดึงค่าป้ายทะเบียนที่ถูกเลือก
     const filterPlate = document.getElementById('filter_license_plate');
     const licensePlate = filterPlate ? filterPlate.value : 'all';
     
@@ -185,7 +183,6 @@ async function fetchData(silent = false) {
     }
 
     try {
-        // ส่งตัวแปร license_plate พ่วงไปกับ URL ด้วย
         const response = await fetch(`api/oil/get_records.php?start_date=${startDate}&end_date=${endDate}&license_plate=${encodeURIComponent(licensePlate)}`);    
         const textData = await response.text(); 
         
@@ -224,7 +221,7 @@ async function fetchData(silent = false) {
         console.error("Error Detail:", error);
         if(tbody) tbody.innerHTML = `
             <tr>
-                <td colspan="9" class="px-6 py-6 text-left text-rose-600 bg-rose-50 border border-rose-200">
+                <td colspan="10" class="px-6 py-6 text-left text-rose-600 bg-rose-50 border border-rose-200">
                     <h3 class="font-black text-lg mb-2">🚨 พบข้อผิดพลาด (JS Error)</h3>
                     <pre class="text-xs whitespace-pre-wrap"><code>${error.stack || error.message}</code></pre>
                 </td>
@@ -270,10 +267,7 @@ function renderAnalyticsCharts() {
         if (combinedTrendChartInstance) combinedTrendChartInstance.destroy();
         combinedTrendChartInstance = new Chart(ctxCost, {
             type: 'line',
-            data: {
-                labels,
-                datasets: [{ label: 'ค่าใช้จ่าย (บาท)', data: costs, borderColor: 'rgb(99, 102, 241)', backgroundColor: 'rgba(99, 102, 241, 0.1)', tension: 0.3, fill: false }]
-            },
+            data: { labels, datasets: [{ label: 'ค่าใช้จ่าย (บาท)', data: costs, borderColor: 'rgb(99, 102, 241)', backgroundColor: 'rgba(99, 102, 241, 0.1)', tension: 0.3, fill: false }] },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
     }
@@ -283,10 +277,7 @@ function renderAnalyticsCharts() {
         if (litersTrendChartInstance) litersTrendChartInstance.destroy();
         litersTrendChartInstance = new Chart(ctxLiters, {
             type: 'line',
-            data: {
-                labels,
-                datasets: [{ label: 'ปริมาณ (ลิตร)', data: liters, borderColor: 'rgb(16, 185, 129)', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3, fill: false }]
-            },
+            data: { labels, datasets: [{ label: 'ปริมาณ (ลิตร)', data: liters, borderColor: 'rgb(16, 185, 129)', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3, fill: false }] },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
     }
@@ -296,10 +287,7 @@ function renderAnalyticsCharts() {
         if (distanceTrendChartInstance) distanceTrendChartInstance.destroy();
         distanceTrendChartInstance = new Chart(ctxDist, {
             type: 'bar',
-            data: {
-                labels,
-                datasets: [{ label: 'ระยะทางวิ่ง (กม.)', data: distances, backgroundColor: 'rgba(56, 189, 248, 0.7)', borderRadius: 4 }]
-            },
+            data: { labels, datasets: [{ label: 'ระยะทางวิ่ง (กม.)', data: distances, backgroundColor: 'rgba(56, 189, 248, 0.7)', borderRadius: 4 }] },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
     }
@@ -309,10 +297,7 @@ function renderAnalyticsCharts() {
         if (efficiencyChartInstance) efficiencyChartInstance.destroy();
         efficiencyChartInstance = new Chart(ctxEff, {
             type: 'line',
-            data: {
-                labels,
-                datasets: [{ label: 'ต้นทุนเฉลี่ยต่อรอบงาน (บาท)', data: costPerJob, borderColor: 'rgb(245, 158, 11)', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.3, fill: false }]
-            },
+            data: { labels, datasets: [{ label: 'ต้นทุนเฉลี่ยต่อรอบงาน (บาท)', data: costPerJob, borderColor: 'rgb(245, 158, 11)', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.3, fill: false }] },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
     }
@@ -377,15 +362,7 @@ function renderMonthlyCompareChart() {
     });
     
     let canvas = document.getElementById('monthlyCompareChart');
-    if (!canvas) {
-        const container = document.createElement('div');
-        container.className = 'card mt-6';
-        container.innerHTML = `<h3 class="font-bold text-[var(--c-text-1)] mb-4 flex items-center"><i data-lucide="calendar" class="w-5 h-5 mr-2 text-rose-500"></i>สรุปยอดเปรียบเทียบระหว่างเดือน (ปีปัจจุบัน)</h3><div class="h-80"><canvas id="monthlyCompareChart"></canvas></div>`;
-        document.getElementById('compareSection')?.appendChild(container);
-        canvas = document.getElementById('monthlyCompareChart');
-        if(window.lucide) lucide.createIcons();
-    }
-    if(!canvas) return;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (monthlyCompareChartInstance) monthlyCompareChartInstance.destroy();
     monthlyCompareChartInstance = new Chart(ctx, {
@@ -656,7 +633,6 @@ window.deleteOilRecord = function(id) {
 };
 
 window.exportOilExcel = async function() {
-    // 1. เตรียมรายชื่อรถเพื่อใส่ใน Dropdown
     let vehicleOptions = '<option value="all">-- รวมทุกคัน --</option>';
     let vehiclesToShow = editTeamsList.map(t => t.team_name);
     if (vehiclesToShow.length === 0) {
@@ -666,11 +642,9 @@ window.exportOilExcel = async function() {
         if(v) vehicleOptions += `<option value="${v}">${v}</option>`;
     });
 
-    // 2. ตั้งค่าเดือนปัจจุบันเป็นค่าเริ่มต้น
     const today = new Date();
     const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-    // 3. แสดงหน้าต่างลอย (Popup) เลือกรถและเดือน
     const { value: formValues } = await Swal.fire({
         title: 'ส่งออกรายงาน (Excel)',
         html: `
@@ -699,16 +673,13 @@ window.exportOilExcel = async function() {
         }
     });
 
-    // 4. เมื่อผู้ใช้กดยืนยัน (ดาวน์โหลด)
     if (formValues) {
         showLoader();
         try {
-            // คำนวณหาวันที่ 1 และวันสุดท้ายของเดือนที่เลือก
             const [year, month] = formValues.month.split('-');
             const startDate = `${year}-${month}-01`;
             const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
-            // ดึงข้อมูล
             const response = await fetch(`api/oil/get_records.php?start_date=${startDate}&end_date=${endDate}`);
             const data = await response.json();
 
@@ -731,7 +702,6 @@ window.exportOilExcel = async function() {
             showToast('info', 'กำลังสร้างไฟล์ Excel พร้อมคำนวณยอดรวม...');
             let sortedRecords = [...recordsToExport].sort((a, b) => new Date(a.date_recorded) - new Date(b.date_recorded));
             
-            // --- ส่วนคำนวณยอดรวม ---
             let totalLiters = 0;
             let totalPrice = 0;
             let totalDistance = 0;
@@ -758,7 +728,6 @@ window.exportOilExcel = async function() {
                 };
             });
 
-            // คำนวณเลขไมล์ที่เพิ่มขึ้น (ถ้าเลือกรถคันเดียว ให้เอา ไมล์ล่าสุด - ไมล์น้อยสุด ของเดือนนั้น)
             let mileageIncreaseText = totalDistance;
             if (formValues.vehicle !== 'all' && sortedRecords.length > 0) {
                 let validMileages = sortedRecords.map(r => parseInt(r.mileage)).filter(m => m > 0);
@@ -771,8 +740,7 @@ window.exportOilExcel = async function() {
                 }
             }
 
-            // 5. แนบแถวสรุปข้อมูลลงท้ายตาราง
-            exportData.push({}); // เว้นบรรทัด 1 แถวเพื่อความสวยงาม
+            exportData.push({}); 
             exportData.push({ "วันที่": "========== สรุปยอดรวมประจำเดือน ==========" });
             
             exportData.push({
@@ -814,7 +782,6 @@ window.exportOilExcel = async function() {
                 });
             }
 
-            // สร้างและดาวน์โหลด
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "ต้นทุนค่าน้ำมัน");
@@ -832,59 +799,36 @@ window.exportOilExcel = async function() {
     }
 };
 
-document.getElementById('importOilExcel')?.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    Swal.fire({ title: 'กำลังอ่านไฟล์ Excel...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-    const reader = new FileReader();
-    reader.onload = async function(event) {
-        try {
-            const data = new Uint8Array(event.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
-            if (jsonData.length === 0) return Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลในไฟล์ Excel', 'error');
-            const payload = jsonData.map(row => {
-                let dateVal = row['วันที่'] || row['Date'] || '';
-                return {
-                    date: formatExcelDate(dateVal),
-                    license_plate: String(row['ทะเบียนรถ'] || '').trim(),
-                    tech_name: String(row['ชื่อผู้เติม'] || '').trim(),
-                    mileage: parseInt(row['เลขไมล์']) || 0,
-                    liters: parseFloat(row['ลิตร']) || 0,
-                    price_per_liter: parseFloat(row['ราคา/ลิตร']) || 0,
-                    total_price: parseFloat(row['ยอดเงิน(บาท)']) || (parseFloat(row['ลิตร']) * parseFloat(row['ราคา/ลิตร'])) || 0
-                };
-            }).filter(item => item.license_plate !== '' && item.liters > 0);
-            const res = await fetch('api/oil/import_records.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ records: payload }) });
-            const result = await res.json();
-            if (result.success) { Swal.fire('สำเร็จ!', `นำเข้าข้อมูลน้ำมันสำเร็จ ${result.imported} รายการ`, 'success'); fetchData(true); }
-            else { Swal.fire('เกิดข้อผิดพลาด', result.error, 'error'); }
-        } catch (err) { Swal.fire('ข้อผิดพลาด', 'ไฟล์ Excel รูปแบบไม่ถูกต้อง', 'error'); }
-        finally { document.getElementById('importOilExcel').value = ''; }
-    };
-    reader.readAsArrayBuffer(file);
-});
-
-function formatExcelDate(excelDate) {
-    if (!excelDate) return null;
-    if (typeof excelDate === 'number') {
-        const date = new Date((excelDate - (25567 + 2)) * 86400 * 1000);
-        return date.toISOString().split('T')[0] + ' 12:00:00';
-    } else if (typeof excelDate === 'string') {
-        let parts = excelDate.split(/[\/\- ]/);
-        if (parts.length >= 3) {
-            const day = parts[0].padStart(2, '0');
-            const month = parts[1].padStart(2, '0');
-            let year = parts[2];
-            if (parseInt(year) > 2500) year = (parseInt(year) - 543).toString();
-            let time = '12:00:00'; 
-            if (excelDate.includes(':')) {
-                const timeMatch = excelDate.match(/\d{2}:\d{2}(:\d{2})?/);
-                if(timeMatch) time = timeMatch[0];
-                if(time.length === 5) time += ':00';
+// 🚀 --- ฟังก์ชันนี้คือปุ่มคำนวณไมล์ใหม่ ---
+window.recalculateAllMileage = function() {
+    Swal.fire({
+        title: 'จัดเรียงและคำนวณไมล์ใหม่?',
+        text: "ระบบจะทำการเรียงลำดับวันที่การเติมน้ำมันของรถทุกคันใหม่ และคำนวณระยะทางจากเลขไมล์ให้สอดคล้องกันทั้งหมด คุณต้องการดำเนินการต่อหรือไม่?",
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#0ea5e9',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'ใช่, คำนวณใหม่เลย',
+        cancelButtonText: 'ยกเลิก',
+        reverseButtons: true
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            showLoader();
+            try {
+                // โปรดตรวจสอบว่าไฟล์ api/oil/recalculate.php มีอยู่ในโฟลเดอร์ตามที่คุณได้สร้างไว้ก่อนหน้านี้
+                const res = await fetch('api/oil/recalculate.php');
+                const data = await res.json();
+                if (data.success) {
+                    showToast('success', 'เรียงวันที่และคำนวณระยะทางใหม่เรียบร้อยแล้ว!');
+                    fetchData(true); 
+                } else {
+                    Swal.fire('เกิดข้อผิดพลาด', data.error, 'error');
+                }
+            } catch (e) {
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อกับ api/oil/recalculate.php ได้ กรุณาตรวจสอบว่ามีไฟล์นี้อยู่จริง', 'error');
+            } finally {
+                hideLoader();
             }
-            return `${year}-${month}-${day} ${time}`;
         }
-    }
-    return excelDate;
-}
+    });
+};
