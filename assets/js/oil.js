@@ -23,6 +23,17 @@ document.addEventListener('DOMContentLoaded', () => {
         totalInput.value = (liters * price).toFixed(2);
     };
 
+    const updateTeamInfo = (teamName) => {
+        const teamInfoEl = document.getElementById('displayUserTeam');
+        if (!teamInfoEl) return;
+
+        if (teamName) {
+            teamInfoEl.innerHTML = `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black">🚗 ทีม: ${teamName}</span>`;
+        } else {
+            teamInfoEl.innerHTML = '<span class="text-slate-400 text-xs">ยังไม่ได้เลือกทีม/ป้ายทะเบียน</span>';
+        }
+    };
+
     litersInput.addEventListener('input', calculateTotal);
     priceInput.addEventListener('input', calculateTotal);
 
@@ -37,9 +48,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (team) {
                 jobCountValue.textContent = team.job_count || 0;
                 jobCountDiv.classList.remove('hidden');
+                updateTeamInfo(team.team_name);
             }
         } else {
             jobCountDiv.classList.add('hidden');
+            updateTeamInfo(null);
         }
     });
 
@@ -260,7 +273,7 @@ async function loadTeamPlates() {
 
             // แสดงข้อมูลทีมของผู้ใช้
             if (myTeamName) {
-                teamInfoEl.innerHTML = `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black">🚗 ทีม: ${myTeamName}</span>`;
+                updateTeamInfo(myTeamName);
 
                 // แสดงจำนวนเคสงานทันที
                 const myTeam = teamPlatesData.find(t => String(t.id) === String(myTeamId));

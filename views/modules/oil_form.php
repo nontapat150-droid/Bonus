@@ -55,16 +55,16 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 <?php endif; ?>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">ป้ายทะเบียนรถ <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ทีม / ป้ายทะเบียนรถ <span class="text-red-500">*</span></label>
                     <div class="relative">
                         <select id="license_plate" name="license_plate" required class="input w-full pl-10 cursor-pointer">
-                            <option value="">-- กำลังโหลดป้ายทะเบียน... --</option>
+                            <option value="">-- กำลังโหลดทีม/ป้ายทะเบียน... --</option>
                         </select>
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <span class="text-gray-400"><i data-lucide="car" class="w-5 h-5 inline-block"></i></span>
                         </div>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-1">* กรุณาเลือกป้ายทะเบียนรถที่คุณกำลังใช้งาน</p>
+                    <p class="text-[11px] text-slate-500 mt-1">* เลือกทีมหรือป้ายทะเบียนรถที่คุณใช้งานอยู่ เพื่อให้ระบบอ้างอิงเคสงานและทีมได้ถูกต้อง</p>
                     <div id="teamJobCount" class="hidden mt-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 text-sm">
                         <span class="font-bold text-emerald-700"><i data-lucide="clipboard" class="w-5 h-5 inline-block"></i> เคสงานของทีมนี้:</span>
                         <span id="jobCountValue" class="font-black text-emerald-600 ml-1">0</span> <span class="text-emerald-600">งาน</span>

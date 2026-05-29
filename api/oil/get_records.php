@@ -53,11 +53,12 @@ try {
     $tableSql = "SELECT
                     o.id, o.tech_id, o.license_plate, o.liters, o.mileage, o.price_per_liter, o.total_price, o.date_recorded,
                     u.full_name as tech_name, u.team_id,
+                    t.id as record_team_id,
                     t.team_name,
                     GROUP_CONCAT(i.image_path SEPARATOR ',') as images
                  FROM oil_records o
                  JOIN users u ON o.tech_id = u.id
-                 LEFT JOIN teams t ON u.team_id = t.id
+                 LEFT JOIN teams t ON t.team_name = o.license_plate
                  LEFT JOIN oil_images i ON o.id = i.record_id
                  $whereClause
                  GROUP BY o.id
@@ -73,7 +74,7 @@ try {
 
     foreach ($rawRecords as $row) {
         $plate = $row['license_plate'];
-        $team_id = $row['team_id'];
+        $team_id = $row['record_team_id'] ?: $row['team_id'];
         $current_date = $row['date_recorded'];
         $current_mileage = (int)$row['mileage'];
 
