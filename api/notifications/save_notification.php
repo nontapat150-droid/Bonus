@@ -10,7 +10,6 @@ if (!hasRole(['admin', 'super_admin'])) {
     exit;
 }
 
-// รับค่าจาก Form
 $type = $_POST['type'] ?? 'all'; 
 $team_id = $_POST['team_id'] ?? null;
 $target_user_id = $_POST['target_user_id'] ?? null;
@@ -36,10 +35,13 @@ $final_target_user_id = ($type === 'user') ? (int)$target_user_id : null;
 $created_by = $_SESSION['user_id'];
 
 try {
-    // อัปเดตตารางฐานข้อมูลอัตโนมัติให้รองรับ "รายบุคคล" (ทำครั้งเดียวจบ)
+    // เช็คคอลัมน์อย่างปลอดภัยก่อนเพิ่ม
     try {
-        $pdo->exec("ALTER TABLE notifications ADD COLUMN target_user_id INT DEFAULT NULL AFTER team_id");
-        $pdo->exec("ALTER TABLE notifications ADD CONSTRAINT fk_notif_target_user FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE");
+        $stmtCol = $pdo->query("SHOW COLUMNS FROM notifications LIKE 'target_user_id'");
+        if ($stmtCol->rowCount() == 0) {
+            $pdo->exec("ALTER TABLE notifications ADD COLUMN target_user_id INT DEFAULT NULL AFTER team_id");
+            $pdo->exec("ALTER TABLE notifications ADD CONSTRAINT fk_notif_target_user FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE");
+        }
     } catch (Exception $e) { }
 
     $stmt = $pdo->prepare("INSERT INTO notifications (title, message, team_id, target_user_id, created_by) VALUES (?, ?, ?, ?, ?)");
