@@ -1,14 +1,19 @@
 // assets/js/oil_report.js
 
 let combinedTrendChartInstance = null;
+let litersTrendChartInstance = null;
 let distanceTrendChartInstance = null;
+let efficiencyChartInstance = null;
+
 let compareCostChartInstance = null;
 let compareLitersChartInstance = null;
 let compareDistanceChartInstance = null;
 let compareJobsChartInstance = null;
 let monthlyCompareChartInstance = null;
+
 let allRecords = [];
 let monthlyData = [];
+let dailyData = []; // Store daily summary from backend
 let isCompareMode = false;
 
 // ตัวแปรเก็บรายชื่อ Dropdown สำหรับการแก้ไข
@@ -31,81 +36,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-window.applyDatePreset = function(preset) {
-    const startInput = document.getElementById('start_date');
-    const endInput = document.getElementById('end_date');
-    const today = new Date();
-    
-    if (preset === 'this_month') {
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        startInput.value = firstDay.toISOString().split('T')[0];
-        endInput.value = today.toISOString().split('T')[0];
-    } else if (preset === 'last_month') {
-        const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-        startInput.value = firstDayLastMonth.toISOString().split('T')[0];
-        endInput.value = lastDayLastMonth.toISOString().split('T')[0];
-    }
-};
+window.updateChartType = function(chartId, type, datasetIndex = null) {
+    let instance = null;
+    if (chartId === 'combinedTrendChart') instance = combinedTrendChartInstance;
+    else if (chartId === 'litersTrendChart') instance = litersTrendChartInstance;
+    else if (chartId === 'distanceTrendChart') instance = distanceTrendChartInstance;
+    else if (chartId === 'efficiencyChart') instance = efficiencyChartInstance;
 
-window.toggleCompareMode = function() {
-    isCompareMode = !isCompareMode;
-    const section = document.getElementById('compareSection');
-    const btn = document.getElementById('compareBtn');
-    const btnText = document.getElementById('compareBtnText');
-    const selectorWrapper = document.getElementById('vehicleSelectorWrapper');
-    
-    if (isCompareMode) {
-        section.classList.remove('hidden');
-        selectorWrapper.classList.remove('hidden');
-        btnText.textContent = 'ดูรายงานปกติ';
-        
-        // Fill vehicle selector
-        fillVehicleCompareSelector();
-        renderComparisonCharts();
-        renderMonthlyCompareChart();
+    if (!instance) return;
+
+    const chartType = type === 'area' ? 'line' : type;
+    const fill = type === 'area';
+
+    if (datasetIndex !== null) {
+        instance.data.datasets[datasetIndex].type = chartType;
+        instance.data.datasets[datasetIndex].fill = fill;
     } else {
-        section.classList.add('hidden');
-        selectorWrapper.classList.add('hidden');
-        btnText.textContent = 'เปรียบเทียบรถ';
+        instance.config.type = chartType;
+        instance.data.datasets.forEach(ds => ds.fill = fill);
     }
-    lucide.createIcons();
-};
-
-function fillVehicleCompareSelector() {
-    const selector = document.getElementById('vehicleCompareSelector');
-    const uniqueVehicles = [...new Set(allRecords.map(r => r.team_name || r.license_plate))].sort();
     
-    // Check if it's already filled to avoid resetting selection on every click
-    if (selector.options.length > 0) return;
-
-    selector.innerHTML = '';
-    uniqueVehicles.forEach(v => {
-        const opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = '🚗 ' + v;
-        opt.selected = true; // Default select all
-        selector.appendChild(opt);
-    });
-}
-
-async function loadEditOptions() {
-    try {
-        // ดึงรายชื่อช่าง
-        const resU = await fetch('api/inventory/get_outbound_targets.php');
-        const dataU = await resU.json();
-        if(dataU.success) editUsersList = dataU.users;
-
-        // ดึงรายชื่อทะเบียนรถ
-        const resT = await fetch('api/oil/get_team_plates.php');
-        const dataT = await resT.json();
-        if(dataT.success) {
-            editTeamsList = dataT.data;
-            // Also update comparison selector if already in compare mode
-            if (isCompareMode) fillVehicleCompareSelector();
-        }
-    } catch(e) { console.error('Failed to load edit options', e); }
-}
+    instance.update();
+};
 
 async function fetchData() {
     const startDate = document.getElementById('start_date').value;
@@ -121,6 +73,7 @@ async function fetchData() {
             updateStats(data.stats);
             allRecords = data.records;
             monthlyData = data.monthly || [];
+            dailyData = data.chart || [];
             
             // Re-fill comparison selector when new data is fetched
             if (isCompareMode) {
@@ -129,7 +82,7 @@ async function fetchData() {
                 fillVehicleCompareSelector();
             }
 
-            renderTrendCharts(data.chart, data.records);
+            renderAnalyticsCharts();
             if (isCompareMode) {
                 renderComparisonCharts();
                 renderMonthlyCompareChart();
@@ -150,66 +103,68 @@ async function fetchData() {
     }
 }
 
-function updateStats(stats) {
-    document.getElementById('stat_total_cost').textContent = stats.total_cost.toLocaleString('th-TH', {minimumFractionDigits: 2});
-    document.getElementById('stat_total_liters').textContent = stats.total_liters.toLocaleString('th-TH', {minimumFractionDigits: 2});
-    document.getElementById('stat_total_records').textContent = stats.total_records.toLocaleString('th-TH');
-    document.getElementById('stat_total_jobs').textContent = stats.total_jobs ? stats.total_jobs.toLocaleString('th-TH') : '0';
-}
-
-function renderTrendCharts(dailyData, records) {
+function renderAnalyticsCharts() {
     const labels = dailyData.map(item => item.record_date);
     const costs = dailyData.map(item => parseFloat(item.daily_cost));
     const liters = dailyData.map(item => parseFloat(item.daily_liters));
 
-    // คำนวณระยะทางรายวัน
-    const dailyDistanceMap = {};
-    records.forEach(r => {
+    // Calculate daily totals for distance and efficiency
+    const dailyDistMap = {};
+    const dailyJobMap = {};
+    const dailyCostMap = {};
+    
+    allRecords.forEach(r => {
         const date = r.date_recorded.split(' ')[0];
-        dailyDistanceMap[date] = (dailyDistanceMap[date] || 0) + parseFloat(r.distance);
+        dailyDistMap[date] = (dailyDistMap[date] || 0) + parseFloat(r.distance);
+        dailyJobMap[date] = (dailyJobMap[date] || 0) + parseInt(r.job_count);
+        dailyCostMap[date] = (dailyCostMap[date] || 0) + parseFloat(r.total_price);
     });
-    const distances = labels.map(date => dailyDistanceMap[date] || 0);
 
-    // 1. Combined Trend Chart (Cost & Liters)
-    const ctxCombined = document.getElementById('combinedTrendChart').getContext('2d');
+    const distances = labels.map(date => dailyDistMap[date] || 0);
+    const costPerJob = labels.map(date => {
+        const jobs = dailyJobMap[date] || 0;
+        return jobs > 0 ? (dailyCostMap[date] / jobs) : 0;
+    });
+
+    // 1. Daily Cost Chart
+    const ctxCost = document.getElementById('combinedTrendChart').getContext('2d');
     if (combinedTrendChartInstance) combinedTrendChartInstance.destroy();
-    combinedTrendChartInstance = new Chart(ctxCombined, {
+    combinedTrendChartInstance = new Chart(ctxCost, {
         type: 'line',
         data: {
             labels,
-            datasets: [
-                {
-                    label: 'ค่าใช้จ่าย (บาท)',
-                    data: costs,
-                    borderColor: 'rgb(99, 102, 241)',
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    yAxisID: 'y',
-                    tension: 0.3,
-                    fill: true
-                },
-                {
-                    label: 'ปริมาณ (ลิตร)',
-                    data: liters,
-                    borderColor: 'rgb(16, 185, 129)',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    yAxisID: 'y1',
-                    tension: 0.3,
-                    fill: true
-                }
-            ]
+            datasets: [{
+                label: 'ค่าใช้จ่าย (บาท)',
+                data: costs,
+                borderColor: 'rgb(99, 102, 241)',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                tension: 0.3,
+                fill: false
+            }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            scales: {
-                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'บาท' } },
-                y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'ลิตร' } }
-            }
-        }
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
     });
 
-    // 2. Distance Trend Chart
+    // 2. Daily Liters Chart
+    const ctxLiters = document.getElementById('litersTrendChart').getContext('2d');
+    if (litersTrendChartInstance) litersTrendChartInstance.destroy();
+    litersTrendChartInstance = new Chart(ctxLiters, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'ปริมาณ (ลิตร)',
+                data: liters,
+                borderColor: 'rgb(16, 185, 129)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                tension: 0.3,
+                fill: false
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    });
+
+    // 3. Daily Distance Chart
     const ctxDist = document.getElementById('distanceTrendChart').getContext('2d');
     if (distanceTrendChartInstance) distanceTrendChartInstance.destroy();
     distanceTrendChartInstance = new Chart(ctxDist, {
@@ -217,17 +172,32 @@ function renderTrendCharts(dailyData, records) {
         data: {
             labels,
             datasets: [{
-                label: 'ระยะทางวิ่งรายวัน (กม.)',
+                label: 'ระยะทางวิ่ง (กม.)',
                 data: distances,
                 backgroundColor: 'rgba(56, 189, 248, 0.7)',
                 borderRadius: 4
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true, title: { display: true, text: 'กิโลเมตร' } } }
-        }
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+    });
+
+    // 4. Efficiency Chart (Cost per Job)
+    const ctxEff = document.getElementById('efficiencyChart').getContext('2d');
+    if (efficiencyChartInstance) efficiencyChartInstance.destroy();
+    efficiencyChartInstance = new Chart(ctxEff, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'ต้นทุนเฉลี่ยต่อรอบงาน (บาท)',
+                data: costPerJob,
+                borderColor: 'rgb(245, 158, 11)',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                tension: 0.3,
+                fill: false
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
     });
 }
 
