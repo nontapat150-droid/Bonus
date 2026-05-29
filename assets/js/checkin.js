@@ -61,7 +61,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
 
                 if (result.success) {
-                    Toast.success(result.message);
+                    // ป๊อปอัปแจ้งเตือนเมื่อถ่ายรูปเข้างานสำเร็จ
+                    Swal.fire({
+                        title: 'สำเร็จ!',
+                        text: result.message,
+                        icon: 'success',
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#4f46e5',
+                        customClass: {
+                            popup: 'rounded-3xl',
+                            confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md'
+                        }
+                    });
+                    
                     form.reset();
                     imagePreview.src = '';
                     imagePreview.classList.add('hidden');
@@ -181,11 +193,9 @@ function renderTable(records) {
 
         let actionHtml = `<div class="flex justify-end md:justify-center gap-2">`;
         if (canEdit) {
-            // เติม Single Quote ครอบ ${item.id} และเพิ่ม type="button"
             actionHtml += `<button type="button" onclick="openEditCheckin('${item.id}')" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">🖼️ แก้ไขรูป</button>`;
         }
         if (canDelete) {
-            // เติม Single Quote ครอบ ${item.id} และเพิ่ม type="button"
             actionHtml += `<button type="button" onclick="deleteCheckin('${item.id}')" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบข้อมูล</button>`;
         }
         if (!canEdit && !canDelete) {
@@ -230,7 +240,6 @@ function renderTable(records) {
 // เปิดหน้าต่าง Modal อย่างปลอดภัยด้วย ID
 window.openEditCheckin = function(id) {
     try {
-        // ค้นหาข้อมูลจาก ID แทน Index ป้องกันปัญหาตารางคลาดเคลื่อน
         const item = checkinData.find(r => r.id == id);
         
         if(!item) {
@@ -324,7 +333,18 @@ window.saveEditCheckin = async function() {
         const data = await res.json();
         
         if(data.success) {
-            Toast.success('อัปเดตรูปภาพเรียบร้อยแล้ว');
+            // ป๊อปอัปแจ้งเตือนเมื่อแก้ไขรูปภาพสำเร็จ
+            Swal.fire({
+                title: 'สำเร็จ!',
+                text: 'อัปเดตรูปภาพเช็คอินเรียบร้อยแล้ว',
+                icon: 'success',
+                confirmButtonText: 'ตกลง',
+                confirmButtonColor: '#4f46e5',
+                customClass: {
+                    popup: 'rounded-3xl',
+                    confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md'
+                }
+            });
             closeEditCheckinModal();
             loadCheckinHistory(); 
         } else {
@@ -362,7 +382,18 @@ window.deleteCheckinImage = async function() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    Toast.success('ลบรูปภาพเรียบร้อยแล้ว');
+                    // ป๊อปอัปแจ้งเตือนเมื่อลบรูปภาพสำเร็จ
+                    Swal.fire({
+                        title: 'สำเร็จ!',
+                        text: 'ลบรูปภาพเรียบร้อยแล้ว',
+                        icon: 'success',
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#4f46e5',
+                        customClass: {
+                            popup: 'rounded-3xl',
+                            confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md'
+                        }
+                    });
                     closeEditCheckinModal();
                     loadCheckinHistory();
                 } else {
@@ -400,7 +431,18 @@ window.deleteCheckin = async function(id) {
                 const data = await res.json();
                 
                 if (data.success) {
-                    Toast.success('ลบข้อมูลเช็คอินเรียบร้อยแล้ว');
+                    // ป๊อปอัปแจ้งเตือนเมื่อลบรายการเช็คอินสำเร็จ
+                    Swal.fire({
+                        title: 'สำเร็จ!',
+                        text: 'ลบข้อมูลเช็คอินเรียบร้อยแล้ว',
+                        icon: 'success',
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#4f46e5',
+                        customClass: {
+                            popup: 'rounded-3xl',
+                            confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md'
+                        }
+                    });
                     loadCheckinHistory();
                 } else {
                     Toast.error(data.error);
@@ -437,7 +479,18 @@ window.saveSettings = async function() {
         });
         const data = await res.json();
         if(data.success) {
-            Toast.success('อัปเดตเวลาเข้างานสำเร็จ');
+            // ป๊อปอัปแจ้งเตือนเมื่ออัปเดตการตั้งค่าเวลาเข้างานสำเร็จ
+            Swal.fire({
+                title: 'สำเร็จ!',
+                text: 'อัปเดตเวลาเข้างานสำเร็จ',
+                icon: 'success',
+                confirmButtonText: 'ตกลง',
+                confirmButtonColor: '#4f46e5',
+                customClass: {
+                    popup: 'rounded-3xl',
+                    confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md'
+                }
+            });
             loadCheckinHistory(); 
         } else Toast.error(data.error);
     } catch(e) { Toast.error('ล้มเหลว'); } finally { Loader.hide(); }
