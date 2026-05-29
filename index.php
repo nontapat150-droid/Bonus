@@ -481,6 +481,7 @@ if ($page === 'home') {
                 <?php
                 $routes = [
                     'oil' => hasRole(['technician']) ? 'views/modules/oil_form.php' : 'views/modules/oil_report.php',
+                    'start_day' => 'views/modules/start_day.php', /* 👈 เพิ่มบรรทัดนี้ลงไป */
                     'dispatch' => 'views/modules/dispatch_map.php',
                     'inventory' => 'views/modules/inventory_app.php',
                     'users' => 'views/modules/user_settings.php',

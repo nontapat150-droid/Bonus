@@ -4,17 +4,14 @@
 if (!defined('PDO::ATTR_ERRMODE')) {
     exit('เข้าถึงโดยตรงไม่ได้');
 }
-
-// ตรวจสอบสิทธิ์ว่าเป็น Admin หรือ Super Admin หรือไม่
-$isAdmin = hasRole(['admin', 'super_admin']);
 ?>
 
 <div class="max-w-2xl mx-auto card overflow-hidden">
     <div class="bg-blue-600 px-6 py-4">
         <h2 class="text-2xl font-bold text-white flex items-center">
-            <span class="mr-2 text-3xl"><i data-lucide="fuel" class="w-5 h-5 inline-block"></i></span> บันทึกการใช้น้ำมัน
+            <span class="mr-2 text-3xl"><i data-lucide="fuel" class="w-5 h-5 inline-block"></i></span> บันทึกบิลน้ำมัน
         </h2>
-        <p class="text-blue-100 text-sm mt-1">กรอกข้อมูลการใช้รถและอัปเดตหลักฐาน (สูงสุด 10 รูป)</p>
+        <p class="text-blue-100 text-sm mt-1">กรอกข้อมูลการใช้รถ, บิลเติมน้ำมัน และอัปเดตหลักฐาน (สูงสุด 10 รูป)</p>
     </div>
 
     <div class="p-6">
@@ -22,7 +19,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
             <div id="alertBox" class="hidden rounded-lg p-4 mb-4 text-sm"></div>
 
-            <!-- Profile Info -->
             <div class="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-2xl p-5 border border-indigo-100">
                 <p class="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-3"><i data-lucide="user" class="w-4 h-4 inline-block"></i> ผู้บันทึกข้อมูล</p>
                 <div class="flex items-center space-x-4">
@@ -36,23 +32,19 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 </div>
             </div>
 
-            <!-- Group 1: Vehicle & Time -->
             <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-5">
                 <h3 class="font-bold text-slate-700 flex items-center mb-2"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs mr-2 uppercase tracking-widest">Step 1</span> ข้อมูลยานพาหนะและเวลา</h3>
                 
-                <?php if ($isAdmin): ?>
                 <div class="bg-amber-50 p-4 rounded-xl border border-amber-200">
-                    <label class="block text-sm font-bold text-amber-800 mb-1">📅 วันที่/เวลา เติมน้ำมัน (สำหรับแอดมินบันทึกย้อนหลัง)</label>
+                    <label class="block text-sm font-bold text-amber-800 mb-1">📅 วันที่/เวลา ตามบิลน้ำมัน <span class="text-red-500">*</span></label>
                     <div class="relative mt-2">
-                        <input type="datetime-local" id="date_recorded" name="date_recorded"
-                            class="input w-full pl-10">
+                        <input type="datetime-local" id="date_recorded" name="date_recorded" required class="input w-full pl-10">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <span class="text-amber-500"><i data-lucide="clock" class="w-5 h-5 inline-block"></i></span>
                         </div>
                     </div>
-                    <p class="text-xs text-amber-600 mt-2 font-medium">* หากปล่อยว่างไว้ ระบบจะใช้ <span class="font-bold underline">วันและเวลาปัจจุบัน</span> โดยอัตโนมัติ</p>
+                    <p class="text-xs text-amber-600 mt-2 font-medium">* ระบุวันที่และเวลาตามสลิปน้ำมันจริง (ค่าเริ่มต้นคือเวลาปัจจุบัน)</p>
                 </div>
-                <?php endif; ?>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">ทีม / ป้ายทะเบียนรถ <span class="text-red-500">*</span></label>
@@ -64,7 +56,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                             <span class="text-gray-400"><i data-lucide="car" class="w-5 h-5 inline-block"></i></span>
                         </div>
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-1">* เลือกทีมหรือป้ายทะเบียนรถที่คุณใช้งานอยู่ เพื่อให้ระบบอ้างอิงเคสงานและทีมได้ถูกต้อง</p>
+                    <p class="text-[11px] text-slate-500 mt-1">* เลือกทีมหรือป้ายทะเบียนรถที่คุณใช้งานอยู่</p>
                     <div id="teamJobCount" class="hidden mt-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 text-sm">
                         <span class="font-bold text-emerald-700"><i data-lucide="clipboard" class="w-5 h-5 inline-block"></i> เคสงานของทีมนี้:</span>
                         <span id="jobCountValue" class="font-black text-emerald-600 ml-1">0</span> <span class="text-emerald-600">งาน</span>
@@ -82,7 +74,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 </div>
             </div>
 
-            <!-- Group 2: Fuel Details -->
             <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                 <h3 class="font-bold text-slate-700 flex items-center mb-4"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs mr-2 uppercase tracking-widest">Step 2</span> ข้อมูลบิลน้ำมัน</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -118,7 +109,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 </div>
             </div>
 
-            <!-- Group 3: Upload Evidence -->
             <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                 <h3 class="font-bold text-slate-700 flex items-center mb-4"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs mr-2 uppercase tracking-widest">Step 3</span> อัปโหลดรูปภาพหลักฐาน</h3>
                 <label class="block text-sm font-medium text-gray-500 mb-2">ถ่ายรูปหน้าปัดไมล์, บิลน้ำมัน หรือป้ายทะเบียน (อัปโหลดได้สูงสุด 10 รูป) <span class="text-red-500">*</span></label>   
@@ -138,7 +128,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
             <div class="pt-2">
                 <button type="submit" id="submitBtn" class="btn-primary w-full py-4 text-lg">
-                    <i data-lucide="save" class="w-5 h-5 inline-block"></i> บันทึกข้อมูลและส่งรายงาน
+                    <i data-lucide="save" class="w-5 h-5 inline-block"></i> บันทึกข้อมูลบิลน้ำมัน
                 </button>
             </div>
         </form>
