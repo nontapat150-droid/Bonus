@@ -18,8 +18,9 @@ if (!hasRole(['admin', 'super_admin'])) {
             <p class="text-[var(--c-text-3)] text-sm mt-1 font-medium">เพิ่ม แก้ไข และกำหนดสิทธิ์การใช้งานของพนักงาน</p>
         </div>
         <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
-            <button onclick="loadPendingUsers()" class="btn-primary flex items-center justify-center w-full sm:w-auto" style="background: var(--c-warning); box-shadow: 0 4px 14px rgba(245,158,11, 0.40);">
+            <button onclick="loadPendingUsers()" class="btn-primary relative flex items-center justify-center w-full sm:w-auto" style="background: var(--c-warning); box-shadow: 0 4px 14px rgba(245,158,11, 0.40);">
                 <span class="mr-2"><i data-lucide="hourglass" class="w-4 h-4"></i></span> รออนุมัติ
+                <span id="pendingCountBadge" class="absolute -top-2 -right-2 bg-rose-500 text-white text-xs font-black px-2 py-0.5 rounded-full shadow-md hidden animate__animated animate__bounceIn">0</span>
             </button>
             <button onclick="openUserModal()" class="btn-primary flex items-center justify-center w-full sm:w-auto">
                 <span class="mr-2 text-lg">+</span> เพิ่มพนักงานใหม่
@@ -42,13 +43,14 @@ if (!hasRole(['admin', 'super_admin'])) {
                     <tr>
                         <th class="px-6 py-4">ชื่อ-นามสกุล</th>
                         <th class="px-6 py-4">Username</th>
+                        <th class="px-6 py-4">รหัสผ่าน</th>
                         <th class="px-6 py-4">ตำแหน่ง / สิทธิ์</th>
                         <th class="px-6 py-4">วันที่เข้าร่วม</th>
                         <th class="px-6 py-4 text-center">จัดการ</th>
                     </tr>
                 </thead>
                 <tbody id="userTableBody" class="divide-y divide-[var(--c-border)]">
-                    <tr><td colspan="5" class="px-8 py-20 text-center"><div class="loader-spinner mx-auto mb-4 w-8 h-8"></div><p class="font-bold text-[var(--c-text-3)]">กำลังโหลดรายชื่อ...</p></td></tr>
+                    <tr><td colspan="6" class="px-8 py-20 text-center"><div class="loader-spinner mx-auto mb-4 w-8 h-8"></div><p class="font-bold text-[var(--c-text-3)]">กำลังโหลดรายชื่อ...</p></td></tr>
                 </tbody>
             </table>
         </div>
@@ -102,7 +104,7 @@ if (!hasRole(['admin', 'super_admin'])) {
             <div>
                 <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">รหัสผ่าน</label>
                 <input type="password" id="password" name="password" class="input" placeholder="เว้นว่างไว้หากไม่ต้องการเปลี่ยน">
-                <p id="passwordHelp" class="text-[10px] text-slate-400 mt-2 ml-1 hidden italic">* หากแก้ไขข้อมูล ไม่ต้องกรอกหากไม่ต้องการเปลี่ยนรหัสผ่าน</p>
+                <p id="passwordHelp" class="text-[10px] text-slate-400 mt-2 ml-1 hidden italic">* หากแก้ไขข้อมูล ไม่ต้องกรอกหากไม่ต้องการเปลี่ยนรหัสผ่าน (รหัสเดิมถูกเข้ารหัสไว้)</p>
             </div>
 
             <div class="pt-4">
@@ -136,7 +138,29 @@ if (!hasRole(['admin', 'super_admin'])) {
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+// ฟังก์ชันเช็คและอัปเดตตัวเลขแจ้งเตือนรออนุมัติ
+async function updatePendingBadge() {
+    try {
+        const res = await fetch('api/users/get_pending.php');
+        const data = await res.json();
+        if (data.success) {
+            const count = data.data.length;
+            const badge = document.getElementById('pendingCountBadge');
+            if (count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+    } catch (e) {}
+}
+
+// อัปเดตตัวเลขทันทีที่เปิดหน้าเว็บ
+document.addEventListener('DOMContentLoaded', updatePendingBadge);
+
 async function loadPendingUsers() {
     document.getElementById('pendingModal').classList.remove('hidden');
     const tbody = document.getElementById('pendingTableBody');
@@ -158,8 +182,8 @@ async function loadPendingUsers() {
                     <td class="px-4 py-3">${user.username}</td>
                     <td class="px-4 py-3"><span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-[10px] font-black">${user.team_name || '-'}</span></td>
                     <td class="px-4 py-3 text-center">
-                        <button onclick="approveUser(${user.id}, 'approved')" class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-600">อนุมัติ</button>
-                        <button onclick="approveUser(${user.id}, 'rejected')" class="bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-600 ml-1">ปฏิเสธ</button>
+                        <button onclick="approveUser(${user.id}, 'approved')" class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-600 shadow-sm">อนุมัติ</button>
+                        <button onclick="approveUser(${user.id}, 'rejected')" class="bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-600 ml-1 shadow-sm">ปฏิเสธ</button>
                     </td>
                 </tr>
             `).join('');
@@ -170,8 +194,25 @@ async function loadPendingUsers() {
 }
 
 async function approveUser(id, status) {
-    if(!confirm(status === 'approved' ? 'ยืนยันการอนุมัติผู้ใช้นี้?' : 'ยืนยันการปฏิเสธผู้ใช้นี้?')) return;
+    const actionText = status === 'approved' ? 'อนุมัติการเข้าใช้งาน' : 'ปฏิเสธคำขอ';
+    const confirmColor = status === 'approved' ? '#10B981' : '#EF4444'; // สีเขียวหรือแดง
+
+    // 1. ถามยืนยันด้วย SweetAlert ก่อน
+    const result = await Swal.fire({
+        title: `ยืนยันการ${actionText}?`,
+        text: `คุณต้องการ${actionText}ของผู้ใช้นี้ใช่หรือไม่`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: confirmColor,
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: `ใช่, ${actionText}`,
+        cancelButtonText: 'ยกเลิก',
+        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold', cancelButton: 'rounded-xl px-6 py-2.5 font-bold' }
+    });
+
+    if(!result.isConfirmed) return;
     
+    // 2. ส่งข้อมูลไป API
     try {
         const res = await fetch('api/users/approve.php', {
             method: 'POST',
@@ -179,17 +220,27 @@ async function approveUser(id, status) {
             body: JSON.stringify({ id, status })
         });
         const data = await res.json();
+
         if(data.success) {
-            loadPendingUsers(); // โหลดข้อมูลรออนุมัติใหม่
-            if (typeof loadUsers === "function") loadUsers(); // รีเฟรชตารางหลัก (อิงจาก users.js)
+            // 3. แจ้งเตือนสำเร็จสวยๆ
+            Swal.fire({
+                title: 'สำเร็จ!',
+                text: `ทำรายการ${actionText}เรียบร้อยแล้ว`,
+                icon: 'success',
+                confirmButtonColor: '#4f46e5',
+                customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+            });
+
+            loadPendingUsers(); // โหลดตารางใน Modal ใหม่
+            updatePendingBadge(); // อัปเดตตัวเลขแจ้งเตือนสีแดงด้านนอกใหม่
+            if (typeof loadUsers === "function") loadUsers(); // รีเฟรชตารางหลักด้านหลัง
         } else {
-            alert('Error: ' + data.error);
+            Swal.fire('ข้อผิดพลาด', data.error, 'error');
         }
     } catch(e) {
-        alert('เกิดข้อผิดพลาด');
+        Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
     }
 }
 </script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="assets/js/common.js"></script>
 <script src="assets/js/users.js"></script>
