@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchData();
     });
 
-    // Auto calculate Total Price & Rounding
     const calcManageTotal = () => {
         const liters = parseFloat(document.getElementById('manage_liters').value) || 0;
         const price = parseFloat(document.getElementById('manage_price_per_liter').value) || 0;
@@ -71,7 +70,6 @@ window.toggleCompareMode = function() {
         if(selectorWrapper) selectorWrapper.classList.remove('hidden');
         if(btnText) btnText.textContent = 'ดูรายงานปกติ';
         if(btn) btn.classList.replace('bg-slate-800', 'bg-indigo-700');
-        
         fillVehicleCompareSelector();
         renderComparisonCharts();
         renderMonthlyCompareChart();
@@ -88,9 +86,7 @@ function fillVehicleCompareSelector() {
     const selector = document.getElementById('vehicleCompareSelector');
     if(!selector) return;
     const uniqueVehicles = [...new Set(allRecords.map(r => r.team_name || r.license_plate))].sort();
-    
     if (selector.options.length > 0) return;
-
     selector.innerHTML = '';
     uniqueVehicles.forEach(v => {
         const opt = document.createElement('option');
@@ -106,7 +102,6 @@ window.autoFillVehicle = function(techId) {
     if(!plateInput) return;
     plateInput.value = ''; 
     if (!techId) return;
-    
     const user = editUsersList.find(u => u.id == techId);
     if (user && user.team_name) {
         plateInput.value = user.team_name;
@@ -151,7 +146,6 @@ async function loadEditOptions() {
     } catch(e) { console.error('Failed to load edit options', e); }
 }
 
-// เพิ่มตัวแปร silent เพื่อเวลาโหลดซ้ำหลังบันทึก จะได้ไม่เด้ง Toast รบกวน
 async function fetchData(silent = false) {
     const startDate = document.getElementById('start_date').value;
     const endDate = document.getElementById('end_date').value;
@@ -209,10 +203,10 @@ function updateStats(stats) {
     const sl = document.getElementById('stat_total_liters');
     const sr = document.getElementById('stat_total_records');
     const sj = document.getElementById('stat_total_jobs');
-    if(sc) sc.textContent = stats.total_cost.toLocaleString('th-TH', {minimumFractionDigits: 2});
-    if(sl) sl.textContent = stats.total_liters.toLocaleString('th-TH', {minimumFractionDigits: 2});
-    if(sr) sr.textContent = stats.total_records.toLocaleString('th-TH');
-    if(sj) sj.textContent = stats.total_jobs ? stats.total_jobs.toLocaleString('th-TH') : '0';
+    if(sc) sc.textContent = Number(stats.total_cost).toLocaleString('th-TH', {minimumFractionDigits: 2});
+    if(sl) sl.textContent = Number(stats.total_liters).toLocaleString('th-TH', {minimumFractionDigits: 2});
+    if(sr) sr.textContent = Number(stats.total_records).toLocaleString('th-TH');
+    if(sj) sj.textContent = stats.total_jobs ? Number(stats.total_jobs).toLocaleString('th-TH') : '0';
 }
 
 function renderAnalyticsCharts() {
@@ -390,15 +384,17 @@ function renderTable(records) {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition-colors animate__animated animate__fadeIn';
         tr.style.animationDelay = `${index * 0.03}s`;
+        
+        // Wrap number to prevent string type error from breaking table render
         tr.innerHTML = `
             <td class="px-4 py-4 whitespace-nowrap">${formattedDate}</td>
             <td class="px-4 py-4 font-medium text-slate-800">${row.tech_name}${fillerLine}</td>
             <td class="px-4 py-4">${teamBadge}</td>
             <td class="px-4 py-4 text-center font-bold text-sky-600">${row.distance} กม.</td>
             <td class="px-4 py-4 text-center"><span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-black">📋 ${row.job_count} งาน</span></td>
-            <td class="px-4 py-4 text-right"><span class="text-xs text-slate-400 block mb-0.5">กม. ละ</span><span class="font-bold text-rose-500">฿${row.cost_per_km.toLocaleString('th-TH', {minimumFractionDigits:2})}</span></td>
-            <td class="px-4 py-4 text-right"><span class="text-xs text-slate-400 block mb-0.5">งาน ละ</span><span class="font-bold text-indigo-500">฿${row.cost_per_job.toLocaleString('th-TH', {minimumFractionDigits:2})}</span></td>
-            <td class="px-4 py-4 text-right font-bold text-indigo-700 text-base">฿${parseFloat(row.total_price).toLocaleString('th-TH', {minimumFractionDigits:2})}</td>
+            <td class="px-4 py-4 text-right"><span class="text-xs text-slate-400 block mb-0.5">กม. ละ</span><span class="font-bold text-rose-500">฿${Number(row.cost_per_km).toLocaleString('th-TH', {minimumFractionDigits:2})}</span></td>
+            <td class="px-4 py-4 text-right"><span class="text-xs text-slate-400 block mb-0.5">งาน ละ</span><span class="font-bold text-indigo-500">฿${Number(row.cost_per_job).toLocaleString('th-TH', {minimumFractionDigits:2})}</span></td>
+            <td class="px-4 py-4 text-right font-bold text-indigo-700 text-base">฿${Number(row.total_price).toLocaleString('th-TH', {minimumFractionDigits:2})}</td>
             <td class="px-4 py-4 text-center whitespace-nowrap">
                 ${row.images ? `<button onclick="viewImages(${index})" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all hover:shadow-sm">📷</button>` : `<span class="text-slate-300 text-xs italic mr-2">-</span>`}
                 <button onclick="deleteOilRecord(${row.id})" class="text-rose-600 hover:text-rose-800 bg-rose-50 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all hover:shadow-sm">🗑️</button>
@@ -575,8 +571,6 @@ window.saveManageOil = async function() {
 
         if (isSuccess) {
             closeManageOilModal();
-            
-            // ขยายขอบเขตการ Filter วันที่ให้อัตโนมัติ หากวันที่เพิ่งบันทึกหลุดออกนอกช่วงการแสดงผล
             const recordDate = new Date(date_recorded);
             const startInput = document.getElementById('start_date');
             const endInput = document.getElementById('end_date');
@@ -586,18 +580,12 @@ window.saveManageOil = async function() {
                 const currentEnd = new Date(endInput.value);
                 const recordDateStr = recordDate.toISOString().split('T')[0];
                 
-                if (recordDate < currentStart) {
-                    startInput.value = recordDateStr;
-                }
-                if (recordDate > currentEnd) {
-                    endInput.value = recordDateStr;
-                }
+                if (recordDate < currentStart) startInput.value = recordDateStr;
+                if (recordDate > currentEnd) endInput.value = recordDateStr;
             }
 
-            // สั่งดึงข้อมูลใหม่แบบปิดแจ้งเตือน(silent) เพื่อมารวมกับการแจ้งเตือนอันใหญ่ด้านล่าง
             await fetchData(true); 
             
-            // แจ้งเตือนแบบกล่องใหญ่ให้ผู้ใช้ทราบว่าบันทึกสำเร็จและดึงข้อมูลลงตารางแล้ว
             Swal.fire({
                 icon: 'success',
                 title: 'บันทึกสำเร็จ!',
