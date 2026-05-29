@@ -67,6 +67,12 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 
                 <div class="flex gap-2">
                     <input type="file" id="importOilExcel" accept=".xlsx, .xls" class="hidden">
+                    
+                    <button onclick="recalculateAllMileage()" class="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-sky-500 text-white text-xs font-bold hover:bg-sky-400 transition-all shadow-lg shadow-sky-100">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">คำนวณไมล์ใหม่</span>
+                    </button>
+
                     <button onclick="document.getElementById('importOilExcel').click()" class="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-amber-500 text-white text-xs font-bold hover:bg-amber-400 transition-all shadow-lg shadow-amber-100">
                         <i data-lucide="upload" class="w-4 h-4"></i>
                         <span class="hidden sm:inline">นำเข้า</span>

@@ -296,3 +296,36 @@ async function loadTeamPlates() {
         teamInfoEl.textContent = 'เกิดข้อผิดพลาดในการโหลดข้อมูลทีม';
     }
 }
+// ฟังก์ชันสำหรับกดปุ่มคำนวณระยะทางไมล์ใหม่ทั้งหมด
+window.recalculateAllMileage = function() {
+    Swal.fire({
+        title: 'จัดเรียงและคำนวณไมล์ใหม่?',
+        text: "ระบบจะทำการเรียงลำดับวันที่การเติมน้ำมันของรถทุกคันใหม่ และคำนวณระยะทางจากเลขไมล์ให้สอดคล้องกันทั้งหมด คุณต้องการดำเนินการต่อหรือไม่?",
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#0ea5e9',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'ใช่, คำนวณใหม่เลย',
+        cancelButtonText: 'ยกเลิก',
+        reverseButtons: true
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            showLoader();
+            try {
+                const res = await fetch('api/oil/recalculate.php');
+                const data = await res.json();
+                if (data.success) {
+                    showToast('success', 'เรียงวันที่และคำนวณระยะทางใหม่เรียบร้อยแล้ว!');
+                    // ดึงข้อมูลมาแสดงใหม่ทันที
+                    fetchData(true); 
+                } else {
+                    Swal.fire('เกิดข้อผิดพลาด', data.error, 'error');
+                }
+            } catch (e) {
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+            } finally {
+                hideLoader();
+            }
+        }
+    });
+};
