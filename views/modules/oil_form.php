@@ -145,4 +145,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/js/common.js"></script>
 <script src="assets/js/oil.js"></script>
