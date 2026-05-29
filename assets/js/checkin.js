@@ -1,9 +1,5 @@
 // assets/js/checkin.js
 let checkinData = [];
-let editImageInput;
-let editImagePreview;
-let editImagePlaceholder;
-let deleteImageBtn;
 
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('checkinForm');
@@ -12,85 +8,89 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadPrompt = document.getElementById('uploadPrompt');
     const timeDisplay = document.getElementById('currentTime');
     const submitBtn = document.getElementById('submitBtn');
-    
-    // ผูกตัวแปรสำหรับ Modal แก้ไขรูปภาพ
-    editImageInput = document.getElementById('edit_checkin_image');
-    editImagePreview = document.getElementById('editImagePreview');
-    editImagePlaceholder = document.getElementById('editImagePlaceholder');
-    deleteImageBtn = document.getElementById('deleteImageBtn');
 
-    // ตั้งค่าเดือนปัจจุบันให้ตัวกรอง
+    // ตั้งค่าเดือนปัจจุบัน
     const now = new Date();
     const currMonth = now.toISOString().slice(0, 7);
-    document.getElementById('filterMonth').value = currMonth;
+    if(document.getElementById('filterMonth')) {
+        document.getElementById('filterMonth').value = currMonth;
+    }
 
     loadSettings();
     loadCheckinHistory();
 
-    // อัปเดตนาฬิกาแบบ Real-time
-    setInterval(() => {
-        timeDisplay.textContent = new Date().toLocaleTimeString('th-TH');
-    }, 1000);
+    if(timeDisplay) {
+        setInterval(() => {
+            timeDisplay.textContent = new Date().toLocaleTimeString('th-TH');
+        }, 1000);
+    }
 
-    // แสดง Preview เมื่อเลือกรูปตอนเช็คอิน
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (!file.type.startsWith('image/')) {
-                Toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
-                fileInput.value = ''; return;
+    // ฟังก์ชันโชว์รูปเวลาจะกดเช็คอิน
+    if(fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.type.startsWith('image/')) {
+                    Toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+                    fileInput.value = ''; return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                    uploadPrompt.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
             }
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                imagePreview.src = e.target.result;
-                imagePreview.classList.remove('hidden');
-                uploadPrompt.classList.add('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-    });
+        });
+    }
 
-    // ยืนยันการเช็คอิน
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!fileInput.files[0]) return Toast.error('กรุณาถ่ายรูปเช็คอิน');
+    // กดยืนยันเช็คอินเข้างาน
+    if(form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!fileInput.files[0]) return Toast.error('กรุณาถ่ายรูปเช็คอิน');
 
-        Loader.show();
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = 'กำลังบันทึก...';
-        const formData = new FormData(form);
+            Loader.show();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'กำลังบันทึก...';
+            const formData = new FormData(form);
 
-        try {
-            const response = await fetch('api/checkin/submit.php', { method: 'POST', body: formData });
-            const result = await response.json();
+            try {
+                const response = await fetch('api/checkin/submit.php', { method: 'POST', body: formData });
+                const result = await response.json();
 
-            if (result.success) {
-                Toast.success(result.message);
-                form.reset();
-                imagePreview.src = '';
-                imagePreview.classList.add('hidden');
-                uploadPrompt.classList.remove('hidden');
-                loadCheckinHistory(); // โหลดตารางใหม่
-            } else {
-                Toast.error(result.error);
+                if (result.success) {
+                    Toast.success(result.message);
+                    form.reset();
+                    imagePreview.src = '';
+                    imagePreview.classList.add('hidden');
+                    uploadPrompt.classList.remove('hidden');
+                    loadCheckinHistory(); // โหลดตารางใหม่
+                } else {
+                    Toast.error(result.error);
+                }
+            } catch (error) {
+                Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว');
+            } finally {
+                Loader.hide();
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '✅ ยืนยันการเช็คอิน';
             }
-        } catch (error) {
-            Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว');
-        } finally {
-            Loader.hide();
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '✅ ยืนยันการเช็คอิน';
-        }
-    });
+        });
+    }
 
-    // แสดง Preview รูปในหน้าต่างแก้ไขรูปภาพ
+    // ดูตัวอย่างรูปในหน้าต่างแก้ไข
+    const editImageInput = document.getElementById('edit_checkin_image');
     if (editImageInput) {
         editImageInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
+            const preview = document.getElementById('editImagePreview');
+            const placeholder = document.getElementById('editImagePlaceholder');
+
             if (!file) {
-                editImagePreview.src = '';
-                editImagePreview.classList.add('hidden');
-                editImagePlaceholder.classList.remove('hidden');
+                if(preview) { preview.src = ''; preview.classList.add('hidden'); }
+                if(placeholder) placeholder.classList.remove('hidden');
                 return;
             }
             if (!file.type.startsWith('image/')) {
@@ -100,20 +100,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const reader = new FileReader();
             reader.onload = (event) => {
-                editImagePreview.src = event.target.result;
-                editImagePreview.classList.remove('hidden');
-                editImagePlaceholder.classList.add('hidden');
+                if(preview) {
+                    preview.src = event.target.result;
+                    preview.classList.remove('hidden');
+                }
+                if(placeholder) placeholder.classList.add('hidden');
             };
             reader.readAsDataURL(file);
         });
     }
 
-    // เคลียร์ค่าตัวกรองเมื่อสลับการค้นหา
-    document.getElementById('filterDate').addEventListener('change', function() { document.getElementById('filterMonth').value = ''; });
-    document.getElementById('filterMonth').addEventListener('change', function() { document.getElementById('filterDate').value = ''; });
+    // ตัวกรองเวลา
+    if(document.getElementById('filterDate')) {
+        document.getElementById('filterDate').addEventListener('change', function() { document.getElementById('filterMonth').value = ''; });
+    }
+    if(document.getElementById('filterMonth')) {
+        document.getElementById('filterMonth').addEventListener('change', function() { document.getElementById('filterDate').value = ''; });
+    }
 });
 
-// ดึงข้อมูลตารางและ Dashboard
+// โหลดข้อมูลตาราง
 async function loadCheckinHistory() {
     const fDate = document.getElementById('filterDate').value;
     const fMonth = document.getElementById('filterMonth').value;
@@ -146,7 +152,7 @@ async function loadCheckinHistory() {
     }
 }
 
-// สร้างตารางประวัติเช็คอิน
+// เรนเดอร์ตาราง
 function renderTable(records) {
     const tbody = document.getElementById('historyTableBody');
     tbody.innerHTML = '';
@@ -217,64 +223,85 @@ function renderTable(records) {
     });
 }
 
-// ---------------- ระบบแก้ไข และ ลบ ----------------
+// ---------------- ระบบแก้ไข (สำหรับรูปภาพ) และ ลบ ----------------
 
-// เปิดหน้าต่างสำหรับอัปเดต/เปลี่ยนรูปภาพเท่านั้น
+// เปิดหน้าต่าง Modal 
 window.openEditCheckin = function(index) {
     const item = checkinData[index];
     if(!item) return;
 
+    // เติมข้อมูลลง DOM
     document.getElementById('edit_checkin_id').value = item.id;
+    
+    const editInput = document.getElementById('edit_checkin_image');
+    const preview = document.getElementById('editImagePreview');
+    const placeholder = document.getElementById('editImagePlaceholder');
+    const delBtn = document.getElementById('deleteImageBtn');
+    const modal = document.getElementById('editCheckinModal');
 
-    if (editImageInput) editImageInput.value = '';
+    if (editInput) editInput.value = '';
+
     if (item.image_path) {
-        editImagePreview.src = `assets/uploads/checkins/${item.image_path}`;
-        editImagePreview.classList.remove('hidden');
-        editImagePlaceholder.classList.add('hidden');
+        if(preview) {
+            preview.src = `assets/uploads/checkins/${item.image_path}`;
+            preview.classList.remove('hidden');
+        }
+        if(placeholder) placeholder.classList.add('hidden');
         
-        // ถ้าเป็น super_admin จะมีปุ่มลบรูปภาพอย่างเดียวขึ้นมา
-        if (deleteImageBtn) {
+        if (delBtn) {
             if (window.USER_ROLE === 'super_admin') {
-                deleteImageBtn.classList.remove('hidden');
+                delBtn.classList.remove('hidden');
             } else {
-                deleteImageBtn.classList.add('hidden');
+                delBtn.classList.add('hidden');
             }
         }
     } else {
-        editImagePreview.src = '';
-        editImagePreview.classList.add('hidden');
-        editImagePlaceholder.classList.remove('hidden');
-        if (deleteImageBtn) deleteImageBtn.classList.add('hidden');
+        if(preview) {
+            preview.src = '';
+            preview.classList.add('hidden');
+        }
+        if(placeholder) placeholder.classList.remove('hidden');
+        if(delBtn) delBtn.classList.add('hidden');
     }
 
-    const modal = document.getElementById('editCheckinModal');
-    modal.classList.remove('hidden');
+    if(modal) modal.classList.remove('hidden');
 };
 
 // ปิดหน้าต่าง Modal
 window.closeEditCheckinModal = function() {
-    document.getElementById('editCheckinModal').classList.add('hidden');
-    if (editImagePreview) {
-        editImagePreview.src = '';
-        editImagePreview.classList.add('hidden');
-    }
-    if (editImagePlaceholder) editImagePlaceholder.classList.remove('hidden');
-    if (editImageInput) editImageInput.value = '';
-    if (deleteImageBtn) deleteImageBtn.classList.add('hidden');
+    const modal = document.getElementById('editCheckinModal');
+    if(modal) modal.classList.add('hidden');
+    
+    const preview = document.getElementById('editImagePreview');
+    if (preview) { preview.src = ''; preview.classList.add('hidden'); }
+    
+    const placeholder = document.getElementById('editImagePlaceholder');
+    if (placeholder) placeholder.classList.remove('hidden');
+    
+    const editInput = document.getElementById('edit_checkin_image');
+    if (editInput) editInput.value = '';
+    
+    const delBtn = document.getElementById('deleteImageBtn');
+    if (delBtn) delBtn.classList.add('hidden');
 };
 
 // บันทึกการอัปเดตรูปภาพ
 window.saveEditCheckin = async function() {
-    const id = document.getElementById('edit_checkin_id').value;
+    const idInput = document.getElementById('edit_checkin_id');
+    const editInput = document.getElementById('edit_checkin_image');
+
+    if (!idInput || !idInput.value) {
+        return Toast.error('ไม่พบ ID');
+    }
 
     // บังคับให้เลือกรูปภาพ เพราะระบบให้อัปเดตแค่รูปเท่านั้น
-    if (!editImageInput || !editImageInput.files[0]) {
+    if (!editInput || !editInput.files || editInput.files.length === 0) {
         return Toast.error('กรุณาเลือกรูปภาพใหม่ก่อนทำการบันทึก');
     }
 
     const formData = new FormData();
-    formData.append('id', id);
-    formData.append('checkin_image', editImageInput.files[0]);
+    formData.append('id', idInput.value);
+    formData.append('checkin_image', editInput.files[0]);
 
     Loader.show();
     try {
@@ -298,10 +325,10 @@ window.saveEditCheckin = async function() {
     }
 };
 
-// ระบบลบเฉพาะรูปภาพอย่างเดียว (ทำงานผ่าน Modal สำหรับ Super Admin)
-window.deleteCheckinImage = async function(id) {
-    if (!id) id = document.getElementById('edit_checkin_id').value;
-    if (!id) return Toast.error('ไม่พบข้อมูลที่ต้องการลบรูป');
+// ระบบลบเฉพาะรูปภาพอย่างเดียว
+window.deleteCheckinImage = async function() {
+    const idInput = document.getElementById('edit_checkin_id');
+    if (!idInput || !idInput.value) return Toast.error('ไม่พบข้อมูลที่ต้องการลบรูป');
 
     Swal.fire({
         title: 'ยืนยันการลบรูปภาพ?',
@@ -319,7 +346,7 @@ window.deleteCheckinImage = async function(id) {
                 const res = await fetch('api/checkin/delete_image.php', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ id: id })
+                    body: JSON.stringify({ id: idInput.value })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -338,7 +365,7 @@ window.deleteCheckinImage = async function(id) {
     });
 };
 
-// ระบบลบข้อมูลเช็คอินทั้งรายการพร้อมรูป (ทำงานที่ปุ่มของตารางหลัก)
+// ระบบลบข้อมูลเช็คอินทั้งรายการ
 window.deleteCheckin = async function(id) {
     Swal.fire({
         title: 'ยืนยันการลบข้อมูล?',
