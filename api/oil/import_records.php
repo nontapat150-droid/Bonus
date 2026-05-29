@@ -26,8 +26,25 @@ try {
     $stmtUsers = $pdo->query("SELECT id, full_name FROM users");
     $users = $stmtUsers->fetchAll(PDO::FETCH_KEY_PAIR); // จะได้อาร์เรย์ [full_name => id]
 
-    $stmtInsert = $pdo->prepare("INSERT INTO oil_records (tech_id, license_plate, liters, mileage, price_per_liter, total_price, date_recorded) 
-                                 VALUES (?, ?, ?, ?, ?, ?, ?)");
+    // ตรวจสอบคอลัมน์ filler_name ในตาราง oil_records หากยังไม่มีให้เพิ่ม
+    try {
+        $pdo->exec("ALTER TABLE oil_records ADD COLUMN IF NOT EXISTS filler_name VARCHAR(150) DEFAULT NULL");
+    } catch (PDOException $e) {
+        // MySQL บางเวอร์ชันไม่รองรับ IF NOT EXISTS ใน ALTER TABLE
+        try {
+            $cols = $pdo->query("SHOW COLUMNS FROM oil_records LIKE 'filler_name'")->fetchAll();
+            if (count($cols) === 0) {
+                $pdo->exec("ALTER TABLE oil_records ADD COLUMN filler_name VARCHAR(150) DEFAULT NULL");
+            }
+        } catch (Exception $ex) {}
+    }
+
+    // เตรียมแผนที่ทีม (team_name => id) เพื่อตรวจสอบว่าชื่อทีมใน Excel มีอยู่ในระบบหรือไม่
+    $stmtTeams = $pdo->query("SELECT id, team_name FROM teams");
+    $teams = $stmtTeams->fetchAll(PDO::FETCH_KEY_PAIR);
+
+    $stmtInsert = $pdo->prepare("INSERT INTO oil_records (tech_id, license_plate, liters, mileage, price_per_liter, total_price, date_recorded, filler_name) 
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
     $imported = 0;
     foreach ($records as $row) {
@@ -39,19 +56,33 @@ try {
         
         $tech_name = trim($row['tech_name']);
         
-        // หากันว่าชื่อใน Excel ตรงกับช่างคนไหนในระบบ (ถ้าไม่เจอให้ใส่เป็นชื่อแอดมินที่กดนำเข้า)
+        // หากชื่อผู้เติม (tech_name) ตรงกับผู้ใช้งานในระบบ ให้ผูกกับ tech_id และเก็บ filler_name
+        // หากไม่พบ ให้เก็บ filler_name เป็นค่าว่าง เพื่อให้แอดมินแก้ไขภายหลัง แต่ยังต้องใส่ tech_id ชั่วคราวเป็นผู้ที่นำเข้าข้อมูล (admin)
         $tech_id = $_SESSION['user_id'];
+        $filler_name = '';
         if ($tech_name) {
             $matched_id = array_search($tech_name, $users);
             if ($matched_id !== false) {
                 $tech_id = $matched_id;
+                $filler_name = $tech_name;
+            } else {
+                // ไม่พบชื่อช่างในระบบ -> เก็บ filler_name ว่าง เพื่อให้ admin แก้ไข
+                $filler_name = '';
             }
         }
 
         // จัดการวันที่
         $date_recorded = $row['date'] ? date('Y-m-d H:i:s', strtotime($row['date'])) : date('Y-m-d H:i:s');
 
-        $stmtInsert->execute([$tech_id, $license_plate, $liters, $mileage, $price_per_liter, $total_price, $date_recorded]);
+        // ตรวจสอบชื่อทีม/ป้ายทะเบียนว่ามีในระบบหรือไม่ ถ้าไม่มีให้เก็บเป็นค่าว่าง
+        if ($license_plate !== '') {
+            $matched_team = array_search($license_plate, $teams);
+            if ($matched_team === false) {
+                $license_plate = '';
+            }
+        }
+
+        $stmtInsert->execute([$tech_id, $license_plate, $liters, $mileage, $price_per_liter, $total_price, $date_recorded, $filler_name]);
         $imported++;
     }
 
