@@ -1,27 +1,49 @@
 // assets/js/common.js
 
-if (typeof Swal === 'undefined') {
-    console.error('SweetAlert2 is required for common UI utilities. Please include SweetAlert2 before common.js.');
-}
-
-window.Toast = Swal.mixin({
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-    didOpen: (toast) => {
-        toast.addEventListener('mouseenter', Swal.stopTimer);
-        toast.addEventListener('mouseleave', Swal.resumeTimer);
+// สร้างระบบแจ้งเตือน (Toast) แบบใหม่ที่ป้องกันการ Error (Safeguard)
+window.Toast = {
+    success: function(msg) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true });
+        } else {
+            console.log('SUCCESS: ' + msg);
+            alert(msg);
+        }
+    },
+    error: function(msg) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true });
+        } else {
+            console.error('ERROR: ' + msg);
+            alert(msg);
+        }
+    },
+    info: function(msg) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true });
+        } else {
+            console.info('INFO: ' + msg);
+        }
+    },
+    warning: function(msg) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ toast: true, position: 'top-end', icon: 'warning', title: msg, showConfirmButton: false, timer: 3000, timerProgressBar: true });
+        } else {
+            console.warn('WARNING: ' + msg);
+        }
     }
-});
+};
 
-Toast.success = (msg) => Toast.fire({ icon: 'success', title: msg });
-Toast.error = (msg) => Toast.fire({ icon: 'error', title: msg });
-Toast.info = (msg) => Toast.fire({ icon: 'info', title: msg });
-Toast.warning = (msg) => Toast.fire({ icon: 'warning', title: msg });
-
+// สร้างระบบ Loading
 window.Loader = {
-    show: () => Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } }),
-    hide: () => Swal.close()
+    show: function() {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+        }
+    },
+    hide: function() {
+        if (typeof Swal !== 'undefined') {
+            Swal.close();
+        }
+    }
 };
