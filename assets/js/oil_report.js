@@ -55,17 +55,19 @@ window.toggleCompareMode = function() {
     const selectorWrapper = document.getElementById('vehicleSelectorWrapper');
     
     if (isCompareMode) {
-        section?.classList.remove('hidden');
-        selectorWrapper?.classList.remove('hidden');
+        if(section) section.classList.remove('hidden');
+        if(selectorWrapper) selectorWrapper.classList.remove('hidden');
         if(btnText) btnText.textContent = 'ดูรายงานปกติ';
+        if(btn) btn.classList.replace('bg-slate-800', 'bg-indigo-700');
         
         fillVehicleCompareSelector();
         renderComparisonCharts();
         renderMonthlyCompareChart();
     } else {
-        section?.classList.add('hidden');
-        selectorWrapper?.classList.add('hidden');
+        if(section) section.classList.add('hidden');
+        if(selectorWrapper) selectorWrapper.classList.add('hidden');
         if(btnText) btnText.textContent = 'เปรียบเทียบรถ';
+        if(btn) btn.classList.replace('bg-indigo-700', 'bg-slate-800');
     }
     if(window.lucide) lucide.createIcons();
 };
