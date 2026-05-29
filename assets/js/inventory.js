@@ -221,10 +221,45 @@ window.renderSnModalList = function(snArray) {
 
     snArray.forEach(sn => {
         const div = document.createElement('div');
-        div.className = 'bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-lg text-sm font-mono text-indigo-700 font-bold text-center flex items-center justify-center hover:bg-indigo-50 transition-colors shadow-sm';
-        div.textContent = sn;
+        div.className = 'bg-white border-2 border-slate-100 p-4 rounded-xl text-sm font-mono text-indigo-700 font-bold flex flex-col items-center justify-center hover:bg-indigo-50 hover:border-indigo-300 transition-all shadow-sm cursor-pointer group relative overflow-hidden';
+        div.innerHTML = `
+            <span class="z-10 text-base mb-2 tracking-wide">${sn}</span>
+            <span class="text-[10px] uppercase tracking-widest bg-slate-100 text-slate-500 px-3 py-1 rounded-full group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors z-10 flex items-center">
+                <i data-lucide="copy" class="w-3 h-3 mr-1 inline-block"></i> คัดลอก
+            </span>
+            <div class="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        `;
+        div.onclick = () => {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(sn).then(() => {
+                    Toast.success('คัดลอก SN: ' + sn + ' เรียบร้อย');
+                }).catch(err => {
+                    Toast.error('ไม่สามารถคัดลอกได้');
+                });
+            } else {
+                // Fallback
+                const textArea = document.createElement("textarea");
+                textArea.value = sn;
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    Toast.success('คัดลอก SN: ' + sn + ' เรียบร้อย');
+                } catch (err) {
+                    Toast.error('ไม่สามารถคัดลอกได้');
+                }
+                document.body.removeChild(textArea);
+            }
+        };
         container.appendChild(div);
     });
+    
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons({
+            root: container
+        });
+    }
 };
 
 document.getElementById('searchSnInModal')?.addEventListener('input', function(e) {
