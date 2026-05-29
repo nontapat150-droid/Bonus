@@ -2,20 +2,14 @@
 // views/layouts/sidebar.php
 // Ultimate SaaS Sidebar (Collapsible Desktop + Drawer/Bottom Nav Mobile)
 ?>
-<!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest"></script>
 
-<!-- CSS is handled in index.php for global scope -->
-
-<!-- === Sidebar Desktop === -->
 <aside id="sidebar-desktop" class="sidebar">
-    <!-- App Logo -->
     <div class="sidebar-logo">
         <div class="w-8 h-8 bg-[var(--c-primary)] rounded-lg flex items-center justify-center text-[var(--c-text-inv)] font-bold shadow-btn shrink-0">B</div>
         <span class="sidebar-logo-text text-xl font-bold tracking-tight text-[var(--c-text-1)]">Bonus<span class="text-[var(--c-primary)]">.</span></span>
     </div>
 
-    <!-- Nav Menu -->
     <nav class="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 custom-scrollbar">
         
         <a href="index.php?page=home" class="nav-item <?= $page === 'home' ? 'active' : '' ?>" data-label="หน้าแรก">
@@ -31,6 +25,11 @@
         </a>
 
         <?php if (!hasRole('sales')): ?>
+        <a href="index.php?page=oil" class="nav-item <?= $page === 'oil' ? 'active' : '' ?>" data-label="ค่าแรกเข้า">
+            <div class="icon"><i data-lucide="gauge"></i></div>
+            <span class="nav-label">ค่าแรกเข้า</span>
+        </a>
+
         <a href="index.php?page=oil" class="nav-item <?= $page === 'oil' ? 'active' : '' ?>" data-label="น้ำมันและยานพาหนะ">
             <div class="icon"><i data-lucide="fuel"></i></div>
             <span class="nav-label">น้ำมันและยานพาหนะ</span>
@@ -57,7 +56,6 @@
         <?php endif; ?>
     </nav>
 
-    <!-- User Profile Section -->
     <div class="sidebar-user flex items-center gap-3 group relative cursor-pointer interactive hover:bg-[var(--c-surface-2)] rounded-lg mx-2 mb-2 transition-colors">
         <div class="w-10 h-10 rounded-full bg-[var(--c-primary-faint)] flex items-center justify-center text-[var(--c-primary)] font-bold shrink-0">
             <?= strtoupper(substr($user['full_name'] ?? 'U', 0, 2)) ?>
@@ -70,25 +68,20 @@
             <i data-lucide="log-out" class="w-5 h-5"></i>
         </a>
         
-        <!-- Hover tooltip for collapsed state -->
         <div class="hidden-tooltip absolute left-16 bg-[var(--c-text-1)] text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity whitespace-nowrap z-[60]">
             <?= htmlspecialchars($user['full_name']) ?> <br>
             <span class="text-[var(--c-danger)] text-[10px]"><a href="logout.php">ออกจากระบบ</a></span>
         </div>
     </div>
 
-    <!-- Toggle Button -->
     <button id="sidebarToggle" class="sidebar-toggle">
         <i data-lucide="chevron-left" class="w-4 h-4 chevron text-[var(--c-text-3)]"></i>
     </button>
 </aside>
 
-<!-- === Mobile Drawer Backdrop === -->
 <div id="mobileDrawerBackdrop" class="mobile-drawer-backdrop"></div>
 
-<!-- === Mobile Drawer === -->
 <aside id="mobileDrawer" class="mobile-drawer flex flex-col">
-    <!-- App Logo -->
     <div class="h-14 px-4 flex items-center justify-between border-b border-[var(--c-border)] shrink-0">
         <div class="flex items-center gap-2">
             <div class="w-8 h-8 bg-[var(--c-primary)] rounded-lg flex items-center justify-center text-white font-bold shadow-sm">B</div>
@@ -99,7 +92,6 @@
         </button>
     </div>
 
-    <!-- Drawer Nav -->
     <nav class="flex-1 overflow-y-auto py-4 px-2">
         <a href="index.php?page=home" class="nav-item <?= $page === 'home' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="layout-dashboard"></i></div>
@@ -110,6 +102,10 @@
             <span class="nav-label">ระบบเช็คอิน</span>
         </a>
         <?php if (!hasRole('sales')): ?>
+        <a href="index.php?page=oil" class="nav-item <?= $page === 'oil' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="gauge"></i></div>
+            <span class="nav-label">ค่าแรกเข้า</span>
+        </a>
         <a href="index.php?page=oil" class="nav-item <?= $page === 'oil' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="fuel"></i></div>
             <span class="nav-label">น้ำมันและยานพาหนะ</span>
@@ -143,7 +139,6 @@
     </div>
 </aside>
 
-<!-- === Bottom Nav Mobile === -->
 <nav id="bottom-nav" class="bottom-tabs md:hidden">
     <a href="index.php?page=home" class="tab-item <?= $page === 'home' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="layout-dashboard" class="w-6 h-6"></i></div>
@@ -154,6 +149,10 @@
         <span class="tab-label">Scan</span>
     </a>
     <?php if (!hasRole('sales')): ?>
+    <a href="index.php?page=oil" class="tab-item <?= $page === 'oil' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="gauge" class="w-6 h-6"></i></div>
+        <span class="tab-label">แรกเข้า</span>
+    </a>
     <a href="index.php?page=oil" class="tab-item <?= $page === 'oil' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="fuel" class="w-6 h-6"></i></div>
         <span class="tab-label">Oil</span>
