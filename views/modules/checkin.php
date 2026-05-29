@@ -96,7 +96,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="block md:table-row-group divide-y divide-gray-100">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -133,4 +133,4 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 </div>
 
-<script src="assets/js/checkin.js"></script>
+<script src="assets/js/checkin.js?v=<?php echo time(); ?>"></script>
