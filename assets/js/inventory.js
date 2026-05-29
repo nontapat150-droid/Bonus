@@ -74,7 +74,7 @@ function renderStockTable(data) {
         
         let actionContent = '<span class="text-xs text-slate-300 italic">วัสดุสิ้นเปลือง / ไม่มี SN</span>';
         if (item.sn_list) {
-            const snsCount = item.sn_list.split(',').length;
+            const snsCount = item.sn_list.split('|').length;
             actionContent = `<button onclick="openSnModal(this)" data-pname="${item.product_name}" data-mname="${item.model_name}" data-sns="${item.sn_list}" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-2 rounded-lg text-xs font-bold transition-colors">🔍 กดดู SN ทั้งหมด (${snsCount})</button>`;
         }
 
@@ -193,7 +193,10 @@ window.openSnModal = function(btnElement) {
     document.getElementById('snModalProductName').textContent = pName;
     document.getElementById('snModalModelName').textContent = `รุ่น (Model): ${mName || '-'}`;
     
-    currentModalSns = snString.split(',').map(sn => sn.trim()).filter(sn => sn !== '');
+    currentModalSns = snString.split('|').map(item => {
+        let parts = item.split(':');
+        return parts.length > 1 ? parts.slice(1).join(':').trim() : item.trim();
+    }).filter(sn => sn !== '');
     
     document.getElementById('searchSnInModal').value = ''; 
     renderSnModalList(currentModalSns); 
