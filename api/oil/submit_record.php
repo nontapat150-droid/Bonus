@@ -20,23 +20,15 @@ try {
     $mileage = intval($_POST['mileage'] ?? 0);
     $liters = floatval($_POST['liters'] ?? 0);
     $price_per_liter = floatval($_POST['price_per_liter'] ?? 0);
-    $distance = 0; // บังคับเป็น 0 เพื่อคำนวณใหม่เสมอ
     $job_count = intval($_POST['job_count'] ?? 0);
-    
-    // รับค่า total_price และปัดเศษอัตโนมัติ (หากไม่มีให้คูณและปัดเศษ)
-    $total_price = isset($_POST['total_price']) && $_POST['total_price'] !== '' ? round(floatval($_POST['total_price'])) : round($liters * $price_per_liter);
     $filler_name = trim($_SESSION['full_name'] ?? '');
 
-    // แอดมินสามารถกำหนด tech_id ได้เอง แทนที่จะเป็นตัวเอง (คนคีย์)
     $tech_id = $user_id;
     if ($isAdmin && !empty($_POST['tech_id'])) {
         $tech_id = intval($_POST['tech_id']);
     }
 
-    // การจัดการวันที่บันทึก (Date Recorded)
-    $date_recorded = date('Y-m-d H:i:s'); // ค่าเริ่มต้นเป็นเวลาปัจจุบัน
-    
-    // ตรวจสอบว่าแอดมินหรือซูเปอร์แอดมิน เป็นผู้กำหนดเวลาย้อนหลังมาหรือไม่
+    $date_recorded = date('Y-m-d H:i:s');
     if ($isAdmin && !empty($_POST['date_recorded'])) {
         $date_recorded = date('Y-m-d H:i:s', strtotime($_POST['date_recorded']));
     }
@@ -45,15 +37,24 @@ try {
         throw new Exception("กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง");
     }
 
-    // --- ส่วนเพิ่มเติม: คำนวณ Job Count อัตโนมัติหากไม่ได้ส่งมา (กรณีช่างเติมหน้างาน) ---
+    // คำนวณระยะทางจากรอบก่อนหน้าอัตโนมัติ
+    $distance = 0;
+    $stmtLastMile = $pdo->prepare("SELECT mileage FROM oil_records WHERE license_plate = ? AND date_recorded < ? ORDER BY date_recorded DESC LIMIT 1");
+    $stmtLastMile->execute([$license_plate, $date_recorded]);
+    $lastMileage = $stmtLastMile->fetchColumn();
+    if ($lastMileage && $mileage >= $lastMileage) {
+        $distance = $mileage - $lastMileage;
+    }
+
+    // ปัดเศษราคารวมอัตโนมัติ
+    $total_price = isset($_POST['total_price']) && $_POST['total_price'] !== '' ? round(floatval($_POST['total_price'])) : round($liters * $price_per_liter);
+
     if ($job_count <= 0) {
-        // ค้นหา ID ทีมจากป้ายทะเบียน
         $stmtTeam = $pdo->prepare("SELECT id FROM teams WHERE team_name = ? LIMIT 1");
         $stmtTeam->execute([$license_plate]);
         $teamId = $stmtTeam->fetchColumn();
 
         if ($teamId) {
-            // ค้นหาวันที่เติมครั้งล่าสุดของรถคันนี้
             $stmtLast = $pdo->prepare("SELECT date_recorded FROM oil_records WHERE license_plate = ? ORDER BY date_recorded DESC LIMIT 1");
             $stmtLast->execute([$license_plate]);
             $lastDate = $stmtLast->fetchColumn();
@@ -68,18 +69,7 @@ try {
             $job_count = (int)$jobStmt->fetchColumn();
         }
     }
-// --- ส่วนเพิ่มเติม: คำนวณระยะทาง (กม.) อัตโนมัติจากไมล์รอบก่อนหน้า ---
-    if ($mileage > 0) {
-        $stmtLastMile = $pdo->prepare("SELECT mileage FROM oil_records WHERE license_plate = ? AND date_recorded < ? ORDER BY date_recorded DESC LIMIT 1");
-        $stmtLastMile->execute([$license_plate, $date_recorded]);
-        $lastMileage = $stmtLastMile->fetchColumn();
-        if ($lastMileage && $mileage >= $lastMileage) {
-            $distance = $mileage - $lastMileage;
-        }
-    }
 
-    // 1. Check and Lock Vehicle
-    // 1. Check and Lock Vehicle
     $stmt = $pdo->prepare("SELECT id, last_tech_id FROM vehicles WHERE license_plate = ?");
     $stmt->execute([$license_plate]);
     $vehicle = $stmt->fetch();
@@ -94,48 +84,32 @@ try {
         $stmt->execute([$license_plate, $user_id]);
     }
 
-    // 2. Insert Oil Record
     $stmt = $pdo->prepare("INSERT INTO oil_records (tech_id, license_plate, liters, mileage, price_per_liter, total_price, date_recorded, filler_name, distance, job_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([$tech_id, $license_plate, $liters, $mileage, $price_per_liter, $total_price, $date_recorded, $filler_name, $distance, $job_count]);
     $record_id = $pdo->lastInsertId();
 
-    // 3. Handle File Uploads (Max 10)
     $upload_dir = '../../assets/uploads/oil_receipts/';
-    if (!is_dir($upload_dir)) {
-        mkdir($upload_dir, 0755, true);
-    }
+    if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
 
     if (isset($_FILES['oil_images'])) {
         $files = $_FILES['oil_images'];
         $count = count($files['name']);
-
-        if ($count > 10) {
-            throw new Exception("อัปโหลดได้สูงสุด 10 รูปเท่านั้น");
-        }
+        if ($count > 10) throw new Exception("อัปโหลดได้สูงสุด 10 รูปเท่านั้น");
 
         $stmtImage = $pdo->prepare("INSERT INTO oil_images (record_id, image_path) VALUES (?, ?)");
-
         for ($i = 0; $i < $count; $i++) {
             if ($files['error'][$i] === UPLOAD_ERR_OK) {
                 $ext = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
-                if (!in_array($ext, ['jpg', 'jpeg', 'png'])) {
-                    throw new Exception("อนุญาตเฉพาะไฟล์รูปภาพ JPG หรือ PNG เท่านั้น");
-                }
+                if (!in_array($ext, ['jpg', 'jpeg', 'png'])) throw new Exception("อนุญาตเฉพาะไฟล์รูปภาพ JPG หรือ PNG เท่านั้น");
 
                 $filename = uniqid('oil_', true) . '.' . $ext;
-                $target_file = $upload_dir . $filename;
-
-                if (move_uploaded_file($files['tmp_name'][$i], $target_file)) {
+                if (move_uploaded_file($files['tmp_name'][$i], $upload_dir . $filename)) {
                     $stmtImage->execute([$record_id, $filename]);
-                } else {
-                    throw new Exception("เกิดข้อผิดพลาดในการบันทึกไฟล์รูปภาพ");
                 }
             }
         }
     } else {
-         if (!$isAdmin) {
-             throw new Exception("กรุณาอัปโหลดรูปภาพหลักฐานอย่างน้อย 1 รูป");
-         }
+         if (!$isAdmin) throw new Exception("กรุณาอัปโหลดรูปภาพหลักฐานอย่างน้อย 1 รูป");
     }
 
     $pdo->commit();
