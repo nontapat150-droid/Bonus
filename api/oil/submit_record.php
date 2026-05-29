@@ -15,11 +15,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 try {
     $pdo->beginTransaction();
 
-    $license_plate = strtoupper(trim($_POST['license_plate'] ?? ''));
+    $license_plate = trim($_POST['license_plate'] ?? '');
     $mileage = intval($_POST['mileage'] ?? 0);
     $liters = floatval($_POST['liters'] ?? 0);
     $price_per_liter = floatval($_POST['price_per_liter'] ?? 0);
     $total_price = $liters * $price_per_liter;
+    $filler_name = trim($_SESSION['full_name'] ?? '');
 
     // การจัดการวันที่บันทึก (Date Recorded)
     $date_recorded = date('Y-m-d H:i:s'); // ค่าเริ่มต้นเป็นเวลาปัจจุบัน
@@ -49,8 +50,8 @@ try {
     }
 
     // 2. Insert Oil Record (แก้ไขเพิ่มคอลัมน์ date_recorded เข้าไป)
-    $stmt = $pdo->prepare("INSERT INTO oil_records (tech_id, license_plate, liters, mileage, price_per_liter, total_price, date_recorded) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$user_id, $license_plate, $liters, $mileage, $price_per_liter, $total_price, $date_recorded]);
+    $stmt = $pdo->prepare("INSERT INTO oil_records (tech_id, license_plate, liters, mileage, price_per_liter, total_price, date_recorded, filler_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$user_id, $license_plate, $liters, $mileage, $price_per_liter, $total_price, $date_recorded, $filler_name]);
     $record_id = $pdo->lastInsertId();
 
     // 3. Handle File Uploads (Max 10)
