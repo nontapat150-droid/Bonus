@@ -90,16 +90,15 @@ function fillVehicleCompareSelector() {
 }
 
 window.autoFillVehicle = function(techId) {
+    const plateInput = document.getElementById('manage_license_plate');
+    if(!plateInput) return;
+    plateInput.value = ''; 
     if (!techId) return;
+    
     const user = editUsersList.find(u => u.id == techId);
     if (user && user.team_name) {
-        const plateSelector = document.getElementById('manage_license_plate');
-        if(!plateSelector) return;
-        const exists = Array.from(plateSelector.options).some(opt => opt.value === user.team_name);
-        if (exists) {
-            plateSelector.value = user.team_name;
-            Toast.info(`เลือกทะเบียนรถ ${user.team_name} ให้อัตโนมัติสำหรับ ${user.full_name}`);
-        }
+        plateInput.value = user.team_name;
+        Toast.info(`แสดงทะเบียนรถ ${user.team_name} สำหรับ ${user.full_name}`);
     }
 };
 
