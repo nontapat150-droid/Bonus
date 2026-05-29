@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelNotificationCreate = document.getElementById('cancelNotificationCreate');
     const sendNotificationBtn = document.getElementById('sendNotificationBtn');
     
-    // Form Elements
     const notificationTitle = document.getElementById('notificationTitle');
     const notificationMessage = document.getElementById('notificationMessage');
     const notificationType = document.getElementById('notificationType');
@@ -24,7 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!bellButton || !notificationModal) return;
 
+    // โหลดแจ้งเตือนเบื้องหลังทันทีที่เปิดหน้าเว็บ
     loadNotifications(true);
+
+    // ดึงข้อมูล Real-time อัตโนมัติทุกๆ 15 วินาที
+    setInterval(() => {
+        if (notificationModal.classList.contains('hidden')) {
+            loadNotifications(true);
+        }
+    }, 15000);
 
     bellButton.addEventListener('click', async () => {
         notificationModal.classList.remove('hidden');
@@ -36,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (notificationCreateCard) notificationCreateCard.classList.add('hidden');
     });
 
-    // สลับโหมดการส่ง (ทุกคน / ทีม / บุคคล)
     if (notificationType) {
         notificationType.addEventListener('change', () => {
             if (notificationType.value === 'all') {
@@ -105,8 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     notificationTitle.value = '';
                     notificationMessage.value = '';
                     notificationType.value = 'all';
-                    notificationType.dispatchEvent(new Event('change')); // Reset dropdowns
+                    notificationType.dispatchEvent(new Event('change'));
                     if (notificationCreateCard) notificationCreateCard.classList.add('hidden');
+                    
+                    // บังคับให้โหลดแจ้งเตือนแบบกระชากขึ้นมาแสดงทันที
                     await loadNotifications(false);
                 } else {
                     Toast.error(data.error || 'ส่งแจ้งเตือนล้มเหลว');
@@ -159,8 +167,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             if (!data.success) return;
 
+            // จัดการตัวเลขตรงไอคอนกระดิ่งแบบไม่ต้องแก้ HTML
             notificationCount.textContent = data.unread_count || 0;
-            unreadDot.classList.toggle('hidden', !(data.unread_count > 0));
+            if (data.unread_count > 0) {
+                unreadDot.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
+                unreadDot.className = "absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[9px] font-black rounded-full border-2 border-white shadow-sm animate__animated animate__heartBeat";
+            } else {
+                unreadDot.className = "hidden";
+            }
 
             if (isBackground) return;
 
@@ -175,11 +189,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const item = document.createElement('div');
                 const isSmartAlert = typeof notification.id === 'string'; 
                 
-                // จัดสีป้ายกำกับเป้าหมาย
                 let targetBadge = `<span class="text-sky-600 font-bold bg-sky-50 px-2 py-0.5 rounded-lg">${notification.target_name}</span>`;
-                if(notification.target_name.includes('เฉพาะคุณ')) {
-                    targetBadge = `<span class="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-lg">🔒 เฉพาะคุณ</span>`;
+                if(notification.target_name.includes('เฉพาะ')) {
+                    targetBadge = `<span class="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-lg">🔒 ${notification.target_name}</span>`;
                 }
+
+                // ปุ่มลบ (แสดงเฉพาะแอดมิน และซ่อนในพวกแจ้งเตือน AI)
+                const delBtnHtml = (isAdmin && !isSmartAlert) 
+                    ? `<button onclick="window.deleteNotification(event, ${notification.id})" class="text-rose-400 hover:text-white hover:bg-rose-500 bg-rose-50 px-2 py-1.5 rounded-lg transition-all shadow-sm" title="ลบการแจ้งเตือนนี้"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`
+                    : '';
 
                 item.className = `rounded-3xl border ${isSmartAlert ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'} p-4 shadow-sm cursor-pointer hover:border-indigo-400 transition-all`;
                 item.innerHTML = `
@@ -191,7 +209,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span class="text-slate-300">•</span> ${targetBadge}
                             </div>
                         </div>
-                        <div class="text-xs font-bold ${notification.is_read ? 'text-slate-300' : 'text-rose-500 px-2 py-1 bg-rose-50 rounded-lg shadow-sm'}">${notification.is_read ? 'อ่านแล้ว' : 'ใหม่'}</div>
+                        <div class="flex items-center gap-2">
+                            ${delBtnHtml}
+                            <div class="text-[10px] font-bold ${notification.is_read ? 'text-slate-400' : 'text-rose-500 px-2 py-1 bg-rose-50 rounded-lg shadow-sm'}">${notification.is_read ? 'อ่านแล้ว' : 'ใหม่'}</div>
+                        </div>
                     </div>
                     <div class="mt-3 text-slate-700 text-sm line-clamp-2 bg-slate-50/50 p-2 rounded-xl">
                         ${escapeHtml(notification.message)}
@@ -206,6 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 notificationList.appendChild(item);
+                lucide.createIcons();
             });
         } catch (error) {}
     }
@@ -241,6 +263,43 @@ document.addEventListener('DOMContentLoaded', () => {
             customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl font-bold px-6 py-2 shadow-md' }
         });
     }
+
+    // ระบบปุ่มลบ
+    window.deleteNotification = async function(event, id) {
+        event.stopPropagation(); // หยุกการกดแล้วทะลุไปอ่านแจ้งเตือน
+
+        const confirmResult = await Swal.fire({
+            title: 'ยืนยันการลบ?',
+            text: "หากลบแล้ว การแจ้งเตือนนี้จะหายไปจากทุกคน (ทั้งผู้ส่งและผู้รับ)",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#EF4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'ใช่, ลบเลย',
+            cancelButtonText: 'ยกเลิก',
+            customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md', cancelButton: 'rounded-xl px-6 py-2.5 font-bold' }
+        });
+
+        if (confirmResult.isConfirmed) {
+            try {
+                const res = await fetch('api/notifications/delete_notification.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    Toast.success('ลบการแจ้งเตือนสำเร็จ');
+                    await loadNotifications(false); // โหลดตารางใหม่
+                } else {
+                    Toast.error(data.error || 'ไม่สามารถลบได้');
+                }
+            } catch (err) {
+                Toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+            }
+        }
+    };
 
     function formatDate(value) {
         if (!value) return '';
