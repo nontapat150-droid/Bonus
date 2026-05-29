@@ -37,6 +37,17 @@ try {
         throw new Exception("กรุณากรอกข้อมูลให้ครบถ้วนและถูกต้อง");
     }
 
+    // 🚨 --- ระบบตรวจจับข้อมูลซ้ำ (Duplicate Detection) ---
+    $stmtCheckDup = $pdo->prepare("SELECT date_recorded, liters FROM oil_records WHERE license_plate = ? AND mileage = ? LIMIT 1");
+    $stmtCheckDup->execute([$license_plate, $mileage]);
+    $dupRecord = $stmtCheckDup->fetch(PDO::FETCH_ASSOC);
+
+    if ($dupRecord) {
+        $dupDate = date('d/m/Y H:i', strtotime($dupRecord['date_recorded']));
+        throw new Exception("ตรวจพบข้อมูลซ้ำ! รถทะเบียน [{$license_plate}] มีการบันทึกเลขไมล์ [{$mileage}] ไปแล้วเมื่อวันที่ {$dupDate} (จำนวน {$dupRecord['liters']} ลิตร)");
+    }
+    // --------------------------------------------------
+
     // ปัดเศษราคารวมอัตโนมัติ
     $total_price = isset($_POST['total_price']) && $_POST['total_price'] !== '' ? round(floatval($_POST['total_price'])) : round($liters * $price_per_liter);
 
@@ -80,7 +91,7 @@ try {
     $stmt->execute([$tech_id, $license_plate, $liters, $mileage, $price_per_liter, $total_price, $date_recorded, $filler_name, $job_count]);
     $record_id = $pdo->lastInsertId();
 
-    // 🚀 --- ระบบคำนวณระยะทางใหม่ทั้งหมดแบบอัตโนมัติ (เรียงตามวันที่เติมน้ำมัน) ---
+    // ระบบคำนวณระยะทางใหม่ทั้งหมดแบบอัตโนมัติ (เรียงตามวันที่เติมน้ำมัน)
     $stmtRecalc = $pdo->prepare("SELECT id, mileage FROM oil_records WHERE license_plate = ? ORDER BY date_recorded ASC, id ASC");
     $stmtRecalc->execute([$license_plate]);
     $recordsForRecalc = $stmtRecalc->fetchAll(PDO::FETCH_ASSOC);
@@ -93,12 +104,11 @@ try {
         $dist = 0;
         if ($prev_mileage !== null) {
             $dist = $curr_m - $prev_mileage;
-            if ($dist < 0) $dist = 0; // ป้องกันระยะทางติดลบกรณีคีย์เลขไมล์ผิด
+            if ($dist < 0) $dist = 0;
         }
         $updateDistStmt->execute([$dist, $rRow['id']]);
         $prev_mileage = $curr_m;
     }
-    // -------------------------------------------------------------
 
     $upload_dir = '../../assets/uploads/oil_receipts/';
     if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
