@@ -1,53 +1,34 @@
 // assets/js/start_day.js
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('startDayForm');
-    const fileInput = document.getElementById('oil_images');
+    const fileInput = document.getElementById('start_day_images');
     const previewContainer = document.getElementById('imagePreviewContainer');
-    const licensePlateSelect = document.getElementById('license_plate');
-    const dateInput = document.getElementById('date_recorded');
+    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
-    // เซ็ตเวลาเริ่มต้นเป็นเวลาปัจจุบัน
-    if (dateInput) {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        dateInput.value = now.toISOString().slice(0,16);
-    }
-
-    // โหลดป้ายทะเบียนรถ (ใช้งาน API เดียวกับระบบน้ำมันได้เลย)
-    async function loadTeamPlates() {
-        try {
-            const res = await fetch('api/oil/get_team_plates.php');
-            const data = await res.json();
-            if (data.success) {
-                licensePlateSelect.innerHTML = '<option value="">-- เลือกป้ายทะเบียนรถ --</option>';
-                data.data.forEach(team => {
-                    const option = document.createElement('option');
-                    option.value = team.id;
-                    option.textContent = `🚗 ${team.team_name}`;
-                    option.setAttribute('data-plate', team.team_name);
-                    if (data.my_team_id && String(team.id) === String(data.my_team_id)) {
-                        option.selected = true;
-                    }
-                    licensePlateSelect.appendChild(option);
-                });
-            }
-        } catch (e) {
-            console.error('Error loading team plates:', e);
-        }
-    }
-    loadTeamPlates();
-
-    // จัดการอัปโหลดและพรีวิวรูปภาพ
     let selectedFiles = [];
+
     fileInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
-        if (selectedFiles.length + files.length > 10) return Toast.error('อัปโหลดได้สูงสุด 10 รูป');
+        if (selectedFiles.length + files.length > 10) {
+            Toast.error('อัปโหลดได้สูงสุด 10 รูป');
+            fileInput.value = ''; 
+            return;
+        }
         
         for (const file of files) {
-            if (file.type.startsWith('image/')) {
-                selectedFiles.push(file);
-                renderPreview(file, selectedFiles.length - 1);
+            if (!file.type.startsWith('image/')) continue;
+
+            let processedFile = file;
+            if (file.size > MAX_IMAGE_SIZE) {
+                try {
+                    processedFile = await compressImage(file, MAX_IMAGE_SIZE);
+                } catch (err) {
+                    Toast.error('รูปภาพใหญ่เกินไป บีบอัดไม่สำเร็จ');
+                    continue;
+                }
             }
+            selectedFiles.push(processedFile);
+            renderPreview(processedFile, selectedFiles.length - 1);
         }
         fileInput.value = '';
     });
@@ -59,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
             div.className = 'relative group rounded-lg overflow-hidden border border-gray-200 aspect-square';
             div.innerHTML = `
                 <img src="${e.target.result}" class="w-full h-full object-cover">
-                <button type="button" onclick="removeImage(${index})" class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                <button type="button" onclick="removeImage(${index})" class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-md">✕</button>
             `;
             previewContainer.appendChild(div);
         };
@@ -72,19 +53,41 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedFiles.forEach((f, i) => renderPreview(f, i));
     };
 
-    // ส่งข้อมูล (ใช้ API ร่วมกับระบบน้ำมันเพราะโครงสร้าง DB เดียวกัน)
+    // ฟังก์ชันย่อขนาดรูปภาพ (เหมือนระบบ Oil)
+    async function compressImage(file, maxSize) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = async () => {
+                    let canvas = document.createElement('canvas');
+                    let ctx = canvas.getContext('2d');
+                    const ratio = Math.min(1, 1920 / Math.max(img.width, img.height));
+                    let width = Math.round(img.width * ratio);
+                    let height = Math.round(img.height * ratio);
+                    let quality = 0.9;
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(blob => {
+                        const name = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+                        resolve(new File([blob], name, { type: 'image/jpeg' }));
+                    }, 'image/jpeg', quality);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        const selectedOption = licensePlateSelect.options[licensePlateSelect.selectedIndex];
-        const teamName = selectedOption ? selectedOption.getAttribute('data-plate') : '';
-        if (!teamName) return Toast.error('กรุณาเลือกป้ายทะเบียนรถ');
-        if (selectedFiles.length === 0) return Toast.error('กรุณาถ่ายรูปหน้าปัดไมล์');
+        if (selectedFiles.length === 0) return Toast.error('กรุณาถ่ายรูปหรือแนบรูปภาพอย่างน้อย 1 รูป');
 
         const formData = new FormData(form);
-        formData.set('license_plate', teamName);
-        formData.delete('oil_images[]');
-        selectedFiles.forEach(file => formData.append('oil_images[]', file));
+        formData.delete('start_day_images[]');
+        selectedFiles.forEach(file => formData.append('start_day_images[]', file));
 
         const submitBtn = document.getElementById('submitBtn');
         const originalText = submitBtn.innerHTML;
@@ -92,26 +95,21 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.disabled = true;
 
         try {
-            const response = await fetch('api/oil/submit_record.php', { method: 'POST', body: formData });
+            const response = await fetch('api/start_day/submit.php', { method: 'POST', body: formData });
             const result = await response.json();
 
             if (result.success) {
                 Swal.fire({
                     title: 'สำเร็จ!',
-                    text: 'บันทึกค่าแรกเข้าเรียบร้อยแล้ว ขอให้ทำงานอย่างปลอดภัยครับ',
+                    text: 'บันทึกข้อมูลเรียบร้อยแล้ว (ระบบบันทึกเวลาให้คุณอัตโนมัติ)',
                     icon: 'success',
                     confirmButtonText: 'ตกลง',
                     confirmButtonColor: '#059669',
-                    customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2 font-bold' }
+                    customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
                 });
                 form.reset();
                 selectedFiles = [];
                 previewContainer.innerHTML = '';
-                
-                // เซ็ตเวลาใหม่
-                const now = new Date();
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                dateInput.value = now.toISOString().slice(0,16);
             } else {
                 Toast.error(result.error);
             }
