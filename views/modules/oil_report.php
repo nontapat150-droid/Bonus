@@ -4,7 +4,6 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 ?>
 
 <div class="space-y-6">
-    <!-- Header & Filter Group -->
     <div class="flex flex-col gap-6">
         <div class="card !p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div class="flex items-center">
@@ -17,8 +16,15 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                 </div>
             </div>
 
-            <!-- Filter Controls -->
             <div class="flex flex-wrap items-center gap-3 bg-[var(--c-surface-2)] p-2 rounded-2xl border border-[var(--c-border)]">
+                
+                <div class="flex items-center gap-2 border-r border-[var(--c-border)] pr-3">
+                    <i data-lucide="truck" class="w-4 h-4 text-[var(--c-text-3)] ml-2"></i>
+                    <select id="filter_license_plate" onchange="document.getElementById('filterBtn').click()" class="bg-transparent border-none text-xs font-bold focus:ring-0 cursor-pointer py-1">
+                        <option value="all">-- ทุกคัน --</option>
+                    </select>
+                </div>
+
                 <div class="flex items-center gap-2">
                     <i data-lucide="calendar" class="w-4 h-4 text-[var(--c-text-3)] ml-2"></i>
                     <select id="dateRangePreset" class="bg-transparent border-none text-xs font-bold focus:ring-0 cursor-pointer py-1" onchange="applyDatePreset(this.value)">
@@ -39,7 +45,6 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             </div>
         </div>
 
-        <!-- Action Buttons Group -->
         <div class="flex flex-wrap items-center gap-3">
             <div id="compareControls" class="flex flex-wrap items-center gap-3">
                 <button onclick="toggleCompareMode()" id="compareBtn" class="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-700 transition-all shadow-lg shadow-slate-200">
@@ -49,8 +54,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                 
                 <div id="vehicleSelectorWrapper" class="hidden animate__animated animate__fadeInLeft">
                     <select id="vehicleCompareSelector" multiple class="input min-w-[200px] text-xs font-bold py-2.5 rounded-2xl" onchange="renderComparisonCharts()">
-                        <!-- Options filled by JS -->
-                    </select>
+                        </select>
                     <p class="text-[10px] text-[var(--c-text-3)] mt-1 ml-2 font-bold uppercase tracking-tighter">* กด Ctrl ค้างเพื่อเลือกหลายคัน</p>
                 </div>
             </div>
@@ -76,7 +80,6 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
         </div>
     </div>
 
-    <!-- Comparison Section -->
     <div id="compareSection" class="hidden animate__animated animate__fadeIn">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="card !p-6">
@@ -111,12 +114,9 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
     </div>
 
     <div class="kpi-grid">
-        <!-- ... existing KPIs ... -->
-    </div>
+        </div>
 
-    <!-- Charts Section -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- 1. Cost Chart -->
         <div class="card !p-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div class="flex items-center gap-3">
@@ -132,7 +132,6 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             <div class="h-64"><canvas id="combinedTrendChart"></canvas></div>
         </div>
 
-        <!-- 2. Liters Chart -->
         <div class="card !p-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div class="flex items-center gap-3">
@@ -148,7 +147,6 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             <div class="h-64"><canvas id="litersTrendChart"></canvas></div>
         </div>
 
-        <!-- 3. Distance Chart -->
         <div class="card !p-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div class="flex items-center gap-3">
@@ -164,7 +162,6 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             <div class="h-64"><canvas id="distanceTrendChart"></canvas></div>
         </div>
 
-        <!-- 4. Job Cost Efficiency Chart -->
         <div class="card !p-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div class="flex items-center gap-3">
@@ -236,12 +233,10 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ชื่อผู้เติม (ช่างเทคนิค) <span class="text-rose-500">*</span></label>
                     <select id="manage_tech_id" class="input w-full" onchange="autoFillVehicle(this.value)"></select>
                 </div>
-                
                 <div>
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ป้ายทะเบียนรถ (ทีม) <span class="text-rose-500">*</span></label>
                     <select id="manage_license_plate" class="input w-full"></select>
                 </div>
-                
                 <div>
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">เลขไมล์รถ <span class="text-rose-500">*</span></label>
                     <input type="number" id="manage_mileage" class="input w-full" placeholder="Ex: 75000">
@@ -286,12 +281,4 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<script src="assets/js/common.js?v=<?= time(); ?>"></script>
 <script src="assets/js/oil_report.js?v=<?= time(); ?>"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="assets/js/common.js"></script>
-<script src="assets/js/oil_report.js"></script>
