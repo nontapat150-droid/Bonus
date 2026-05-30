@@ -12,43 +12,32 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     .animate-dashboard { animation: fadeSlideUp 0.4s ease-out forwards; }
     .animate-row { opacity: 0; animation: fadeSlideUp 0.3s ease-out forwards; }
 
-    /* 🌟 Scrollbar */
-    .table-container { scroll-behavior: smooth; overflow: auto; padding: 0 8px 16px 8px; }
-    .table-container::-webkit-scrollbar { width: 6px; height: 6px; }
+    /* 🌟 Scrollbar ที่เลื่อนง่ายขึ้น */
+    .table-container { scroll-behavior: smooth; overflow-x: auto; overflow-y: auto; padding-bottom: 16px; }
+    .table-container::-webkit-scrollbar { width: 8px; height: 8px; }
     .table-container::-webkit-scrollbar-track { background: transparent; }
     .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     
-    /* 🌟 FULL DATA CARD-LIKE TABLE */
-    .job-table { border-collapse: separate; border-spacing: 0 6px; min-width: 1100px; width: 100%; table-layout: auto; }
+    /* 🌟 ตารางต้องกว้างอย่างน้อย 1200px ห้ามบีบเด็ดขาด */
+    .job-table { border-collapse: separate; border-spacing: 0 8px; min-width: 1200px; width: 100%; }
     .job-table th { 
         position: sticky; top: 0; z-index: 20; background: #f8fafc; 
-        text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; 
+        text-transform: uppercase; font-size: 0.75rem; 
         padding: 12px 10px; font-weight: 800; color: #64748b; white-space: nowrap;
-        border-bottom: 2px solid #e2e8f0; box-shadow: 0 4px 6px -6px rgba(0,0,0,0.1);
+        border-bottom: 2px solid #e2e8f0; 
     }
     
-    .job-table tbody tr { transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; }
+    .job-table tbody tr { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
     .job-table tbody tr:hover { transform: translateY(-2px); z-index: 10; position: relative; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08); }
-    .job-table tbody tr:hover td { background-color: #fdfdfe; border-color: #cbd5e1; }
     
     .job-table td { 
         background-color: #ffffff;
-        padding: 10px 10px; vertical-align: middle;
+        padding: 12px 10px; vertical-align: top; /* 🌟 ให้อ่านจากบนลงล่างง่ายๆ */
         border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;
-        transition: all 0.2s ease;
-        word-break: break-word; /* 🌟 ป้องกันข้อความล้น ให้ขึ้นบรรทัดใหม่เสมอ */
     }
-    .job-table td:first-child { 
-        border-left: 1px solid #f1f5f9; 
-        border-top-left-radius: 10px; border-bottom-left-radius: 10px; 
-    }
-    .job-table td:last-child { 
-        border-right: 1px solid #f1f5f9; 
-        border-top-right-radius: 10px; border-bottom-right-radius: 10px; 
-    }
+    .job-table td:first-child { border-left: 1px solid #f1f5f9; border-radius: 8px 0 0 8px; }
+    .job-table td:last-child { border-right: 1px solid #f1f5f9; border-radius: 0 8px 8px 0; }
 
-    /* Map Background */
     #map { background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f8 100%); }
     .leaflet-container { border-radius: 0; }
 </style>
@@ -153,14 +142,12 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <table class="job-table pb-4">
     <thead class="bg-[#f8fafc]">
         <tr>
-            <th class="text-center w-12">
-                <i data-lucide="check-square" class="w-4 h-4 mx-auto text-slate-400"></i>
-            </th>
+            <th class="text-center w-12"><i data-lucide="check-square" class="w-4 h-4 mx-auto text-slate-400"></i></th>
             <th class="text-center w-16">คิว</th>
-            <th class="text-left w-28">รหัสงาน</th>
-            <th class="text-left min-w-[160px]">ชื่อลูกค้า</th>
+            <th class="text-left w-32">รหัสงาน</th>
+            <th class="text-left w-48">ชื่อลูกค้า</th>
             <th class="text-left w-32">เบอร์โทร</th>
-            <th class="text-left min-w-[250px] w-full">สถานที่ติดตั้ง</th>
+            <th class="text-left auto">สถานที่ติดตั้ง</th>
             <th class="text-left w-28">วันที่</th>
             <th class="text-center w-36">ทีมรับผิดชอบ</th>
         </tr>
@@ -199,4 +186,4 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     const IS_ADMIN = <?php echo $isAdmin ? 'true' : 'false'; ?>;
 </script>
 <script src="assets/js/common.js"></script>
-<script src="assets/js/dispatch.js"></script>
+<script src="assets/js/dispatch.js?v=<?= time() ?>"></script>
