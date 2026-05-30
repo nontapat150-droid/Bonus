@@ -40,9 +40,53 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
     #map { background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f8 100%); }
     .leaflet-container { border-radius: 0; }
+
+    .dispatch-page { display: flex; flex-direction: column; gap: 1rem; min-height: 100vh; padding-bottom: 2rem; }
+    .dispatch-page .card:hover { transform: none; }
+    .dispatch-workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; min-height: 0; }
+    .dispatch-list-panel { min-height: 620px; overflow: hidden; }
+    .dispatch-list-scroll { flex: 1; min-height: 0; overflow: auto; background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%); scroll-behavior: smooth; }
+    .dispatch-job-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 14px; }
+    .dispatch-job-card { border-radius: 8px; }
+    .dispatch-job-card:hover { transform: translateY(-2px); box-shadow: 0 14px 28px -20px rgba(15, 23, 42, 0.55); }
+    .dispatch-stat { min-width: 0; border: 1px solid var(--c-border); background: var(--c-surface); border-radius: 8px; padding: 10px 12px; }
+    .dispatch-stat-label { display: block; color: var(--c-text-3); font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; line-height: 1; }
+    .dispatch-stat-value { display: block; margin-top: 5px; color: var(--c-text-1); font-size: 18px; font-weight: 900; line-height: 1; }
+    .dispatch-map-panel { height: 360px; min-height: 360px; overflow: hidden; }
+    .dispatch-map-header { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 500; pointer-events: none; }
+    .dispatch-map-header > div { pointer-events: auto; }
+    .dispatch-marker {
+        width: 34px; height: 34px; border-radius: 50% 50% 50% 8px;
+        transform: rotate(-45deg); border: 2px solid #fff;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-weight: 900; font-size: 12px;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.28);
+    }
+    .dispatch-marker span { transform: rotate(45deg); }
+    .action-buttons button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+    @media (min-width: 768px) {
+        .dispatch-job-list { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 16px; }
+    }
+    @media (min-width: 1024px) {
+        .dispatch-page { height: calc(100vh - 100px); min-height: 0; padding-bottom: 0; }
+        .dispatch-workspace { grid-template-columns: minmax(0, 1.12fr) minmax(390px, .88fr); flex: 1; }
+        .dispatch-list-panel { min-height: 0; }
+        .dispatch-map-panel { position: sticky; top: 88px; align-self: start; height: calc(100vh - 120px); min-height: 520px; }
+    }
+    @media (min-width: 1440px) {
+        .dispatch-workspace { grid-template-columns: minmax(0, 1.2fr) minmax(440px, .8fr); }
+    }
+    @media (max-width: 767px) {
+        .dispatch-list-panel { min-height: 520px; }
+        .dispatch-job-list { padding: 12px; }
+        .dispatch-map-panel { height: 330px; min-height: 330px; }
+        .dashboard-header { align-items: stretch; }
+        .dashboard-header .action-buttons { width: 100%; }
+        .action-buttons > button { min-height: 40px; }
+    }
 </style>
 
-<div class="flex flex-col gap-4 animate-dashboard min-h-screen pb-10 lg:h-[calc(100vh-100px)] lg:pb-0">
+<div class="dispatch-page animate-dashboard">
     
     <?php if ($isAdmin): ?>
     <div class="card !p-4 flex flex-wrap gap-4 items-center justify-between z-20 dashboard-header shrink-0">
@@ -57,49 +101,54 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         <div class="action-buttons grid grid-cols-2 md:flex md:flex-row md:justify-end gap-2 flex-wrap">
             <input type="file" id="jobExcelFile" accept=".xlsx, .xls" class="hidden">
             <button onclick="document.getElementById('jobExcelFile').click()" title="นำเข้าไฟล์ Excel" class="bg-[var(--c-surface-2)] hover:bg-[var(--c-border)] text-[var(--c-text-2)] px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all border border-[var(--c-border)]">
-                <i data-lucide="download" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span class="hidden sm:inline">นำเข้า</span>
+                <i data-lucide="download" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>นำเข้า</span>
             </button>
             <button id="exportExcelBtn" title="ส่งออกไฟล์ Excel" class="bg-[var(--c-info-bg)] text-[var(--c-info)] hover:opacity-80 px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all border border-[var(--c-info-bg)]">
-                <i data-lucide="bar-chart-2" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span class="hidden sm:inline">ส่งออก</span>
+                <i data-lucide="bar-chart-2" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>ส่งออก</span>
             </button>
             <button id="dispatchModalBtn" title="จ่ายงานอัตโนมัติ" class="btn-primary !px-2 md:!px-4 !py-2 text-[10px] md:text-xs col-span-2 md:col-span-1">
-                <i data-lucide="bot" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span class="hidden sm:inline">จ่ายงาน</span>
+                <i data-lucide="bot" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>จ่ายงาน</span>
             </button>
             <button id="optimizeRouteBtn" title="เรียงลำดับเส้นทาง" class="bg-[var(--c-success)] hover:opacity-80 text-white px-2 md:px-4 py-2 rounded-lg text-[10px] md:text-xs font-bold shadow-sm transition-all border border-transparent">
-                <i data-lucide="map-pin" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span class="hidden sm:inline">เรียงคิว</span>
+                <i data-lucide="map-pin" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>เรียงคิว</span>
             </button>
             <button id="clearAssignmentsBtn" title="ล้างการจ่ายงาน" class="bg-[var(--c-warning-bg)] text-[var(--c-warning-text)] border border-[var(--c-warning-bg)] hover:opacity-80 px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all">
-                <i data-lucide="refresh-cw" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span class="hidden sm:inline">ล้าง</span>
+                <i data-lucide="refresh-cw" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>ล้าง</span>
             </button>
             <button id="deleteAllJobsBtn" title="ลบงานทั้งหมด" class="bg-[var(--c-danger-bg)] text-[var(--c-danger-text)] border border-[var(--c-danger-bg)] hover:opacity-80 px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all">
-                <i data-lucide="trash-2" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span class="hidden sm:inline">ลบ</span>
+                <i data-lucide="trash-2" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>ลบ</span>
             </button>
         </div>
     </div>
     <?php endif; ?>
 
-    <!-- Table Section Card -->
-    <div class="card !p-0 flex flex-col lg:flex-1 overflow-hidden relative min-h-[400px]">
+    <div class="dispatch-workspace">
+    <section class="card !p-0 flex flex-col relative dispatch-list-panel">
         <div id="mapLoader" class="absolute inset-0 bg-[var(--c-surface)]/90 backdrop-blur-sm flex flex-col items-center justify-center z-[80] hidden transition-opacity duration-200">
             <div class="w-10 h-10 border-3 border-[var(--c-primary-faint)] border-t-[var(--c-primary)] rounded-full animate-spin mb-3"></div>
             <p id="loaderText" class="text-[var(--c-primary)] font-bold text-xs uppercase tracking-widest animate-pulse">กำลังโหลด...</p>
         </div>
 
-        <div class="px-4 py-3 border-b border-[var(--c-border)] bg-[var(--c-surface-2)] flex flex-wrap gap-3 items-center justify-between shrink-0">
-            <div class="flex items-center gap-4">
+        <div class="px-4 py-3 border-b border-[var(--c-border)] bg-[var(--c-surface-2)] flex flex-col xl:flex-row gap-3 xl:items-center xl:justify-between shrink-0">
+            <div class="flex flex-wrap items-center gap-3">
                 <div class="flex items-center bg-[var(--c-surface)] px-3 py-1.5 rounded-md border border-[var(--c-border)] shadow-sm cursor-pointer hover:border-[var(--c-primary)] transition-colors">
                     <input type="checkbox" id="selectAllJobs" class="w-4 h-4 rounded border-[var(--c-text-3)] text-[var(--c-primary)] focus:ring-0 cursor-pointer">
                     <label for="selectAllJobs" class="text-[10px] font-black text-[var(--c-text-2)] ml-2 uppercase cursor-pointer">เลือกทั้งหมด</label>
                 </div>
-                <span class="text-xs font-bold text-[var(--c-text-3)]">จำนวน: <span id="jobCountBadge" class="text-[var(--c-primary)] font-black text-sm ml-1">0</span></span>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-1 min-w-[240px]">
+                    <div class="dispatch-stat"><span class="dispatch-stat-label">ทั้งหมด</span><span id="jobCountBadge" class="dispatch-stat-value">0</span></div>
+                    <div class="dispatch-stat"><span class="dispatch-stat-label">มีพิกัด</span><span id="mappedCountBadge" class="dispatch-stat-value text-[var(--c-info)]">0</span></div>
+                    <div class="dispatch-stat"><span class="dispatch-stat-label">จ่ายแล้ว</span><span id="assignedCountBadge" class="dispatch-stat-value text-[var(--c-success)]">0</span></div>
+                    <div class="dispatch-stat"><span class="dispatch-stat-label">รอจ่าย</span><span id="unassignedCountBadgeMain" class="dispatch-stat-value text-[var(--c-warning)]">0</span></div>
+                </div>
             </div>
 
-            <div class="flex items-center gap-1 md:gap-2 flex-wrap">
-                <input type="date" id="dateFilter" class="text-[10px] md:text-xs font-bold input !py-1.5 !px-2">
-                <button onclick="document.getElementById('dateFilter').value=''; renderUI();" class="bg-[var(--c-surface)] hover:bg-[var(--c-surface-3)] border border-[var(--c-border)] text-[var(--c-text-2)] px-2 md:px-3 py-1.5 rounded-lg text-[9px] md:text-[10px] font-bold transition-all whitespace-nowrap">
+            <div class="flex items-center gap-2 flex-wrap w-full xl:w-auto">
+                <input type="date" id="dateFilter" class="text-xs font-bold input !py-2 !px-3 min-h-10 flex-1 sm:flex-none">
+                <button onclick="document.getElementById('dateFilter').value=''; renderUI();" class="bg-[var(--c-surface)] hover:bg-[var(--c-surface-3)] border border-[var(--c-border)] text-[var(--c-text-2)] px-3 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap min-h-10">
                     ทุกวัน
                 </button>
-                <select id="limitFilter" class="text-[10px] md:text-xs font-bold input !py-1.5 !px-2">
+                <select id="limitFilter" class="text-xs font-bold input !py-2 !px-3 min-h-10">
                     <option value="20">20</option>
                     <option value="50">50</option>
                     <option value="100">100</option>
@@ -107,12 +156,12 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 </select>
 
                 <?php if ($isAdmin): ?>
-                <select id="teamFilter" class="text-[10px] md:text-xs font-bold input !py-1.5 !px-2 !bg-[var(--c-primary-faint)] !text-[var(--c-primary)] !border-[var(--c-primary-faint)]">
+                <select id="teamFilter" class="text-xs font-bold input !py-2 !px-3 !bg-[var(--c-primary-faint)] !text-[var(--c-primary)] !border-[var(--c-primary-faint)] min-h-10">
                     <option value="all">ทีม</option>
                     <option value="unassigned">รอจ่าย</option>
                 </select>
-                <div class="flex items-center bg-[var(--c-surface)] rounded-lg border border-[var(--c-border)] overflow-hidden h-[34px] hidden md:flex">
-                    <input type="text" id="newTeamName" placeholder="ชื่อทีม" class="border-0 px-2 h-full text-[10px] font-bold focus:ring-0 w-16 md:w-24">       
+                <div class="flex items-center bg-[var(--c-surface)] rounded-lg border border-[var(--c-border)] overflow-hidden h-10 hidden md:flex">
+                    <input type="text" id="newTeamName" placeholder="ชื่อทีม" class="border-0 px-3 h-full text-xs font-bold focus:ring-0 w-28">
                     <button id="addTeamBtn" class="bg-[var(--c-primary-faint)] hover:bg-[var(--c-primary)] hover:text-white text-[var(--c-primary)] h-full px-3 font-black border-l border-[var(--c-border)] transition-colors">+</button>
                 </div>
                 <?php endif; ?>
@@ -135,36 +184,35 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             </div>
         </div>
 
-        <!-- Table Section -->
-        <div class="w-full flex-1 overflow-hidden flex flex-col">
-            <div class="flex-1 overflow-hidden relative bg-[var(--c-surface)]">
-                <div class="table-container absolute inset-0 w-full h-full overflow-auto">
-                    <table class="job-table pb-4">
-    <thead class="bg-[#f8fafc]">
-        <tr>
-            <th class="text-center w-12"><i data-lucide="check-square" class="w-4 h-4 mx-auto text-slate-400"></i></th>
-            <th class="text-center w-16">คิว</th>
-            <th class="text-left w-32">รหัสงาน</th>
-            <th class="text-left w-48">ชื่อลูกค้า</th>
-            <th class="text-left w-32">เบอร์โทร</th>
-            <th class="text-left auto">สถานที่ติดตั้ง</th>
-            <th class="text-left w-28">วันที่</th>
-            <th class="text-center w-36">ทีมรับผิดชอบ</th>
-        </tr>
-    </thead>
-    <tbody id="jobTableBody" class="text-sm text-[var(--c-text-2)]">
-        </tbody>
-</table>
+        <div class="dispatch-list-scroll">
+            <div id="jobTableBody" class="dispatch-job-list text-sm text-[var(--c-text-2)]"></div>
+        </div>
+    </section>
+
+    <aside class="card !p-0 relative dispatch-map-panel">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <div class="dispatch-map-header">
+            <div class="bg-white/95 backdrop-blur rounded-lg border border-slate-200 shadow-sm px-3 py-2 flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none">Map Overview</div>
+                    <div class="text-xs font-black text-slate-800 mt-1">แผนที่งานติดตั้ง</div>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                    <div class="text-right">
+                        <div id="mapCountBadge" class="text-sm font-black text-[var(--c-primary)] leading-none">0</div>
+                        <div class="text-[9px] font-bold text-slate-400 mt-1">มีพิกัด</div>
+                    </div>
+                    <div class="w-px bg-slate-200"></div>
+                    <div class="text-right">
+                        <div id="mapMissingBadge" class="text-sm font-black text-amber-600 leading-none">0</div>
+                        <div class="text-[9px] font-bold text-slate-400 mt-1">ไม่มีพิกัด</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Map Section Card -->
-    <div class="card !p-0 overflow-hidden shrink-0 relative h-[400px] lg:h-[450px]">
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <div id="map" class="w-full h-full"></div>
+    </aside>
     </div>
 </div>
 
