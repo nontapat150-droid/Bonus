@@ -473,6 +473,7 @@ function renderUI() {
 // 🌟 ฟังก์ชันเรนเดอร์ตาราง (UI/UX อัปเดตใหม่)
 // 🌟 ฟังก์ชันเรนเดอร์ตาราง (แก้ไข UI/UX สมบูรณ์แบบ)
 // 🌟 ฟังก์ชันเรนเดอร์ตารางแบบ ข้อมูลมาครบ 100% ไม่มีการซ่อนข้อความ
+// 🌟 ฟังก์ชันเรนเดอร์ตารางที่แสดงข้อมูลครบ 100% จัดเรียงสวยงาม
 function createJobRow(job, index) {
     const tr = document.createElement('tr');
     tr.className = 'cursor-pointer animate-row group';
@@ -481,91 +482,78 @@ function createJobRow(job, index) {
     const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
     const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#94a3b8';
 
-    // 🌟 ทีมรับผิดชอบ
     const teamBadge = job.team_name 
-        ? `<span class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-[11px] font-bold shadow-sm whitespace-nowrap w-full" style="background-color: ${color}15; color: ${color}; border: 1px solid ${color}30">
+        ? `<div class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-[11px] font-bold shadow-sm whitespace-nowrap w-full" style="background-color: ${color}15; color: ${color}; border: 1px solid ${color}30">
              <span class="w-2 h-2 rounded-full mr-2" style="background-color: ${color}"></span>
              ${job.team_name}
-           </span>`
-        : `<span class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 whitespace-nowrap w-full">
-             <svg class="w-3 h-3 mr-1.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+           </div>`
+        : `<div class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 whitespace-nowrap w-full">
              รอจ่ายงาน
-           </span>`;
+           </div>`;
 
     const phoneVal = job.phone ? job.phone.split(',')[0] : '-';
 
-    // 🌟 นำข้อมูล Package มาโชว์
     const packageHtml = (job.package && job.package !== '-' && job.package !== 'null') 
-        ? `<div class="mt-1.5 inline-block px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[9px] font-black border border-indigo-100 uppercase tracking-wide">📦 ${job.package}</div>`
+        ? `<div class="mt-1.5 inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold border border-indigo-100 uppercase">📦 ${job.package}</div>`
         : '';
 
-    // 🌟 นำข้อมูล หมายเหตุ มาโชว์ (ถ้ามี)
     const remarkHtml = (job.remark && job.remark !== '-' && job.remark !== 'null')
-        ? `<div class="mt-2 flex items-start space-x-1.5 bg-rose-50/50 p-1.5 rounded border border-rose-100/50">
-             <span class="text-[9px] font-black text-rose-500 bg-rose-100 px-1 rounded whitespace-nowrap">หมายเหตุ</span>
-             <span class="text-[10px] text-rose-600 font-bold leading-tight break-words">${job.remark}</span>
+        ? `<div class="mt-2 flex items-start space-x-1.5 bg-rose-50/80 p-2 rounded-md border border-rose-100">
+             <span class="text-[10px] font-black text-rose-500 bg-white px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">หมายเหตุ</span>
+             <span class="text-[11px] text-rose-700 font-bold leading-relaxed whitespace-normal break-words">${job.remark}</span>
            </div>`
         : '';
 
     tr.innerHTML = `
-        <td class="text-center">
+        <td class="text-center align-middle w-12">
             <div class="flex justify-center items-center h-full" onclick="event.stopPropagation()">
-                <input type="checkbox" class="job-checkbox w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer transition-colors" 
+                <input type="checkbox" class="job-checkbox w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
                     data-id="${job.id}" ${isSelected ? 'checked' : ''} onchange="toggleJobSelection('${job.id}')">
             </div>
         </td>
         
-        <td class="text-center">
-            <div class="w-8 h-8 mx-auto rounded-xl flex items-center justify-center text-[12px] font-black text-white shadow-sm transition-transform group-hover:scale-110" style="background-color: ${color}">
+        <td class="text-center align-middle w-16">
+            <div class="w-8 h-8 mx-auto rounded-xl flex items-center justify-center text-[13px] font-black text-white shadow-sm transition-transform group-hover:scale-110" style="background-color: ${color}">
                 ${job.seq || '-'}
             </div>
         </td>
         
-        <td>
-            <div class="flex flex-col items-start">
-                <span class="font-black text-slate-800 text-[13px] tracking-tight group-hover:text-indigo-600 transition-colors">${job.access_no}</span>
-                ${packageHtml}
+        <td class="align-top w-32">
+            <div class="font-black text-slate-800 text-[13px] group-hover:text-indigo-600 transition-colors">${job.access_no}</div>
+            ${packageHtml}
+        </td>
+        
+        <td class="align-top w-48">
+            <div class="font-bold text-slate-700 text-[12px] whitespace-normal break-words leading-relaxed">${job.customer}</div>
+        </td>
+        
+        <td class="align-top w-32">
+            <div class="inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 whitespace-nowrap">
+                📞 ${phoneVal}
             </div>
         </td>
         
-        <td>
-            <div class="font-bold text-slate-800 text-[11px] leading-snug break-words">${job.customer}</div>
-        </td>
-        
-        <td>
-            <span class="inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100 whitespace-nowrap shadow-sm">
-                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-                ${phoneVal}
-            </span>
-        </td>
-        
-        <td>
-            <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-100/50 group-hover:bg-indigo-50/30 group-hover:border-indigo-100/50 transition-colors">
-                <div class="flex items-start">
-                    <svg class="w-4 h-4 text-slate-400 mt-0.5 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    <div class="text-[11px] text-slate-600 font-medium leading-relaxed break-words whitespace-normal w-full">
-                        ${job.address}
-                    </div>
+        <td class="align-top auto">
+            <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-200 group-hover:bg-indigo-50/30 transition-colors">
+                <div class="text-[11px] text-slate-600 font-medium leading-relaxed whitespace-normal break-words">
+                    📍 ${job.address}
                 </div>
                 ${remarkHtml}
             </div>
         </td>
         
-        <td>
-            <span class="text-[11px] font-bold text-slate-500 whitespace-nowrap flex items-center bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-                <svg class="w-3 h-3 mr-1.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                ${job.plan_arrival_date || '-'}
-            </span>
+        <td class="align-top w-28">
+            <div class="text-[11px] font-bold text-slate-600 whitespace-nowrap bg-slate-100 px-2 py-1 rounded border border-slate-200 inline-block">
+                📅 ${job.plan_arrival_date || '-'}
+            </div>
         </td>
         
-        <td class="text-center px-2">
+        <td class="text-center align-top w-36">
             ${teamBadge}
         </td>
     `;
 
-    // 🌟 กดที่แถวเพื่อเรียกป๊อปอัป + นำทาง Map ได้ปกติ
     tr.onclick = () => showJobPopup(job, color);
-    
     return tr;
 }
 
