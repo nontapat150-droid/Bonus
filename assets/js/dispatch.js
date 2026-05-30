@@ -611,20 +611,33 @@ function renderMapJobList(mapJobs) {
         const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
         const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
         const coords = getJobLatLng(job);
+        const isCompleted = job.status && (job.status.toLowerCase() === 'completed' || job.status.toLowerCase() === 'failed');
+        const actionButtons = !isCompleted ? `
+            <div class="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100">
+                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'completed')">
+                    <i data-lucide="check-circle" class="w-3 h-3"></i>จบงาน
+                </button>
+                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-rose-500 text-white hover:bg-rose-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'failed')">
+                    <i data-lucide="x-circle" class="w-3 h-3"></i>ไม่สำเร็จ
+                </button>
+            </div>` : '';
         return `
-            <button type="button" class="w-full text-left p-3 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors" onclick="showMapJobDetail('${escapeHTML(job.id)}')">
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 rounded-lg text-white flex items-center justify-center text-xs font-black shrink-0" style="background:${color};">${displayValue(job.seq || index + 1)}</div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="text-xs font-black text-slate-900 truncate">${displayValue(job.access_no, 'N/A')}</div>
-                            <div class="text-[10px] font-black whitespace-nowrap" style="color:${color};">${displayValue(job.team_name, 'ทีม')}</div>
+            <div class="p-3 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors space-y-2">
+                <button type="button" class="w-full text-left" onclick="showMapJobDetail('${escapeHTML(job.id)}')">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-lg text-white flex items-center justify-center text-xs font-black shrink-0" style="background:${color};">${displayValue(job.seq || index + 1)}</div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="text-xs font-black text-slate-900 truncate">${displayValue(job.access_no, 'N/A')}</div>
+                                <div class="text-[10px] font-black whitespace-nowrap" style="color:${color};">${displayValue(job.team_name, 'ทีม')}</div>
+                            </div>
+                            <div class="text-[11px] font-bold text-slate-600 truncate mt-1">${displayValue(job.customer, 'ไม่ระบุลูกค้า')}</div>
+                            <div class="text-[10px] font-bold text-slate-400 truncate mt-1">${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}</div>
                         </div>
-                        <div class="text-[11px] font-bold text-slate-600 truncate mt-1">${displayValue(job.customer, 'ไม่ระบุลูกค้า')}</div>
-                        <div class="text-[10px] font-bold text-slate-400 truncate mt-1">${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}</div>
                     </div>
-                </div>
-            </button>`;
+                </button>
+                ${actionButtons}
+            </div>`;
     }).join('');
 }
 
@@ -731,6 +744,15 @@ function createJobRow(job, index) {
                 <i data-lucide="navigation" class="w-4 h-4"></i>นำทาง
             </button>
         </div>
+        ${job.team_id && (!job.status || (job.status.toLowerCase() !== 'completed' && job.status.toLowerCase() !== 'failed')) ? `
+        <div class="mt-2 grid grid-cols-2 gap-2">
+            <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'completed')">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>จบงาน
+            </button>
+            <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'failed')">
+                <i data-lucide="x-circle" class="w-4 h-4"></i>ไม่สำเร็จ
+            </button>
+        </div>` : ''}
     `;
 
     div.onclick = () => {
@@ -859,23 +881,42 @@ function showJobPopup(job, color) {
 }
 
 window.updateJobStatus = async function(jobId, status) {
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    if (!job) return;
+
     let remark = '';
+    
     if (status === 'failed') {
         const { value: text } = await Swal.fire({
-            title: 'ระบุสาเหตุ', 
+            title: 'ระบุเหตุผลที่ไม่สำเร็จ', 
+            html: `<p class="text-sm text-slate-600 mb-3">งาน: <strong>${escapeHTML(job.access_no)}</strong></p>`,
             input: 'textarea', 
+            inputPlaceholder: 'เขียนหมายเหตุเกี่ยวกับปัญหาที่เกิดขึ้น...',
             showCancelButton: true,
+            confirmButtonColor: '#ef4444',
             confirmButtonText: 'ยืนยัน', 
             cancelButtonText: 'ยกเลิก',
             customClass: { popup: 'rounded-xl', confirmButton: 'rounded-lg text-xs', cancelButton: 'rounded-lg text-xs' }
         });
         if (!text) { 
-            if(text !== undefined) Swal.fire('แจ้งเตือน', 'กรุณาระบุหมายเหตุ', 'warning'); 
+            if(text !== undefined) Swal.fire('แจ้งเตือน', 'กรุณาระบุเหตุผล', 'warning'); 
             return; 
         }
         remark = text;
-    } else {
-        if (!confirm('ยืนยันปิดจ๊อบ?')) return;
+    } else if (status === 'completed') {
+        const { isConfirmed } = await Swal.fire({
+            title: 'ยืนยันปิดจ๊อบ',
+            html: `<p class="text-sm text-slate-600 mb-2">งาน: <strong>${escapeHTML(job.access_no)}</strong></p>
+                   <p class="text-sm text-slate-600">ลูกค้า: <strong>${escapeHTML(job.customer || 'ไม่ระบุ')}</strong></p>
+                   <p class="text-xs text-slate-500 mt-3">ท้องถิ่นที่: ${escapeHTML(job.address || '-')}</p>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'ยืนยันจบงาน',
+            cancelButtonText: 'ยกเลิก',
+            customClass: { popup: 'rounded-xl', confirmButton: 'rounded-lg text-xs', cancelButton: 'rounded-lg text-xs' }
+        });
+        if (!isConfirmed) return;
     }
     
     showLoader('บันทึกสถานะ...');
@@ -887,10 +928,21 @@ window.updateJobStatus = async function(jobId, status) {
         });
         const data = await res.json();
         if (data.success) {
-            Swal.fire({ title: 'สำเร็จ', text: 'บันทึกสถานะเรียบร้อย', icon: 'success', timer: 1500, showConfirmButton: false });
-            loadJobs();
+            const icon = status === 'completed' ? 'success' : 'info';
+            const message = status === 'completed' ? 'บันทึกการจบงานเรียบร้อย' : 'บันทึกการไม่สำเร็จเรียบร้อย';
+            Swal.fire({ 
+                title: 'สำเร็จ', 
+                text: message, 
+                icon: icon, 
+                timer: 1500, 
+                showConfirmButton: false,
+                didClose: () => {
+                    loadJobs();
+                    refreshLucideIcons();
+                }
+            });
         } else {
-            Swal.fire('ข้อผิดพลาด', data.error, 'error');
+            Swal.fire('ข้อผิดพลาด', data.error || 'เกิดข้อผิดพลาด', 'error');
         }
     } catch (e) {
         Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', 'error');

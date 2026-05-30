@@ -1,5 +1,7 @@
 <?php
 // api/dispatch/update_job_status.php
+// Update job status to 'completed' or 'failed' with optional remarks
+// Each completed job is tracked for oil system calculations
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
 
@@ -17,12 +19,19 @@ if ($role !== 'technician') {
 
 $input = json_decode(file_get_contents('php://input'), true);
 $job_id = $input['job_id'] ?? null;
-$status = $input['status'] ?? null; // รอรับค่า 'completed' (จบงาน) หรือ 'failed' (ไม่สำเร็จ)
+$status = $input['status'] ?? null; // 'completed' (จบงาน) หรือ 'failed' (ไม่สำเร็จ)
 $remark = $input['remark'] ?? '';
 
 // ตรวจสอบข้อมูลเบื้องต้น
 if (!$job_id || !$status) {
     echo json_encode(['success' => false, 'error' => 'ข้อมูลไม่ครบถ้วน']);
+    exit;
+}
+
+// ตรวจสอบว่าสถานะที่ส่งมาถูกต้อง
+$validStatuses = ['completed', 'failed'];
+if (!in_array($status, $validStatuses)) {
+    echo json_encode(['success' => false, 'error' => 'สถานะไม่ถูกต้อง']);
     exit;
 }
 
@@ -40,6 +49,7 @@ try {
     $stmt->execute([$status, $remark, $job_id]);
 
     // 2. บันทึกประวัติการทำรายการลงในตาราง job_logs
+    // นี้คือการติดตามการสำเร็จของงานสำหรับการคำนวณในระบบน้ำมัน (จำนวนกรณีงานต่อวัน)
     $logStmt = $pdo->prepare("INSERT INTO job_logs (job_id, tech_id, status, remark) VALUES (?, ?, ?, ?)");
     $logStmt->execute([$job_id, $user['id'], $status, $remark]);
 
@@ -48,5 +58,5 @@ try {
 
 } catch (Exception $e) {
     $pdo->rollBack();
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' . $e->getMessage()]);
 }
