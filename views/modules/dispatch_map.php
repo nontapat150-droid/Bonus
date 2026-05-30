@@ -43,8 +43,12 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
     .dispatch-page { display: flex; flex-direction: column; gap: 1rem; min-height: 100vh; padding-bottom: 2rem; }
     .dispatch-page .card:hover { transform: none; }
+    .dispatch-view-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 10px; padding: 6px; box-shadow: var(--shadow-1); }
+    .dispatch-view-tab { min-height: 44px; border-radius: 8px; font-size: 13px; font-weight: 900; color: var(--c-text-2); display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background .16s ease, color .16s ease, box-shadow .16s ease; }
+    .dispatch-view-tab:hover { background: var(--c-surface-2); color: var(--c-text-1); }
+    .dispatch-view-tab.is-active { background: var(--c-primary); color: white; box-shadow: var(--shadow-btn); }
     .dispatch-workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; min-height: 0; }
-    .dispatch-list-panel { min-height: 620px; overflow: hidden; }
+    .dispatch-list-panel { min-height: 640px; overflow: hidden; }
     .dispatch-list-scroll { flex: 1; min-height: 0; overflow: auto; background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%); scroll-behavior: smooth; }
     .dispatch-job-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 14px; }
     .dispatch-job-card { border-radius: 8px; }
@@ -52,9 +56,11 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     .dispatch-stat { min-width: 0; border: 1px solid var(--c-border); background: var(--c-surface); border-radius: 8px; padding: 10px 12px; }
     .dispatch-stat-label { display: block; color: var(--c-text-3); font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; line-height: 1; }
     .dispatch-stat-value { display: block; margin-top: 5px; color: var(--c-text-1); font-size: 18px; font-weight: 900; line-height: 1; }
-    .dispatch-map-panel { height: 360px; min-height: 360px; overflow: hidden; }
+    .dispatch-map-panel { height: calc(100vh - 210px); min-height: 620px; overflow: hidden; }
     .dispatch-map-header { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 500; pointer-events: none; }
     .dispatch-map-header > div { pointer-events: auto; }
+    .dispatch-map-list { position: absolute; z-index: 500; top: 88px; right: 12px; bottom: 12px; width: min(360px, calc(100% - 24px)); pointer-events: auto; overflow: hidden; }
+    .dispatch-map-list-body { max-height: 100%; overflow-y: auto; }
     .dispatch-marker {
         width: 34px; height: 34px; border-radius: 50% 50% 50% 8px;
         transform: rotate(-45deg); border: 2px solid #fff;
@@ -69,17 +75,15 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     }
     @media (min-width: 1024px) {
         .dispatch-page { height: calc(100vh - 100px); min-height: 0; padding-bottom: 0; }
-        .dispatch-workspace { grid-template-columns: minmax(0, 1.12fr) minmax(390px, .88fr); flex: 1; }
+        .dispatch-workspace { display: block; flex: 1; }
         .dispatch-list-panel { min-height: 0; }
-        .dispatch-map-panel { position: sticky; top: 88px; align-self: start; height: calc(100vh - 120px); min-height: 520px; }
-    }
-    @media (min-width: 1440px) {
-        .dispatch-workspace { grid-template-columns: minmax(0, 1.2fr) minmax(440px, .8fr); }
+        .dispatch-map-panel { height: calc(100vh - 180px); min-height: 620px; }
     }
     @media (max-width: 767px) {
         .dispatch-list-panel { min-height: 520px; }
         .dispatch-job-list { padding: 12px; }
-        .dispatch-map-panel { height: 330px; min-height: 330px; }
+        .dispatch-map-panel { height: calc(100vh - 170px); min-height: 560px; }
+        .dispatch-map-list { left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; max-height: 42%; }
         .dashboard-header { align-items: stretch; }
         .dashboard-header .action-buttons { width: 100%; }
         .action-buttons > button { min-height: 40px; }
@@ -122,8 +126,19 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
     <?php endif; ?>
 
+    <div class="dispatch-view-tabs shrink-0">
+        <button type="button" id="dispatchViewJobsBtn" class="dispatch-view-tab is-active">
+            <i data-lucide="list-checks" class="w-4 h-4"></i>
+            <span>ดูงาน</span>
+        </button>
+        <button type="button" id="dispatchViewMapBtn" class="dispatch-view-tab">
+            <i data-lucide="map" class="w-4 h-4"></i>
+            <span>ดูแผนที่</span>
+        </button>
+    </div>
+
     <div class="dispatch-workspace">
-    <section class="card !p-0 flex flex-col relative dispatch-list-panel">
+    <section id="jobViewPanel" class="card !p-0 flex flex-col relative dispatch-list-panel">
         <div id="mapLoader" class="absolute inset-0 bg-[var(--c-surface)]/90 backdrop-blur-sm flex flex-col items-center justify-center z-[80] hidden transition-opacity duration-200">
             <div class="w-10 h-10 border-3 border-[var(--c-primary-faint)] border-t-[var(--c-primary)] rounded-full animate-spin mb-3"></div>
             <p id="loaderText" class="text-[var(--c-primary)] font-bold text-xs uppercase tracking-widest animate-pulse">กำลังโหลด...</p>
@@ -189,7 +204,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         </div>
     </section>
 
-    <aside class="card !p-0 relative dispatch-map-panel">
+    <aside id="mapViewPanel" class="card !p-0 relative dispatch-map-panel hidden">
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <div class="dispatch-map-header">
@@ -210,6 +225,16 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     </div>
                 </div>
             </div>
+        </div>
+        <div class="dispatch-map-list bg-white/95 backdrop-blur rounded-lg border border-slate-200 shadow-lg">
+            <div class="px-3 py-2 border-b border-slate-100 flex items-center justify-between gap-3">
+                <div>
+                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-wider leading-none">Assigned Jobs</div>
+                    <div class="text-xs font-black text-slate-800 mt-1">งานที่มอบหมายแล้ว</div>
+                </div>
+                <div id="mapAssignedCountBadge" class="text-sm font-black text-[var(--c-primary)]">0</div>
+            </div>
+            <div id="mapJobList" class="dispatch-map-list-body"></div>
         </div>
         <div id="map" class="w-full h-full"></div>
     </aside>

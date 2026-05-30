@@ -3,6 +3,7 @@
 let allJobs = [];
 let currentTeams = []; 
 let selectedJobIds = new Set();
+let activeDispatchView = 'jobs';
 
 // Leaflet map and markers (free, no API key)
 let map = null;
@@ -72,60 +73,6 @@ function initMap() {
     }
 }
 
-function updateMapMarkers(jobs) {
-    if (!window.L || !map || !markersGroup) return;
-    markersGroup.clearLayers();
-    const valid = (jobs || []).filter(j => {
-        const lat = cleanCoordinate(j.lat);
-        const lng = cleanCoordinate(j.lng);
-        return lat && lng;
-    }).map(j => ({
-        lat: cleanCoordinate(j.lat),
-        lng: cleanCoordinate(j.lng),
-        job: j
-    }));
-    if (valid.length === 0) return;
-    
-    valid.forEach((v, idx) => {
-        try {
-            const teamIdx = currentTeams.findIndex(t => t.id == v.job.team_id);
-            const color = v.job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
-            
-            // Create custom marker icon with team color
-            const icon = L.divIcon({
-                html: `<div style="background-color: ${color}; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📍</div>`,
-                iconSize: [32, 32],
-                popupAnchor: [0, -16]
-            });
-            
-            const marker = L.marker([v.lat, v.lng], { icon });
-            const popup = `
-                <div style="min-width:200px; font-family: 'Segoe UI', sans-serif;">
-                    <div style="background: ${color}; color: white; padding: 8px; border-radius: 4px 4px 0 0; font-weight: 700; margin: -4px -4px 8px -4px;">${v.job.access_no || 'N/A'}</div>
-                    <div style="padding: 8px;">
-                        <div style="font-size: 13px; font-weight: 600; color: #1f2937; margin-bottom: 4px;">${v.job.customer || 'ไม่ระบุชื่อ'}</div>
-                        <div style="font-size: 11px; color: #6b7280; margin-bottom: 8px; display: flex; gap: 4px;"><span>📍</span><span>${v.job.address || '-'}</span></div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
-                            <div style="background: #f3f4f6; padding: 6px; border-radius: 4px;"><div style="color: #9ca3af; font-size: 10px;">วันที่</div><div style="font-weight: 600; color: #374151;">${v.job.plan_arrival_date || '-'}</div></div>
-                            <div style="background: #f3f4f6; padding: 6px; border-radius: 4px;"><div style="color: #9ca3af; font-size: 10px;">ทีม</div><div style="font-weight: 600; color: ${color};">${v.job.team_name || 'รอจ่าย'}</div></div>
-                        </div>
-                        <div style="margin-top: 8px;"><a style="display: inline-block; background: ${color}; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 11px; font-weight: 600;" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}">🚗 นำทาง</a></div>
-                    </div>
-                </div>`;
-            marker.bindPopup(popup);
-            markersGroup.addLayer(marker);
-        } catch (e) { console.warn('marker failed', e); }
-    });
-    
-    const bounds = markersGroup.getBounds();
-    if (bounds && bounds.isValid && bounds.isValid()) {
-        try { map.fitBounds(bounds.pad(0.15)); } catch (e) { }
-    }
-    
-    // Handle map resize
-    setTimeout(() => { if (map) map.invalidateSize(); }, 300);
-}
-
 const teamColors = [
     '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
     '#ec4899', '#14b8a6', '#f97316', '#4f46e5', '#06b6d4'
@@ -165,22 +112,15 @@ function updateMapMarkers(jobs) {
             });
 
             const marker = L.marker([v.lat, v.lng], { icon });
-            const popup = `
-                <div style="min-width:240px; max-width:300px; font-family:'Inter','Sarabun',sans-serif;">
-                    <div style="background:${color}; color:white; padding:10px 12px; border-radius:8px 8px 0 0; font-weight:800; margin:-4px -4px 10px -4px;">${displayValue(v.job.access_no, 'N/A')}</div>
-                    <div style="padding:0 4px 4px;">
-                        <div style="font-size:14px; font-weight:800; color:#0f172a; margin-bottom:4px;">${displayValue(v.job.customer, 'ไม่ระบุชื่อลูกค้า')}</div>
-                        <div style="font-size:12px; color:#475569; margin-bottom:10px; line-height:1.45;">${displayValue(v.job.address)}</div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px;">
-                            <div style="background:#f8fafc; padding:8px; border-radius:8px; border:1px solid #e2e8f0;"><div style="color:#94a3b8; font-size:10px; font-weight:700;">วันที่</div><div style="font-weight:800; color:#334155;">${displayValue(v.job.plan_arrival_date)}</div></div>
-                            <div style="background:#f8fafc; padding:8px; border-radius:8px; border:1px solid #e2e8f0;"><div style="color:#94a3b8; font-size:10px; font-weight:700;">ทีม</div><div style="font-weight:800; color:${color};">${displayValue(v.job.team_name, 'รอจ่าย')}</div></div>
-                            <div style="background:#f8fafc; padding:8px; border-radius:8px; border:1px solid #e2e8f0;"><div style="color:#94a3b8; font-size:10px; font-weight:700;">โทร</div><div style="font-weight:800; color:#047857;">${displayValue(v.job.phone)}</div></div>
-                            <div style="background:#f8fafc; padding:8px; border-radius:8px; border:1px solid #e2e8f0;"><div style="color:#94a3b8; font-size:10px; font-weight:700;">พิกัด</div><div style="font-weight:800; color:#334155;">${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}</div></div>
-                        </div>
-                        <div style="margin-top:10px;"><a style="display:inline-block; background:${color}; color:white; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:12px; font-weight:800;" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}">นำทาง</a></div>
-                    </div>
-                </div>`;
-            marker.bindPopup(popup);
+            marker.bindTooltip(`${rawValue(v.job.seq || idx + 1)}. ${rawValue(v.job.access_no, 'N/A')}`, {
+                direction: 'top',
+                offset: [0, -28],
+                opacity: 0.9
+            });
+            marker.on('click', () => {
+                focusMapOnJob(v.job.id);
+                showJobPopup(v.job, color);
+            });
             markersGroup.addLayer(marker);
             jobMarkerMap.set(String(v.job.id), marker);
         } catch (e) { console.warn('marker failed', e); }
@@ -203,7 +143,6 @@ function focusMapOnJob(jobId) {
     if (!marker || !map) return false;
     const latLng = marker.getLatLng();
     map.setView(latLng, Math.max(map.getZoom(), 14), { animate: true });
-    marker.openPopup();
     return true;
 }
 
@@ -211,6 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initMap();
     loadJobs();
 
+    document.getElementById('dispatchViewJobsBtn')?.addEventListener('click', () => switchDispatchView('jobs'));
+    document.getElementById('dispatchViewMapBtn')?.addEventListener('click', () => switchDispatchView('map'));
     document.getElementById('navigateSelectedBtn')?.addEventListener('click', handleNavigateSelected);
 
     if (IS_ADMIN) {
@@ -231,6 +172,24 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('limitFilter')?.addEventListener('change', renderUI);
     document.getElementById('selectAllJobs')?.addEventListener('change', handleSelectAll);
 });
+
+function switchDispatchView(view) {
+    activeDispatchView = view === 'map' ? 'map' : 'jobs';
+    const jobsPanel = document.getElementById('jobViewPanel');
+    const mapPanel = document.getElementById('mapViewPanel');
+    const jobsBtn = document.getElementById('dispatchViewJobsBtn');
+    const mapBtn = document.getElementById('dispatchViewMapBtn');
+
+    jobsPanel?.classList.toggle('hidden', activeDispatchView !== 'jobs');
+    mapPanel?.classList.toggle('hidden', activeDispatchView !== 'map');
+    jobsBtn?.classList.toggle('is-active', activeDispatchView === 'jobs');
+    mapBtn?.classList.toggle('is-active', activeDispatchView === 'map');
+
+    renderUI();
+    if (activeDispatchView === 'map') {
+        setTimeout(() => { if (map) map.invalidateSize(); }, 80);
+    }
+}
 
 function handleNavigateSelected() {
     if (selectedJobIds.size === 0) return;
@@ -541,151 +500,8 @@ async function runOptimizeRoute() {
 
 function renderUI() {
     const container = document.getElementById('jobTableBody');
-    if (!container) return;
-    container.innerHTML = '';
-
-    let teamVal = 'all';
-    const teamEl = document.getElementById('teamFilter');
-    if (IS_ADMIN && teamEl) teamVal = teamEl.value;
-
-    const dateVal = document.getElementById('dateFilter')?.value;
-    const limitVal = document.getElementById('limitFilter')?.value;
-
-    let filteredJobs = allJobs;
-
-    if (teamVal === 'unassigned') filteredJobs = filteredJobs.filter(j => !j.team_id);
-    else if (teamVal !== 'all') filteredJobs = filteredJobs.filter(j => j.team_id == teamVal);
-    
-    if (dateVal) filteredJobs = filteredJobs.filter(j => j.plan_arrival_date === dateVal);
-
-    const totalCount = filteredJobs.length;
-    if (limitVal && limitVal !== 'all') filteredJobs = filteredJobs.slice(0, parseInt(limitVal));
-
-    const countBadge = document.getElementById('jobCountBadge');
-    if (countBadge) countBadge.textContent = totalCount;
-
-    // 🌟 ถ้าไม่มีข้อมูล ให้แสดงกล่องข้อความเปล่าๆ
-    if (filteredJobs.length === 0) {
-        container.innerHTML = `
-            <div class="col-span-full flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
-                <div class="text-4xl mb-3 opacity-50">📭</div>
-                <div class="text-slate-400 font-bold">ไม่พบข้อมูลงาน</div>
-            </div>`;
-        updateMapMarkers(filteredJobs);
-        return;
-    }
-
-    filteredJobs.forEach((job, index) => {
-        const card = createJobRow(job, index);
-        card.style.animationDelay = `${(index % 25) * 0.03}s`; // Stagger animation
-        container.appendChild(card);
-    });
-
-    try { updateMapMarkers(filteredJobs); } catch (e) { console.warn(e); }
-}
-
-// 🌟 ตัวแปรสำคัญ: บีบ Padding ลง และจำกัดข้อความให้อยู่ใน 1 บรรทัดด้วย truncate-text
-// 🌟 ฟังก์ชันเรนเดอร์ตาราง (UI/UX อัปเดตใหม่)
-// 🌟 ฟังก์ชันเรนเดอร์ตาราง (แก้ไข UI/UX สมบูรณ์แบบ)
-// 🌟 ฟังก์ชันเรนเดอร์ตารางแบบ ข้อมูลมาครบ 100% ไม่มีการซ่อนข้อความ
-// 🌟 ฟังก์ชันเรนเดอร์ตารางที่แสดงข้อมูลครบ 100% จัดเรียงสวยงาม
-function createJobRow(job, index) {
-    const div = document.createElement('div');
-    div.className = 'bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-indigo-300 transition-all duration-300 cursor-pointer flex flex-col p-4 animate-row relative group';
-    
-    const isSelected = selectedJobIds.has(String(job.id));
-    const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
-    const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#94a3b8';
-
-    const teamBadge = job.team_name 
-        ? `<div class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap" style="background-color: ${color}15; color: ${color}; border: 1px solid ${color}30">
-             <span class="w-2 h-2 rounded-full mr-1.5" style="background-color: ${color}"></span>
-             ${job.team_name}
-           </div>`
-        : `<div class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 whitespace-nowrap">
-             <svg class="w-3 h-3 mr-1 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> รอจ่ายงาน
-           </div>`;
-
-    const phoneVal = job.phone ? job.phone.split(',')[0] : '-';
-
-    const packageHtml = (job.package && job.package !== '-' && job.package !== 'null') 
-        ? `<div class="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-black border border-indigo-100 uppercase">📦 ${job.package}</div>`
-        : '';
-
-    const remarkHtml = (job.remark && job.remark !== '-' && job.remark !== 'null')
-        ? `<div class="mt-3 bg-rose-50/80 p-2.5 rounded-xl border border-rose-100">
-             <div class="text-[10px] font-black text-rose-500 mb-0.5 flex items-center">หมายเหตุ</div>
-             <div class="text-[11px] text-rose-700 font-bold leading-relaxed break-words">${job.remark}</div>
-           </div>`
-        : '';
-
-    // 🌟 โครงสร้าง HTML ภายในการ์ด (Card Layout)
-    div.innerHTML = `
-        <div class="flex justify-between items-start mb-3">
-            <div class="flex items-center gap-2.5">
-                <div class="p-1 -ml-1 rounded-md hover:bg-slate-100" onclick="event.stopPropagation()">
-                    <input type="checkbox" class="job-checkbox w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
-                        data-id="${job.id}" ${isSelected ? 'checked' : ''} onchange="toggleJobSelection('${job.id}')">
-                </div>
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-[12px] font-black text-white shadow-sm" style="background-color: ${color}">
-                    ${job.seq || '-'}
-                </div>
-                <div class="font-black text-slate-800 text-[14px] tracking-tight group-hover:text-indigo-600 transition-colors">${job.access_no}</div>
-            </div>
-            <div class="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-100 flex items-center shadow-sm">
-                📅 ${job.plan_arrival_date || '-'}
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <div class="font-bold text-slate-700 text-[13px] leading-snug break-words mb-2">${job.customer}</div>
-            <div class="flex flex-wrap gap-2 items-center">
-                <div class="inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                    📞 ${phoneVal}
-                </div>
-                ${packageHtml}
-            </div>
-        </div>
-
-        <div class="flex-1 bg-slate-50/80 p-3 rounded-xl border border-slate-100 group-hover:bg-indigo-50/40 transition-colors flex flex-col justify-center">
-            <div class="flex items-start">
-                <div class="text-[11px] text-slate-600 font-medium leading-relaxed break-words whitespace-normal line-clamp-2" title="${job.address}">
-                    📍 ${job.address}
-                </div>
-            </div>
-        </div>
-        
-        ${remarkHtml}
-
-        <div class="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
-            <div class="text-[10px] font-bold text-slate-400 uppercase">ทีมรับผิดชอบ</div>
-            ${teamBadge}
-        </div>
-    `;
-
-    // กดที่การ์ดเพื่อเปิด Popup เหมือนเดิม
-    div.onclick = () => showJobPopup(job, color);
-    
-    return div;
-}
-
-function renderUI() {
-    const container = document.getElementById('jobTableBody');
-    if (!container) return;
-    container.innerHTML = '';
-
-    let teamVal = 'all';
-    const teamEl = document.getElementById('teamFilter');
-    if (IS_ADMIN && teamEl) teamVal = teamEl.value;
-
-    const dateVal = document.getElementById('dateFilter')?.value;
-    const limitVal = document.getElementById('limitFilter')?.value;
-
-    let filteredJobs = [...allJobs];
-
-    if (teamVal === 'unassigned') filteredJobs = filteredJobs.filter(j => !j.team_id);
-    else if (teamVal !== 'all') filteredJobs = filteredJobs.filter(j => j.team_id == teamVal);
-    if (dateVal) filteredJobs = filteredJobs.filter(j => j.plan_arrival_date === dateVal);
+    const filteredJobs = getFilteredJobs();
+    const mapJobs = getMapJobs(filteredJobs);
 
     const totalCount = filteredJobs.length;
     const mappedCount = filteredJobs.filter(j => getJobLatLng(j)).length;
@@ -697,41 +513,121 @@ function renderUI() {
     setText('assignedCountBadge', assignedCount);
     setText('unassignedCountBadgeMain', unassignedCount);
 
-    if (limitVal && limitVal !== 'all') filteredJobs = filteredJobs.slice(0, parseInt(limitVal));
+    renderJobList(container, filteredJobs);
+    renderMapJobList(mapJobs);
 
-    if (filteredJobs.length === 0) {
+    try { updateMapMarkers(mapJobs); } catch (e) { console.warn(e); }
+    updateSelectionUI();
+    refreshLucideIcons();
+}
+
+function getFilteredJobs() {
+    let teamVal = 'all';
+    const teamEl = document.getElementById('teamFilter');
+    if (IS_ADMIN && teamEl) teamVal = teamEl.value;
+
+    const dateVal = document.getElementById('dateFilter')?.value;
+    let filteredJobs = [...allJobs];
+
+    if (teamVal === 'unassigned') filteredJobs = filteredJobs.filter(j => !j.team_id);
+    else if (teamVal !== 'all') filteredJobs = filteredJobs.filter(j => j.team_id == teamVal);
+    if (dateVal) filteredJobs = filteredJobs.filter(j => j.plan_arrival_date === dateVal);
+
+    return filteredJobs;
+}
+
+function getLimitedJobs(jobs) {
+    const limitVal = document.getElementById('limitFilter')?.value;
+    if (limitVal && limitVal !== 'all') return jobs.slice(0, parseInt(limitVal));
+    return jobs;
+}
+
+function getMapJobs(jobs) {
+    return jobs
+        .filter(job => (job.team_id || hasValue(job.team_name)) && getJobLatLng(job))
+        .sort((a, b) => {
+            const teamA = rawValue(a.team_name, '');
+            const teamB = rawValue(b.team_name, '');
+            if (teamA !== teamB) return teamA.localeCompare(teamB, 'th');
+            return (parseInt(a.seq || 9999) - parseInt(b.seq || 9999)) || String(a.access_no || '').localeCompare(String(b.access_no || ''), 'th');
+        });
+}
+
+function renderJobList(container, filteredJobs) {
+    if (!container) return;
+    container.innerHTML = '';
+
+    const visibleJobs = getLimitedJobs(filteredJobs);
+
+    if (visibleJobs.length === 0) {
         container.innerHTML = `
             <div class="col-span-full min-h-[320px] flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
                 <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center mb-3"><i data-lucide="inbox" class="w-6 h-6"></i></div>
                 <div class="text-slate-500 font-black">ไม่พบข้อมูลงาน</div>
                 <div class="text-xs text-slate-400 font-bold mt-1">ลองเปลี่ยนวันที่ ทีม หรือจำนวนรายการที่แสดง</div>
             </div>`;
-        updateMapMarkers(filteredJobs);
-        updateSelectionUI();
-        refreshLucideIcons();
+        syncVisibleSelection([]);
         return;
     }
 
     const fragment = document.createDocumentFragment();
-    filteredJobs.forEach((job, index) => {
+    visibleJobs.forEach((job, index) => {
         const card = createJobRow(job, index);
         card.style.animationDelay = `${(index % 25) * 0.025}s`;
         fragment.appendChild(card);
     });
     container.appendChild(fragment);
 
+    syncVisibleSelection(visibleJobs);
+}
+
+function syncVisibleSelection(visibleJobs) {
     const selectAll = document.getElementById('selectAllJobs');
     if (selectAll) {
-        const visibleIds = filteredJobs.map(j => String(j.id));
+        const visibleIds = visibleJobs.map(j => String(j.id));
         const selectedVisible = visibleIds.filter(id => selectedJobIds.has(id)).length;
         selectAll.checked = visibleIds.length > 0 && selectedVisible === visibleIds.length;
         selectAll.indeterminate = selectedVisible > 0 && selectedVisible < visibleIds.length;
     }
-
-    try { updateMapMarkers(filteredJobs); } catch (e) { console.warn(e); }
-    updateSelectionUI();
-    refreshLucideIcons();
 }
+
+function renderMapJobList(mapJobs) {
+    const container = document.getElementById('mapJobList');
+    if (!container) return;
+
+    setText('mapAssignedCountBadge', mapJobs.length);
+
+    if (mapJobs.length === 0) {
+        container.innerHTML = `
+            <div class="p-4 text-center">
+                <div class="w-10 h-10 mx-auto rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center mb-2"><i data-lucide="map-pin-off" class="w-5 h-5"></i></div>
+                <div class="text-xs font-black text-slate-500">ยังไม่มีงานที่มอบหมายพร้อมพิกัด</div>
+                <div class="text-[10px] font-bold text-slate-400 mt-1">เลือกทีม/วันที่อื่น หรือกดจ่ายงานอัตโนมัติก่อน</div>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = mapJobs.map((job, index) => {
+        const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
+        const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
+        const coords = getJobLatLng(job);
+        return `
+            <button type="button" class="w-full text-left p-3 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors" onclick="showMapJobDetail('${escapeHTML(job.id)}')">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg text-white flex items-center justify-center text-xs font-black shrink-0" style="background:${color};">${displayValue(job.seq || index + 1)}</div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="text-xs font-black text-slate-900 truncate">${displayValue(job.access_no, 'N/A')}</div>
+                            <div class="text-[10px] font-black whitespace-nowrap" style="color:${color};">${displayValue(job.team_name, 'ทีม')}</div>
+                        </div>
+                        <div class="text-[11px] font-bold text-slate-600 truncate mt-1">${displayValue(job.customer, 'ไม่ระบุลูกค้า')}</div>
+                        <div class="text-[10px] font-bold text-slate-400 truncate mt-1">${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}</div>
+                    </div>
+                </div>
+            </button>`;
+    }).join('');
+}
+
 
 function detailItem(label, value) {
     return `
@@ -861,6 +757,15 @@ function openJobNavigationById(jobId) {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`, '_blank');
 }
 
+function showMapJobDetail(jobId) {
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    if (!job) return;
+    const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
+    const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
+    focusMapOnJob(job.id);
+    showJobPopup(job, color);
+}
+
 function toggleJobSelection(id) {
     const strId = String(id);
     if (selectedJobIds.has(strId)) selectedJobIds.delete(strId);
@@ -876,82 +781,6 @@ function syncSelectAllState() {
     const checked = boxes.filter(cb => cb.checked).length;
     selectAll.checked = boxes.length > 0 && checked === boxes.length;
     selectAll.indeterminate = checked > 0 && checked < boxes.length;
-}
-
-function showJobPopup(job, color) {
-    // Clean and validate coordinates before creating link
-    const lat = cleanCoordinate(job.lat);
-    const lng = cleanCoordinate(job.lng);
-    const gmapsLink = lat && lng ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}` : null;
-    
-    let actionButtons = '';
-    if (!IS_ADMIN) {
-        actionButtons = `
-            <div class="grid grid-cols-2 gap-2 mt-3">
-                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'completed')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-lg shadow-sm text-[11px] uppercase">
-                    ✅ ปิดจ๊อบ
-                </button>
-                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'failed')" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-lg shadow-sm text-[11px] uppercase">
-                    ❌ ทำไม่สำเร็จ
-                </button>
-            </div>
-        `;
-    }
-
-    Swal.fire({
-        title: `<div class="text-indigo-600 font-black text-lg">${job.access_no}</div>`,
-        html: `
-            <div class="text-left mt-1 font-sans">
-                <div class="bg-white border border-slate-100 p-4 rounded-xl shadow-sm space-y-3">
-                    <div>
-                        <p class="text-[9px] font-bold text-slate-400 uppercase">ชื่อลูกค้า</p>
-                        <p class="text-sm font-black text-slate-800">${job.customer}</p>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="bg-slate-50 p-2 rounded flex items-start space-x-2 border border-slate-100">
-                            <span class="text-xs mt-0.5">📍</span>
-                            <p class="text-[11px] text-slate-600 font-bold">${job.address}</p>
-                        </div>
-                        <div class="bg-emerald-50 p-2 rounded flex items-center space-x-2 border border-emerald-100">
-                            <span class="text-xs">📞</span>
-                            <p class="text-xs font-black text-emerald-700">${job.phone || 'ไม่ระบุเบอร์โทร'}</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <div class="bg-indigo-50 flex-1 p-2 rounded border border-indigo-100">
-                                <p class="text-[9px] font-bold text-indigo-400 uppercase">แพ็กเกจ</p>
-                                <p class="text-[11px] font-bold text-indigo-700">${job.package || '-'}</p>
-                            </div>
-                            <div class="bg-violet-50 flex-1 p-2 rounded border border-violet-100">
-                                <p class="text-[9px] font-bold text-violet-400 uppercase">ทีมช่าง</p>
-                                <p class="text-[11px] font-bold text-violet-700">${job.team_name || 'รอจ่ายงาน'}</p>
-                            </div>
-                        </div>
-                        ${job.remark ? `
-                        <div class="bg-rose-50 p-2 rounded border border-rose-100">
-                            <p class="text-[9px] font-bold text-rose-400 uppercase">หมายเหตุ</p>
-                            <p class="text-[11px] font-bold text-rose-700">${job.remark}</p>
-                        </div>` : ''}
-                    </div>
-                </div>
-                ${actionButtons}
-            </div>
-        `,
-        showCancelButton: true,
-        showCloseButton: true,
-        confirmButtonColor: '#4f46e5',
-        cancelButtonColor: '#f1f5f9',
-        confirmButtonText: '🚀 นำทาง Map',
-        cancelButtonText: '<span class="text-slate-500 font-bold">ปิด</span>',
-        customClass: {
-            popup: 'rounded-2xl p-4 shadow-xl z-[9999]',
-            title: 'text-left pb-2 border-b border-slate-100',
-            confirmButton: 'rounded-lg px-4 py-2.5 font-bold w-full mt-2 text-[11px]',
-            cancelButton: 'rounded-lg px-4 py-2.5 font-bold w-full mt-2 text-[11px] hover:bg-slate-200',
-            actions: 'flex-col w-full px-2'
-        }
-    }).then((result) => {
-        if (result.isConfirmed) window.open(gmapsLink, '_blank');
-    });
 }
 
 function showJobPopup(job, color) {
