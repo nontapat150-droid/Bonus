@@ -13,59 +13,44 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     .animate-row { opacity: 0; animation: fadeSlideUp 0.3s ease-out forwards; }
 
     /* 🌟 Scrollbar */
-    .table-container { scroll-behavior: smooth; overflow: auto; padding: 0 8px; }
+    .table-container { scroll-behavior: smooth; overflow: auto; padding: 0 8px 16px 8px; }
     .table-container::-webkit-scrollbar { width: 6px; height: 6px; }
     .table-container::-webkit-scrollbar-track { background: transparent; }
     .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     
-    /* 🌟 MODERN CARD-LIKE TABLE LAYOUT (FIXED) */
-    .job-table { border-collapse: separate; border-spacing: 0 8px; min-width: 900px; width: 100%; table-layout: auto; }
+    /* 🌟 FULL DATA CARD-LIKE TABLE */
+    .job-table { border-collapse: separate; border-spacing: 0 6px; min-width: 1100px; width: 100%; table-layout: auto; }
     .job-table th { 
         position: sticky; top: 0; z-index: 20; background: #f8fafc; 
         text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; 
-        padding: 10px 12px; font-weight: 800; color: #64748b; white-space: nowrap;
+        padding: 12px 10px; font-weight: 800; color: #64748b; white-space: nowrap;
         border-bottom: 2px solid #e2e8f0; box-shadow: 0 4px 6px -6px rgba(0,0,0,0.1);
     }
     
-    .job-table tbody tr { transition: transform 0.2s ease; }
-    .job-table tbody tr:hover { transform: translateY(-2px); z-index: 10; position: relative; }
-    .job-table tbody tr:hover td { background-color: #f8fafc; border-color: #cbd5e1; }
+    .job-table tbody tr { transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; }
+    .job-table tbody tr:hover { transform: translateY(-2px); z-index: 10; position: relative; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08); }
+    .job-table tbody tr:hover td { background-color: #fdfdfe; border-color: #cbd5e1; }
     
     .job-table td { 
         background-color: #ffffff;
-        padding: 10px 12px; vertical-align: middle;
-        border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;
+        padding: 10px 10px; vertical-align: middle;
+        border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;
         transition: all 0.2s ease;
+        word-break: break-word; /* 🌟 ป้องกันข้อความล้น ให้ขึ้นบรรทัดใหม่เสมอ */
     }
     .job-table td:first-child { 
-        border-left: 1px solid #e2e8f0; 
+        border-left: 1px solid #f1f5f9; 
         border-top-left-radius: 10px; border-bottom-left-radius: 10px; 
     }
     .job-table td:last-child { 
-        border-right: 1px solid #e2e8f0; 
+        border-right: 1px solid #f1f5f9; 
         border-top-right-radius: 10px; border-bottom-right-radius: 10px; 
     }
-
-    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
     /* Map Background */
     #map { background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f8 100%); }
     .leaflet-container { border-radius: 0; }
-
-    /* 🌟 Responsive Restored */
-    @media (max-width: 1024px) {
-        .job-table th { font-size: 0.65rem; padding: 8px 6px; }
-        .job-table td { padding: 8px 6px; }
-    }
-    @media (max-width: 768px) {
-        .dashboard-header { flex-direction: column; align-items: stretch; gap: 0.5rem; }
-        .action-buttons { overflow-x: auto; padding-bottom: 4px; white-space: nowrap; }
-        #map { min-height: 400px; }
-    }
-    @media (max-width: 640px) {
-        .job-table { min-width: 600px; }
-    }
 </style>
 
 <div class="flex flex-col gap-4 animate-dashboard min-h-screen pb-10 lg:h-[calc(100vh-100px)] lg:pb-0">
@@ -168,15 +153,16 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <table class="job-table pb-4">
     <thead class="bg-[#f8fafc]">
         <tr>
-            <th class="text-center w-10">
+            <th class="text-center w-12">
                 <i data-lucide="check-square" class="w-4 h-4 mx-auto text-slate-400"></i>
             </th>
             <th class="text-center w-16">คิว</th>
-            <th class="min-w-[120px] text-left">รหัสงาน / วันที่</th>
-            <th class="min-w-[160px] text-left">ข้อมูลลูกค้า</th>
-            <th class="min-w-[200px] w-full text-left">สถานที่ติดตั้ง</th>
-            <th class="text-center w-32">ทีมรับผิดชอบ</th>
-            <th class="text-center w-12"></th>
+            <th class="text-left w-28">รหัสงาน</th>
+            <th class="text-left min-w-[160px]">ชื่อลูกค้า</th>
+            <th class="text-left w-32">เบอร์โทร</th>
+            <th class="text-left min-w-[250px] w-full">สถานที่ติดตั้ง</th>
+            <th class="text-left w-28">วันที่</th>
+            <th class="text-center w-36">ทีมรับผิดชอบ</th>
         </tr>
     </thead>
     <tbody id="jobTableBody" class="text-sm text-[var(--c-text-2)]">
