@@ -31,9 +31,26 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     
     .truncate-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+    /* 🌟 Map & Two-Column Layout */
+    #map { background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f8 100%); border-radius: 0 8px 8px 0; }
+    .leaflet-container { border-radius: 0; }
+
+    /* Improve table on responsive */
+    @media (max-width: 1024px) {
+        .job-table th { font-size: 0.6rem; padding: 6px 6px; }
+        .job-table td { padding: 4px 6px; }
+    }
+
     @media (max-width: 768px) {
         .dashboard-header { flex-direction: column; align-items: stretch; gap: 0.5rem; }
         .action-buttons { overflow-x: auto; padding-bottom: 4px; white-space: nowrap; }
+        #map { min-height: 400px; }
+    }
+
+    @media (max-width: 640px) {
+        .job-table th { font-size: 0.55rem; padding: 4px 4px; }
+        .job-table td { padding: 3px 4px; font-size: 0.7rem; }
+        .job-table { min-width: 600px; }
     }
 </style>
 
@@ -133,27 +150,39 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             </div>
         </div>
 
-        <div class="flex-1 overflow-hidden relative bg-[var(--c-surface)]">
-            <div id="map" class="w-full" style="height:360px;"></div>
-            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-            <div class="table-container relative w-full overflow-auto" style="height:calc(100% - 360px);">
-                <table class="job-table">
-                    <thead class="bg-[var(--c-surface-2)]">
-                        <tr>
-                            <th class="w-8 text-center !bg-[var(--c-surface-2)]">#</th>
-                            <th class="w-12 text-center !bg-[var(--c-surface-2)]">คิว</th>
-                            <th class="w-24 !bg-[var(--c-surface-2)]">รหัสงาน</th>
-                            <th class="w-48 !bg-[var(--c-surface-2)]">ชื่อลูกค้า</th>
-                            <th class="w-24 !bg-[var(--c-surface-2)]">เบอร์โทร</th>
-                            <th class="min-w-[180px] !bg-[var(--c-surface-2)]">สถานที่</th>
-                            <th class="w-20 !bg-[var(--c-surface-2)]">วันที่</th>
-                            <th class="w-28 text-right pr-4 !bg-[var(--c-surface-2)]">ทีมช่าง</th>
-                        </tr>
-                    </thead>
-                    <tbody id="jobTableBody" class="text-xs text-[var(--c-text-2)] divide-y divide-[var(--c-border)]">
-                        </tbody>
-                </table>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+        <div class="flex-1 overflow-hidden relative bg-[var(--c-surface)] flex flex-col md:flex-row gap-0">
+            <!-- Left: Jobs Table (60% on desktop, full on mobile) -->
+            <div class="w-full md:w-3/5 overflow-hidden flex flex-col border-b md:border-b-0 md:border-r border-[var(--c-border)]">
+                <div class="flex-1 overflow-hidden relative bg-[var(--c-surface)]">
+                    <div class="table-container absolute inset-0 w-full h-full overflow-auto">
+                        <table class="job-table">
+                            <thead class="bg-[var(--c-surface-2)]">
+                                <tr>
+                                    <th class="w-8 text-center !bg-[var(--c-surface-2)]">#</th>
+                                    <th class="w-12 text-center !bg-[var(--c-surface-2)]">คิว</th>
+                                    <th class="w-20 !bg-[var(--c-surface-2)]">รหัสงาน</th>
+                                    <th class="min-w-[120px] !bg-[var(--c-surface-2)]">ชื่อลูกค้า</th>
+                                    <th class="w-20 !bg-[var(--c-surface-2)]">เบอร์โทร</th>
+                                    <th class="min-w-[140px] !bg-[var(--c-surface-2)]">สถานที่</th>
+                                    <th class="w-20 !bg-[var(--c-surface-2)]">วันที่</th>
+                                    <th class="w-24 text-right pr-4 !bg-[var(--c-surface-2)]">ทีมช่าง</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jobTableBody" class="text-xs text-[var(--c-text-2)] divide-y divide-[var(--c-border)]">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Map (40% on desktop, full on mobile) -->
+            <div class="w-full md:w-2/5 overflow-hidden flex flex-col bg-[var(--c-surface-3)]">
+                <div class="flex-1 overflow-hidden relative">
+                    <div id="map" class="w-full h-full" style="min-height: 300px;"></div>
+                </div>
             </div>
         </div>
     </div>
