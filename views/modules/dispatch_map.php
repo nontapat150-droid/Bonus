@@ -165,14 +165,14 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <table class="job-table">
                         <thead class="bg-[var(--c-surface-2)]">
                             <tr>
-                                <th class="w-8 text-center !bg-[var(--c-surface-2)]">#</th>
-                                <th class="w-12 text-center !bg-[var(--c-surface-2)]">คิว</th>
-                                <th class="w-16 !bg-[var(--c-surface-2)]">รหัส</th>
-                                <th class="min-w-[150px] !bg-[var(--c-surface-2)]">ชื่อ</th>
-                                <th class="w-14 !bg-[var(--c-surface-2)]">เบอร์</th>
+                                <th class="w-[40px] text-center !bg-[var(--c-surface-2)]">#</th>
+                                <th class="w-[50px] text-center !bg-[var(--c-surface-2)]">คิว</th>
+                                <th class="w-[110px] !bg-[var(--c-surface-2)]">รหัส</th>
+                                <th class="w-[180px] !bg-[var(--c-surface-2)]">ชื่อ</th>
+                                <th class="w-[100px] !bg-[var(--c-surface-2)]">เบอร์</th>
                                 <th class="min-w-[250px] !bg-[var(--c-surface-2)]">ที่อยู่</th>
-                                <th class="w-16 !bg-[var(--c-surface-2)]">วันที่</th>
-                                <th class="w-20 text-right pr-2 !bg-[var(--c-surface-2)]">ทีม</th>
+                                <th class="w-[90px] !bg-[var(--c-surface-2)]">วันที่</th>
+                                <th class="w-[110px] text-right pr-2 !bg-[var(--c-surface-2)]">ทีม</th>
                             </tr>
                         </thead>
                         <tbody id="jobTableBody" class="text-xs text-[var(--c-text-2)] divide-y divide-[var(--c-border)]">
