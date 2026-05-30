@@ -7,19 +7,62 @@ let selectedJobIds = new Set();
 // Leaflet map and markers (free, no API key)
 let map = null;
 let markersGroup = null;
+let jobMarkerMap = new Map();
 
 // Clean latitude/longitude from unwanted characters (like $)
 function cleanCoordinate(value) {
-    if (!value) return null;
+    if (value === null || value === undefined || value === '') return null;
     const cleaned = String(value).replace(/[^0-9.-]/g, '').trim();
     const num = parseFloat(cleaned);
-    return isNaN(num) ? null : num;
+    return Number.isFinite(num) ? num : null;
+}
+
+function getJobLatLng(job) {
+    const lat = cleanCoordinate(job?.lat);
+    const lng = cleanCoordinate(job?.lng);
+    if (lat === null || lng === null) return null;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+    return { lat, lng };
+}
+
+function hasValue(value) {
+    if (value === null || value === undefined) return false;
+    const text = String(value).trim();
+    return text !== '' && text !== '-' && text.toLowerCase() !== 'null';
+}
+
+function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }[char]));
+}
+
+function displayValue(value, fallback = '-') {
+    return hasValue(value) ? escapeHTML(String(value).trim()) : fallback;
+}
+
+function rawValue(value, fallback = '-') {
+    return hasValue(value) ? String(value).trim() : fallback;
+}
+
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
+function refreshLucideIcons() {
+    if (window.lucide?.createIcons) window.lucide.createIcons();
 }
 
 function initMap() {
     try {
         if (!document.getElementById('map')) return;
-        map = L.map('map').setView([13.736717, 100.523186], 6);
+        map = L.map('map', { zoomControl: false }).setView([13.736717, 100.523186], 6);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
@@ -89,6 +132,81 @@ const teamColors = [
 ];
 function getColor(index) { return teamColors[index % teamColors.length]; }
 
+function updateMapMarkers(jobs) {
+    if (!window.L || !map || !markersGroup) return;
+    markersGroup.clearLayers();
+    jobMarkerMap.clear();
+
+    const valid = (jobs || []).map(job => {
+        const coords = getJobLatLng(job);
+        return coords ? { ...coords, job } : null;
+    }).filter(Boolean);
+
+    setText('mapCountBadge', valid.length);
+    setText('mapMissingBadge', Math.max((jobs || []).length - valid.length, 0));
+
+    if (valid.length === 0) {
+        map.setView([13.736717, 100.523186], 6);
+        setTimeout(() => { if (map) map.invalidateSize(); }, 300);
+        return;
+    }
+
+    valid.forEach((v, idx) => {
+        try {
+            const teamIdx = currentTeams.findIndex(t => t.id == v.job.team_id);
+            const color = v.job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
+            const label = displayValue(v.job.seq || idx + 1);
+            const icon = L.divIcon({
+                className: '',
+                html: `<div class="dispatch-marker" style="background-color:${color};"><span>${label}</span></div>`,
+                iconSize: [34, 34],
+                iconAnchor: [17, 34],
+                popupAnchor: [0, -30]
+            });
+
+            const marker = L.marker([v.lat, v.lng], { icon });
+            const popup = `
+                <div style="min-width:240px; max-width:300px; font-family:'Inter','Sarabun',sans-serif;">
+                    <div style="background:${color}; color:white; padding:10px 12px; border-radius:8px 8px 0 0; font-weight:800; margin:-4px -4px 10px -4px;">${displayValue(v.job.access_no, 'N/A')}</div>
+                    <div style="padding:0 4px 4px;">
+                        <div style="font-size:14px; font-weight:800; color:#0f172a; margin-bottom:4px;">${displayValue(v.job.customer, 'ไม่ระบุชื่อลูกค้า')}</div>
+                        <div style="font-size:12px; color:#475569; margin-bottom:10px; line-height:1.45;">${displayValue(v.job.address)}</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px;">
+                            <div style="background:#f8fafc; padding:8px; border-radius:8px; border:1px solid #e2e8f0;"><div style="color:#94a3b8; font-size:10px; font-weight:700;">วันที่</div><div style="font-weight:800; color:#334155;">${displayValue(v.job.plan_arrival_date)}</div></div>
+                            <div style="background:#f8fafc; padding:8px; border-radius:8px; border:1px solid #e2e8f0;"><div style="color:#94a3b8; font-size:10px; font-weight:700;">ทีม</div><div style="font-weight:800; color:${color};">${displayValue(v.job.team_name, 'รอจ่าย')}</div></div>
+                            <div style="background:#f8fafc; padding:8px; border-radius:8px; border:1px solid #e2e8f0;"><div style="color:#94a3b8; font-size:10px; font-weight:700;">โทร</div><div style="font-weight:800; color:#047857;">${displayValue(v.job.phone)}</div></div>
+                            <div style="background:#f8fafc; padding:8px; border-radius:8px; border:1px solid #e2e8f0;"><div style="color:#94a3b8; font-size:10px; font-weight:700;">พิกัด</div><div style="font-weight:800; color:#334155;">${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}</div></div>
+                        </div>
+                        <div style="margin-top:10px;"><a style="display:inline-block; background:${color}; color:white; padding:8px 12px; border-radius:8px; text-decoration:none; font-size:12px; font-weight:800;" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}">นำทาง</a></div>
+                    </div>
+                </div>`;
+            marker.bindPopup(popup);
+            markersGroup.addLayer(marker);
+            jobMarkerMap.set(String(v.job.id), marker);
+        } catch (e) { console.warn('marker failed', e); }
+    });
+
+    if (valid.length === 1) {
+        map.setView([valid[0].lat, valid[0].lng], 14);
+    } else {
+        const bounds = markersGroup.getBounds();
+        if (bounds && bounds.isValid && bounds.isValid()) {
+            try { map.fitBounds(bounds.pad(0.18), { maxZoom: 13 }); } catch (e) { }
+        }
+    }
+
+    setTimeout(() => { if (map) map.invalidateSize(); }, 300);
+}
+
+function focusMapOnJob(jobId) {
+    const marker = jobMarkerMap.get(String(jobId));
+    if (!marker || !map) return false;
+    const latLng = marker.getLatLng();
+    map.setView(latLng, Math.max(map.getZoom(), 14), { animate: true });
+    marker.openPopup();
+    return true;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
     loadJobs();
@@ -123,30 +241,23 @@ function handleNavigateSelected() {
     // เรียงตามลำดับคิว (seq) ถ้ามี
     jobsToNav.sort((a, b) => (a.seq || 999) - (b.seq || 999));
     
-    const validJobs = jobsToNav.filter(j => {
-        const lat = cleanCoordinate(j.lat);
-        const lng = cleanCoordinate(j.lng);
-        return lat && lng;
-    });
+    const validJobs = jobsToNav.filter(j => getJobLatLng(j));
     
     if (validJobs.length === 0) {
         return Swal.fire('ไม่พบพิกัด', 'งานที่เลือกไม่มีข้อมูลพิกัดละติจูด/ลองจิจูด', 'warning');
     }
     
     if (validJobs.length === 1) {
-        const lat = cleanCoordinate(validJobs[0].lat);
-        const lng = cleanCoordinate(validJobs[0].lng);
+        const { lat, lng } = getJobLatLng(validJobs[0]);
         const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
         window.open(url, '_blank');
         return;
     }
-    
+
     const destination = validJobs[validJobs.length - 1];
-    const destLat = cleanCoordinate(destination.lat);
-    const destLng = cleanCoordinate(destination.lng);
+    const { lat: destLat, lng: destLng } = getJobLatLng(destination);
     const waypoints = validJobs.slice(0, validJobs.length - 1).map(j => {
-        const lat = cleanCoordinate(j.lat);
-        const lng = cleanCoordinate(j.lng);
+        const { lat, lng } = getJobLatLng(j);
         return `${lat},${lng}`;
     }).join('|');
     
@@ -335,6 +446,7 @@ async function runAutoDispatch() {
 
 function handleSelectAll(e) {
     const checked = e.target.checked;
+    e.target.indeterminate = false;
     document.querySelectorAll('.job-checkbox').forEach(cb => {
         cb.checked = checked;
         const id = cb.dataset.id;
@@ -557,11 +669,213 @@ function createJobRow(job, index) {
     return div;
 }
 
+function renderUI() {
+    const container = document.getElementById('jobTableBody');
+    if (!container) return;
+    container.innerHTML = '';
+
+    let teamVal = 'all';
+    const teamEl = document.getElementById('teamFilter');
+    if (IS_ADMIN && teamEl) teamVal = teamEl.value;
+
+    const dateVal = document.getElementById('dateFilter')?.value;
+    const limitVal = document.getElementById('limitFilter')?.value;
+
+    let filteredJobs = [...allJobs];
+
+    if (teamVal === 'unassigned') filteredJobs = filteredJobs.filter(j => !j.team_id);
+    else if (teamVal !== 'all') filteredJobs = filteredJobs.filter(j => j.team_id == teamVal);
+    if (dateVal) filteredJobs = filteredJobs.filter(j => j.plan_arrival_date === dateVal);
+
+    const totalCount = filteredJobs.length;
+    const mappedCount = filteredJobs.filter(j => getJobLatLng(j)).length;
+    const assignedCount = filteredJobs.filter(j => j.team_id || hasValue(j.team_name)).length;
+    const unassignedCount = totalCount - assignedCount;
+
+    setText('jobCountBadge', totalCount);
+    setText('mappedCountBadge', mappedCount);
+    setText('assignedCountBadge', assignedCount);
+    setText('unassignedCountBadgeMain', unassignedCount);
+
+    if (limitVal && limitVal !== 'all') filteredJobs = filteredJobs.slice(0, parseInt(limitVal));
+
+    if (filteredJobs.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-full min-h-[320px] flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
+                <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center mb-3"><i data-lucide="inbox" class="w-6 h-6"></i></div>
+                <div class="text-slate-500 font-black">ไม่พบข้อมูลงาน</div>
+                <div class="text-xs text-slate-400 font-bold mt-1">ลองเปลี่ยนวันที่ ทีม หรือจำนวนรายการที่แสดง</div>
+            </div>`;
+        updateMapMarkers(filteredJobs);
+        updateSelectionUI();
+        refreshLucideIcons();
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    filteredJobs.forEach((job, index) => {
+        const card = createJobRow(job, index);
+        card.style.animationDelay = `${(index % 25) * 0.025}s`;
+        fragment.appendChild(card);
+    });
+    container.appendChild(fragment);
+
+    const selectAll = document.getElementById('selectAllJobs');
+    if (selectAll) {
+        const visibleIds = filteredJobs.map(j => String(j.id));
+        const selectedVisible = visibleIds.filter(id => selectedJobIds.has(id)).length;
+        selectAll.checked = visibleIds.length > 0 && selectedVisible === visibleIds.length;
+        selectAll.indeterminate = selectedVisible > 0 && selectedVisible < visibleIds.length;
+    }
+
+    try { updateMapMarkers(filteredJobs); } catch (e) { console.warn(e); }
+    updateSelectionUI();
+    refreshLucideIcons();
+}
+
+function detailItem(label, value) {
+    return `
+        <div class="rounded-lg bg-slate-50 border border-slate-100 p-2 min-w-0">
+            <div class="text-[9px] font-black text-slate-400 uppercase tracking-wide">${label}</div>
+            <div class="text-[11px] font-bold text-slate-700 mt-1 break-words">${displayValue(value)}</div>
+        </div>`;
+}
+
+function statusBadge(status) {
+    const value = rawValue(status, 'Pending').toLowerCase();
+    if (value === 'completed') return '<span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100">เสร็จแล้ว</span>';
+    if (value === 'failed') return '<span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-100">ไม่สำเร็จ</span>';
+    return '<span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-100">รอดำเนินการ</span>';
+}
+
+function createJobRow(job, index) {
+    const div = document.createElement('article');
+    div.className = 'dispatch-job-card bg-white border border-slate-200 shadow-sm hover:border-indigo-300 transition-all duration-200 cursor-pointer flex flex-col p-4 animate-row relative group';
+
+    const isSelected = selectedJobIds.has(String(job.id));
+    const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
+    const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
+    const coords = getJobLatLng(job);
+    const jobId = escapeHTML(job.id);
+    const queueLabel = displayValue(job.seq || index + 1);
+
+    const teamBadge = job.team_name
+        ? `<div class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap" style="background-color:${color}15; color:${color}; border:1px solid ${color}30">
+             <span class="w-2 h-2 rounded-full mr-1.5" style="background-color:${color}"></span>${displayValue(job.team_name)}
+           </div>`
+        : `<div class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 whitespace-nowrap">
+             <i data-lucide="clock-3" class="w-3 h-3 mr-1"></i>รอจ่ายงาน
+           </div>`;
+
+    const coordText = coords ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}` : 'ไม่มีพิกัด';
+    const mapButtonClass = coords
+        ? 'bg-[var(--c-primary)] text-white hover:bg-[var(--c-primary-hover)]'
+        : 'bg-slate-100 text-slate-400 cursor-not-allowed';
+
+    div.innerHTML = `
+        <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3 min-w-0">
+                <div class="pt-1" onclick="event.stopPropagation()">
+                    <input type="checkbox" class="job-checkbox w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        data-id="${jobId}" ${isSelected ? 'checked' : ''} onchange="toggleJobSelection('${jobId}')">
+                </div>
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center text-[12px] font-black text-white shadow-sm shrink-0" style="background-color:${color}">
+                    ${queueLabel}
+                </div>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="font-black text-slate-900 text-sm leading-tight break-words">${displayValue(job.access_no, 'N/A')}</h3>
+                        ${statusBadge(job.status)}
+                    </div>
+                    <div class="text-[11px] font-bold text-slate-500 mt-1">${displayValue(job.plan_arrival_date)}</div>
+                </div>
+            </div>
+            ${teamBadge}
+        </div>
+
+        <div class="mt-3 space-y-2">
+            <div>
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-wide">ลูกค้า</div>
+                <div class="text-sm font-black text-slate-800 leading-snug break-words">${displayValue(job.customer, 'ไม่ระบุชื่อลูกค้า')}</div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div class="rounded-lg bg-emerald-50 border border-emerald-100 p-2 min-w-0">
+                    <div class="text-[9px] font-black text-emerald-500 uppercase tracking-wide">โทรศัพท์</div>
+                    <div class="text-[12px] font-black text-emerald-700 mt-1 break-words">${displayValue(job.phone, 'ไม่ระบุเบอร์โทร')}</div>
+                </div>
+                <div class="rounded-lg bg-indigo-50 border border-indigo-100 p-2 min-w-0">
+                    <div class="text-[9px] font-black text-indigo-500 uppercase tracking-wide">พิกัด</div>
+                    <div class="text-[11px] font-bold ${coords ? 'text-indigo-700' : 'text-amber-700'} mt-1 break-words">${coordText}</div>
+                </div>
+            </div>
+            <div class="rounded-lg bg-slate-50 border border-slate-100 p-3">
+                <div class="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1">สถานที่ติดตั้ง</div>
+                <div class="text-[12px] text-slate-700 font-bold leading-relaxed break-words">${displayValue(job.address)}</div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                ${detailItem('แพ็กเกจ', job.package)}
+                ${detailItem('สินค้า', job.product)}
+                ${detailItem('Order No.', job.order_no)}
+                ${detailItem('Task Order', job.task_order)}
+                ${detailItem('Task Type', job.task_type)}
+                ${detailItem('สร้างเมื่อ', job.created_at)}
+            </div>
+            ${hasValue(job.remark) ? `
+                <div class="rounded-lg bg-rose-50 border border-rose-100 p-3">
+                    <div class="text-[9px] font-black text-rose-500 uppercase tracking-wide mb-1">หมายเหตุ</div>
+                    <div class="text-[12px] text-rose-700 font-bold leading-relaxed break-words">${displayValue(job.remark)}</div>
+                </div>` : ''}
+        </div>
+
+        <div class="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
+            <button type="button" class="rounded-lg px-3 py-2 text-xs font-black border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1" onclick="event.stopPropagation(); showJobPopupById('${jobId}')">
+                <i data-lucide="file-text" class="w-4 h-4"></i>รายละเอียด
+            </button>
+            <button type="button" class="rounded-lg px-3 py-2 text-xs font-black flex items-center justify-center gap-1 ${mapButtonClass}" ${coords ? '' : 'disabled'} onclick="event.stopPropagation(); openJobNavigationById('${jobId}')">
+                <i data-lucide="navigation" class="w-4 h-4"></i>นำทาง
+            </button>
+        </div>
+    `;
+
+    div.onclick = () => {
+        focusMapOnJob(job.id);
+        showJobPopup(job, color);
+    };
+
+    return div;
+}
+
+function showJobPopupById(jobId) {
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    if (!job) return;
+    const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
+    const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
+    focusMapOnJob(job.id);
+    showJobPopup(job, color);
+}
+
+function openJobNavigationById(jobId) {
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    const coords = getJobLatLng(job);
+    if (!coords) return Swal.fire('ไม่พบพิกัด', 'งานนี้ยังไม่มีละติจูด/ลองจิจูดที่ถูกต้อง', 'warning');
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`, '_blank');
+}
+
 function toggleJobSelection(id) {
     const strId = String(id);
     if (selectedJobIds.has(strId)) selectedJobIds.delete(strId);
     else selectedJobIds.add(strId);
+    syncSelectAllState();
     updateSelectionUI();
+}
+
+function syncSelectAllState() {
+    const selectAll = document.getElementById('selectAllJobs');
+    if (!selectAll) return;
+    const boxes = Array.from(document.querySelectorAll('.job-checkbox'));
+    const checked = boxes.filter(cb => cb.checked).length;
+    selectAll.checked = boxes.length > 0 && checked === boxes.length;
+    selectAll.indeterminate = checked > 0 && checked < boxes.length;
 }
 
 function showJobPopup(job, color) {
@@ -637,6 +951,81 @@ function showJobPopup(job, color) {
         }
     }).then((result) => {
         if (result.isConfirmed) window.open(gmapsLink, '_blank');
+    });
+}
+
+function showJobPopup(job, color) {
+    const coords = getJobLatLng(job);
+    const gmapsLink = coords ? `https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}` : null;
+
+    let actionButtons = '';
+    if (!IS_ADMIN) {
+        actionButtons = `
+            <div class="grid grid-cols-2 gap-2 mt-3">
+                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'completed')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
+                    ปิดจ๊อบ
+                </button>
+                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'failed')" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
+                    ทำไม่สำเร็จ
+                </button>
+            </div>
+        `;
+    }
+
+    Swal.fire({
+        title: `<div class="text-left"><div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">รายละเอียดงาน</div><div class="font-black text-lg" style="color:${color};">${displayValue(job.access_no, 'N/A')}</div></div>`,
+        html: `
+            <div class="text-left mt-1 font-sans space-y-3">
+                <div class="bg-white border border-slate-100 p-4 rounded-lg shadow-sm space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">ลูกค้า</p>
+                            <p class="text-sm font-black text-slate-800">${displayValue(job.customer, 'ไม่ระบุชื่อลูกค้า')}</p>
+                        </div>
+                        ${statusBadge(job.status)}
+                    </div>
+                    <div class="rounded-lg bg-slate-50 p-3 border border-slate-100">
+                        <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">สถานที่ติดตั้ง</p>
+                        <p class="text-xs text-slate-700 font-bold leading-relaxed">${displayValue(job.address)}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        ${detailItem('วันที่', job.plan_arrival_date)}
+                        ${detailItem('ทีม', job.team_name || 'รอจ่าย')}
+                        ${detailItem('โทรศัพท์', job.phone)}
+                        ${detailItem('พิกัด', coords ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}` : 'ไม่มีพิกัด')}
+                        ${detailItem('แพ็กเกจ', job.package)}
+                        ${detailItem('สินค้า', job.product)}
+                        ${detailItem('Order No.', job.order_no)}
+                        ${detailItem('Task Order', job.task_order)}
+                        ${detailItem('Task Type', job.task_type)}
+                        ${detailItem('สร้างเมื่อ', job.created_at)}
+                    </div>
+                    ${hasValue(job.remark) ? `
+                    <div class="bg-rose-50 p-3 rounded-lg border border-rose-100">
+                        <p class="text-[9px] font-bold text-rose-500 uppercase mb-1">หมายเหตุ</p>
+                        <p class="text-xs font-bold text-rose-700 leading-relaxed">${displayValue(job.remark)}</p>
+                    </div>` : ''}
+                </div>
+                ${actionButtons}
+            </div>
+        `,
+        showCancelButton: true,
+        showCloseButton: true,
+        showConfirmButton: !!gmapsLink,
+        confirmButtonColor: color,
+        cancelButtonColor: '#f1f5f9',
+        confirmButtonText: 'นำทางด้วย Google Maps',
+        cancelButtonText: '<span class="text-slate-500 font-bold">ปิด</span>',
+        customClass: {
+            popup: 'rounded-2xl p-4 shadow-xl z-[9999]',
+            title: 'text-left pb-2 border-b border-slate-100',
+            confirmButton: 'rounded-lg px-4 py-2.5 font-bold w-full mt-2 text-xs',
+            cancelButton: 'rounded-lg px-4 py-2.5 font-bold w-full mt-2 text-xs hover:bg-slate-200',
+            actions: 'flex-col w-full px-2'
+        },
+        didOpen: refreshLucideIcons
+    }).then((result) => {
+        if (result.isConfirmed && gmapsLink) window.open(gmapsLink, '_blank');
     });
 }
 
