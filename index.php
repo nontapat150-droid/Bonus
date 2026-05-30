@@ -767,6 +767,7 @@ if ($page === 'home') {
         }
     </script>
     <script src="assets/js/common.js"></script>
+    <script src="assets/js/datepicker.js"></script>
     <script src="assets/js/notifications.js"></script>
 </body>
 </html>
