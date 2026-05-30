@@ -32,8 +32,8 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     
     .truncate-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* 🌟 Map & Two-Column Layout */
-    #map { background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f8 100%); border-radius: 0 8px 8px 0; }
+    /* 🌟 Map & Single Column Layout */
+    #map { background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f8 100%); }
     .leaflet-container { border-radius: 0; }
 
     /* Improve table on responsive */
@@ -64,7 +64,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     }
 </style>
 
-<div class="flex flex-col gap-4 animate-dashboard h-[calc(100dvh-160px)] md:h-[calc(100vh-120px)]">
+<div class="flex flex-col gap-4 animate-dashboard min-h-screen pb-10 lg:h-[calc(100vh-100px)] lg:pb-0">
     
     <?php if ($isAdmin): ?>
     <div class="card !p-4 flex flex-wrap gap-4 items-center justify-between z-20 dashboard-header shrink-0">
@@ -100,8 +100,8 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
     <?php endif; ?>
 
-    <div class="card !p-0 flex flex-col flex-1 overflow-hidden relative">
-        
+    <!-- Table Section Card -->
+    <div class="card !p-0 flex flex-col lg:flex-1 overflow-hidden relative min-h-[400px]">
         <div id="mapLoader" class="absolute inset-0 bg-[var(--c-surface)]/90 backdrop-blur-sm flex flex-col items-center justify-center z-[80] hidden transition-opacity duration-200">
             <div class="w-10 h-10 border-3 border-[var(--c-primary-faint)] border-t-[var(--c-primary)] rounded-full animate-spin mb-3"></div>
             <p id="loaderText" class="text-[var(--c-primary)] font-bold text-xs uppercase tracking-widest animate-pulse">กำลังโหลด...</p>
@@ -157,41 +157,36 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             </div>
         </div>
 
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-        <div class="flex-1 overflow-hidden relative bg-[var(--c-surface)] flex flex-col md:flex-row gap-0">
-            <!-- Left: Jobs Table (60% on desktop, full on mobile) -->
-            <div class="w-full md:w-3/5 overflow-hidden flex flex-col border-b md:border-b-0 md:border-r border-[var(--c-border)]">
-                <div class="flex-1 overflow-hidden relative bg-[var(--c-surface)]">
-                    <div class="table-container absolute inset-0 w-full h-full overflow-auto">
-                        <table class="job-table">
-                            <thead class="bg-[var(--c-surface-2)]">
-                                <tr>
-                                    <th class="w-8 text-center !bg-[var(--c-surface-2)]">#</th>
-                                    <th class="w-12 text-center !bg-[var(--c-surface-2)]">คิว</th>
-                                    <th class="w-16 !bg-[var(--c-surface-2)]">รหัส</th>
-                                    <th class="min-w-[80px] !bg-[var(--c-surface-2)]">ชื่อ</th>
-                                    <th class="w-14 !bg-[var(--c-surface-2)]">เบอร์</th>
-                                    <th class="min-w-[100px] !bg-[var(--c-surface-2)]">ที่อยู่</th>
-                                    <th class="w-16 !bg-[var(--c-surface-2)]">วันที่</th>
-                                    <th class="w-20 text-right pr-2 !bg-[var(--c-surface-2)]">ทีม</th>
-                                </tr>
-                            </thead>
-                            <tbody id="jobTableBody" class="text-xs text-[var(--c-text-2)] divide-y divide-[var(--c-border)]">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right: Map (40% on desktop, full on mobile) -->
-            <div class="w-full md:w-2/5 overflow-hidden flex flex-col bg-[var(--c-surface-3)]">
-                <div class="flex-1 overflow-hidden relative">
-                    <div id="map" class="w-full h-full" style="min-height: 300px;"></div>
+        <!-- Table Section -->
+        <div class="w-full flex-1 overflow-hidden flex flex-col">
+            <div class="flex-1 overflow-hidden relative bg-[var(--c-surface)]">
+                <div class="table-container absolute inset-0 w-full h-full overflow-auto">
+                    <table class="job-table">
+                        <thead class="bg-[var(--c-surface-2)]">
+                            <tr>
+                                <th class="w-8 text-center !bg-[var(--c-surface-2)]">#</th>
+                                <th class="w-12 text-center !bg-[var(--c-surface-2)]">คิว</th>
+                                <th class="w-16 !bg-[var(--c-surface-2)]">รหัส</th>
+                                <th class="min-w-[80px] !bg-[var(--c-surface-2)]">ชื่อ</th>
+                                <th class="w-14 !bg-[var(--c-surface-2)]">เบอร์</th>
+                                <th class="min-w-[100px] !bg-[var(--c-surface-2)]">ที่อยู่</th>
+                                <th class="w-16 !bg-[var(--c-surface-2)]">วันที่</th>
+                                <th class="w-20 text-right pr-2 !bg-[var(--c-surface-2)]">ทีม</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jobTableBody" class="text-xs text-[var(--c-text-2)] divide-y divide-[var(--c-border)]">
+                            </tbody>
+                    </table>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Map Section Card -->
+    <div class="card !p-0 overflow-hidden shrink-0 relative h-[400px] lg:h-[450px]">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <div id="map" class="w-full h-full"></div>
     </div>
 </div>
 
