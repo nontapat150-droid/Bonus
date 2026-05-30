@@ -488,15 +488,15 @@ function createJobRow(job, index) {
                 ${job.seq || '-'}
             </div>
         </td>
-        <td class="px-0.5"><span class="font-bold text-slate-800 text-[9px] md:text-[11px] truncate-text block">${job.access_no}</span></td>
+        <td class="px-0.5"><span class="font-bold text-slate-800 text-[9px] md:text-[11px] block">${job.access_no}</span></td>
         <td class="px-0.5">
-            <div class="font-bold text-slate-800 text-[8px] md:text-[10px] truncate-text" title="${job.customer}">${job.customer}</div>
+            <div class="font-bold text-slate-800 text-[8px] md:text-[10px] wrap-text" title="${job.customer}">${job.customer}</div>
         </td>
         <td class="px-0.5">
-            <span class="text-[7px] md:text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100">📞 ${job.phone?.split(',')[0]?.substring(0,4) || '-'}</span>
+            <span class="text-[7px] md:text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100 whitespace-nowrap">📞 ${job.phone?.split(',')[0]?.substring(0,4) || '-'}</span>
         </td>
-        <td class="px-0.5">
-            <div class="text-[8px] md:text-[10px] text-slate-500 truncate-text" title="${job.address}">📍 ${job.address}</div>
+        <td class="px-0.5 py-2">
+            <div class="text-[8px] md:text-[10px] text-slate-500 wrap-text" title="${job.address}">📍 ${job.address}</div>
         </td>
         <td class="px-0.5"><span class="text-[7px] md:text-[9px] font-bold text-slate-500">${job.plan_arrival_date || '-'}</span></td>
         <td class="text-right pr-1 md:pr-4">

@@ -31,6 +31,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     }
     
     .truncate-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wrap-text { white-space: normal; word-break: break-word; line-height: 1.4; }
 
     /* 🌟 Map & Single Column Layout */
     #map { background: linear-gradient(135deg, #f0f4f8 0%, #e8f0f8 100%); }
@@ -167,9 +168,9 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                                 <th class="w-8 text-center !bg-[var(--c-surface-2)]">#</th>
                                 <th class="w-12 text-center !bg-[var(--c-surface-2)]">คิว</th>
                                 <th class="w-16 !bg-[var(--c-surface-2)]">รหัส</th>
-                                <th class="min-w-[80px] !bg-[var(--c-surface-2)]">ชื่อ</th>
+                                <th class="min-w-[150px] !bg-[var(--c-surface-2)]">ชื่อ</th>
                                 <th class="w-14 !bg-[var(--c-surface-2)]">เบอร์</th>
-                                <th class="min-w-[100px] !bg-[var(--c-surface-2)]">ที่อยู่</th>
+                                <th class="min-w-[250px] !bg-[var(--c-surface-2)]">ที่อยู่</th>
                                 <th class="w-16 !bg-[var(--c-surface-2)]">วันที่</th>
                                 <th class="w-20 text-right pr-2 !bg-[var(--c-surface-2)]">ทีม</th>
                             </tr>
