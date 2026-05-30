@@ -30,22 +30,45 @@ function updateMapMarkers(jobs) {
         job: j
     }));
     if (valid.length === 0) return;
-    valid.forEach(v => {
+    
+    valid.forEach((v, idx) => {
         try {
-            const marker = L.marker([v.lat, v.lng]);
+            const teamIdx = currentTeams.findIndex(t => t.id == v.job.team_id);
+            const color = v.job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
+            
+            // Create custom marker icon with team color
+            const icon = L.divIcon({
+                html: `<div style="background-color: ${color}; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; border: 2px solid white; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📍</div>`,
+                iconSize: [32, 32],
+                popupAnchor: [0, -16]
+            });
+            
+            const marker = L.marker([v.lat, v.lng], { icon });
             const popup = `
-                <div style="min-width:180px">
-                    <div style="font-weight:700;margin-bottom:4px">${v.job.access_no || ''}</div>
-                    <div style="font-size:13px">${v.job.customer || ''}</div>
-                    <div style="font-size:12px;color:#444;margin-top:6px">${v.job.address || ''}</div>
-                    <div style="margin-top:8px"><a target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}">นำทาง (Google Maps)</a></div>
+                <div style="min-width:200px; font-family: 'Segoe UI', sans-serif;">
+                    <div style="background: ${color}; color: white; padding: 8px; border-radius: 4px 4px 0 0; font-weight: 700; margin: -4px -4px 8px -4px;">${v.job.access_no || 'N/A'}</div>
+                    <div style="padding: 8px;">
+                        <div style="font-size: 13px; font-weight: 600; color: #1f2937; margin-bottom: 4px;">${v.job.customer || 'ไม่ระบุชื่อ'}</div>
+                        <div style="font-size: 11px; color: #6b7280; margin-bottom: 8px; display: flex; gap: 4px;"><span>📍</span><span>${v.job.address || '-'}</span></div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
+                            <div style="background: #f3f4f6; padding: 6px; border-radius: 4px;"><div style="color: #9ca3af; font-size: 10px;">วันที่</div><div style="font-weight: 600; color: #374151;">${v.job.plan_arrival_date || '-'}</div></div>
+                            <div style="background: #f3f4f6; padding: 6px; border-radius: 4px;"><div style="color: #9ca3af; font-size: 10px;">ทีม</div><div style="font-weight: 600; color: ${color};">${v.job.team_name || 'รอจ่าย'}</div></div>
+                        </div>
+                        <div style="margin-top: 8px;"><a style="display: inline-block; background: ${color}; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 11px; font-weight: 600;" target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}">🚗 นำทาง</a></div>
+                    </div>
                 </div>`;
             marker.bindPopup(popup);
             markersGroup.addLayer(marker);
         } catch (e) { console.warn('marker failed', e); }
     });
+    
     const bounds = markersGroup.getBounds();
-    if (bounds && bounds.isValid && bounds.isValid()) map.fitBounds(bounds.pad(0.2));
+    if (bounds && bounds.isValid && bounds.isValid()) {
+        try { map.fitBounds(bounds.pad(0.15)); } catch (e) { }
+    }
+    
+    // Handle map resize
+    setTimeout(() => { if (map) map.invalidateSize(); }, 300);
 }
 
 const teamColors = [
