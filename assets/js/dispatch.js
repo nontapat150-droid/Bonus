@@ -428,9 +428,9 @@ async function runOptimizeRoute() {
 }
 
 function renderUI() {
-    const tbody = document.getElementById('jobTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
+    const container = document.getElementById('jobTableBody');
+    if (!container) return;
+    container.innerHTML = '';
 
     let teamVal = 'all';
     const teamEl = document.getElementById('teamFilter');
@@ -452,20 +452,23 @@ function renderUI() {
     const countBadge = document.getElementById('jobCountBadge');
     if (countBadge) countBadge.textContent = totalCount;
 
+    // 🌟 ถ้าไม่มีข้อมูล ให้แสดงกล่องข้อความเปล่าๆ
     if (filteredJobs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-slate-400 font-bold bg-slate-50">ไม่มีข้อมูล</td></tr>';
+        container.innerHTML = `
+            <div class="col-span-full flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+                <div class="text-4xl mb-3 opacity-50">📭</div>
+                <div class="text-slate-400 font-bold">ไม่พบข้อมูลงาน</div>
+            </div>`;
         updateMapMarkers(filteredJobs);
         return;
     }
 
     filteredJobs.forEach((job, index) => {
-        const row = createJobRow(job, index);
-        // Staggered Animation
-        row.style.animationDelay = `${(index % 25) * 0.02}s`;
-        tbody.appendChild(row);
+        const card = createJobRow(job, index);
+        card.style.animationDelay = `${(index % 25) * 0.03}s`; // Stagger animation
+        container.appendChild(card);
     });
 
-    // Update map markers for visible/filtered jobs
     try { updateMapMarkers(filteredJobs); } catch (e) { console.warn(e); }
 }
 
@@ -475,86 +478,83 @@ function renderUI() {
 // 🌟 ฟังก์ชันเรนเดอร์ตารางแบบ ข้อมูลมาครบ 100% ไม่มีการซ่อนข้อความ
 // 🌟 ฟังก์ชันเรนเดอร์ตารางที่แสดงข้อมูลครบ 100% จัดเรียงสวยงาม
 function createJobRow(job, index) {
-    const tr = document.createElement('tr');
-    tr.className = 'cursor-pointer animate-row group';
+    const div = document.createElement('div');
+    div.className = 'bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-indigo-300 transition-all duration-300 cursor-pointer flex flex-col p-4 animate-row relative group';
     
     const isSelected = selectedJobIds.has(String(job.id));
     const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
     const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#94a3b8';
 
     const teamBadge = job.team_name 
-        ? `<div class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-[11px] font-bold shadow-sm whitespace-nowrap w-full" style="background-color: ${color}15; color: ${color}; border: 1px solid ${color}30">
-             <span class="w-2 h-2 rounded-full mr-2" style="background-color: ${color}"></span>
+        ? `<div class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap" style="background-color: ${color}15; color: ${color}; border: 1px solid ${color}30">
+             <span class="w-2 h-2 rounded-full mr-1.5" style="background-color: ${color}"></span>
              ${job.team_name}
            </div>`
-        : `<div class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 whitespace-nowrap w-full">
-             รอจ่ายงาน
+        : `<div class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 whitespace-nowrap">
+             <svg class="w-3 h-3 mr-1 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> รอจ่ายงาน
            </div>`;
 
     const phoneVal = job.phone ? job.phone.split(',')[0] : '-';
 
     const packageHtml = (job.package && job.package !== '-' && job.package !== 'null') 
-        ? `<div class="mt-1.5 inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold border border-indigo-100 uppercase">📦 ${job.package}</div>`
+        ? `<div class="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-black border border-indigo-100 uppercase">📦 ${job.package}</div>`
         : '';
 
     const remarkHtml = (job.remark && job.remark !== '-' && job.remark !== 'null')
-        ? `<div class="mt-2 flex items-start space-x-1.5 bg-rose-50/80 p-2 rounded-md border border-rose-100">
-             <span class="text-[10px] font-black text-rose-500 bg-white px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap">หมายเหตุ</span>
-             <span class="text-[11px] text-rose-700 font-bold leading-relaxed whitespace-normal break-words">${job.remark}</span>
+        ? `<div class="mt-3 bg-rose-50/80 p-2.5 rounded-xl border border-rose-100">
+             <div class="text-[10px] font-black text-rose-500 mb-0.5 flex items-center">หมายเหตุ</div>
+             <div class="text-[11px] text-rose-700 font-bold leading-relaxed break-words">${job.remark}</div>
            </div>`
         : '';
 
-    tr.innerHTML = `
-        <td class="text-center align-middle w-12">
-            <div class="flex justify-center items-center h-full" onclick="event.stopPropagation()">
-                <input type="checkbox" class="job-checkbox w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
-                    data-id="${job.id}" ${isSelected ? 'checked' : ''} onchange="toggleJobSelection('${job.id}')">
-            </div>
-        </td>
-        
-        <td class="text-center align-middle w-16">
-            <div class="w-8 h-8 mx-auto rounded-xl flex items-center justify-center text-[13px] font-black text-white shadow-sm transition-transform group-hover:scale-110" style="background-color: ${color}">
-                ${job.seq || '-'}
-            </div>
-        </td>
-        
-        <td class="align-top w-32">
-            <div class="font-black text-slate-800 text-[13px] group-hover:text-indigo-600 transition-colors">${job.access_no}</div>
-            ${packageHtml}
-        </td>
-        
-        <td class="align-top w-48">
-            <div class="font-bold text-slate-700 text-[12px] whitespace-normal break-words leading-relaxed">${job.customer}</div>
-        </td>
-        
-        <td class="align-top w-32">
-            <div class="inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 whitespace-nowrap">
-                📞 ${phoneVal}
-            </div>
-        </td>
-        
-        <td class="align-top auto">
-            <div class="bg-slate-50/50 p-2.5 rounded-lg border border-slate-200 group-hover:bg-indigo-50/30 transition-colors">
-                <div class="text-[11px] text-slate-600 font-medium leading-relaxed whitespace-normal break-words">
-                    📍 ${job.address}
+    // 🌟 โครงสร้าง HTML ภายในการ์ด (Card Layout)
+    div.innerHTML = `
+        <div class="flex justify-between items-start mb-3">
+            <div class="flex items-center gap-2.5">
+                <div class="p-1 -ml-1 rounded-md hover:bg-slate-100" onclick="event.stopPropagation()">
+                    <input type="checkbox" class="job-checkbox w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" 
+                        data-id="${job.id}" ${isSelected ? 'checked' : ''} onchange="toggleJobSelection('${job.id}')">
                 </div>
-                ${remarkHtml}
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-[12px] font-black text-white shadow-sm" style="background-color: ${color}">
+                    ${job.seq || '-'}
+                </div>
+                <div class="font-black text-slate-800 text-[14px] tracking-tight group-hover:text-indigo-600 transition-colors">${job.access_no}</div>
             </div>
-        </td>
-        
-        <td class="align-top w-28">
-            <div class="text-[11px] font-bold text-slate-600 whitespace-nowrap bg-slate-100 px-2 py-1 rounded border border-slate-200 inline-block">
+            <div class="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-100 flex items-center shadow-sm">
                 📅 ${job.plan_arrival_date || '-'}
             </div>
-        </td>
+        </div>
+
+        <div class="mb-3">
+            <div class="font-bold text-slate-700 text-[13px] leading-snug break-words mb-2">${job.customer}</div>
+            <div class="flex flex-wrap gap-2 items-center">
+                <div class="inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    📞 ${phoneVal}
+                </div>
+                ${packageHtml}
+            </div>
+        </div>
+
+        <div class="flex-1 bg-slate-50/80 p-3 rounded-xl border border-slate-100 group-hover:bg-indigo-50/40 transition-colors flex flex-col justify-center">
+            <div class="flex items-start">
+                <div class="text-[11px] text-slate-600 font-medium leading-relaxed break-words whitespace-normal line-clamp-2" title="${job.address}">
+                    📍 ${job.address}
+                </div>
+            </div>
+        </div>
         
-        <td class="text-center align-top w-36">
+        ${remarkHtml}
+
+        <div class="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
+            <div class="text-[10px] font-bold text-slate-400 uppercase">ทีมรับผิดชอบ</div>
             ${teamBadge}
-        </td>
+        </div>
     `;
 
-    tr.onclick = () => showJobPopup(job, color);
-    return tr;
+    // กดที่การ์ดเพื่อเปิด Popup เหมือนเดิม
+    div.onclick = () => showJobPopup(job, color);
+    
+    return div;
 }
 
 function toggleJobSelection(id) {
