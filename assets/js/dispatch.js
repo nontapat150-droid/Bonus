@@ -488,7 +488,7 @@ function createJobRow(job, index) {
                 ${job.seq || '-'}
             </div>
         </td>
-        <td class="px-0.5"><span class="font-bold text-slate-800 text-[9px] md:text-[11px] block">${job.access_no}</span></td>
+        <td class="px-0.5"><span class="font-bold text-slate-800 text-[9px] md:text-[11px]">${job.access_no}</span></td>
         <td class="px-0.5">
             <div class="font-bold text-slate-800 text-[8px] md:text-[10px] wrap-text" title="${job.customer}">${job.customer}</div>
         </td>
