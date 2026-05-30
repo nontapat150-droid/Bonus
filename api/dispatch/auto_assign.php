@@ -119,46 +119,53 @@ function buildMapLink(array $route) {
     return $mapLink;
 }
 
-// Clustering: จัดกลุ่มงานให้เป็นบริเวณ เพื่อให้แต่ละทีมอยู่ในบริเวณเดียวกัน
-function clusterJobsGreedy(array $jobs, int $numClusters) {
-    if (empty($jobs) || $numClusters <= 0) return [];
-    if ($numClusters >= count($jobs)) {
-        return array_map(function($job) { return [$job]; }, $jobs);
-    }
+// Clustering: จัดกลุ่มงานให้เป็นบริเวณ เพื่อให้แต่ละทีมอยู่ในบริเวณเดียวกันแบบจำกัดจำนวน (Strict Quota)
+function clusterJobsWithLimits(array $jobs, array $teamLimits, array $teamAnchors) {
+    if (empty($jobs) || empty($teamLimits)) return [];
     
+    $numClusters = count($teamLimits);
     $clusters = array_fill(0, $numClusters, []);
     $remainingJobs = array_values($jobs);
     $clusterCenters = [];
     
-    // ขั้นตอนที่ 1: เลือก seed points สำหรับแต่ละ cluster ให้ห่างกัน
-    for ($i = 0; $i < $numClusters && !empty($remainingJobs); $i++) {
-        if ($i === 0) {
-            // Seed แรก = ศูนย์กลางทั้งหมด
-            $center = centroid($remainingJobs);
-            $seedIdx = nearestJobIndex($remainingJobs, $center);
+    // ขั้นตอนที่ 1: เลือก seed points สำหรับแต่ละ cluster
+    for ($i = 0; $i < $numClusters; $i++) {
+        if (isset($teamAnchors[$i]) && $teamAnchors[$i] !== null) {
+            // ใช้ anchor ของงานที่ทีมนี้มีอยู่แล้ว เพื่อให้ได้งานใกล้บริเวณเดิม
+            $clusterCenters[$i] = ['lat' => (float)$teamAnchors[$i]['lat'], 'lng' => (float)$teamAnchors[$i]['lng']];
         } else {
-            // Seed ต่อไป = ห่างไกลจาก seeds ที่มีอยู่
-            $seedIdx = farthestSeed($remainingJobs, $clusterCenters);
-        }
-        
-        if ($seedIdx !== null) {
-            $seed = $remainingJobs[$seedIdx];
-            $clusterCenters[$i] = ['lat' => (float)$seed['lat'], 'lng' => (float)$seed['lng'], 'index' => $seedIdx];
+            // ทีมนี้ยังไม่มีงาน ให้เลือก seed จากงานที่เหลือให้ห่างกันที่สุด
+            if (empty($clusterCenters) && !empty($remainingJobs)) {
+                $center = centroid($remainingJobs);
+                $seedIdx = nearestJobIndex($remainingJobs, $center);
+            } else if (!empty($remainingJobs)) {
+                $seedIdx = farthestSeed($remainingJobs, $clusterCenters);
+            } else {
+                $seedIdx = null;
+            }
+            
+            if ($seedIdx !== null) {
+                $seed = $remainingJobs[$seedIdx];
+                $clusterCenters[$i] = ['lat' => (float)$seed['lat'], 'lng' => (float)$seed['lng']];
+            } else {
+                $clusterCenters[$i] = ['lat' => 0.0, 'lng' => 0.0];
+            }
         }
     }
     
-    // ขั้นตอนที่ 2: Assign jobs ให้กับ cluster ที่ใกล้ที่สุด (greedy)
-    $targetSize = (int)ceil(count($jobs) / $numClusters);
     $assigned = array_fill(0, $numClusters, 0);
     
+    // ขั้นตอนที่ 2: Assign jobs ให้กับ cluster ที่ใกล้ที่สุดแบบ global greedy
     while (!empty($remainingJobs)) {
         $best = null;
         $bestClusterIdx = -1;
         
         foreach ($remainingJobs as $jobIdx => $job) {
             for ($cIdx = 0; $cIdx < $numClusters; $cIdx++) {
-                // ถ้า cluster เต็มแล้ว ข้ามไป
-                if ($assigned[$cIdx] >= $targetSize) continue;
+                // ถ้า cluster เต็มตามโควตาของทีมแล้ว ให้ข้ามไป
+                if ($assigned[$cIdx] >= $teamLimits[$cIdx]) continue;
+                
+                if ($clusterCenters[$cIdx]['lat'] === 0.0 && $clusterCenters[$cIdx]['lng'] === 0.0) continue;
                 
                 $distance = haversineDistance(
                     $clusterCenters[$cIdx]['lat'],
@@ -167,6 +174,7 @@ function clusterJobsGreedy(array $jobs, int $numClusters) {
                     (float)$job['lng']
                 );
                 
+                // หาคู่ (งาน, ทีม) ที่มีระยะทางใกล้ที่สุดจากทุกคู่ที่เป็นไปได้
                 if ($best === null || $distance < $best['distance']) {
                     $best = [
                         'distance' => $distance,
@@ -178,30 +186,20 @@ function clusterJobsGreedy(array $jobs, int $numClusters) {
             }
         }
         
-        if ($best === null) break;
+        if ($best === null) break; // ทุกทีมได้งานครบตามโควตาแล้ว
         
         $job = $remainingJobs[$best['jobIdx']];
         $clusters[$bestClusterIdx][] = $job;
         $assigned[$bestClusterIdx]++;
         
-        // Update cluster center (centroid ของจุดที่มีอยู่)
-        $clusterCenters[$bestClusterIdx] = centroid($clusters[$bestClusterIdx]);
+        // Update cluster center โดยถ่วงน้ำหนักรวมกับ anchor เดิม(ถ้ามี) เพื่อไม่ให้ศูนย์กลางกระโดดหนีไปไกล
+        $currentJobsForCentroid = $clusters[$bestClusterIdx];
+        if (isset($teamAnchors[$bestClusterIdx]) && $teamAnchors[$bestClusterIdx] !== null) {
+            $currentJobsForCentroid[] = $teamAnchors[$bestClusterIdx];
+        }
+        $clusterCenters[$bestClusterIdx] = centroid($currentJobsForCentroid);
         
         array_splice($remainingJobs, $best['jobIdx'], 1);
-    }
-    
-    // เพิ่ม remaining jobs ให้กับ clusters ที่ยังมีที่ว่าง
-    if (!empty($remainingJobs)) {
-        foreach ($remainingJobs as $job) {
-            // หา cluster ที่ยังไม่เต็ม
-            for ($i = 0; $i < $numClusters; $i++) {
-                if ($assigned[$i] < $targetSize) {
-                    $clusters[$i][] = $job;
-                    $assigned[$i]++;
-                    break;
-                }
-            }
-        }
     }
     
     return $clusters;
@@ -323,33 +321,6 @@ try {
 
         $stmtTeamJobs->execute([$teamInfo['id']]);
         $teamJobs = array_values(array_filter($stmtTeamJobs->fetchAll(), function($job) {
-            return isValidCoordinate($job['lat'], $job['lng']);
-        }));
-        $route = buildNearestRoute($teamJobs, $teamInfo['anchor']);
-        $mapLink = buildMapLink($route);
-
-        foreach ($route as $seq => $job) {
-            $stmtUpdateRoute->execute([$seq + 1, $mapLink, $job['id']]);
-        }
-
-        $assignedByTeam[] = [
-            'team_name' => $teamName,
-            'assigned' => $teamInfo['assigned']
-        ];
-    }
-
-    $pdo->commit();
-    echo json_encode([
-        'success' => true,
-        'assigned' => $assignedTotal,
-        'teams' => $assignedByTeam
-    ]);
-
-} catch (Exception $e) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-}
-(array_filter($stmtTeamJobs->fetchAll(), function($job) {
             return isValidCoordinate($job['lat'], $job['lng']);
         }));
         $route = buildNearestRoute($teamJobs, $teamInfo['anchor']);
