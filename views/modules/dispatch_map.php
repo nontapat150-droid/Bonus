@@ -20,11 +20,12 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     
     /* 🌟 COMPACT TABLE LAYOUT */
-    .job-table { border-collapse: separate; border-spacing: 0; min-width: 900px; width: 100%; }
+    .job-table { border-collapse: separate; border-spacing: 0; min-width: 900px; width: 100%; table-layout: auto; }
     .job-table th { 
         position: sticky; top: 0; z-index: 20; background: #f8fafc; 
         border-bottom: 2px solid #e2e8f0; text-transform: uppercase; 
         letter-spacing: 0.05em; font-size: 0.65rem; padding: 8px 10px; font-weight: 900; color: #64748b;
+        white-space: nowrap;
     }
     .job-table td { 
         border-bottom: 1px solid #f1f5f9; padding: 6px 10px; transition: background-color 0.15s; vertical-align: middle;
@@ -165,14 +166,14 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <table class="job-table">
                         <thead class="bg-[var(--c-surface-2)]">
                             <tr>
-                                <th class="w-[40px] text-center !bg-[var(--c-surface-2)]">#</th>
-                                <th class="w-[50px] text-center !bg-[var(--c-surface-2)]">คิว</th>
-                                <th class="w-[110px] !bg-[var(--c-surface-2)]">รหัส</th>
-                                <th class="w-[180px] !bg-[var(--c-surface-2)]">ชื่อ</th>
-                                <th class="w-[100px] !bg-[var(--c-surface-2)]">เบอร์</th>
-                                <th class="min-w-[250px] !bg-[var(--c-surface-2)]">ที่อยู่</th>
-                                <th class="w-[90px] !bg-[var(--c-surface-2)]">วันที่</th>
-                                <th class="w-[110px] text-right pr-2 !bg-[var(--c-surface-2)]">ทีม</th>
+                                <th class="text-center !bg-[var(--c-surface-2)]">#</th>
+                                <th class="text-center !bg-[var(--c-surface-2)]">คิว</th>
+                                <th class="!bg-[var(--c-surface-2)]">รหัส</th>
+                                <th class="min-w-[150px] !bg-[var(--c-surface-2)]">ชื่อ</th>
+                                <th class="!bg-[var(--c-surface-2)]">เบอร์</th>
+                                <th class="min-w-[200px] w-full !bg-[var(--c-surface-2)]">ที่อยู่</th>
+                                <th class="!bg-[var(--c-surface-2)]">วันที่</th>
+                                <th class="text-right pr-2 !bg-[var(--c-surface-2)]">ทีม</th>
                             </tr>
                         </thead>
                         <tbody id="jobTableBody" class="text-xs text-[var(--c-text-2)] divide-y divide-[var(--c-border)]">
