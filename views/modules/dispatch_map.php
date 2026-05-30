@@ -135,9 +135,9 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
         <div class="flex-1 overflow-hidden relative bg-[var(--c-surface)]">
             <div id="map" class="w-full" style="height:360px;"></div>
-            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2Yk0nV+0x0g0b3q5k1xjvJ2Q5hYv1M9gq0i0z6M=" crossorigin="" />
-            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j8k2Ggqk3o8b8D6b2rjv1Yk1t5o1q2s3v4w5x6=" crossorigin=""></script>
-            <div class="table-container absolute inset-0 w-full h-full overflow-auto">
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <div class="table-container relative w-full overflow-auto" style="height:calc(100% - 360px);">
                 <table class="job-table">
                     <thead class="bg-[var(--c-surface-2)]">
                         <tr>
