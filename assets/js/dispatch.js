@@ -8,6 +8,14 @@ let selectedJobIds = new Set();
 let map = null;
 let markersGroup = null;
 
+// Clean latitude/longitude from unwanted characters (like $)
+function cleanCoordinate(value) {
+    if (!value) return null;
+    const cleaned = String(value).replace(/[^0-9.-]/g, '').trim();
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? null : num;
+}
+
 function initMap() {
     try {
         if (!document.getElementById('map')) return;
@@ -24,9 +32,13 @@ function initMap() {
 function updateMapMarkers(jobs) {
     if (!window.L || !map || !markersGroup) return;
     markersGroup.clearLayers();
-    const valid = (jobs || []).filter(j => j.lat && j.lng).map(j => ({
-        lat: parseFloat(j.lat),
-        lng: parseFloat(j.lng),
+    const valid = (jobs || []).filter(j => {
+        const lat = cleanCoordinate(j.lat);
+        const lng = cleanCoordinate(j.lng);
+        return lat && lng;
+    }).map(j => ({
+        lat: cleanCoordinate(j.lat),
+        lng: cleanCoordinate(j.lng),
         job: j
     }));
     if (valid.length === 0) return;
@@ -111,22 +123,34 @@ function handleNavigateSelected() {
     // เรียงตามลำดับคิว (seq) ถ้ามี
     jobsToNav.sort((a, b) => (a.seq || 999) - (b.seq || 999));
     
-    const validJobs = jobsToNav.filter(j => j.lat && j.lng);
+    const validJobs = jobsToNav.filter(j => {
+        const lat = cleanCoordinate(j.lat);
+        const lng = cleanCoordinate(j.lng);
+        return lat && lng;
+    });
     
     if (validJobs.length === 0) {
         return Swal.fire('ไม่พบพิกัด', 'งานที่เลือกไม่มีข้อมูลพิกัดละติจูด/ลองจิจูด', 'warning');
     }
     
     if (validJobs.length === 1) {
-        const url = `https://www.google.com/maps/dir/?api=1&destination=${validJobs[0].lat},${validJobs[0].lng}`;
+        const lat = cleanCoordinate(validJobs[0].lat);
+        const lng = cleanCoordinate(validJobs[0].lng);
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
         window.open(url, '_blank');
         return;
     }
     
     const destination = validJobs[validJobs.length - 1];
-    const waypoints = validJobs.slice(0, validJobs.length - 1).map(j => `${j.lat},${j.lng}`).join('|');
+    const destLat = cleanCoordinate(destination.lat);
+    const destLng = cleanCoordinate(destination.lng);
+    const waypoints = validJobs.slice(0, validJobs.length - 1).map(j => {
+        const lat = cleanCoordinate(j.lat);
+        const lng = cleanCoordinate(j.lng);
+        return `${lat},${lng}`;
+    }).join('|');
     
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${destination.lat},${destination.lng}&waypoints=${waypoints}&travelmode=driving`;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&waypoints=${waypoints}&travelmode=driving`;
     window.open(url, '_blank');
 }
 
@@ -333,34 +357,6 @@ function updateSelectionUI() {
     }
 }
 
-function handleNavigateSelected() {
-    if (selectedJobIds.size === 0) return;
-    
-    const selectedIdsArray = Array.from(selectedJobIds);
-    let jobsToNav = allJobs.filter(j => selectedIdsArray.includes(String(j.id)));
-    
-    // Sort by sequence number (seq) if available, otherwise preserve order
-    jobsToNav.sort((a, b) => (a.seq || 999) - (b.seq || 999));
-    
-    const validJobs = jobsToNav.filter(j => j.lat && j.lng);
-    
-    if (validJobs.length === 0) {
-        return Swal.fire('ไม่พบพิกัด', 'งานที่เลือกไม่มีข้อมูลพิกัดละติจูด/ลองจิจูด', 'warning');
-    }
-    
-    if (validJobs.length === 1) {
-        const url = `https://www.google.com/maps/dir/?api=1&destination=${validJobs[0].lat},${validJobs[0].lng}`;
-        window.open(url, '_blank');
-        return;
-    }
-    
-    const destination = validJobs[validJobs.length - 1];
-    const waypoints = validJobs.slice(0, validJobs.length - 1).map(j => `${j.lat},${j.lng}`).join('|');
-    
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${destination.lat},${destination.lng}&waypoints=${waypoints}&travelmode=driving`;
-    window.open(url, '_blank');
-}
-
 async function handleBulkDelete() {
     if (selectedJobIds.size === 0) return;
     if (!confirm(`ยืนยันการลบงานที่เลือกจำนวน ${selectedJobIds.size} รายการ? (ไม่สามารถกู้คืนได้)`)) return;
@@ -522,8 +518,10 @@ function toggleJobSelection(id) {
 }
 
 function showJobPopup(job, color) {
-    // ลิงก์มาตรฐานของ Google Maps แบบนำทาง (Navigation) 
-    const gmapsLink = `https://www.google.com/maps/dir/?api=1&destination=${job.lat},${job.lng}`;
+    // Clean and validate coordinates before creating link
+    const lat = cleanCoordinate(job.lat);
+    const lng = cleanCoordinate(job.lng);
+    const gmapsLink = lat && lng ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}` : null;
     
     let actionButtons = '';
     if (!IS_ADMIN) {
