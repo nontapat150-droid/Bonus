@@ -4,6 +4,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 $isAdmin = hasRole(['admin', 'super_admin']);
 ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
     /* 🌟 Dashboard Animations */
@@ -37,20 +38,29 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
     /* Improve table on responsive */
     @media (max-width: 1024px) {
-        .job-table th { font-size: 0.6rem; padding: 6px 6px; }
-        .job-table td { padding: 4px 6px; }
+        .job-table th { font-size: 0.6rem; padding: 6px 4px; }
+        .job-table td { padding: 4px 3px; }
     }
 
     @media (max-width: 768px) {
         .dashboard-header { flex-direction: column; align-items: stretch; gap: 0.5rem; }
         .action-buttons { overflow-x: auto; padding-bottom: 4px; white-space: nowrap; }
         #map { min-height: 400px; }
+        .card.!p-0 { border-radius: 8px; }
     }
 
     @media (max-width: 640px) {
-        .job-table th { font-size: 0.55rem; padding: 4px 4px; }
-        .job-table td { padding: 3px 4px; font-size: 0.7rem; }
-        .job-table { min-width: 600px; }
+        .job-table th { font-size: 0.5rem; padding: 3px 2px; letter-spacing: 0; }
+        .job-table td { padding: 2px 2px; font-size: 0.65rem; }
+        .job-table { min-width: 500px; }
+        .dashboard-header { gap: 0.25rem; }
+        .dashboard-header .flex.items-center { gap: 0.5rem; }
+    }
+
+    @media (max-width: 480px) {
+        .job-table th { font-size: 0.45rem; padding: 2px 1px; }
+        .job-table td { padding: 2px 1px; font-size: 0.6rem; }
+        .job-table { min-width: 450px; }
     }
 </style>
 
@@ -66,27 +76,25 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             </div>
         </div>
 
-        <div class="action-buttons flex items-center gap-2 flex-1 justify-end">
+        <div class="action-buttons grid grid-cols-2 md:flex md:flex-row md:justify-end gap-2 flex-wrap">
             <input type="file" id="jobExcelFile" accept=".xlsx, .xls" class="hidden">
-            <button onclick="document.getElementById('jobExcelFile').click()" class="bg-[var(--c-surface-2)] hover:bg-[var(--c-border)] text-[var(--c-text-2)] px-3 py-2 rounded-lg text-xs font-bold transition-all border border-[var(--c-border)]">
-                <i data-lucide="download" class="w-4 h-4 inline-block mr-1"></i> นำเข้า
+            <button onclick="document.getElementById('jobExcelFile').click()" title="นำเข้าไฟล์ Excel" class="bg-[var(--c-surface-2)] hover:bg-[var(--c-border)] text-[var(--c-text-2)] px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all border border-[var(--c-border)]">
+                <i data-lucide="download" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span class="hidden sm:inline">นำเข้า</span>
             </button>
-            <button id="exportExcelBtn" class="bg-[var(--c-info-bg)] text-[var(--c-info)] hover:opacity-80 px-3 py-2 rounded-lg text-xs font-bold transition-all border border-[var(--c-info-bg)]">
-                <i data-lucide="bar-chart-2" class="w-4 h-4 inline-block mr-1"></i> ส่งออก
+            <button id="exportExcelBtn" title="ส่งออกไฟล์ Excel" class="bg-[var(--c-info-bg)] text-[var(--c-info)] hover:opacity-80 px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all border border-[var(--c-info-bg)]">
+                <i data-lucide="bar-chart-2" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span class="hidden sm:inline">ส่งออก</span>
             </button>
-            <div class="w-px h-6 bg-[var(--c-border)] mx-1 hidden md:block"></div>
-            <button id="dispatchModalBtn" class="btn-primary !px-4 !py-2 text-xs">
-                <i data-lucide="bot" class="w-4 h-4 inline-block mr-1"></i> จ่ายงานออโต้
+            <button id="dispatchModalBtn" title="จ่ายงานอัตโนมัติ" class="btn-primary !px-2 md:!px-4 !py-2 text-[10px] md:text-xs col-span-2 md:col-span-1">
+                <i data-lucide="bot" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span class="hidden sm:inline">จ่ายงาน</span>
             </button>
-            <button id="optimizeRouteBtn" class="bg-[var(--c-success)] hover:opacity-80 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all border border-transparent">
-                <i data-lucide="map-pin" class="w-4 h-4 inline-block mr-1"></i> เรียงคิว
+            <button id="optimizeRouteBtn" title="เรียงลำดับเส้นทาง" class="bg-[var(--c-success)] hover:opacity-80 text-white px-2 md:px-4 py-2 rounded-lg text-[10px] md:text-xs font-bold shadow-sm transition-all border border-transparent">
+                <i data-lucide="map-pin" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span class="hidden sm:inline">เรียงคิว</span>
             </button>
-            <div class="w-px h-6 bg-[var(--c-border)] mx-1 hidden md:block"></div>
-            <button id="clearAssignmentsBtn" class="bg-[var(--c-warning-bg)] text-[var(--c-warning-text)] border border-[var(--c-warning-bg)] hover:opacity-80 px-3 py-2 rounded-lg text-xs font-bold transition-all">
-                <i data-lucide="refresh-cw" class="w-4 h-4 inline-block mr-1"></i> ล้าง
+            <button id="clearAssignmentsBtn" title="ล้างการจ่ายงาน" class="bg-[var(--c-warning-bg)] text-[var(--c-warning-text)] border border-[var(--c-warning-bg)] hover:opacity-80 px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all">
+                <i data-lucide="refresh-cw" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span class="hidden sm:inline">ล้าง</span>
             </button>
-            <button id="deleteAllJobsBtn" class="bg-[var(--c-danger-bg)] text-[var(--c-danger-text)] border border-[var(--c-danger-bg)] hover:opacity-80 px-3 py-2 rounded-lg text-xs font-bold transition-all">
-                <i data-lucide="trash-2" class="w-4 h-4 inline-block mr-1"></i> ลบทั้งหมด
+            <button id="deleteAllJobsBtn" title="ลบงานทั้งหมด" class="bg-[var(--c-danger-bg)] text-[var(--c-danger-text)] border border-[var(--c-danger-bg)] hover:opacity-80 px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all">
+                <i data-lucide="trash-2" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span class="hidden sm:inline">ลบ</span>
             </button>
         </div>
     </div>
@@ -108,26 +116,25 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 <span class="text-xs font-bold text-[var(--c-text-3)]">จำนวน: <span id="jobCountBadge" class="text-[var(--c-primary)] font-black text-sm ml-1">0</span></span>
             </div>
 
-            <div class="flex items-center gap-2 flex-wrap">
-                <input type="date" id="dateFilter" class="text-xs font-bold input !py-1.5">
-                <button onclick="document.getElementById('dateFilter').value=''; renderUI();" class="bg-[var(--c-surface)] hover:bg-[var(--c-surface-3)] border border-[var(--c-border)] text-[var(--c-text-2)] px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all">
+            <div class="flex items-center gap-1 md:gap-2 flex-wrap">
+                <input type="date" id="dateFilter" class="text-[10px] md:text-xs font-bold input !py-1.5 !px-2">
+                <button onclick="document.getElementById('dateFilter').value=''; renderUI();" class="bg-[var(--c-surface)] hover:bg-[var(--c-surface-3)] border border-[var(--c-border)] text-[var(--c-text-2)] px-2 md:px-3 py-1.5 rounded-lg text-[9px] md:text-[10px] font-bold transition-all whitespace-nowrap">
                     ทุกวัน
                 </button>
-                <select id="limitFilter" class="text-xs font-bold input !py-1.5">
-                    <option value="20">20 แถว</option>
-                    <option value="50">50 แถว</option>
-                    <option value="100">100 แถว</option>
+                <select id="limitFilter" class="text-[10px] md:text-xs font-bold input !py-1.5 !px-2">
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
                     <option value="all">ทั้งหมด</option>
                 </select>
 
                 <?php if ($isAdmin): ?>
-                <div class="w-px h-5 bg-[var(--c-border)] mx-1"></div>
-                <select id="teamFilter" class="text-xs font-bold input !py-1.5 !bg-[var(--c-primary-faint)] !text-[var(--c-primary)] !border-[var(--c-primary-faint)]">
-                    <option value="all">ทุกทีม</option>
-                    <option value="unassigned">ยังไม่จ่าย</option>
+                <select id="teamFilter" class="text-[10px] md:text-xs font-bold input !py-1.5 !px-2 !bg-[var(--c-primary-faint)] !text-[var(--c-primary)] !border-[var(--c-primary-faint)]">
+                    <option value="all">ทีม</option>
+                    <option value="unassigned">รอจ่าย</option>
                 </select>
-                <div class="flex items-center bg-[var(--c-surface)] rounded-lg border border-[var(--c-border)] overflow-hidden h-[34px]">
-                    <input type="text" id="newTeamName" placeholder="ชื่อทีมใหม่" class="border-0 px-3 h-full text-xs font-bold focus:ring-0 w-24">       
+                <div class="flex items-center bg-[var(--c-surface)] rounded-lg border border-[var(--c-border)] overflow-hidden h-[34px] hidden md:flex">
+                    <input type="text" id="newTeamName" placeholder="ชื่อทีม" class="border-0 px-2 h-full text-[10px] font-bold focus:ring-0 w-16 md:w-24">       
                     <button id="addTeamBtn" class="bg-[var(--c-primary-faint)] hover:bg-[var(--c-primary)] hover:text-white text-[var(--c-primary)] h-full px-3 font-black border-l border-[var(--c-border)] transition-colors">+</button>
                 </div>
                 <?php endif; ?>
@@ -163,12 +170,12 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                                 <tr>
                                     <th class="w-8 text-center !bg-[var(--c-surface-2)]">#</th>
                                     <th class="w-12 text-center !bg-[var(--c-surface-2)]">คิว</th>
-                                    <th class="w-20 !bg-[var(--c-surface-2)]">รหัสงาน</th>
-                                    <th class="min-w-[120px] !bg-[var(--c-surface-2)]">ชื่อลูกค้า</th>
-                                    <th class="w-20 !bg-[var(--c-surface-2)]">เบอร์โทร</th>
-                                    <th class="min-w-[140px] !bg-[var(--c-surface-2)]">สถานที่</th>
-                                    <th class="w-20 !bg-[var(--c-surface-2)]">วันที่</th>
-                                    <th class="w-24 text-right pr-4 !bg-[var(--c-surface-2)]">ทีมช่าง</th>
+                                    <th class="w-16 !bg-[var(--c-surface-2)]">รหัส</th>
+                                    <th class="min-w-[80px] !bg-[var(--c-surface-2)]">ชื่อ</th>
+                                    <th class="w-14 !bg-[var(--c-surface-2)]">เบอร์</th>
+                                    <th class="min-w-[100px] !bg-[var(--c-surface-2)]">ที่อยู่</th>
+                                    <th class="w-16 !bg-[var(--c-surface-2)]">วันที่</th>
+                                    <th class="w-20 text-right pr-2 !bg-[var(--c-surface-2)]">ทีม</th>
                                 </tr>
                             </thead>
                             <tbody id="jobTableBody" class="text-xs text-[var(--c-text-2)] divide-y divide-[var(--c-border)]">

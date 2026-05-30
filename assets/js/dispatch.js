@@ -484,29 +484,29 @@ function createJobRow(job, index) {
 
     tr.innerHTML = `
         <td class="text-center">
-            <input type="checkbox" class="job-checkbox w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-0 cursor-pointer" 
+            <input type="checkbox" class="job-checkbox w-2.5 h-2.5 md:w-3.5 md:h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-0 cursor-pointer" 
                 data-id="${job.id}" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleJobSelection('${job.id}')">
         </td>
-        <td class="text-center">
-            <div class="w-6 h-6 mx-auto rounded flex items-center justify-center text-[10px] font-black text-white" style="background-color: ${color}">
+        <td class="text-center px-0.5">
+            <div class="w-5 h-5 md:w-6 md:h-6 mx-auto rounded flex items-center justify-center text-[8px] md:text-[10px] font-black text-white" style="background-color: ${color}">
                 ${job.seq || '-'}
             </div>
         </td>
-        <td><span class="font-bold text-slate-800 text-[11px] truncate-text w-20 block">${job.access_no}</span></td>
-        <td>
-            <div class="font-bold text-slate-800 truncate-text max-w-[150px] md:max-w-[200px]" title="${job.customer}">${job.customer}</div>
+        <td class="px-0.5"><span class="font-bold text-slate-800 text-[9px] md:text-[11px] truncate-text block">${job.access_no}</span></td>
+        <td class="px-0.5">
+            <div class="font-bold text-slate-800 text-[8px] md:text-[10px] truncate-text" title="${job.customer}">${job.customer}</div>
         </td>
-        <td>
-            <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">📞 ${job.phone?.split(',')[0] || '-'}</span>
+        <td class="px-0.5">
+            <span class="text-[7px] md:text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100">📞 ${job.phone?.split(',')[0]?.substring(0,4) || '-'}</span>
         </td>
-        <td>
-            <div class="text-[10px] text-slate-500 truncate-text max-w-[150px] md:max-w-[250px]" title="${job.address}">📍 ${job.address}</div>
+        <td class="px-0.5">
+            <div class="text-[8px] md:text-[10px] text-slate-500 truncate-text" title="${job.address}">📍 ${job.address}</div>
         </td>
-        <td><span class="text-[9px] font-bold text-slate-500">${job.plan_arrival_date || '-'}</span></td>
-        <td class="text-right pr-4">
+        <td class="px-0.5"><span class="text-[7px] md:text-[9px] font-bold text-slate-500">${job.plan_arrival_date || '-'}</span></td>
+        <td class="text-right pr-1 md:pr-4">
             ${job.team_name 
-                ? `<span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded shadow-sm" style="background-color: ${color}15; color: ${color}; border: 1px solid ${color}30">${job.team_name}</span>`
-                : `<span class="text-[9px] font-bold text-slate-400 italic bg-slate-50 px-2 py-0.5 rounded border border-slate-100">รอทีม</span>`}
+                ? `<span class="text-[7px] md:text-[9px] font-bold uppercase px-1 md:px-2 py-0.5 rounded shadow-sm whitespace-nowrap" style="background-color: ${color}15; color: ${color}; border: 1px solid ${color}30">${job.team_name.substring(0,6)}</span>`
+                : `<span class="text-[7px] md:text-[9px] font-bold text-slate-400 italic bg-slate-50 px-1 md:px-2 py-0.5 rounded border border-slate-100">รอ</span>`}
         </td>
     `;
 
