@@ -4,6 +4,50 @@ let allJobs = [];
 let currentTeams = []; 
 let selectedJobIds = new Set();
 
+// Leaflet map and markers (free, no API key)
+let map = null;
+let markersGroup = null;
+
+function initMap() {
+    try {
+        if (!document.getElementById('map')) return;
+        map = L.map('map').setView([13.736717, 100.523186], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+        markersGroup = L.layerGroup().addTo(map);
+    } catch (e) {
+        console.warn('Leaflet init failed', e);
+    }
+}
+
+function updateMapMarkers(jobs) {
+    if (!window.L || !map || !markersGroup) return;
+    markersGroup.clearLayers();
+    const valid = (jobs || []).filter(j => j.lat && j.lng).map(j => ({
+        lat: parseFloat(j.lat),
+        lng: parseFloat(j.lng),
+        job: j
+    }));
+    if (valid.length === 0) return;
+    valid.forEach(v => {
+        try {
+            const marker = L.marker([v.lat, v.lng]);
+            const popup = `
+                <div style="min-width:180px">
+                    <div style="font-weight:700;margin-bottom:4px">${v.job.access_no || ''}</div>
+                    <div style="font-size:13px">${v.job.customer || ''}</div>
+                    <div style="font-size:12px;color:#444;margin-top:6px">${v.job.address || ''}</div>
+                    <div style="margin-top:8px"><a target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${v.lat},${v.lng}">นำทาง (Google Maps)</a></div>
+                </div>`;
+            marker.bindPopup(popup);
+            markersGroup.addLayer(marker);
+        } catch (e) { console.warn('marker failed', e); }
+    });
+    const bounds = markersGroup.getBounds();
+    if (bounds && bounds.isValid && bounds.isValid()) map.fitBounds(bounds.pad(0.2));
+}
+
 const teamColors = [
     '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
     '#ec4899', '#14b8a6', '#f97316', '#4f46e5', '#06b6d4'
@@ -11,6 +55,7 @@ const teamColors = [
 function getColor(index) { return teamColors[index % teamColors.length]; }
 
 document.addEventListener('DOMContentLoaded', () => {
+    initMap();
     loadJobs();
 
     document.getElementById('navigateSelectedBtn')?.addEventListener('click', handleNavigateSelected);
@@ -390,6 +435,7 @@ function renderUI() {
 
     if (filteredJobs.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-slate-400 font-bold bg-slate-50">ไม่มีข้อมูล</td></tr>';
+        updateMapMarkers(filteredJobs);
         return;
     }
 
@@ -399,6 +445,9 @@ function renderUI() {
         row.style.animationDelay = `${(index % 25) * 0.02}s`;
         tbody.appendChild(row);
     });
+
+    // Update map markers for visible/filtered jobs
+    try { updateMapMarkers(filteredJobs); } catch (e) { console.warn(e); }
 }
 
 // 🌟 ตัวแปรสำคัญ: บีบ Padding ลง และจำกัดข้อความให้อยู่ใน 1 บรรทัดด้วย truncate-text
