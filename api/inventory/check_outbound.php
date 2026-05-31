@@ -19,11 +19,12 @@ if (empty($sn)) {
 }
 
 try {
-    $sql = "SELECT i.sn, p.name as product_name, pm.model_name
+    $sql = "SELECT i.id, i.sn, pm.model_name as product_name, p.name as model_name
             FROM inventory_items i
             JOIN product_models pm ON i.model_id = pm.id
             JOIN products p ON pm.product_id = p.id
-            WHERE i.sn = ? AND i.status = 'in_stock'";
+            WHERE i.sn = ? AND i.status = 'in_stock'
+            LIMIT 1";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$sn]);

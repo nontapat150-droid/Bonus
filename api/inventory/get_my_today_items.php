@@ -13,7 +13,7 @@ try {
     // และถูกโอน/เบิกมาที่ $user_id ภายในวันนี้ (ดูจาก Log ล่าสุด)
     $sql = "
         SELECT 
-            i.id, i.sn, p.name as product_name, pm.model_name, l.timestamp
+            i.id, i.sn, pm.model_name as product_name, p.name as model_name, l.timestamp
         FROM inventory_items i
         JOIN product_models pm ON i.model_id = pm.id
         JOIN products p ON pm.product_id = p.id

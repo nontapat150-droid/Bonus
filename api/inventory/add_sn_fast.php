@@ -6,8 +6,9 @@ header('Content-Type: application/json');
 requireLogin(['admin', 'super_admin']);
 
 $input = json_decode(file_get_contents('php://input'), true);
-$pName = trim($input['product_name'] ?? '');
-$mName = trim($input['model_name'] ?? '');
+// สลับค่าที่รับมาเพื่อให้บันทึกลง Table ถูกต้องตามความต้องการ (Product -> pm.model_name, Model -> p.name)
+$pName = trim($input['model_name'] ?? ''); 
+$mName = trim($input['product_name'] ?? '');
 $sn = trim($input['sn'] ?? '');
 $admin_id = $_SESSION['user_id'];
 

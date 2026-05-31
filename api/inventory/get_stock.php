@@ -12,18 +12,19 @@ if (!hasRole(['admin', 'super_admin'])) {
 }
 
 try {
-    $sql = "SELECT
-                p.product_code,
-                p.name as product_name,
-                pm.id as model_id,
-                pm.model_name,
+    $sql = "SELECT 
+                p.product_code, 
+                pm.model_name as product_name, 
+                p.name as model_name, 
+                p.unit,
                 COUNT(i.id) as qty,
                 GROUP_CONCAT(CONCAT(i.id, ':', i.sn) SEPARATOR '|') as sn_list
             FROM products p
             JOIN product_models pm ON p.id = pm.product_id
             LEFT JOIN inventory_items i ON pm.id = i.model_id AND i.status = 'in_stock'
-            GROUP BY p.id, pm.id
-            ORDER BY p.name ASC, pm.model_name ASC";
+            GROUP BY pm.id
+            ORDER BY p.name ASC";
+
 
     $stmt = $pdo->query($sql);
     $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
