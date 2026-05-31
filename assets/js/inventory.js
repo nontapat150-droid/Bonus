@@ -71,27 +71,31 @@ function renderStockTable(data) {
         const row = document.createElement('tr');
         row.className = 'hover:bg-slate-50 transition-colors animate__animated animate__fadeIn';
         row.style.animationDelay = `${index * 0.03}s`;
-        
+
+        const displayProductName = item.product_name || item.name || item.product || '-';
+        const displayModelName = item.model_name || item.model || (item.product_name ? 'วัสดุสิ้นเปลือง' : '');
+        const displayQty = typeof item.qty === 'number' ? item.qty : (item.qty || 0);
+
         let actionContent = '<span class="text-xs text-slate-300 italic">วัสดุสิ้นเปลือง / ไม่มี SN</span>';
         if (item.sn_list) {
             const snsCount = item.sn_list.split('|').length;
-            actionContent = `<button onclick="openSnModal(this)" data-pname="${item.product_name}" data-mname="${item.model_name}" data-sns="${item.sn_list}" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-2 rounded-lg text-xs font-bold transition-colors">🔍 กดดู SN ทั้งหมด (${snsCount})</button>`;
+            actionContent = `<button onclick="openSnModal(this)" data-pname="${displayProductName}" data-mname="${displayModelName}" data-sns="${item.sn_list}" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-2 rounded-lg text-xs font-bold transition-colors">🔍 กดดู SN ทั้งหมด (${snsCount})</button>`;
         }
 
         row.innerHTML = `
             <td class="px-6 py-4 font-mono text-xs text-slate-400">${item.product_code || '-'}</td>
-            <td class="px-6 py-4 font-bold text-slate-800">${item.product_name}</td>
-            <td class="px-6 py-4 text-slate-600">${item.model_name || 'วัสดุสิ้นเปลือง'}</td>
+            <td class="px-6 py-4 font-bold text-slate-800">${displayProductName}</td>
+            <td class="px-6 py-4 text-slate-600">${displayModelName || 'วัสดุสิ้นเปลือง'}</td>
             <td class="px-6 py-4 text-center">
-                <span class="inline-flex items-center justify-center px-4 py-1.5 rounded-full text-sm font-bold ${item.qty > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}">
-                    ${item.qty} ${item.qty > 0 ? (item.unit || 'ชิ้น') : 'หมด'}
+                <span class="inline-flex items-center justify-center px-4 py-1.5 rounded-full text-sm font-bold ${displayQty > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}">
+                    ${displayQty} ${displayQty > 0 ? (item.unit || 'ชิ้น') : 'หมด'}
                 </span>
             </td>
             <td class="px-6 py-4 text-center">
                 ${actionContent}
             </td>
              <td class="px-6 py-4 text-center">
-                 <button onclick="deleteInventoryItem('${item.product_name}', '${item.model_name || ''}')" class="text-red-500 hover:text-red-700" title="ลบสินค้านี้">🗑️</button>
+                 <button onclick="deleteInventoryItem('${displayProductName}', '${displayModelName || ''}')" class="text-red-500 hover:text-red-700" title="ลบสินค้านี้">🗑️</button>
             </td>
         `;
         tbody.appendChild(row);
@@ -100,12 +104,13 @@ function renderStockTable(data) {
 
 document.getElementById('searchStock')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
-    const filtered = stockData.filter(item =>
-        item.product_name.toLowerCase().includes(term) ||
-        (item.model_name && item.model_name.toLowerCase().includes(term)) ||
-        (item.product_code && item.product_code.toLowerCase().includes(term)) ||
-        (item.sn_list && item.sn_list.toLowerCase().includes(term))
-    );
+    const filtered = stockData.filter(item => {
+        const productName = (item.product_name || item.name || item.product || '').toString().toLowerCase();
+        const modelName = (item.model_name || item.model || '').toString().toLowerCase();
+        const productCode = (item.product_code || '').toString().toLowerCase();
+        const snList = (item.sn_list || '').toString().toLowerCase();
+        return productName.includes(term) || modelName.includes(term) || productCode.includes(term) || snList.includes(term);
+    });
     renderStockTable(filtered);
 });
 
