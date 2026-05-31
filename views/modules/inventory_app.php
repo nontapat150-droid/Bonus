@@ -423,4 +423,4 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 </style>
 
 <script src="assets/js/common.js"></script>
-<script src="assets/js/inventory.js"></script>
+<script src="assets/js/inventory.js?v=<?= time() ?>"></script>
