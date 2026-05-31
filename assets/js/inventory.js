@@ -1047,18 +1047,26 @@ document.getElementById('confirmOutboundBtn')?.addEventListener('click', () => {
 
 window.closeOutboundModal = function() {
     const modal = document.getElementById('outboundModal');
-    modal.querySelector('div').classList.remove('animate__fadeInUp');
-    modal.querySelector('div').classList.add('animate__fadeOutDown');
-    
+    if (!modal) return;
+
+    const innerDiv = modal.querySelector('div');
+    if (innerDiv) {
+        innerDiv.classList.remove('animate__fadeInUp');
+        innerDiv.classList.add('animate__fadeOutDown');
+    }
+
     // แจ้งเตือนเมื่อปิดหน้าต่างโดยยังไม่บันทึก
     Toast.warning('ยกเลิกการยืนยันเบิกออก (คิวยังคงอยู่)');
 
+    // ซ่อน Modal ทันทีหรือเกือบทันทีเพื่อป้องกัน Blur ค้าง
+    // และลบ Class อนิเมชั่นออก
     setTimeout(() => {
         modal.classList.add('hidden');
-        modal.querySelector('div').classList.remove('animate__fadeOutDown');
-    }, 300);
+        if (innerDiv) innerDiv.classList.remove('animate__fadeOutDown');
+        // Safeguard: มั่นใจว่าเบลอหายไปแน่นอน
+        modal.style.display = 'none'; 
+    }, 250);
 };
-
 // 5.7 บันทึกการเบิกออก (ตัดสต็อก)
 document.getElementById('finalSubmitOutbound')?.addEventListener('click', async (e) => {
     if (stagedOutbound.length === 0) return;
