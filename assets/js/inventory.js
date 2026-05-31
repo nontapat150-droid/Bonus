@@ -1041,8 +1041,15 @@ document.getElementById('confirmOutboundBtn')?.addEventListener('click', () => {
         }
     });
 
+    // ล้างค่า inline style (จาก Safeguard ตอนปิด) เพื่อให้สามารถเปิดรอบสองได้
+    modal.style.display = '';
     modal.classList.remove('hidden');
-    modal.querySelector('div').classList.add('animate__animated', 'animate__fadeInUp');
+    
+    const innerDiv = modal.querySelector('div');
+    if (innerDiv) {
+        innerDiv.classList.remove('animate__fadeOutDown');
+        innerDiv.classList.add('animate__animated', 'animate__fadeInUp');
+    }
 });
 
 window.closeOutboundModal = function() {
