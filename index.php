@@ -56,6 +56,22 @@ if ($page === 'home') {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
+    <!-- OneSignal Web Push SDK -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "a125af04-6897-44e7-9925-7d5b67631d12",
+        });
+        
+        // ผูก OneSignal ID กับ User ID ในฐานข้อมูล เพื่อให้ส่งรายบุคคลได้
+        <?php if(isset($user['id'])): ?>
+            OneSignal.login("<?= $user['id'] ?>");
+        <?php endif; ?>
+      });
+    </script>
+    
     <style>
         /* === 1. COLOR SYSTEM === */
         :root {
