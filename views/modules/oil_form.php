@@ -119,7 +119,7 @@ if (!defined('PDO::ATTR_ERRMODE')) {
                             <p class="mb-1 text-sm text-indigo-600 font-bold">คลิกเพื่อถ่ายรูปหรือเลือกไฟล์</p>
                             <p class="text-[10px] text-slate-400 uppercase tracking-widest">PNG, JPG, JPEG</p>
                         </div>
-                        <input id="oil_images" name="oil_images[]" type="file" class="hidden" multiple accept="image/*" capture="environment" required />
+                        <input id="oil_images" name="oil_images[]" type="file" class="hidden" multiple accept="image/*" required />
                     </label>
                 </div>
                 <div id="imagePreviewContainer" class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-4"></div>
