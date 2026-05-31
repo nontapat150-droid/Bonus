@@ -81,7 +81,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                                 <i data-lucide="camera" class="w-8 h-8 mb-3 text-emerald-400 group-hover:scale-110 transition-transform"></i>
                                 <p class="mb-1 text-sm text-emerald-600 font-bold">คลิกเพื่อถ่ายรูปหรือแนบไฟล์</p>
                             </div>
-                            <input id="start_day_images" name="start_day_images[]" type="file" class="hidden" multiple accept="image/*" capture="environment" />
+                            <input id="start_day_images" name="start_day_images[]" type="file" class="sr-only" multiple accept="image/*" />
                         </label>
                     </div>
                     <div id="imagePreviewContainer" class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-4"></div>
