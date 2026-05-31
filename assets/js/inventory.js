@@ -72,8 +72,8 @@ function renderStockTable(data) {
         row.className = 'hover:bg-slate-50 transition-colors animate__animated animate__fadeIn';
         row.style.animationDelay = `${index * 0.03}s`;
 
-        const displayProductName = item.model_name || item.model || '-';
-        const displayModelName = item.product_name || item.name || item.product || (item.model_name ? 'วัสดุสิ้นเปลือง' : '');
+        const displayProductName = item.product_name || item.name || item.product || '-';
+        const displayModelName = item.model_name || item.model || (item.product_name ? 'วัสดุสิ้นเปลือง' : '');
         const displayQty = typeof item.qty === 'number' ? item.qty : (item.qty || 0);
 
         let actionContent = '<span class="text-xs text-slate-300 italic">วัสดุสิ้นเปลือง / ไม่มี SN</span>';
