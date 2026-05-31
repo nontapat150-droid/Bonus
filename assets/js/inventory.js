@@ -584,31 +584,35 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
             excelDataPayload = [];
             let skipped = 0;
 
-            // ฟังก์ชันตรวจสอบว่าเป็นคอลัมน์ที่ต้องการหรือไม่ (ปรับให้ฉลาดขึ้น)
+            // ฟังก์ชันตรวจสอบว่าเป็นคอลัมน์ที่ต้องการหรือไม่ (ปรับให้ฉลาดขึ้นและแม่นยำขึ้น)
             const isSNCol = (h) => {
                 const s = String(h).toLowerCase().trim();
-                return s.includes('sn') || s.includes('ซีเรียล') || s.includes('serial') || s.includes('หมายเลข');
+                return s === 'sn' || s.includes('ซีเรียล') || s.includes('serial') || s.includes('หมายเลข');
             };
             const isModelCol = (h) => {
                 const s = String(h).toLowerCase().trim();
-                // รวมรูปแบบชื่อคอลัมน์ที่นิยมใช้สำหรับรุ่น/โมเดล
                 if (!s) return false;
-                const include = ['model', 'รุ่น', 'model name', 'model_name', 'model_no', 'รุ่นสินค้า', 'รุ่น (model)'];
-                const exclude = ['รูป', 'รูปภาพ', 'image', 'picture'];
+                // เน้นคำที่บ่งบอกว่าเป็น "รุ่น" โดยเฉพาะ
+                const include = ['model', 'รุ่น', 'model_name', 'model_no', 'รุ่นสินค้า', 'model no', 'type'];
+                const exclude = ['รูป', 'รูปภาพ', 'image', 'picture', 'brand', 'ยี่ห้อ'];
                 for (const ex of exclude) if (s.includes(ex)) return false;
+                
+                // ถ้ามีคำว่า model หรือ รุ่น อยู่ในหัวตาราง ให้ถือว่าเป็นคอลัมน์รุ่น
                 return include.some(k => s.includes(k));
             };
             const isNameCol = (h) => {
                 const s = String(h).toLowerCase().trim();
-                return s.includes('name') || s.includes('ชื่อ') || s.includes('product');
+                // ถ้าเป็นคอลัมน์รุ่นไปแล้ว ไม่ควรเป็นคอลัมน์ชื่อสินค้า
+                if (s.includes('model') || s.includes('รุ่น')) return false;
+                return s.includes('name') || s.includes('ชื่อ') || s.includes('product') || s.includes('สินค้า');
             };
             const isCodeCol = (h) => {
                 const s = String(h).toLowerCase().trim();
-                return s.includes('code') || s.includes('รหัส') || s.includes('product_code');
+                return s.includes('code') || s.includes('รหัส') || s.includes('sku') || s.includes('p-');
             };
             const isRemarkCol = (h) => {
                 const s = String(h).toLowerCase().trim();
-                return s.includes('remark') || s.includes('หมายเหตุ') || s.includes('note');
+                return s.includes('remark') || s.includes('หมายเหตุ') || s.includes('note') || s.includes('รายละเอียด');
             };
 
             // ตรวจสอบคอลัมน์จากแถวแรก (Header)
@@ -617,20 +621,36 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
 
             headerRow.forEach((cell, idx) => {
                 const header = String(cell).trim();
+                if (!header) return;
+
+                // ตรวจสอบรุ่นก่อนชื่อสินค้า เพื่อป้องกันการสลับกัน (Heuristic order)
                 if (isCodeCol(header)) cI = idx;
-                else if (isNameCol(header)) nI = idx;
-                else if (isModelCol(header)) mI = idx;
+                else if (isModelCol(header)) {
+                    if (mI === -1) mI = idx; // ล็อกอินเด็กซ์แรกที่เจอ
+                }
+                else if (isNameCol(header)) {
+                    if (nI === -1) nI = idx;
+                }
                 else if (isSNCol(header)) sI = idx;
                 else if (isRemarkCol(header)) rI = idx;
             });
 
-            // ถ้าไม่พบ Name หรือ Model จากการแสกน ให้ใช้ตำแหน่งเริ่มต้น (Fallback)
-            // ค้นหาแถวแรกที่มีข้อมูลจริงๆ เพื่อเช็คว่ามี Header หรือไม่
+            // ตรวจสอบความถูกต้องของการตรวจพบ
+            console.log('Column Detection Result:', { 
+                productCode: cI !== -1 ? headerRow[cI] : 'Not Found', 
+                productName: nI !== -1 ? headerRow[nI] : 'Not Found', 
+                model: mI !== -1 ? headerRow[mI] : 'Not Found', 
+                sn: sI !== -1 ? headerRow[sI] : 'Not Found', 
+                remark: rI !== -1 ? headerRow[rI] : 'Not Found' 
+            });
+
+            // ถ้าไม่พบ Name หรือ Model จากการแสกน ให้ใช้ตำแหน่งเริ่มต้น (Fallback แบบระมัดระวัง)
             let startRow = 1;
-            if (nI === -1 && mI === -1 && sI === -1) {
-                // ถ้าไม่เจอ Header เลย อาจเป็นไฟล์ไม่มี Header ให้ใช้ 0, 1, 2
+            if (nI === -1 && mI === -1) {
+                // ถ้าไม่เจอ Header เลยจริงๆ ให้สันนิษฐานตามลำดับมาตรฐาน: ชื่อ | รุ่น | SN
                 nI = 0; mI = 1; sI = 2;
-                startRow = 0; // เริ่มอ่านตั้งแต่แถวแรก
+                startRow = 0; 
+                console.warn('No headers detected, using default column order: [0]Product, [1]Model, [2]SN');
             }
 
             // ถ้าไม่พบคอลัมน์ model ให้พยายามเดาจากข้อมูลแถว (fallback heuristic)
@@ -690,10 +710,18 @@ document.getElementById('excelImport')?.addEventListener('change', (e) => {
             const countP = document.getElementById('excelCount');
 
             if (excelDataPayload.length > 0) {
-                countP.textContent = `✓ พบข้อมูลพร้อมนำเข้า ${excelDataPayload.length} รายการ (ข้ามแถวว่าง/ไม่สมบูรณ์ ${skipped} แถว)`;
+                const detectedCols = [];
+                if (nI !== -1) detectedCols.push(`ชื่อสินค้า (Col ${nI+1}: ${headerRow[nI]})`);
+                if (mI !== -1) detectedCols.push(`รุ่น (Col ${mI+1}: ${headerRow[mI]})`);
+                if (sI !== -1) detectedCols.push(`SN (Col ${sI+1}: ${headerRow[sI]})`);
+                
+                countP.innerHTML = `✓ พบข้อมูลพร้อมนำเข้า ${excelDataPayload.length} รายการ<br>` + 
+                                  `<div class="text-[10px] text-slate-500 mt-1 font-normal bg-slate-50 p-2 rounded border border-slate-100 italic">` +
+                                  `ระบบตรวจพบหัวตาราง: ${detectedCols.join(' | ')}</div>`;
+                
                 previewDiv.classList.remove('hidden');
                 previewDiv.classList.add('animate__animated', 'animate__bounceIn');
-                Toast.success('โหลดไฟล์สำเร็จ! กรุณากดปุ่มยืนยันด้านล่าง');
+                Toast.success('โหลดไฟล์สำเร็จ! กรุณาตรวจสอบคอลัมน์และกดยืนยัน');
             } else {
                 Toast.error(`ไม่พบข้อมูลที่ถูกต้องในไฟล์\n\nตรวจสอบว่าไฟล์มีคอลัมน์: ชื่อสินค้า | รุ่น | ซีเรียล`);
                 previewDiv.classList.add('hidden');
