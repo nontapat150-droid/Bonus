@@ -8,10 +8,13 @@ try {
     $data = ['sn_products' => [], 'consumables' => []];
     
     // ดึงสินค้าแบบ SN
-    $stmt = $pdo->query("SELECT p.name, pm.model_name FROM products p JOIN product_models pm ON p.id = pm.product_id ORDER BY p.name");
+    $stmt = $pdo->query("SELECT p.name, pm.model_name FROM products p JOIN product_models pm ON p.id = pm.product_id ORDER BY pm.model_name");
     while ($row = $stmt->fetch()) {
-        if (!isset($data['sn_products'][$row['name']])) $data['sn_products'][$row['name']] = [];
-        $data['sn_products'][$row['name']][] = $row['model_name'];
+        // สลับเอา model_name มาเป็น key (Product) และ name มาเป็น value (Model)
+        $pName = $row['model_name']; 
+        $mName = $row['name'];
+        if (!isset($data['sn_products'][$pName])) $data['sn_products'][$pName] = [];
+        $data['sn_products'][$pName][] = $mName;
     }
 
     // ดึงสินค้าแบบนับจำนวน (วัสดุสิ้นเปลือง)

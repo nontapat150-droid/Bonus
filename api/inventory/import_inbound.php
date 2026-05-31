@@ -62,8 +62,9 @@ try {
 
     foreach ($items as $index => $item) {
         $pCodeInput = trim($item['product_code'] ?? '');
-        $pName = trim($item['product_name'] ?? '');
-        $mName = trim($item['model_name'] ?? '');
+        // สลับค่าที่รับมาเพื่อให้บันทึกลง Table ถูกต้องตามความต้องการ (Product -> pm.model_name, Model -> p.name)
+        $pName = trim($item['model_name'] ?? ''); 
+        $mName = trim($item['product_name'] ?? '');
         $sn = trim($item['sn'] ?? '');
         $remark = trim($item['remark'] ?? '');
 
