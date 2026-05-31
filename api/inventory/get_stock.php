@@ -16,7 +16,6 @@ try {
                 p.product_code, 
                 pm.model_name as product_name, 
                 p.name as model_name, 
-                p.unit,
                 COUNT(i.id) as qty,
                 GROUP_CONCAT(CONCAT(i.id, ':', i.sn) SEPARATOR '|') as sn_list
             FROM products p
