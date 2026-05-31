@@ -422,5 +422,5 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>
 
-<script src="assets/js/common.js"></script>
+<script src="assets/js/common.js?v=<?= time() ?>"></script>
 <script src="assets/js/inventory.js?v=<?= time() ?>"></script>

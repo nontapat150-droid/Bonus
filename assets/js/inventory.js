@@ -1055,15 +1055,17 @@ window.closeOutboundModal = function() {
         innerDiv.classList.add('animate__fadeOutDown');
     }
 
-    // แจ้งเตือนเมื่อปิดหน้าต่างโดยยังไม่บันทึก
-    Toast.info('ยกเลิกการยืนยันเบิกออก (คิวยังคงอยู่)');
+    // แจ้งเตือนเมื่อปิดหน้าต่างโดยยังไม่บันทึก (พร้อมระบบ Safeguard)
+    if (window.Toast && typeof window.Toast.info === 'function') {
+        Toast.info('ยกเลิกการยืนยันเบิกออก (คิวยังคงอยู่)');
+    } else {
+        console.log('ยกเลิกการยืนยันเบิกออก (คิวยังคงอยู่)');
+    }
 
     // ซ่อน Modal ทันทีหรือเกือบทันทีเพื่อป้องกัน Blur ค้าง
-    // และลบ Class อนิเมชั่นออก
     setTimeout(() => {
         modal.classList.add('hidden');
         if (innerDiv) innerDiv.classList.remove('animate__fadeOutDown');
-        // Safeguard: มั่นใจว่าเบลอหายไปแน่นอน
         modal.style.display = 'none'; 
     }, 250);
 };
