@@ -523,7 +523,7 @@ async function validateAndSaveSN(sn) {
         
         if (data.success) {
             Toast.success(`เพิ่ม SN: ${sn} สำเร็จ!`);
-            if (pSel === '_NEW_' || mSel === '_NEW_') loadMasterOptions(pName, mName);
+            loadMasterOptions(pName, mName);
             loadStockOverview();
         } else if (data.status === 'duplicate') {
             Toast.error(`SN: ${sn} ซ้ำในระบบ!`);
@@ -553,7 +553,7 @@ window.saveInboundQty = async function() {
         if (data.success) {
             Toast.success(`เพิ่ม ${pName} จำนวน ${qty} ${unit} สำเร็จ!`);
             document.getElementById('inboundQty').value = '';
-            if (pSel === '_NEW_') loadMasterOptions(pName);
+            loadMasterOptions(pName);
             loadStockOverview();
         } else { Toast.error(data.error); }
     } catch (e) { Toast.error('การเชื่อมต่อล้มเหลว'); }
