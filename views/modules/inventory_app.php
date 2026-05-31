@@ -158,10 +158,10 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             </div>
 
             <div class="flex flex-col sm:flex-row gap-3 w-full max-w-md">
-                <input type="file" id="excelImport" accept=".xlsx, .xls" class="hidden">
-                <button onclick="document.getElementById('excelImport').click()" class="flex-1 bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold py-3 px-6 rounded-lg text-sm transition-colors flex items-center justify-center">
+                <input type="file" id="excelImport" accept=".xlsx, .xls" class="sr-only">
+                <label for="excelImport" class="flex-1 bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold py-3 px-6 rounded-lg text-sm transition-colors flex items-center justify-center cursor-pointer">
                     <span class="mr-2 text-lg"><i data-lucide="folder" class="w-5 h-5 inline-block"></i></span> เลือกไฟล์ Excel
-                </button>
+                </label>
                 <button onclick="downloadTemplate()" class="flex-1 bg-blue-100 text-blue-600 hover:bg-blue-200 font-bold py-3 px-6 rounded-lg text-sm transition-colors flex items-center justify-center">
                     <span class="mr-2 text-lg"><i data-lucide="arrow-down" class="w-5 h-5 inline-block"></i></span> ดาวน์โหลด Template
                 </button>
