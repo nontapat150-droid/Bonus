@@ -115,14 +115,14 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                         <h4 class="font-bold text-slate-700 flex items-center mb-3"><span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs mr-2 uppercase tracking-widest">Step 2</span> ค้นหาสินค้าและรุ่น</h4>
                     </div>
                     <div class="relative mt-0">
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">ชื่อสินค้า</label>
-                        <input type="text" id="mainProductInput" class="w-full input font-bold" placeholder="คลิกเพื่อเลือก หรือพิมพ์ชื่อสินค้าใหม่..." autocomplete="off">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">ชื่อสินค้า (เช่น Router, ONU, กล้อง)</label>
+                        <input type="text" id="mainProductInput" class="w-full input font-bold" placeholder="เลือกสินค้า..." autocomplete="off">
                         <div id="productDropdown" class="absolute z-[50] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
                     </div>
 
                     <div id="areaModelSelect" class="relative">
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">รุ่น (Model)</label>
-                        <input type="text" id="mainModelInput" class="w-full input font-bold" placeholder="คลิกเพื่อเลือก หรือพิมพ์รุ่นใหม่..." autocomplete="off">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">รุ่น / Model (เช่น HG8145V5, AC1200)</label>
+                        <input type="text" id="mainModelInput" class="w-full input font-bold" placeholder="ระบุรุ่น..." autocomplete="off">
                         <div id="modelDropdown" class="absolute z-[50] w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto hidden mt-1 custom-scrollbar"></div>
                     </div>
 
