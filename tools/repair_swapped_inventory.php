@@ -1,7 +1,7 @@
 <?php
 // tools/repair_swapped_inventory.php
-require_once '../config/db.php';
-require_once '../config/auth.php';
+require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../config/auth.php';
 
 // Script นี้ใช้สำหรับสลับชื่อสินค้าและชื่อรุ่นในฐานข้อมูลกรณีที่นำเข้าสลับกันมา
 // ชื่อสินค้า (products.name) <-> ชื่อรุ่น (product_models.model_name)

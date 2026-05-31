@@ -615,7 +615,7 @@ if ($page === 'home') {
         if(mobileDrawerBackdrop) mobileDrawerBackdrop.addEventListener('click', closeDrawer);
 
         // Toast System (Level 5 Shadow)
-        const Toast = {
+        const AppToast = {
             show(message, type = 'success') {
                 const container = document.getElementById('toast-container');
                 const toast = document.createElement('div');
