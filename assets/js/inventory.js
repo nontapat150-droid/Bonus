@@ -72,14 +72,14 @@ function renderStockTable(data) {
         row.className = 'hover:bg-slate-50 transition-colors animate__animated animate__fadeIn';
         row.style.animationDelay = `${index * 0.03}s`;
 
-        const displayProductName = item.product_name || item.name || item.product || '-';
-        const displayModelName = item.model_name || item.model || (item.product_name ? 'วัสดุสิ้นเปลือง' : '');
+        const displayProductName = item.model_name || item.model || '-';
+        const displayModelName = item.product_name || item.name || item.product || (item.model_name ? 'วัสดุสิ้นเปลือง' : '');
         const displayQty = typeof item.qty === 'number' ? item.qty : (item.qty || 0);
 
         let actionContent = '<span class="text-xs text-slate-300 italic">วัสดุสิ้นเปลือง / ไม่มี SN</span>';
         if (item.sn_list) {
             const snsCount = item.sn_list.split('|').length;
-            actionContent = `<button onclick="openSnModal(this)" data-pname="${displayProductName}" data-mname="${displayModelName}" data-sns="${item.sn_list}" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-2 rounded-lg text-xs font-bold transition-colors">🔍 กดดู SN ทั้งหมด (${snsCount})</button>`;
+            actionContent = `<button onclick="openSnModal(this)" data-pname="${item.product_name}" data-mname="${item.model_name || ''}" data-sns="${item.sn_list}" class="text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-2 rounded-lg text-xs font-bold transition-colors">🔍 กดดู SN ทั้งหมด (${snsCount})</button>`;
         }
 
         row.innerHTML = `
@@ -95,7 +95,7 @@ function renderStockTable(data) {
                 ${actionContent}
             </td>
              <td class="px-6 py-4 text-center">
-                 <button onclick="deleteInventoryItem('${displayProductName}', '${displayModelName || ''}')" class="text-red-500 hover:text-red-700" title="ลบสินค้านี้">🗑️</button>
+                 <button onclick="deleteInventoryItem('${item.product_name}', '${item.model_name || ''}')" class="text-red-500 hover:text-red-700" title="ลบสินค้านี้">🗑️</button>
             </td>
         `;
         tbody.appendChild(row);
