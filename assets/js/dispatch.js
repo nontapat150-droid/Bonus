@@ -247,7 +247,18 @@ async function loadJobs() {
     showLoader('ซิงค์ข้อมูล...');
     try {
         const res = await fetch('api/dispatch/get_jobs.php?_=' + new Date().getTime());
-        const data = await res.json();
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`HTTP ${res.status}: ${text.substring(0, 200)}`);
+        }
+
+        const text = await res.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (parseError) {
+            throw new Error(`Invalid JSON response: ${text.substring(0, 300)}`);
+        }
 
         if (data.success) {
             allJobs = data.data;
@@ -266,7 +277,7 @@ async function loadJobs() {
             renderUI();
         }
     } catch (e) {
-        Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
+        Swal.fire('ข้อผิดพลาด', `เชื่อมต่อล้มเหลว: ${escapeHTML(e.message)}`, 'error');
     } finally {
         hideLoader();
     }
