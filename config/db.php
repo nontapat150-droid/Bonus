@@ -1,7 +1,7 @@
 <?php
 // config/db.php
 
-$date_default_timezone_set('Asia/Bangkok');
+
 
 // Allow overriding connection via environment variables (recommended for dev/production)
 $host = getenv('DB_HOST') ?: 'sql207.infinityfree.com';
