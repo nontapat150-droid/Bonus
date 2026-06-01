@@ -260,3 +260,194 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 </script>
 <script src="assets/js/common.js"></script>
 <script src="assets/js/dispatch.js?v=<?= time() ?>"></script>
+
+<style>
+    /* Custom Scrollbar สำหรับ Modal ป้องกันการเลื่อนทับซ้อน */
+    .modal-scrollbar::-webkit-scrollbar { width: 6px; }
+    .modal-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; rounded: 8px; }
+    .modal-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+    .modal-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+
+<div id="completeJobModal" class="fixed inset-0 z-[9999] hidden bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden z-[10000] max-h-[95vh] flex flex-col">
+        
+        <div class="p-5 bg-emerald-600 text-white flex justify-between items-center shrink-0">
+            <h3 class="text-xl font-black tracking-tight">ยืนยันรายละเอียดการจบงาน</h3>
+            <button onclick="closeCompleteJobModal()" class="text-emerald-200 hover:text-white text-3xl leading-none transition-colors">&times;</button>
+        </div>
+        
+        <div class="p-6 overflow-y-auto flex-1 bg-slate-50 modal-scrollbar">
+            <form id="completeJobForm" class="space-y-6">
+                <input type="hidden" id="cj_job_id">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">งาน (Job)</label>
+                        <p id="cj_access_no" class="font-bold text-slate-800 text-sm mt-1">-</p>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">ทีม (Team)</label>
+                        <p id="cj_team_name" class="font-bold text-slate-800 text-sm mt-1">-</p>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">ชื่อลูกค้า</label>
+                        <p id="cj_customer" class="font-bold text-slate-800 text-sm mt-1 truncate">-</p>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">เลข Non</label>
+                        <p id="cj_non" class="font-black text-indigo-600 text-sm mt-1">-</p>
+                    </div>
+                    <div class="sm:col-span-2 md:col-span-4">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">ที่อยู่ติดตั้ง</label>
+                        <p id="cj_address" class="font-bold text-slate-700 text-sm mt-1 break-words">-</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-black text-slate-700 mb-4">ข้อมูลการติดตั้ง</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1.5">วันที่ติดตั้ง <span class="text-rose-500">*</span></label>
+                            <input type="datetime-local" id="cj_install_date" required class="w-full border border-slate-300 rounded-lg font-bold text-sm p-2.5 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1.5">Splitter</label>
+                            <input type="text" id="cj_splitter" class="w-full border border-slate-300 rounded-lg font-bold text-sm p-2.5 outline-none focus:border-emerald-500" placeholder="ระบุ Splitter">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1.5">Code SOA</label>
+                            <input type="text" id="cj_code_soa" class="w-full border border-slate-300 rounded-lg font-bold text-sm p-2.5 outline-none focus:border-emerald-500" placeholder="ระบุ Code SOA">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1.5">ระยะที่ขอ (เมตร)</label>
+                            <input type="number" id="cj_distance" class="w-full border border-slate-300 rounded-lg font-bold text-sm p-2.5 outline-none focus:border-emerald-500" placeholder="เช่น 150">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-black text-slate-700 mb-4">วัสดุที่ใช้งานจริง</h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Patch Cord ดำ</label>
+                            <input type="number" id="cj_patch_black" class="w-full border border-slate-300 rounded-lg text-center font-bold p-2 outline-none focus:border-emerald-500" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Patch Cord เหลือง</label>
+                            <input type="number" id="cj_patch_yellow" class="w-full border border-slate-300 rounded-lg text-center font-bold p-2 outline-none focus:border-emerald-500" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">ท่อดำ</label>
+                            <input type="number" id="cj_tube_black" class="w-full border border-slate-300 rounded-lg text-center font-bold p-2 outline-none focus:border-emerald-500" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">ท่อหดขาว</label>
+                            <input type="number" id="cj_tube_white" class="w-full border border-slate-300 rounded-lg text-center font-bold p-2 outline-none focus:border-emerald-500" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 mb-1">เนมเพลท</label>
+                            <input type="number" id="cj_nameplate" class="w-full border border-slate-300 rounded-lg text-center font-bold p-2 outline-none focus:border-emerald-500" placeholder="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">หมายเหตุเพิ่มเติม</label>
+                    <textarea id="cj_remark" rows="2" class="w-full border border-slate-300 rounded-lg font-bold text-sm p-2.5 outline-none focus:border-emerald-500" placeholder="รายละเอียดอื่นๆ (ถ้ามี)"></textarea>
+                </div>
+            </form>
+        </div>
+        
+        <div class="p-5 bg-white border-t border-slate-200 flex justify-end gap-3 shrink-0">
+            <button type="button" onclick="closeCompleteJobModal()" class="px-6 py-3 rounded-xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">ยกเลิก</button>
+            <button type="button" onclick="submitCompleteJobDetails()" class="px-6 py-3 rounded-xl font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-md transition-colors">
+                บันทึกการจบงาน
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ฟังก์ชันสำหรับเปิด Modal ยืนยันจบงาน
+function openCompleteJobModal(jobId) {
+    // ดึงข้อมูลจาก allJobs (ตัวแปรแผนที่เดิมของคุณที่เก็บงานไว้)
+    // หากโค้ดเดิมคุณใช้ชื่อตัวแปรอื่น ให้เปลี่ยน allJobs เป็นชื่อนั้นครับ
+    const job = (typeof allJobs !== 'undefined') ? allJobs.find(j => String(j.id) === String(jobId)) : null;
+    
+    document.getElementById('cj_job_id').value = jobId;
+    
+    if (job) {
+        document.getElementById('cj_access_no').textContent = job.access_no || 'N/A';
+        document.getElementById('cj_team_name').textContent = job.team_name || 'ไม่มีทีม';
+        document.getElementById('cj_customer').textContent = job.customer || 'ไม่ระบุ';
+        document.getElementById('cj_address').textContent = job.address || '-';
+        document.getElementById('cj_non').textContent = job.task_order || job.order_no || job.access_no || '-';
+    } else {
+        document.getElementById('cj_access_no').textContent = "ไม่ทราบข้อมูล";
+    }
+
+    // เซ็ตวันที่ปัจจุบัน
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('cj_install_date').value = now.toISOString().slice(0, 16);
+
+    // เคลียร์ค่า input
+    const inputs = ['cj_splitter', 'cj_code_soa', 'cj_distance', 'cj_patch_black', 'cj_patch_yellow', 'cj_tube_black', 'cj_tube_white', 'cj_nameplate', 'cj_remark'];
+    inputs.forEach(id => document.getElementById(id).value = '');
+
+    // เปิด Modal
+    document.getElementById('completeJobModal').classList.remove('hidden');
+}
+
+// ฟังก์ชันสำหรับปิด Modal
+function closeCompleteJobModal() {
+    document.getElementById('completeJobModal').classList.add('hidden');
+}
+
+// ฟังก์ชันสำหรับส่งข้อมูลไปบันทึก
+async function submitCompleteJobDetails() {
+    const installDate = document.getElementById('cj_install_date').value;
+    if (!installDate) {
+        alert('กรุณาระบุวันที่ติดตั้ง');
+        return;
+    }
+
+    const payload = {
+        job_id: document.getElementById('cj_job_id').value,
+        install_date: installDate,
+        splitter: document.getElementById('cj_splitter').value,
+        code_soa: document.getElementById('cj_code_soa').value,
+        distance: document.getElementById('cj_distance').value || 0,
+        patch_black: document.getElementById('cj_patch_black').value || 0,
+        patch_yellow: document.getElementById('cj_patch_yellow').value || 0,
+        tube_black: document.getElementById('cj_tube_black').value || 0,
+        tube_white: document.getElementById('cj_tube_white').value || 0,
+        nameplate: document.getElementById('cj_nameplate').value || 0,
+        remark: document.getElementById('cj_remark').value
+    };
+
+    try {
+        const response = await fetch('api/dispatch/complete_job.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            alert('บันทึกข้อมูลการจบงานเรียบร้อยแล้ว');
+            closeCompleteJobModal();
+            // รีโหลดแผนที่ (เรียกใช้ฟังก์ชันโหลดงานของคุณ เช่น loadJobs() หรือ loadMapData())
+            if (typeof loadJobs === 'function') loadJobs();
+            else location.reload(); // รีเฟรชหน้าต่างหากไม่มีฟังก์ชันดึงข้อมูลใหม่
+        } else {
+            alert('เกิดข้อผิดพลาด: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
+    }
+}
+</script>
