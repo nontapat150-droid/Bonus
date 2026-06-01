@@ -802,85 +802,13 @@ window.exportOilExcel = async function() {
             showToast('info', 'กำลังสร้างไฟล์ Excel พร้อมคำนวณยอดรวม...');
             let sortedRecords = [...recordsToExport].sort((a, b) => new Date(a.date_recorded) - new Date(b.date_recorded));
             
-            let totalLiters = 0;
-            let totalPrice = 0;
-            let totalDistance = 0;
-            let totalJobs = 0;
-            
-            let exportData = sortedRecords.map(row => {
-                totalLiters += Number(row.liters);
-                totalPrice += Number(row.total_price);
-                totalDistance += Number(row.distance);
-                totalJobs += Number(row.job_count);
-                
-                const d = new Date(row.date_recorded);
-                return {
-                    "วันที่": d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}),
-                    "ทะเบียนรถ (ทีม)": row.team_name || row.license_plate,
-                    "ชื่อผู้เติม": row.tech_name,
-                    "เลขไมล์": parseInt(row.mileage),
-                    "ลิตร": Number(row.liters),
-                    "ยอดเงิน(บาท)": Number(row.total_price),
-                    "ระยะทางวิ่ง(กม.)": row.distance,
-                    "จำนวนเคสงาน(รอบ)": row.job_count,
-                    "ต้นทุน/กม.(บาท)": row.cost_per_km,
-                    "ต้นทุน/งาน(บาท)": row.cost_per_job
-                };
-            });
-
-            let mileageIncreaseText = totalDistance;
-            if (formValues.vehicle !== 'all' && sortedRecords.length > 0) {
-                let validMileages = sortedRecords.map(r => parseInt(r.mileage)).filter(m => m > 0);
-                if (validMileages.length > 0) {
-                    let minMile = Math.min(...validMileages);
-                    let maxMile = Math.max(...validMileages);
-                    if (maxMile >= minMile) {
-                        mileageIncreaseText = maxMile - minMile;
-                    }
-                }
-            }
-
-            exportData.push({}); 
-            exportData.push({ "วันที่": "========== สรุปยอดรวมประจำเดือน ==========" });
-            
-            exportData.push({
-                "วันที่": "เลขไมล์เดือนนี้เพิ่มขึ้น",
-                "ทะเบียนรถ (ทีม)": formValues.vehicle !== 'all' ? (mileageIncreaseText.toLocaleString('th-TH') + " กม.") : "ดูที่ 'รวมระยะทางที่ใช้รถ' (เลือกทุกคัน)"
-            });
-
-            exportData.push({
-                "วันที่": "จำนวนลิตรที่เติมไปเดือนนี้",
-                "ทะเบียนรถ (ทีม)": totalLiters.toLocaleString('th-TH', {minimumFractionDigits: 2}) + " ลิตร"
-            });
-            
-            exportData.push({
-                "วันที่": "ยอดเงินที่ใช้ไปของเดือนนี้",
-                "ทะเบียนรถ (ทีม)": totalPrice.toLocaleString('th-TH', {minimumFractionDigits: 2}) + " บาท"
-            });
-            
-            exportData.push({
-                "วันที่": "รวมระยะทางเท่าไหร่ที่ใช้รถ",
-                "ทะเบียนรถ (ทีม)": totalDistance.toLocaleString('th-TH') + " กม."
-            });
-            
-            let avgPricePerLiter = totalLiters > 0 ? (totalPrice / totalLiters) : 0;
-            exportData.push({
-                "วันที่": "ราคา/ลิตร โดยเฉลี่ยเดือนนี้",
-                "ทะเบียนรถ (ทีม)": avgPricePerLiter.toLocaleString('th-TH', {minimumFractionDigits: 2}) + " บาท/ลิตร"
-            });
-            
-            if (totalJobs > 0) {
-                let avgCostPerJob = totalPrice / totalJobs;
-                exportData.push({
-                    "วันที่": "เฉลี่ยต่อเคส (ต้นทุน)",
-                    "ทะเบียนรถ (ทีม)": avgCostPerJob.toLocaleString('th-TH', {minimumFractionDigits: 2}) + " บาท/เคส"
-                });
-            } else {
-                exportData.push({
-                    "วันที่": "เฉลี่ยต่อเคส (ต้นทุน)",
-                    "ทะเบียนรถ (ทีม)": "ไม่มีประวัติการเข้าเคสงาน"
-                });
-            }
+            let exportData = sortedRecords.map(row => ({
+                "ชื่อผู้เติม": row.tech_name,
+                "เลขไมล์": parseInt(row.mileage),
+                "ระยะทางวิ่ง(กม.)": Number(row.distance),
+                "กม./ลิตร": Number(row.km_per_liter),
+                "ยอดเติม(บาท)": Number(row.total_price)
+            }));
 
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
