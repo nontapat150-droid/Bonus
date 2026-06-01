@@ -527,13 +527,13 @@ if ($page === 'home') {
             <?php if ($page === 'home'): ?>
                 <div class="max-w-7xl mx-auto space-y-8">
                     
-                    <?php if ($announcement): ?>
+                    <?php if ($marqueeAnnouncement): ?>
                     <div class="marquee-wrapper animate__animated animate__fadeInDown">
                         <div class="marquee-badge">
                             <i data-lucide="megaphone" class="w-4 h-4 mr-2 text-yellow-300"></i> ประกาศ
                         </div>
                         <div class="marquee-content">
-                            <?= htmlspecialchars($announcement['message']) ?>
+                            <?= htmlspecialchars($marqueeAnnouncement['message']) ?>
                         </div>
                     </div>
                     <?php endif; ?>

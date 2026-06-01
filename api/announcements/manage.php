@@ -33,7 +33,7 @@ function ensureColumnExists($pdo, $column, $definition) {
         $stmt = $pdo->prepare("SHOW COLUMNS FROM announcements LIKE ?");
         $stmt->execute([$column]);
         if (!$stmt->fetch()) {
-            $pdo->exec("ALTER TABLE announcements ADD COLUMN $column $definition");
+            $pdo->exec("ALTER TABLE announcements ADD COLUMN `$column` $definition");
         }
     } catch (Exception $e) {
         // Ignore
