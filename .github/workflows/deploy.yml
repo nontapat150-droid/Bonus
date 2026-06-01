@@ -22,7 +22,7 @@ jobs:
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         server-dir: /htdocs/  # บังคับอัปโหลดไปที่โฟลเดอร์ htdocs ของ InfinityFree
-        timeout: 600
+        timeout: 60000
         exclude: |
           **/.git*
           **/.git*/**

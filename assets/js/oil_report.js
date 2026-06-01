@@ -235,22 +235,16 @@ function updateStats(stats) {
     const sr = document.getElementById('stat_total_records');
     const sj = document.getElementById('stat_total_jobs');
     const sd = document.getElementById('stat_total_distance');
-    const sal = document.getElementById('stat_avg_liters_per_km');
+    const sak = document.getElementById('stat_avg_km_per_liter');
     const sac = document.getElementById('stat_avg_cost_per_km');
 
     let totalDistance = 0;
-    let totalLitersPerKm = 0;
-    let countLitersPerKm = 0;
-
     allRecords.forEach(r => {
         totalDistance += Number(r.distance) || 0;
-        if (Number(r.liters_per_km) > 0) {
-            totalLitersPerKm += Number(r.liters_per_km);
-            countLitersPerKm += 1;
-        }
     });
 
-    const avgLitersPerKm = countLitersPerKm > 0 ? (totalLitersPerKm / countLitersPerKm) : 0;
+    const totalLiters = Number(stats.total_liters) || 0;
+    const avgKmPerLiter = totalDistance > 0 && totalLiters > 0 ? (totalDistance / totalLiters) : 0;
     const avgCostPerKm = totalDistance > 0 ? (Number(stats.total_cost) / totalDistance) : 0;
 
     if(sc) sc.textContent = Number(stats.total_cost).toLocaleString('th-TH', {minimumFractionDigits: 2});
@@ -258,7 +252,7 @@ function updateStats(stats) {
     if(sr) sr.textContent = Number(stats.total_records).toLocaleString('th-TH');
     if(sj) sj.textContent = stats.total_jobs ? Number(stats.total_jobs).toLocaleString('th-TH') : '0';
     if(sd) sd.textContent = totalDistance.toLocaleString('th-TH', {minimumFractionDigits: 2});
-    if(sal) sal.textContent = countLitersPerKm > 0 ? Number(avgLitersPerKm).toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-';
+    if(sak) sak.textContent = avgKmPerLiter > 0 ? Number(avgKmPerLiter).toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-';
     if(sac) sac.textContent = totalDistance > 0 ? '฿' + Number(avgCostPerKm).toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-';
 }
 
@@ -424,7 +418,7 @@ function renderTable(records) {
             <td class="px-4 py-4">${teamBadge}</td>
             <td class="px-4 py-4 text-center font-bold text-slate-600">${Number(row.mileage).toLocaleString('th-TH')}</td>
             <td class="px-4 py-4 text-center font-bold text-sky-600">${row.distance} กม.</td>
-            <td class="px-4 py-4 text-center font-bold text-slate-700">${Number(row.liters_per_km) > 0 ? Number(row.liters_per_km).toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ลิตร/กม.' : '-'}</td>
+            <td class="px-4 py-4 text-center font-bold text-slate-700">${Number(row.km_per_liter) > 0 ? Number(row.km_per_liter).toLocaleString('th-TH', {minimumFractionDigits:2}) + ' กม./ลิตร' : '-'}</td>
             <td class="px-4 py-4 text-center"><span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-black">📋 ${row.job_count} งาน</span></td>
             <td class="px-4 py-4 text-right"><span class="text-xs text-slate-400 block mb-0.5">กม. ละ</span><span class="font-bold text-rose-500">฿${Number(row.cost_per_km).toLocaleString('th-TH', {minimumFractionDigits:2})}</span></td>
             <td class="px-4 py-4 text-right"><span class="text-xs text-slate-400 block mb-0.5">งาน ละ</span><span class="font-bold text-indigo-500">฿${Number(row.cost_per_job).toLocaleString('th-TH', {minimumFractionDigits:2})}</span></td>
