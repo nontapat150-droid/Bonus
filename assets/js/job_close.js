@@ -8,7 +8,7 @@ const CJ_OPTIONAL_INPUTS = [
 
 const CJ_REQUIRED_RULES = [
     { id: 'cj_install_provider', label: 'ประเภทงานติดตั้ง (AIS / 3BB)', check: () => ['AIS', '3BB'].includes(getSelectedInstallProvider()) },
-    { id: 'cj_install_date', label: 'วันที่ติดตั้ง', check: () => !!(document.getElementById('cj_install_date')?.value?.trim()) }
+    { id: 'cj_install_date', label: 'วันที่ติดตั้ง (ต้องเลือกทุกครั้ง)', check: () => !!(document.getElementById('cj_install_date')?.value?.trim()) }
 ];
 
 function cjEscape(s) {
@@ -36,9 +36,11 @@ function bindCompleteJobProviderListeners() {
     });
 }
 
-function defaultInstallDateFromJob(job) {
-    if (job?.plan_arrival_date) return String(job.plan_arrival_date).slice(0, 10);
-    return new Date().toISOString().slice(0, 10);
+function formatPlanDateHint(job) {
+    if (!job?.plan_arrival_date) return '';
+    const d = new Date(String(job.plan_arrival_date).slice(0, 10) + 'T00:00:00');
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function validateJobCloseForm() {
@@ -132,7 +134,18 @@ function fillJobCloseFormForCreate(job) {
     document.getElementById('cj_close_id').value = '';
     document.getElementById('cj_mode').value = 'create';
     document.getElementById('cj_job_id').value = job.id;
-    document.getElementById('cj_install_date').value = defaultInstallDateFromJob(job);
+    const dateInput = document.getElementById('cj_install_date');
+    if (dateInput) {
+        dateInput.value = '';
+        dateInput.removeAttribute('value');
+    }
+    const dateHint = document.getElementById('cj_install_date_hint');
+    if (dateHint) {
+        const planLabel = formatPlanDateHint(job);
+        dateHint.textContent = planLabel
+            ? `กรุณาเลือกวันที่ติดตั้งทุกครั้ง (วันมอบหมายงาน: ${planLabel})`
+            : 'กรุณาเลือกวันที่ติดตั้งทุกครั้งก่อนบันทึก';
+    }
     const bb = document.getElementById('cj_provider_3bb');
     if (bb) bb.checked = true;
     document.getElementById('cj_close_case').textContent = job.access_no || '-';
@@ -323,4 +336,40 @@ const JobClose = {
         }
     }
 };
+window.deleteJobCloseRecord = async function(closeId) {
+    const { isConfirmed } = await Swal.fire({
+        title: 'ลบประวัติปิดงาน?',
+        html: `<p class="text-sm text-slate-600">รายการนี้จะถูกลบถาวร</p>
+               <p class="text-xs text-amber-700 mt-2">งานที่เกี่ยวข้องจะกลับเป็นสถานะรอปิดงาน (ช่างสามารถปิดงานใหม่ได้)</p>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'ยืนยันลบ',
+        cancelButtonText: 'ยกเลิก',
+        customClass: { popup: 'rounded-xl', confirmButton: 'rounded-lg text-xs', cancelButton: 'rounded-lg text-xs' }
+    });
+    if (!isConfirmed) return;
+
+    try {
+        const res = await fetch('api/dispatch/delete_job_close.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ close_id: closeId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire({ title: 'ลบแล้ว', text: data.message || 'ลบประวัติเรียบร้อย', icon: 'success', timer: 1500, showConfirmButton: false,
+                didClose: () => {
+                    if (typeof applyFilter === 'function' && typeof currentType !== 'undefined' && currentType === 'job_close') applyFilter();
+                    if (typeof loadJobCloseHistory === 'function') loadJobCloseHistory();
+                }
+            });
+        } else {
+            Swal.fire('ข้อผิดพลาด', data.error || 'ลบไม่สำเร็จ', 'error');
+        }
+    } catch (e) {
+        Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ', 'error');
+    }
+};
+
 window.JobClose = JobClose;

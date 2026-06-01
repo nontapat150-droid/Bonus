@@ -46,9 +46,9 @@ try {
         $params[] = $filter_date;
     }
 
-    // 3. กรองซ่อนงานที่ถูกกด จบงาน(completed) หรือ ไม่สำเร็จ(failed) ไปแล้ว
+    // 3. ซ่อนเฉพาะงานที่ปิดสำเร็จแล้ว — งานไม่สำเร็จยังแสดงพร้อมสถานะ
     if ($filter_status === 'active') {
-        $sql .= " AND (j.status IS NULL OR j.status NOT IN ('completed', 'failed'))";
+        $sql .= " AND (j.status IS NULL OR j.status <> 'completed')";
     }
 
     $sql .= " ORDER BY j.plan_arrival_date ASC, COALESCE(j.seq, 9999) ASC";
