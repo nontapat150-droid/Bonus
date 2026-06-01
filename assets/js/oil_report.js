@@ -819,6 +819,8 @@ window.exportOilExcel = async function() {
                     "ชื่อผู้เติม": row.tech_name,
                     "เลขไมล์": parseInt(row.mileage),
                     "ระยะทางวิ่ง(กม.)": Number(row.distance),
+                    "จำนวนลิตร": Number(row.liters),
+                    "ราคาต่อลิตร": Number(row.price_per_liter),
                     "กม./ลิตร": Number(row.km_per_liter),
                     "ยอดเติม(บาท)": Number(row.total_price)
                 };
