@@ -1,41 +1,45 @@
 <?php
 // api/dispatch/get_jobs.php
 
-// 🌟 1. ดักจับ Error ขั้นรุนแรง (Fatal Error) ให้พ่นกลับเป็น JSON เสมอ
+// 🌟 1. ปิดการโชว์ Error เป็น HTML แล้วให้พ่นเป็น JSON เสมอ
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 register_shutdown_function(function() {
     $error = error_get_last();
     if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-        header('Content-Type: application/json');
-        echo json_encode([
-            'success' => false, 
-            'error' => 'PHP Fatal Error: ' . $error['message'] . ' in ' . basename($error['file']) . ' on line ' . $error['line']
-        ]);
+        echo json_encode(['success' => false, 'error' => 'PHP Fatal Error: ' . $error['message']]);
         exit;
     }
 });
-
-// ปิดการโชว์ Error ของ PHP แบบปกติ เพื่อไม่ให้รบกวน JSON
-ini_set('display_errors', 0);
 
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
 
 header('Content-Type: application/json');
-requireLogin();
+
+// 🌟 2. ป้องกัน Session หมดอายุ แล้วโดนเด้งไปหน้าเว็บ HTML (ทำให้ JSON พัง)
+if (!isLoggedIn()) {
+    echo json_encode(['success' => false, 'error' => 'Session หมดอายุ: กรุณารีเฟรชหน้าเว็บและเข้าสู่ระบบใหม่']);
+    exit;
+}
 
 $user = getCurrentUser();
-$role = $user['role'];
-$username = $user['username'];
-$user_id = $user['id']; 
+$role = $user['role'] ?? 'technician';
+$username = $user['username'] ?? '';
+$user_id = $user['id'] ?? 0;
+
+$filter_date = $_GET['date'] ?? 'all'; 
+$filter_status = $_GET['status'] ?? 'active'; 
 
 try {
-    // ดึงข้อมูล team_id ล่าสุดจากฐานข้อมูลโดยตรง
-    $stmtUser = $pdo->prepare("SELECT team_id FROM users WHERE id = ?");
-    $stmtUser->execute([$user_id]);
-    $team_id = $stmtUser->fetchColumn();
-
-    $filter_date = $_GET['date'] ?? 'all'; 
-    $filter_status = $_GET['status'] ?? 'active'; 
+    // 🌟 3. ย้ายคำสั่ง SQL ชุดนี้มาไว้ใน try...catch เพื่อป้องกันระบบแครช
+    $team_id = null;
+    if ($user_id) {
+        $stmtUser = $pdo->prepare("SELECT team_id FROM users WHERE id = ?");
+        $stmtUser->execute([$user_id]);
+        $team_id = $stmtUser->fetchColumn();
+    }
 
     $sql = "SELECT j.*, t.team_name 
             FROM jobs j 
@@ -43,7 +47,6 @@ try {
             WHERE 1=1";
     $params = [];
 
-    // ตรวจสอบเงื่อนไขการดึงงานสำหรับช่าง
     if ($role === 'technician') {
         if ($team_id) {
             $sql .= " AND (j.team_id = ? OR t.team_name = ?)";
@@ -55,13 +58,11 @@ try {
         }
     }
 
-    // กรองตามวันที่ 
     if ($filter_date !== 'all' && !empty($filter_date)) {
         $sql .= " AND j.plan_arrival_date = ?";
         $params[] = $filter_date;
     }
 
-    // ซ่อนเฉพาะงานที่ปิดสำเร็จแล้ว
     if ($filter_status === 'active') {
         $sql .= " AND (j.status IS NULL OR j.status <> 'completed')";
     }
@@ -70,35 +71,24 @@ try {
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    $jobs = $stmt->fetchAll();
+    $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $teams = [];
     if (hasRole(['admin', 'super_admin'])) {
         $stmtTeams = $pdo->query("SELECT * FROM teams");
-        $teams = $stmtTeams->fetchAll();
+        $teams = $stmtTeams->fetchAll(PDO::FETCH_ASSOC);
     }
 
     echo json_encode([
         'success' => true, 
         'data' => $jobs, 
-        'teams' => $teams,
-        'debug' => [  
-            'role' => $role,
-            'team_id_in_db' => $team_id,
-            'username' => $username
-        ]
+        'teams' => $teams
     ]);
 
 } catch (PDOException $e) {
-    // 🌟 2. ดักจับ Error เฉพาะเรื่องฐานข้อมูลและส่งกลับเป็น JSON
-    echo json_encode([
-        'success' => false, 
-        'error' => 'SQL Error: ' . $e->getMessage()
-    ]);
+    // ถ้ามีปัญหาเกี่ยวกับฐานข้อมูล เช่น คอลัมน์ขาดหาย จะแจ้งตรงนี้
+    echo json_encode(['success' => false, 'error' => 'Database SQL Error: ' . $e->getMessage()]);
 } catch (Exception $e) {
-    // 🌟 3. ดักจับ Error ทั่วไปในระบบ
-    echo json_encode([
-        'success' => false, 
-        'error' => 'System Error: ' . $e->getMessage()
-    ]);
+    echo json_encode(['success' => false, 'error' => 'System Error: ' . $e->getMessage()]);
 }
+?>

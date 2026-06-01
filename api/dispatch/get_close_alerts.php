@@ -1,10 +1,16 @@
 <?php
+// api/dispatch/get_close_alerts.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
 require_once '../../config/job_close.php';
 
 header('Content-Type: application/json');
-requireLogin();
+
+// 🌟 ป้องกัน Session หมดอายุ แล้วโดนเด้งเป็น HTML
+if (!isLoggedIn()) {
+    echo json_encode(['success' => false, 'error' => 'Session Expired']);
+    exit;
+}
 
 if (!hasRole('technician')) {
     echo json_encode(['success' => true, 'alerts' => []]);
@@ -61,6 +67,9 @@ try {
     }
 
     echo json_encode(['success' => true, 'alerts' => $alerts, 'count' => count($alerts)]);
+} catch (PDOException $e) {
+    echo json_encode(['success' => false, 'error' => 'SQL Error: ' . $e->getMessage()]);
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => 'Error: ' . $e->getMessage()]);
 }
+?>
