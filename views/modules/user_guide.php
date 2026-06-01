@@ -4,13 +4,13 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 
 $role = $user['role'] ?? 'user';
 $guideFiles = [
-    'super_admin' => 'USER_GUIDE_SUPER_ADMIN.md',
-    'admin' => 'USER_GUIDE_ADMIN.md',
-    'technician' => 'USER_GUIDE_TECHNICIAN.md',
-    'sales' => 'USER_GUIDE.md',
-    'user' => 'USER_GUIDE.md'
+    'super_admin' => 'USER_GUIDE_SUPER_ADMIN.html',
+    'admin' => 'USER_GUIDE_ADMIN.html',
+    'technician' => 'USER_GUIDE_TECHNICIAN.html',
+    'sales' => 'USER_GUIDE.html',
+    'user' => 'USER_GUIDE.html'
 ];
-$guideFile = $guideFiles[$role] ?? 'USER_GUIDE.md';
+$guideFile = $guideFiles[$role] ?? 'USER_GUIDE.html';
 $guideLabel = [
     'super_admin' => 'คู่มือสำหรับผู้ดูแลระบบสูงสุด',
     'admin' => 'คู่มือสำหรับผู้ดูแลระบบ',
@@ -18,6 +18,8 @@ $guideLabel = [
     'sales' => 'คู่มือการใช้งาน',
     'user' => 'คู่มือการใช้งาน'
 ][$role] ?? 'คู่มือการใช้งาน';
+$guidePath = __DIR__ . '/../../' . $guideFile;
+$guideContent = file_exists($guidePath) ? file_get_contents($guidePath) : '<div class="p-6 bg-slate-50 rounded-3xl text-slate-500">ไม่พบคู่มือสำหรับบทบาทนี้</div>';
 ?>
 
 <div class="space-y-6 pb-20 lg:pb-0">
@@ -43,9 +45,12 @@ $guideLabel = [
         <h3 class="text-xl font-black text-[var(--c-text-1)] mb-4">คำแนะนำด่วน</h3>
         <ul class="space-y-3 text-sm text-slate-600">
             <li>ใช้คู่มือบทบาทของคุณเพื่อค้นหาเมนูและฟังก์ชันที่เกี่ยวข้องได้เร็วขึ้น</li>
-            <li>หากคุณเป็น `super_admin` ให้ใช้เมนู `ตั้งค่าระบบเว็บไซต์` เพื่อจัดการประกาศหน้าเว็บ</li>
-            <li>หากคุณเป็น `admin` ให้ดูเรื่องการจัดการงานและระบบคลังสินค้า</li>
-            <li>หากคุณเป็น `technician` ให้ดูวิธีบันทึกเช็คอินและข้อมูลน้ำมัน</li>
+            <li>หากคุณเป็น `super_admin` ให้ใช้เมนู `ตั้งค่าระบบเว็บไซต์` เพื่อแก้ไขเนื้อหาคู่มือสำหรับทุกบทบาท</li>
+            <li>คู่มือที่แสดงบนหน้านี้รองรับ HTML, CSS และเนื้อหาที่เขียนด้วยรูปแบบข้อความปกติ</li>
         </ul>
+    </div>
+
+    <div class="card p-6 rounded-3xl bg-white border border-slate-200 prose prose-slate max-w-none">
+        <?= $guideContent ?>
     </div>
 </div>
