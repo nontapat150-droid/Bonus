@@ -119,22 +119,6 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
         </div>
     </div>
 
-    <div class="card !p-6 mb-6">
-        <div class="flex items-start gap-4">
-            <div class="p-3 bg-slate-100 rounded-2xl text-slate-700">
-                <i data-lucide="info" class="w-6 h-6"></i>
-            </div>
-            <div>
-                <h3 class="font-black text-[var(--c-text-1)]">วิธีคำนวณน้ำมันแยกเป็นรอบ</h3>
-                <p class="mt-2 text-sm text-[var(--c-text-3)] leading-6">
-                    ระบบจะคำนวณ "ลิตร/กม." ของรอบปัจจุบันจากจำนวนลิตรที่เติม ÷ ระยะทางของรอบก่อนหน้า
-                    หากยังไม่มีรอบก่อนหน้า จะแสดงเครื่องหมาย "-" เพื่อไม่ให้เข้าใจผิด.
-                    นอกจากนี้ สรุปภาพรวมจะเน้นทั้งปริมาณน้ำมันรวม, ระยะทางรวม, ค่าเฉลี่ยลิตร/กม. และต้นทุนต่อกม.
-                </p>
-            </div>
-        </div>
-    </div>
-
     <div class="kpi-grid mb-6">
         <div class="card !p-6 bg-slate-50 border border-slate-200">
             <p class="text-[10px] uppercase tracking-[0.3em] text-slate-400 font-black">จำนวนรอบ (รายการ)</p>
@@ -153,8 +137,8 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             <h3 id="stat_total_distance" class="mt-4 text-3xl font-black text-slate-900">0.00</h3>
         </div>
         <div class="card !p-6 bg-slate-50 border border-slate-200">
-            <p class="text-[10px] uppercase tracking-[0.3em] text-slate-400 font-black">ค่าเฉลี่ย ลิตร/กม.</p>
-            <h3 id="stat_avg_liters_per_km" class="mt-4 text-3xl font-black text-slate-900">-</h3>
+            <p class="text-[10px] uppercase tracking-[0.3em] text-slate-400 font-black">ค่าเฉลี่ย กม./ลิตร</p>
+            <h3 id="stat_avg_km_per_liter" class="mt-4 text-3xl font-black text-slate-900">-</h3>
         </div>
         <div class="card !p-6 bg-slate-50 border border-slate-200">
             <p class="text-[10px] uppercase tracking-[0.3em] text-slate-400 font-black">ต้นทุนเฉลี่ย/กม.</p>
@@ -237,7 +221,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                         <th class="px-4 py-4">ทีม/ป้ายทะเบียน</th>
                         <th>เลขไมล์</th>
                         <th class="px-4 py-4 text-center">ระยะทาง (กม.)</th>
-                        <th class="px-4 py-4 text-center">ลิตร/กม. (จากรอบก่อนหน้า)</th>
+                        <th class="px-4 py-4 text-center">กม./ลิตร</th>
                         <th class="px-4 py-4 text-center">เคสงาน (รอบ)</th>
                         <th class="px-4 py-4 text-right">ต้นทุน/กม.</th>
                         <th class="px-4 py-4 text-right">ต้นทุน/งาน</th>

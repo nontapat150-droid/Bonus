@@ -195,8 +195,9 @@ async function fetchData(silent = false) {
         }
 
         if (data.success) {
+            const uniqueRecords = dedupeRecords(data.records);
             updateStats(data.stats);
-            allRecords = data.records;
+            allRecords = uniqueRecords;
             monthlyData = data.monthly || [];
             dailyData = data.chart || [];
             
@@ -207,7 +208,7 @@ async function fetchData(silent = false) {
 
             renderAnalyticsCharts();
             if (isCompareMode) { renderComparisonCharts(); renderMonthlyCompareChart(); }
-            renderTable(data.records);
+            renderTable(uniqueRecords);
             
             if (!silent) {
                 if (data.records.length > 0) showToast('success', `โหลดข้อมูลสำเร็จ พบทั้งหมด ${data.records.length} รายการ`);
@@ -235,22 +236,16 @@ function updateStats(stats) {
     const sr = document.getElementById('stat_total_records');
     const sj = document.getElementById('stat_total_jobs');
     const sd = document.getElementById('stat_total_distance');
-    const sal = document.getElementById('stat_avg_liters_per_km');
+    const sak = document.getElementById('stat_avg_km_per_liter');
     const sac = document.getElementById('stat_avg_cost_per_km');
 
     let totalDistance = 0;
-    let totalLitersPerKm = 0;
-    let countLitersPerKm = 0;
-
     allRecords.forEach(r => {
         totalDistance += Number(r.distance) || 0;
-        if (Number(r.liters_per_km) > 0) {
-            totalLitersPerKm += Number(r.liters_per_km);
-            countLitersPerKm += 1;
-        }
     });
 
-    const avgLitersPerKm = countLitersPerKm > 0 ? (totalLitersPerKm / countLitersPerKm) : 0;
+    const totalLiters = Number(stats.total_liters) || 0;
+    const avgKmPerLiter = totalDistance > 0 && totalLiters > 0 ? (totalDistance / totalLiters) : 0;
     const avgCostPerKm = totalDistance > 0 ? (Number(stats.total_cost) / totalDistance) : 0;
 
     if(sc) sc.textContent = Number(stats.total_cost).toLocaleString('th-TH', {minimumFractionDigits: 2});
@@ -258,7 +253,7 @@ function updateStats(stats) {
     if(sr) sr.textContent = Number(stats.total_records).toLocaleString('th-TH');
     if(sj) sj.textContent = stats.total_jobs ? Number(stats.total_jobs).toLocaleString('th-TH') : '0';
     if(sd) sd.textContent = totalDistance.toLocaleString('th-TH', {minimumFractionDigits: 2});
-    if(sal) sal.textContent = countLitersPerKm > 0 ? Number(avgLitersPerKm).toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-';
+    if(sak) sak.textContent = avgKmPerLiter > 0 ? Number(avgKmPerLiter).toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-';
     if(sac) sac.textContent = totalDistance > 0 ? '฿' + Number(avgCostPerKm).toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-';
 }
 
@@ -401,6 +396,19 @@ function renderMonthlyCompareChart() {
     });
 }
 
+function dedupeRecords(records) {
+    const seenIds = new Set();
+    const uniqueRecords = [];
+    records.forEach(row => {
+        const key = row.id ? `id:${row.id}` : `${row.date_recorded}|${row.license_plate}|${row.mileage}|${row.total_price}`;
+        if (!seenIds.has(key)) {
+            seenIds.add(key);
+            uniqueRecords.push(row);
+        }
+    });
+    return uniqueRecords;
+}
+
 function renderTable(records) {
     const tbody = document.getElementById('oilTableBody');
     if(!tbody) return;
@@ -424,7 +432,7 @@ function renderTable(records) {
             <td class="px-4 py-4">${teamBadge}</td>
             <td class="px-4 py-4 text-center font-bold text-slate-600">${Number(row.mileage).toLocaleString('th-TH')}</td>
             <td class="px-4 py-4 text-center font-bold text-sky-600">${row.distance} กม.</td>
-            <td class="px-4 py-4 text-center font-bold text-slate-700">${Number(row.liters_per_km) > 0 ? Number(row.liters_per_km).toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ลิตร/กม.' : '-'}</td>
+            <td class="px-4 py-4 text-center font-bold text-slate-700">${Number(row.km_per_liter) > 0 ? Number(row.km_per_liter).toLocaleString('th-TH', {minimumFractionDigits:2}) + ' กม./ลิตร' : '-'}</td>
             <td class="px-4 py-4 text-center"><span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-black">📋 ${row.job_count} งาน</span></td>
             <td class="px-4 py-4 text-right"><span class="text-xs text-slate-400 block mb-0.5">กม. ละ</span><span class="font-bold text-rose-500">฿${Number(row.cost_per_km).toLocaleString('th-TH', {minimumFractionDigits:2})}</span></td>
             <td class="px-4 py-4 text-right"><span class="text-xs text-slate-400 block mb-0.5">งาน ละ</span><span class="font-bold text-indigo-500">฿${Number(row.cost_per_job).toLocaleString('th-TH', {minimumFractionDigits:2})}</span></td>
@@ -807,86 +815,30 @@ window.exportOilExcel = async function() {
 
             showToast('info', 'กำลังสร้างไฟล์ Excel พร้อมคำนวณยอดรวม...');
             let sortedRecords = [...recordsToExport].sort((a, b) => new Date(a.date_recorded) - new Date(b.date_recorded));
+
+            const seenRecords = new Set();
+            const uniqueRecords = [];
+            sortedRecords.forEach(row => {
+                const key = row.id ? `id:${row.id}` : `${row.date_recorded}|${row.license_plate}|${row.mileage}|${row.total_price}`;
+                if (!seenRecords.has(key)) {
+                    seenRecords.add(key);
+                    uniqueRecords.push(row);
+                }
+            });
             
-            let totalLiters = 0;
-            let totalPrice = 0;
-            let totalDistance = 0;
-            let totalJobs = 0;
-            
-            let exportData = sortedRecords.map(row => {
-                totalLiters += Number(row.liters);
-                totalPrice += Number(row.total_price);
-                totalDistance += Number(row.distance);
-                totalJobs += Number(row.job_count);
-                
+            let exportData = uniqueRecords.map(row => {
                 const d = new Date(row.date_recorded);
                 return {
-                    "วันที่": d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}),
-                    "ทะเบียนรถ (ทีม)": row.team_name || row.license_plate,
+                    "วันที่": d.toLocaleDateString('en-GB'),
                     "ชื่อผู้เติม": row.tech_name,
                     "เลขไมล์": parseInt(row.mileage),
-                    "ลิตร": Number(row.liters),
-                    "ยอดเงิน(บาท)": Number(row.total_price),
-                    "ระยะทางวิ่ง(กม.)": row.distance,
-                    "จำนวนเคสงาน(รอบ)": row.job_count,
-                    "ต้นทุน/กม.(บาท)": row.cost_per_km,
-                    "ต้นทุน/งาน(บาท)": row.cost_per_job
+                    "ระยะทางวิ่ง(กม.)": Number(row.distance),
+                    "จำนวนลิตร": Number(row.liters),
+                    "ราคาต่อลิตร": Number(row.price_per_liter),
+                    "กม./ลิตร": Number(row.km_per_liter),
+                    "ยอดเติม(บาท)": Number(row.total_price)
                 };
             });
-
-            let mileageIncreaseText = totalDistance;
-            if (formValues.vehicle !== 'all' && sortedRecords.length > 0) {
-                let validMileages = sortedRecords.map(r => parseInt(r.mileage)).filter(m => m > 0);
-                if (validMileages.length > 0) {
-                    let minMile = Math.min(...validMileages);
-                    let maxMile = Math.max(...validMileages);
-                    if (maxMile >= minMile) {
-                        mileageIncreaseText = maxMile - minMile;
-                    }
-                }
-            }
-
-            exportData.push({}); 
-            exportData.push({ "วันที่": "========== สรุปยอดรวมประจำเดือน ==========" });
-            
-            exportData.push({
-                "วันที่": "เลขไมล์เดือนนี้เพิ่มขึ้น",
-                "ทะเบียนรถ (ทีม)": formValues.vehicle !== 'all' ? (mileageIncreaseText.toLocaleString('th-TH') + " กม.") : "ดูที่ 'รวมระยะทางที่ใช้รถ' (เลือกทุกคัน)"
-            });
-
-            exportData.push({
-                "วันที่": "จำนวนลิตรที่เติมไปเดือนนี้",
-                "ทะเบียนรถ (ทีม)": totalLiters.toLocaleString('th-TH', {minimumFractionDigits: 2}) + " ลิตร"
-            });
-            
-            exportData.push({
-                "วันที่": "ยอดเงินที่ใช้ไปของเดือนนี้",
-                "ทะเบียนรถ (ทีม)": totalPrice.toLocaleString('th-TH', {minimumFractionDigits: 2}) + " บาท"
-            });
-            
-            exportData.push({
-                "วันที่": "รวมระยะทางเท่าไหร่ที่ใช้รถ",
-                "ทะเบียนรถ (ทีม)": totalDistance.toLocaleString('th-TH') + " กม."
-            });
-            
-            let avgPricePerLiter = totalLiters > 0 ? (totalPrice / totalLiters) : 0;
-            exportData.push({
-                "วันที่": "ราคา/ลิตร โดยเฉลี่ยเดือนนี้",
-                "ทะเบียนรถ (ทีม)": avgPricePerLiter.toLocaleString('th-TH', {minimumFractionDigits: 2}) + " บาท/ลิตร"
-            });
-            
-            if (totalJobs > 0) {
-                let avgCostPerJob = totalPrice / totalJobs;
-                exportData.push({
-                    "วันที่": "เฉลี่ยต่อเคส (ต้นทุน)",
-                    "ทะเบียนรถ (ทีม)": avgCostPerJob.toLocaleString('th-TH', {minimumFractionDigits: 2}) + " บาท/เคส"
-                });
-            } else {
-                exportData.push({
-                    "วันที่": "เฉลี่ยต่อเคส (ต้นทุน)",
-                    "ทะเบียนรถ (ทีม)": "ไม่มีประวัติการเข้าเคสงาน"
-                });
-            }
 
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
