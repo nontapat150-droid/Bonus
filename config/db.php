@@ -5,8 +5,8 @@ date_default_timezone_set('Asia/Bangkok');
 
 $host = 'sql207.infinityfree.com';
 $db   = 'if0_42036532_ro';
-$user = 'if0_42036532'; // Adjust based on XAMPP default
-$pass = 'Wxv8bmb9Cak';     // Adjust based on XAMPP default
+$user = 'if0_42036532';
+$pass = 'Wxv8bmb9Cak';
 $charset = 'utf8';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
