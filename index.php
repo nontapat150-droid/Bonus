@@ -36,7 +36,7 @@ if ($page === 'home') {
         // 1. ลบประกาศที่หมดอายุอัตโนมัติ
         $pdo->exec("DELETE FROM announcements WHERE expires_at IS NOT NULL AND expires_at < NOW()");
         // 2. ดึงประกาศล่าสุดที่ยังไม่หมดอายุ
-        $stmtAnn = $pdo->query("SELECT message, expires_at FROM announcements ORDER BY id DESC LIMIT 1");
+        $stmtAnn = $pdo->query("SELECT id, message, image_url, expires_at FROM announcements ORDER BY id DESC LIMIT 1");
         $announcement = $stmtAnn->fetch();
         
     } catch (PDOException $e) {}
@@ -458,6 +458,35 @@ if ($page === 'home') {
             </div>
         </div>
 
+        <?php if ($announcement): ?>
+        <div id="siteAnnouncementModal" class="hidden fixed inset-0 z-[100] bg-black/50 px-4 py-8 flex items-center justify-center">
+            <div class="max-w-3xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl ring-1 ring-slate-900/10">
+                <div class="relative pb-4">
+                    <button id="closeAnnouncementBtn" class="absolute right-4 top-4 text-slate-600 hover:text-slate-900 text-2xl font-bold">&times;</button>
+                    <?php if (!empty($announcement['image_url'])): ?>
+                    <img src="<?= htmlspecialchars($announcement['image_url']) ?>" alt="ประกาศ" class="w-full h-72 object-cover">
+                    <?php endif; ?>
+                </div>
+                <div class="p-6">
+                    <div class="flex items-center justify-between gap-4 mb-4">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.22em] font-black text-slate-400">ประกาศ</p>
+                            <h2 class="text-2xl font-black text-slate-900">ข้อความประกาศ</h2>
+                        </div>
+                        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
+                            <i data-lucide="bell" class="w-4 h-4"></i> ปิดได้
+                        </span>
+                    </div>
+                    <?php if (!empty($announcement['message'])): ?>
+                    <p class="text-slate-700 text-sm leading-relaxed whitespace-pre-line"><?= nl2br(htmlspecialchars($announcement['message'])) ?></p>
+                    <?php else: ?>
+                    <p class="text-slate-500 text-sm">ประกาศนี้เป็นภาพเท่านั้น</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <main class="p-4 md:p-6 page-view">
             
             <?php if ($page === 'home'): ?>
@@ -565,7 +594,8 @@ if ($page === 'home') {
                     'system_history' => 'views/modules/system_history.php',
                     'job_close_history' => 'views/modules/job_close_history.php',
                     'dispatch' => 'views/modules/dispatch_map.php',
-                    'inventory' => 'views/modules/inventory_app.php',
+                        'inventory' => 'views/modules/inventory_app.php',
+                    'site_settings' => 'views/modules/site_settings.php',
                     'users' => 'views/modules/user_settings.php',
                     'checkin' => 'views/modules/checkin.php'
                 ];
@@ -578,6 +608,9 @@ if ($page === 'home') {
                 }
                 // สิทธิ์อื่นๆห้ามเข้าหน้าประวัติรวม ยกเว้นแอดมิน
                 if ($page === 'system_history' && !hasRole(['admin', 'super_admin'])) {
+                    $accessDenied = true;
+                }
+                if ($page === 'site_settings' && !hasRole('super_admin')) {
                     $accessDenied = true;
                 }
                 if ($page === 'job_close_history' && !hasRole('technician')) {
@@ -785,6 +818,29 @@ if ($page === 'home') {
                 Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
             }
         }
+
+        <?php if ($announcement): ?>
+        (function() {
+            const announcementId = <?= json_encode($announcement['id']) ?>;
+            const announcementModal = document.getElementById('siteAnnouncementModal');
+            const closeBtn = document.getElementById('closeAnnouncementBtn');
+            if (!announcementModal || !closeBtn || !announcementId) return;
+            const dismissed = localStorage.getItem('dismissedAnnouncement');
+            if (dismissed === announcementId.toString()) return;
+            function showAnnouncement() {
+                announcementModal.classList.remove('hidden');
+            }
+            function closeAnnouncement() {
+                announcementModal.classList.add('hidden');
+                localStorage.setItem('dismissedAnnouncement', announcementId.toString());
+            }
+            closeBtn.addEventListener('click', closeAnnouncement);
+            announcementModal.addEventListener('click', (event) => {
+                if (event.target === announcementModal) closeAnnouncement();
+            });
+            document.addEventListener('DOMContentLoaded', showAnnouncement);
+        })();
+        <?php endif; ?>
     </script>
     <script src="assets/js/common.js"></script>
     <script src="assets/js/datepicker.js"></script>
