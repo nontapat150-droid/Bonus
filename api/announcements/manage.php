@@ -12,6 +12,20 @@ if (!hasRole(['admin', 'super_admin'])) {
     exit;
 }
 
+// Ensure the announcements table exists
+try {
+    $pdo->exec('CREATE TABLE IF NOT EXISTS announcements (
+        id INT AUTO_INCREMENT PRIMARY KEY, 
+        title VARCHAR(255) DEFAULT NULL, 
+        message TEXT NOT NULL, 
+        image_url VARCHAR(255) DEFAULT NULL, 
+        expires_at DATETIME DEFAULT NULL, 
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+} catch (Exception $e) {
+    // Ignore if table exists or permission issue
+}
+
 function announcementHasTitleColumn($pdo) {
     try {
         $stmt = $pdo->prepare("SHOW COLUMNS FROM announcements LIKE 'title'");
