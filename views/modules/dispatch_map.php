@@ -171,6 +171,12 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <option value="100">100</option>
                     <option value="all">ทั้งหมด</option>
                 </select>
+                
+                <select id="statusFilter" class="text-xs font-bold input !py-2 !px-3 min-h-10">
+                    <option value="all">ทุกสถานะ</option>
+                    <option value="pending">รอดำเนินการ</option>
+                    <option value="failed">ไม่สำเร็จ</option>
+                </select>
 
                 <?php if ($isAdmin): ?>
                 <select id="teamFilter" class="text-xs font-bold input !py-2 !px-3 !bg-[var(--c-primary-faint)] !text-[var(--c-primary)] !border-[var(--c-primary-faint)] min-h-10">
