@@ -86,11 +86,13 @@ try {
 
         $cost_per_job = $job_count > 0 ? ($row['total_price'] / $job_count) : 0;
         $cost_per_km = $distance > 0 ? ($row['total_price'] / $distance) : 0;
+        $liters_per_km = $distance > 0 ? ($row['liters'] / $distance) : 0;
 
         $row['distance'] = $distance;
         $row['job_count'] = $job_count;
         $row['cost_per_job'] = round($cost_per_job, 2);
         $row['cost_per_km'] = round($cost_per_km, 2);
+        $row['liters_per_km'] = round($liters_per_km, 2);
 
         $processed_records[] = $row;
     }
