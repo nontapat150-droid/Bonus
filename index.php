@@ -16,7 +16,8 @@ $stats = [
     'total_staff' => 0
 ];
 
-$announcement = null;
+$popupAnnouncement = null;
+$marqueeAnnouncement = null;
 
 if ($page === 'home') {
     try {
@@ -35,9 +36,12 @@ if ($page === 'home') {
         // --- 🚀 จัดการและดึงข้อมูลประกาศ (Marquee) ---
         // 1. ลบประกาศที่หมดอายุอัตโนมัติ
         $pdo->exec("DELETE FROM announcements WHERE expires_at IS NOT NULL AND expires_at < NOW()");
-        // 2. ดึงประกาศล่าสุดที่ยังไม่หมดอายุ
-        $stmtAnn = $pdo->query("SELECT * FROM announcements ORDER BY id DESC LIMIT 1");
-        $announcement = $stmtAnn->fetch();
+        // 2. ดึงประกาศแยกระหว่างป๊อปอัปและป้ายวิ่ง
+        $stmtPopup = $pdo->query("SELECT * FROM announcements WHERE type = 'popup' ORDER BY id DESC LIMIT 1");
+        $popupAnnouncement = $stmtPopup->fetch();
+
+        $stmtMarquee = $pdo->query("SELECT * FROM announcements WHERE type = 'marquee' ORDER BY id DESC LIMIT 1");
+        $marqueeAnnouncement = $stmtMarquee->fetch();
         
     } catch (PDOException $e) {}
 }
@@ -483,27 +487,27 @@ if ($page === 'home') {
             </div>
         </div>
 
-        <?php if ($announcement): ?>
+        <?php if ($popupAnnouncement): ?>
         <div id="siteAnnouncementModal" class="hidden fixed inset-0 z-[100] bg-black/50 px-4 py-8 flex items-center justify-center">
             <div class="max-w-3xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl ring-1 ring-slate-900/10">
                 <div class="relative pb-4">
                     <button id="closeAnnouncementBtn" class="absolute right-4 top-4 text-slate-600 hover:text-slate-900 text-2xl font-bold">&times;</button>
-                    <?php if (!empty($announcement['image_url'])): ?>
-                    <img src="<?= htmlspecialchars($announcement['image_url']) ?>" alt="ประกาศ" class="w-full h-72 object-cover">
+                    <?php if (!empty($popupAnnouncement['image_url'])): ?>
+                    <img src="<?= htmlspecialchars($popupAnnouncement['image_url']) ?>" alt="ประกาศ" class="w-full h-72 object-cover">
                     <?php endif; ?>
                 </div>
                 <div class="p-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                         <div>
                             <p class="text-xs uppercase tracking-[0.22em] font-black text-slate-400">ประกาศ</p>
-                            <h2 class="text-2xl font-black text-slate-900"><?= !empty($announcement['title']) ? htmlspecialchars($announcement['title']) : 'ประกาศใหม่' ?></h2>
+                            <h2 class="text-2xl font-black text-slate-900"><?= !empty($popupAnnouncement['title']) ? htmlspecialchars($popupAnnouncement['title']) : 'ประกาศใหม่' ?></h2>
                         </div>
                         <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
                             <i data-lucide="bell" class="w-4 h-4"></i> ปิดได้
                         </span>
                     </div>
-                    <?php if (!empty($announcement['message'])): ?>
-                    <p class="text-slate-700 text-sm leading-relaxed whitespace-pre-line"><?= nl2br(htmlspecialchars($announcement['message'])) ?></p>
+                    <?php if (!empty($popupAnnouncement['message'])): ?>
+                    <p class="text-slate-700 text-sm leading-relaxed whitespace-pre-line"><?= nl2br(htmlspecialchars($popupAnnouncement['message'])) ?></p>
                     <?php else: ?>
                     <p class="text-slate-500 text-sm">ประกาศนี้เป็นภาพเท่านั้น</p>
                     <?php endif; ?>
@@ -781,9 +785,9 @@ if ($page === 'home') {
             isAdmin: <?php echo hasRole(['admin', 'super_admin']) ? 'true' : 'false'; ?>
         };
 
-        <?php if ($announcement): ?>
+        <?php if ($popupAnnouncement): ?>
         (function() {
-            const announcementId = <?= json_encode($announcement['id']) ?>;
+            const announcementId = <?= json_encode($popupAnnouncement['id']) ?>;
             const announcementModal = document.getElementById('siteAnnouncementModal');
             const closeBtn = document.getElementById('closeAnnouncementBtn');
             const checkbox = document.getElementById('dontShowAnnouncementToday');
