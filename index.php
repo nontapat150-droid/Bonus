@@ -580,6 +580,28 @@ if ($page === 'home') {
                             </div>
                         </a>
                         <?php endif; ?>
+                        <a href="index.php?page=guide" class="card flex flex-col justify-between hover:border-[var(--c-info)] transition-colors group text-inherit no-underline">
+                            <div class="flex items-start justify-between">
+                                <div class="w-12 h-12 rounded-xl bg-[var(--c-info)] text-white flex items-center justify-center shadow-btn group-hover:scale-105 transition-transform" style="--shadow-btn: 0 4px 14px rgba(59,130,246, 0.40);"><i data-lucide="book-open"></i></div>
+                                <i data-lucide="arrow-up-right" class="text-[var(--c-text-3)] group-hover:text-[var(--c-info)] transition-colors"></i>
+                            </div>
+                            <div class="mt-6">
+                                <h3 class="text-base font-bold text-[var(--c-text-1)]">คู่มือการใช้งาน</h3>
+                                <p class="text-sm text-[var(--c-text-3)]">ดูคู่มือแยกตามบทบาท พร้อมคำแนะนำสำหรับการใช้งานระบบ</p>
+                            </div>
+                        </a>
+                        <?php if (hasRole('super_admin')): ?>
+                        <a href="index.php?page=site_settings" class="card flex flex-col justify-between hover:border-[var(--c-slate-600)] transition-colors group text-inherit no-underline">
+                            <div class="flex items-start justify-between">
+                                <div class="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-btn group-hover:scale-105 transition-transform" style="--shadow-btn: 0 4px 14px rgba(15,23,42, 0.40);"><i data-lucide="settings"></i></div>
+                                <i data-lucide="arrow-up-right" class="text-[var(--c-text-3)] group-hover:text-slate-900 transition-colors"></i>
+                            </div>
+                            <div class="mt-6">
+                                <h3 class="text-base font-bold text-[var(--c-text-1)]">ตั้งค่าระบบเว็บไซต์</h3>
+                                <p class="text-sm text-[var(--c-text-3)]">จัดการประกาศป๊อปอัปและรูปประกาศสำหรับผู้เข้าชม</p>
+                            </div>
+                        </a>
+                        <?php endif; ?>
                     </div>
 
                 </div>
@@ -594,7 +616,8 @@ if ($page === 'home') {
                     'system_history' => 'views/modules/system_history.php',
                     'job_close_history' => 'views/modules/job_close_history.php',
                     'dispatch' => 'views/modules/dispatch_map.php',
-                        'inventory' => 'views/modules/inventory_app.php',
+                    'guide' => 'views/modules/user_guide.php',
+                    'inventory' => 'views/modules/inventory_app.php',
                     'site_settings' => 'views/modules/site_settings.php',
                     'users' => 'views/modules/user_settings.php',
                     'checkin' => 'views/modules/checkin.php'
