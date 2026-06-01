@@ -162,7 +162,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
             <div class="flex items-center gap-2 flex-wrap w-full xl:w-auto">
                 <input type="date" id="dateFilter" class="text-xs font-bold input !py-2 !px-3 min-h-10 flex-1 sm:flex-none">
-                <button onclick="document.getElementById('dateFilter').value=''; renderUI();" class="bg-[var(--c-surface)] hover:bg-[var(--c-surface-3)] border border-[var(--c-border)] text-[var(--c-text-2)] px-3 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap min-h-10">
+                <button onclick="document.getElementById('dateFilter').value=''; window.renderUI();" class="bg-[var(--c-surface)] hover:bg-[var(--c-surface-3)] border border-[var(--c-border)] text-[var(--c-text-2)] px-3 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap min-h-10">
                     ทุกวัน
                 </button>
                 <select id="limitFilter" class="text-xs font-bold input !py-2 !px-3 min-h-10">
@@ -171,13 +171,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <option value="100">100</option>
                     <option value="all">ทั้งหมด</option>
                 </select>
-                <select id="statusFilter" onchange="renderUI()" class="text-xs font-bold input !py-2 !px-3 min-h-10">
-                    <option value="all">ทุกสถานะ</option>
-                    <option value="pending">รอดำเนินการ</option>
-                    <option value="failed">ไม่สำเร็จ</option>
-                </select>
-                
-                <select id="statusFilter" onchange="renderUI()" class="text-xs font-bold input !py-2 !px-3 min-h-10">
+                <select id="statusFilter" class="text-xs font-bold input !py-2 !px-3 min-h-10">
                     <option value="all">ทุกสถานะ</option>
                     <option value="pending">รอดำเนินการ</option>
                     <option value="failed">ไม่สำเร็จ</option>
