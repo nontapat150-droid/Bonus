@@ -614,8 +614,8 @@ function renderMapJobList(mapJobs) {
         const isCompleted = job.status && (job.status.toLowerCase() === 'completed' || job.status.toLowerCase() === 'failed');
         const actionButtons = !isCompleted ? `
             <div class="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100">
-                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'completed')">
-                    <i data-lucide="check-circle" class="w-3 h-3"></i>จบงาน
+                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
+                    <i data-lucide="check-circle" class="w-3 h-3"></i>ปิดงาน
                 </button>
                 <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-rose-500 text-white hover:bg-rose-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'failed')">
                     <i data-lucide="x-circle" class="w-3 h-3"></i>ไม่สำเร็จ
@@ -746,8 +746,8 @@ function createJobRow(job, index) {
         </div>
         ${job.team_id && (!job.status || (job.status.toLowerCase() !== 'completed' && job.status.toLowerCase() !== 'failed')) ? `
         <div class="mt-2 grid grid-cols-2 gap-2">
-            <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'completed')">
-                <i data-lucide="check-circle" class="w-4 h-4"></i>จบงาน
+            <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>ปิดงาน
             </button>
             <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'failed')">
                 <i data-lucide="x-circle" class="w-4 h-4"></i>ไม่สำเร็จ
@@ -813,8 +813,8 @@ function showJobPopup(job, color) {
     if (!IS_ADMIN) {
         actionButtons = `
             <div class="grid grid-cols-2 gap-2 mt-3">
-                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'completed')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
-                    ปิดจ๊อบ
+                <button onclick="Swal.close(); openCompleteJobModal(${job.id})" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
+                    ปิดงาน 3BB
                 </button>
                 <button onclick="Swal.close(); updateJobStatus(${job.id}, 'failed')" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
                     ทำไม่สำเร็จ
@@ -880,61 +880,118 @@ function showJobPopup(job, color) {
     });
 }
 
-window.updateJobStatus = async function(jobId, status) {
-    const job = allJobs.find(j => String(j.id) === String(jobId));
-    if (!job) return;
+const CJ_OPTIONAL_INPUTS = [
+    'cj_order_no', 'cj_equipment_soa', 'cj_sn_playbox', 'cj_sn_onu', 'cj_sn_mesh',
+    'cj_sn_sim', 'cj_sn_ip_camera', 'cj_splitter', 'cj_port_used', 'cj_l3_name',
+    'cj_actual_cable_length', 'cj_ref_id_3bb', 'cj_sc_connector_blue', 'cj_initial_fee', 'cj_remark'
+];
 
-    let remark = '';
-    
-    if (status === 'failed') {
-        const { value: text } = await Swal.fire({
-            title: 'ระบุเหตุผลที่ไม่สำเร็จ', 
-            html: `<p class="text-sm text-slate-600 mb-3">งาน: <strong>${escapeHTML(job.access_no)}</strong></p>`,
-            input: 'textarea', 
-            inputPlaceholder: 'เขียนหมายเหตุเกี่ยวกับปัญหาที่เกิดขึ้น...',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            confirmButtonText: 'ยืนยัน', 
-            cancelButtonText: 'ยกเลิก',
-            customClass: { popup: 'rounded-xl', confirmButton: 'rounded-lg text-xs', cancelButton: 'rounded-lg text-xs' }
-        });
-        if (!text) { 
-            if(text !== undefined) Swal.fire('แจ้งเตือน', 'กรุณาระบุเหตุผล', 'warning'); 
-            return; 
-        }
-        remark = text;
-    } else if (status === 'completed') {
-        const { isConfirmed } = await Swal.fire({
-            title: 'ยืนยันปิดจ๊อบ',
-            html: `<p class="text-sm text-slate-600 mb-2">งาน: <strong>${escapeHTML(job.access_no)}</strong></p>
-                   <p class="text-sm text-slate-600">ลูกค้า: <strong>${escapeHTML(job.customer || 'ไม่ระบุ')}</strong></p>
-                   <p class="text-xs text-slate-500 mt-3">ท้องถิ่นที่: ${escapeHTML(job.address || '-')}</p>`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#10b981',
-            confirmButtonText: 'ยืนยันจบงาน',
-            cancelButtonText: 'ยกเลิก',
-            customClass: { popup: 'rounded-xl', confirmButton: 'rounded-lg text-xs', cancelButton: 'rounded-lg text-xs' }
-        });
-        if (!isConfirmed) return;
+function formatThaiDate(dateStr) {
+    if (!hasValue(dateStr)) return '-';
+    const d = new Date(dateStr + 'T00:00:00');
+    if (Number.isNaN(d.getTime())) return String(dateStr);
+    return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+window.openCompleteJobModal = function(jobId) {
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    if (!job) {
+        Swal.fire('ไม่พบงาน', 'ไม่พบข้อมูลงานที่เลือก', 'warning');
+        return;
     }
-    
-    showLoader('บันทึกสถานะ...');
+
+    const modal = document.getElementById('completeJobModal');
+    if (!modal) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบฟอร์มปิดงาน กรุณารีเฟรชหน้าเว็บ', 'error');
+        return;
+    }
+
+    document.getElementById('cj_job_id').value = jobId;
+    const installDate = rawValue(job.plan_arrival_date, '');
+    document.getElementById('cj_install_date').value = installDate;
+    document.getElementById('cj_install_date_display').textContent = formatThaiDate(installDate);
+    document.getElementById('cj_close_case').textContent = rawValue(job.access_no, '-');
+    document.getElementById('cj_customer').textContent = rawValue(job.customer, 'ไม่ระบุ');
+    document.getElementById('cj_package').textContent = rawValue(job.package, '-');
+    document.getElementById('cj_main_package').textContent = rawValue(job.product, '-');
+
+    document.getElementById('cj_order_no').value = hasValue(job.order_no) ? String(job.order_no).trim() : '';
+    CJ_OPTIONAL_INPUTS.forEach(id => {
+        if (id === 'cj_order_no') return;
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+
+    modal.classList.remove('hidden');
+    refreshLucideIcons();
+};
+
+window.closeCompleteJobModal = function() {
+    const modal = document.getElementById('completeJobModal');
+    if (modal) modal.classList.add('hidden');
+};
+
+window.submitCompleteJob3BB = async function() {
+    const jobId = document.getElementById('cj_job_id')?.value;
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    if (!jobId || !job) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลงาน', 'error');
+        return;
+    }
+
+    const val = (id) => document.getElementById(id)?.value?.trim() ?? '';
+
+    const close3bb = {
+        install_date: document.getElementById('cj_install_date')?.value || job.plan_arrival_date,
+        close_case_no: job.access_no,
+        order_no: val('cj_order_no'),
+        customer_name: job.customer,
+        package_name: job.package,
+        main_package: job.product,
+        equipment_soa: val('cj_equipment_soa'),
+        sn_playbox: val('cj_sn_playbox'),
+        sn_onu: val('cj_sn_onu'),
+        sn_mesh: val('cj_sn_mesh'),
+        sn_sim: val('cj_sn_sim'),
+        sn_ip_camera: val('cj_sn_ip_camera'),
+        splitter: val('cj_splitter'),
+        port_used: val('cj_port_used'),
+        l3_name: val('cj_l3_name'),
+        actual_cable_length: val('cj_actual_cable_length'),
+        ref_id_3bb: val('cj_ref_id_3bb'),
+        sc_connector_blue: val('cj_sc_connector_blue'),
+        initial_fee: val('cj_initial_fee'),
+        remark: val('cj_remark')
+    };
+
+    const { isConfirmed } = await Swal.fire({
+        title: 'ยืนยันปิดงาน 3BB?',
+        html: `<p class="text-sm text-slate-600">Non: <strong>${escapeHTML(job.access_no)}</strong></p>
+               <p class="text-sm text-slate-600">ลูกค้า: <strong>${escapeHTML(job.customer || '-')}</strong></p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        confirmButtonText: 'ยืนยันปิดงาน',
+        cancelButtonText: 'ยกเลิก',
+        customClass: { popup: 'rounded-xl', confirmButton: 'rounded-lg text-xs', cancelButton: 'rounded-lg text-xs' }
+    });
+    if (!isConfirmed) return;
+
+    showLoader('กำลังบันทึกปิดงาน...');
     try {
         const res = await fetch('api/dispatch/update_job_status.php', {
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ job_id: jobId, status: status, remark: remark })
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job_id: jobId, status: 'completed', close_3bb: close3bb })
         });
         const data = await res.json();
         if (data.success) {
-            const icon = status === 'completed' ? 'success' : 'info';
-            const message = status === 'completed' ? 'บันทึกการจบงานเรียบร้อย' : 'บันทึกการไม่สำเร็จเรียบร้อย';
-            Swal.fire({ 
-                title: 'สำเร็จ', 
-                text: message, 
-                icon: icon, 
-                timer: 1500, 
+            closeCompleteJobModal();
+            Swal.fire({
+                title: 'สำเร็จ',
+                text: 'บันทึกการปิดงาน 3BB เรียบร้อย',
+                icon: 'success',
+                timer: 1500,
                 showConfirmButton: false,
                 didClose: () => {
                     loadJobs();
@@ -946,8 +1003,68 @@ window.updateJobStatus = async function(jobId, status) {
         }
     } catch (e) {
         Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', 'error');
-    } finally { 
-        hideLoader(); 
+    } finally {
+        hideLoader();
+    }
+};
+
+window.updateJobStatus = async function(jobId, status) {
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    if (!job) return;
+
+    if (status === 'completed') {
+        openCompleteJobModal(jobId);
+        return;
+    }
+
+    let remark = '';
+
+    if (status === 'failed') {
+        const { value: text } = await Swal.fire({
+            title: 'ระบุเหตุผลที่ไม่สำเร็จ',
+            html: `<p class="text-sm text-slate-600 mb-3">งาน: <strong>${escapeHTML(job.access_no)}</strong></p>`,
+            input: 'textarea',
+            inputPlaceholder: 'เขียนหมายเหตุเกี่ยวกับปัญหาที่เกิดขึ้น...',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'ยืนยัน',
+            cancelButtonText: 'ยกเลิก',
+            customClass: { popup: 'rounded-xl', confirmButton: 'rounded-lg text-xs', cancelButton: 'rounded-lg text-xs' }
+        });
+        if (!text) {
+            if (text !== undefined) Swal.fire('แจ้งเตือน', 'กรุณาระบุเหตุผล', 'warning');
+            return;
+        }
+        remark = text;
+    }
+
+    showLoader('บันทึกสถานะ...');
+    try {
+        const res = await fetch('api/dispatch/update_job_status.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job_id: jobId, status: status, remark: remark })
+        });
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire({
+                title: 'สำเร็จ',
+                text: 'บันทึกการไม่สำเร็จเรียบร้อย',
+                icon: 'info',
+                timer: 1500,
+                showConfirmButton: false,
+                didClose: () => {
+                    loadJobs();
+                    refreshLucideIcons();
+                }
+            });
+        } else {
+            Swal.fire('ข้อผิดพลาด', data.error || 'เกิดข้อผิดพลาด', 'error');
+        }
+    } catch (e) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', 'error');
+    } finally {
+        hideLoader();
     }
 };
 
