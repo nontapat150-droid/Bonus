@@ -1,6 +1,6 @@
 <?php
 // ไฟล์: api/dispatch/complete_job.php
-require_once '../../config/db.php'; // ⚠️ ตรวจสอบ Path ไฟล์เชื่อมต่อฐานข้อมูลให้ถูกต้อง
+require_once '../../config/db.php'; // ⚠️ ตรวจสอบ Path ไฟล์เชื่อมต่อฐานข้อมูลของคุณให้ถูกต้อง
 
 header('Content-Type: application/json');
 
@@ -13,7 +13,7 @@ if (!isset($data['job_id']) || empty($data['job_id'])) {
 }
 
 try {
-    // อัปเดตข้อมูลลงตาราง jobs โดยตรง
+    // อัปเดตข้อมูลวัสดุและสถานะลงในตาราง jobs โดยตรง
     $sql = "UPDATE jobs SET 
                 status = 'completed',
                 install_date = ?,
@@ -41,17 +41,13 @@ try {
         (int)$data['tube_black'],
         (int)$data['tube_white'],
         (int)$data['nameplate'],
-        $data['remark'],
+        $data['remark'], // หมายเหตุ
         $data['job_id']
     ]);
 
-    if ($stmt->rowCount() > 0) {
-        echo json_encode(['status' => 'success', 'message' => 'บันทึกข้อมูลจบงานสำเร็จ']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'ไม่สามารถอัปเดตข้อมูลได้ หรือสถานะอาจอัปเดตไปแล้ว']);
-    }
+    echo json_encode(['status' => 'success', 'message' => 'บันทึกข้อมูลจบงานสำเร็จ']);
 
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'error', 'message' => 'Database Error: ' . $e->getMessage()]);
+    echo json_encode(['status' => 'error', 'message' => 'เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' . $e->getMessage()]);
 }
 ?>
