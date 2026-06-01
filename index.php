@@ -468,10 +468,10 @@ if ($page === 'home') {
                     <?php endif; ?>
                 </div>
                 <div class="p-6">
-                    <div class="flex items-center justify-between gap-4 mb-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                         <div>
                             <p class="text-xs uppercase tracking-[0.22em] font-black text-slate-400">ประกาศ</p>
-                            <h2 class="text-2xl font-black text-slate-900">ข้อความประกาศ</h2>
+                            <h2 class="text-2xl font-black text-slate-900"><?= !empty($announcement['title']) ? htmlspecialchars($announcement['title']) : 'ประกาศใหม่' ?></h2>
                         </div>
                         <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
                             <i data-lucide="bell" class="w-4 h-4"></i> ปิดได้
@@ -482,6 +482,12 @@ if ($page === 'home') {
                     <?php else: ?>
                     <p class="text-slate-500 text-sm">ประกาศนี้เป็นภาพเท่านั้น</p>
                     <?php endif; ?>
+                </div>
+                <div class="px-6 pb-6 border-t border-slate-200">
+                    <label class="flex items-center gap-3 text-sm text-slate-600">
+                        <input id="dontShowAnnouncementToday" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        ไม่ต้องแจ้งเตือนวันนี้
+                    </label>
                 </div>
             </div>
         </div>
@@ -847,16 +853,24 @@ if ($page === 'home') {
             const announcementId = <?= json_encode($announcement['id']) ?>;
             const announcementModal = document.getElementById('siteAnnouncementModal');
             const closeBtn = document.getElementById('closeAnnouncementBtn');
+            const checkbox = document.getElementById('dontShowAnnouncementToday');
             if (!announcementModal || !closeBtn || !announcementId) return;
-            const dismissed = localStorage.getItem('dismissedAnnouncement');
-            if (dismissed === announcementId.toString()) return;
+            const today = new Date().toISOString().slice(0, 10);
+            const storageKey = `dismissedAnnouncement_${announcementId}`;
+            const dismissed = localStorage.getItem(storageKey);
+            if (dismissed === today) return;
+
             function showAnnouncement() {
                 announcementModal.classList.remove('hidden');
             }
+
             function closeAnnouncement() {
                 announcementModal.classList.add('hidden');
-                localStorage.setItem('dismissedAnnouncement', announcementId.toString());
+                if (checkbox && checkbox.checked) {
+                    localStorage.setItem(storageKey, today);
+                }
             }
+
             closeBtn.addEventListener('click', closeAnnouncement);
             announcementModal.addEventListener('click', (event) => {
                 if (event.target === announcementModal) closeAnnouncement();
