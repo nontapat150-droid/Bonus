@@ -387,12 +387,37 @@ if ($page === 'home') {
             </button>
 
             <div class="flex items-center gap-3 ml-auto">
+                <button id="guideModalBtn" class="p-2 text-[var(--c-text-2)] hover:bg-[var(--c-surface-2)] rounded-full transition-colors" title="คู่มือการใช้งาน">
+                    <i data-lucide="book-open" class="w-6 h-6"></i>
+                </button>
                 <button id="notificationBell" class="relative p-2 text-[var(--c-text-2)] hover:bg-[var(--c-surface-2)] rounded-full transition-colors">
                     <i data-lucide="bell" class="w-6 h-6"></i>
                     <span id="notificationUnreadDot" class="hidden absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[9px] font-black rounded-full border-2 border-white shadow-sm">0</span>
                 </button>
             </div>
         </header>
+
+        <div id="guideModal" class="hidden fixed inset-0 z-50 bg-black/40 p-4 backdrop-blur-sm flex justify-center items-center">
+            <div class="w-full max-w-4xl rounded-[32px] bg-white shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+                <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-200 shrink-0 bg-white z-10">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">คู่มือการใช้งาน</h2>
+                        <p class="text-slate-500 text-sm">เลือกบทบาทเพื่อดูคู่มือ</p>
+                    </div>
+                    <button id="closeGuideModal" class="text-slate-400 hover:text-slate-700 text-xl font-bold">&times;</button>
+                </div>
+
+                <div class="px-5 py-4 overflow-y-auto custom-scrollbar flex-1">
+                    <div class="flex gap-2 mb-4 border-b border-slate-200 pb-4 flex-wrap">
+                        <button class="guide-tab-btn px-4 py-2 text-sm font-bold rounded-2xl transition-colors bg-slate-100 text-slate-700 active" data-role="super_admin">👑 Super Admin</button>
+                        <button class="guide-tab-btn px-4 py-2 text-sm font-bold rounded-2xl transition-colors hover:bg-slate-100" data-role="admin">⚙️ Admin</button>
+                        <button class="guide-tab-btn px-4 py-2 text-sm font-bold rounded-2xl transition-colors hover:bg-slate-100" data-role="technician">🔧 Technician</button>
+                        <button class="guide-tab-btn px-4 py-2 text-sm font-bold rounded-2xl transition-colors hover:bg-slate-100" data-role="general">📖 General</button>
+                    </div>
+                    <div id="guideContent" class="prose prose-slate max-w-none"></div>
+                </div>
+            </div>
+        </div>
 
         <div id="notificationModal" class="hidden fixed inset-0 z-50 bg-black/40 p-4 backdrop-blur-sm flex justify-center items-center">
             <div class="w-full max-w-3xl rounded-[32px] bg-white shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
@@ -882,5 +907,71 @@ if ($page === 'home') {
     <script src="assets/js/common.js"></script>
     <script src="assets/js/datepicker.js"></script>
     <script src="assets/js/notifications.js"></script>
+    
+    <script>
+        // Guide Modal Handler
+        const guideBtn = document.getElementById('guideModalBtn');
+        const guideModal = document.getElementById('guideModal');
+        const closeGuideBtn = document.getElementById('closeGuideModal');
+        const guideContent = document.getElementById('guideContent');
+        const guideTabs = document.querySelectorAll('.guide-tab-btn');
+
+        const guideContents = {
+            'super_admin': null,
+            'admin': null,
+            'technician': null,
+            'general': null
+        };
+
+        // Load guides
+        async function loadGuides() {
+            const guides = {
+                'super_admin': 'USER_GUIDE_SUPER_ADMIN.html',
+                'admin': 'USER_GUIDE_ADMIN.html',
+                'technician': 'USER_GUIDE_TECHNICIAN.html',
+                'general': 'USER_GUIDE.html'
+            };
+
+            for (const [role, file] of Object.entries(guides)) {
+                try {
+                    const response = await fetch(file);
+                    guideContents[role] = await response.text();
+                } catch (error) {
+                    guideContents[role] = `<p class="text-slate-500">ไม่สามารถโหลดคู่มือ ${role} ได้</p>`;
+                }
+            }
+        }
+
+        guideBtn.addEventListener('click', () => {
+            guideModal.classList.remove('hidden');
+            if (!guideContent.innerHTML) {
+                displayGuide('super_admin');
+            }
+        });
+
+        closeGuideBtn.addEventListener('click', () => {
+            guideModal.classList.add('hidden');
+        });
+
+        guideModal.addEventListener('click', (e) => {
+            if (e.target === guideModal) {
+                guideModal.classList.add('hidden');
+            }
+        });
+
+        guideTabs.forEach(btn => {
+            btn.addEventListener('click', () => {
+                guideTabs.forEach(b => b.classList.remove('active', 'bg-slate-100', 'text-slate-700'));
+                btn.classList.add('active', 'bg-slate-100', 'text-slate-700');
+                displayGuide(btn.dataset.role);
+            });
+        });
+
+        function displayGuide(role) {
+            guideContent.innerHTML = guideContents[role] || '<p class="text-slate-500">กำลังโหลด...</p>';
+        }
+
+        document.addEventListener('DOMContentLoaded', loadGuides);
+    </script>
 </body>
 </html>

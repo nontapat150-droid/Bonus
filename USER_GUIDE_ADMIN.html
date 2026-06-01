@@ -1,53 +1,512 @@
-<div class="space-y-6">
-  <section class="bg-slate-50 p-6 rounded-3xl border border-slate-200">
-    <h1 class="text-3xl font-black text-slate-900"><i data-lucide="monitor" class="w-6 h-6 mr-2"></i>คู่มือสำหรับผู้ดูแลระบบ (Admin)</h1>
-    <p class="mt-3 text-slate-600">คู่มือนี้อธิบายการจัดการ Dispatch, รายงานน้ำมัน, คลังสินค้า, และการแก้ไขประกาศเว็บไซต์</p>
-  </section>
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">1️⃣ Dispatch Operations</h2>
-    <p class="mt-3 text-slate-700">สร้างทีม, กำหนดงานให้ช่าง, ตรวจสอบสถานะการจัดส่ง และบันทึกผลลัพธ์</p>
-  </section>
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">2️⃣ Oil Report Management</h2>
-    <p class="mt-3 text-slate-700">บันทึกการเติมน้ำมันประจำวัน, แก้ไขบันทึก, ส่งออก/นำเข้าไฟล์ Excel</p>
-  </section>
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">3️⃣ Inventory Controls</h2>
-    <p class="mt-3 text-slate-700">เพิ่ม/แก้ไขสินค้า, ตรวจสอบสต็อก, โอนสินค้าระหว่างคลัง</p>
-  </section>
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">4️⃣ Announcement Editing</h2>
-    <p class="mt-3 text-slate-700">แก้ไขข้อความและรูปภาพของประกาศหน้าเว็บที่แสดงเป็นโมดัลบนหน้าแรก</p>
-  </section>
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">5️⃣ Basic User Oversight</h2>
-    <p class="mt-3 text-slate-700">ดูรายชื่อผู้ใช้, รีเซ็ตรหัสผ่าน, ตรวจสอบบทบาทผู้ใช้</p>
-  </section>
-  <div class="flex justify-end mt-4">
-    <a href="index.php?page=home" class="btn-primary bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300"><i data-lucide="home" class="w-4 h-4 mr-2"></i>กลับสู่หน้าแรก</a>
+<style>
+  .sa-guide * { box-sizing: border-box; }
+  .sa-guide {
+    font-family: 'Inter', 'Sarabun', sans-serif;
+    background: #F0F2FA;
+    padding: 24px;
+    border-radius: 20px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* ── Hero Banner ── */
+  .sa-hero {
+    background: linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%);
+    border-radius: 18px;
+    padding: 32px 28px;
+    color: #fff;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .sa-hero::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+  .sa-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; right: 60px;
+    width: 140px; height: 140px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+  }
+  .sa-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .sa-hero h1 {
+    font-size: 26px;
+    font-weight: 800;
+    margin: 0 0 8px 0;
+    line-height: 1.2;
+  }
+  .sa-hero p {
+    font-size: 14px;
+    opacity: 0.85;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ── Section Cards ── */
+  .sa-step {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #E2E5F0;
+    box-shadow: 0 1px 2px rgba(10,10,30,.04), 0 2px 8px rgba(10,10,30,.06);
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .sa-step:hover {
+    box-shadow: 0 4px 8px rgba(10,10,30,.06), 0 12px 24px rgba(10,10,30,.09);
+    transform: translateY(-2px);
+  }
+  .sa-step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #F0F2FA;
+    cursor: pointer;
+    user-select: none;
+  }
+  .sa-step-num {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #6C5CE7, #a855f7);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(108,92,231,0.35);
+  }
+  .sa-step-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0D0D1A;
+    flex: 1;
+    margin: 0;
+  }
+  .sa-step-body {
+    padding: 18px 22px;
+    background: #FAFBFF;
+  }
+  .sa-step-body p {
+    color: #4B4F6A;
+    font-size: 14px;
+    line-height: 1.7;
+    margin: 0 0 12px 0;
+  }
+  .sa-step-body p:last-child { margin-bottom: 0; }
+
+  /* ── Action List ── */
+  .sa-action-list {
+    list-style: none;
+    padding: 0; margin: 8px 0 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sa-action-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: #4B4F6A;
+    line-height: 1.6;
+  }
+  .sa-action-list li .sa-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #EDE9FF;
+    color: #6C5CE7;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .sa-action-list li strong {
+    color: #0D0D1A;
+  }
+
+  /* ── Warning Note ── */
+  .sa-note {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    border-left: 4px solid #F59E0B;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 10px;
+  }
+  .sa-note-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .sa-note p {
+    font-size: 13px;
+    color: #78350F;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ── Tip Note ── */
+  .sa-tip {
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-left: 4px solid #3B82F6;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .sa-tip p {
+    font-size: 13px;
+    color: #1E40AF;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ── Trouble Table ── */
+  .sa-trouble-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 800;
+    color: #0D0D1A;
+    margin: 28px 0 14px 0;
+  }
+  .sa-trouble-title span {
+    background: #FEF2F2;
+    color: #EF4444;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .sa-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #E2E5F0;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(10,10,30,.04), 0 2px 8px rgba(10,10,30,.06);
+  }
+  .sa-table thead tr {
+    background: #F7F8FC;
+  }
+  .sa-table th {
+    padding: 12px 18px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #9499B5;
+    border-bottom: 1px solid #E2E5F0;
+    text-align: left;
+  }
+  .sa-table td {
+    padding: 14px 18px;
+    font-size: 14px;
+    color: #4B4F6A;
+    border-bottom: 1px solid #F0F2FA;
+    vertical-align: top;
+    line-height: 1.6;
+  }
+  .sa-table tbody tr:last-child td { border-bottom: none; }
+  .sa-table tbody tr:hover td { background: #F8F7FF; }
+  .sa-table td:first-child {
+    font-weight: 600;
+    color: #0D0D1A;
+    width: 38%;
+  }
+  .sa-badge-danger {
+    display: inline-block;
+    background: #FEF2F2;
+    color: #991B1B;
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 6px;
+  }
+
+  /* ── Back Button ── */
+  .sa-footer {
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  .sa-btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1.5px solid #E2E5F0;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4B4F6A;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.2s;
+  }
+  .sa-btn-back:hover {
+    background: #6C5CE7;
+    border-color: #6C5CE7;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(108,92,231,0.35);
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .sa-guide { padding: 16px; }
+    .sa-hero { padding: 22px 18px; }
+    .sa-hero h1 { font-size: 20px; }
+    .sa-step-header { padding: 14px 16px; gap: 10px; }
+    .sa-step-body { padding: 14px 16px; }
+    .sa-table th, .sa-table td { padding: 10px 12px; font-size: 13px; }
+    .sa-table td:first-child { width: auto; }
+  }
+</style>
+
+<div class="sa-guide">
+
+  <!-- Hero -->
+  <div class="sa-hero">
+    <div class="sa-hero-badge">👑 Super Admin</div>
+    <h1>คู่มือผู้ดูแลระบบสูงสุด</h1>
+    <p>คุณมีสิทธิ์เข้าถึงและจัดการได้ทุกอย่างในระบบ — ทั้งผู้ใช้งาน งาน คลังสินค้า และความปลอดภัย</p>
   </div>
-</div>
-  <section class="bg-slate-50 p-6 rounded-3xl border border-slate-200">
-    <h1 class="text-3xl font-black text-slate-900">คู่มือสำหรับผู้ดูแลระบบ (Admin)</h1>
-    <p class="mt-3 text-slate-600">คู่มือนี้เป็น HTML ที่รองรับการแก้ไขได้จากหน้า <strong>ตั้งค่าระบบเว็บไซต์</strong>.</p>
-  </section>
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">1. ระบบจัดส่ง</h2>
-    <p class="mt-3 text-slate-700">ใช้เมนู Dispatch เพื่อดูรายการงาน สร้างทีม และจ่ายงานอัตโนมัติ.</p>
-  </section>
+  <!-- Step 1 -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">1</div>
+      <p class="sa-step-title">เข้าสู่ระบบ</p>
+    </div>
+    <div class="sa-step-body">
+      <p>เปิดเว็บไซต์ขึ้นมา จะเห็นหน้าให้กรอกชื่อผู้ใช้และรหัสผ่าน กรอกให้ครบแล้วกดปุ่ม <strong>"เข้าสู่ระบบ"</strong> ระบบจะพาไปหน้าแรก (Dashboard) ที่แสดงภาพรวมทั้งหมด</p>
+      <div class="sa-tip">
+        <span>💡</span>
+        <p>ถ้ากรอกรหัสแล้วเข้าไม่ได้ ให้ตรวจสอบว่ากด Caps Lock ติดอยู่หรือเปล่า</p>
+      </div>
+    </div>
+  </div>
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">2. น้ำมันและรายงาน</h2>
-    <ul class="mt-4 list-disc list-inside space-y-2 text-slate-700">
-      <li>ดูรายงานน้ำมัน</li>
-      <li>ส่งออกไฟล์ Excel</li>
-      <li>นำเข้าไฟล์ Excel หากจำเป็น</li>
-    </ul>
-  </section>
+  <!-- Step 2 -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">2</div>
+      <p class="sa-step-title">ตั้งค่าเว็บไซต์</p>
+    </div>
+    <div class="sa-step-body">
+      <p>ที่เมนูด้านซ้ายมือ ให้มองหาคำว่า <strong>"ตั้งค่าระบบเว็บไซต์"</strong> แล้วคลิก ตรงนี้คือที่สำหรับปรับแต่งการทำงานของระบบทั้งหมด เช่น ชื่อบริษัท เวลาทำงาน ฯลฯ</p>
+      <div class="sa-note">
+        <span class="sa-note-icon">⚠️</span>
+        <p>เมื่อปรับเสร็จทุกครั้ง <strong>อย่าลืมกดบันทึก</strong> ไม่งั้นการตั้งค่าจะหายไป</p>
+      </div>
+    </div>
+  </div>
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">3. ระบบคลังสินค้า</h2>
-    <p class="mt-3 text-slate-700">ตรวจสอบสต็อก เพิ่ม/แก้ไขสินค้า และโอนสินค้าระหว่างคลัง.</p>
-  </section>
+  <!-- Step 3 -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">3</div>
+      <p class="sa-step-title">จัดการสมาชิก</p>
+    </div>
+    <div class="sa-step-body">
+      <p>คลิกเมนู <strong>"จัดการผู้ใช้"</strong> จะเห็นรายชื่อทุกคนในระบบ ทำได้ดังนี้</p>
+      <ul class="sa-action-list">
+        <li><span class="sa-arrow">+ เพิ่ม</span><span>กดปุ่ม <strong>"+ เพิ่มผู้ใช้"</strong> แล้วกรอกข้อมูลให้ครบ</span></li>
+        <li><span class="sa-arrow">✏️ แก้ไข</span><span>กดปุ่มดินสอหน้าชื่อคนที่ต้องการเปลี่ยนข้อมูล</span></li>
+        <li><span class="sa-arrow">🗑️ ลบ</span><span>กดปุ่มถังขยะแล้วกด <strong>"ยืนยัน"</strong> อีกครั้ง</span></li>
+      </ul>
+      <div class="sa-note">
+        <span class="sa-note-icon">⚠️</span>
+        <p>กด <strong>"บันทึก"</strong> ทุกครั้งหลังทำการเปลี่ยนแปลง</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">4</div>
+      <p class="sa-step-title">โพสต์ประกาศ</p>
+    </div>
+    <div class="sa-step-body">
+      <p>คลิกเมนู <strong>"ประกาศ"</strong> หรือ <strong>"ข่าวสาร"</strong> → กรอกหัวข้อ → ใส่รายละเอียด → แนบรูป (ถ้ามี) → กดบันทึก ทุกคนในระบบจะเห็นประกาศนี้ทันที</p>
+      <div class="sa-note">
+        <span class="sa-note-icon">⚠️</span>
+        <p>รูปที่แนบต้องขนาด <strong>ไม่เกิน 5 MB</strong> และต้องเป็นไฟล์ .jpg หรือ .png เท่านั้น</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">5</div>
+      <p class="sa-step-title">กำหนดงานและทีม (Dispatch)</p>
+    </div>
+    <div class="sa-step-body">
+      <p>คลิกเมนู <strong>"แจกจ่ายงาน (Dispatch)"</strong> แล้วทำตามลำดับ</p>
+      <ul class="sa-action-list">
+        <li><span class="sa-arrow">ทีม</span><span>กดปุ่ม <strong>"สร้างทีม"</strong> → ตั้งชื่อทีม → เพิ่มสมาชิก</span></li>
+        <li><span class="sa-arrow">งาน</span><span>กดปุ่ม <strong>"+ เพิ่มงาน"</strong> → กรอกรายละเอียดและที่อยู่ → <strong>ปักหมุดบนแผนที่</strong></span></li>
+        <li><span class="sa-arrow">สด</span><span>ดูสถานะงานแบบเรียลไทม์ได้เลย ไม่ต้องรีเฟรช</span></li>
+      </ul>
+      <div class="sa-note">
+        <span class="sa-note-icon">⚠️</span>
+        <p><strong>สำคัญมาก:</strong> ตอนสร้างงาน ต้องปักหมุดตำแหน่งบนแผนที่ด้วยทุกครั้ง ไม่งั้นงานจะไม่แสดงในแผนที่</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 6 -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">6</div>
+      <p class="sa-step-title">จัดการคลังสินค้า</p>
+    </div>
+    <div class="sa-step-body">
+      <p>คลิกเมนู <strong>"คลังสินค้า"</strong> จะเห็นรายการสินค้าทั้งหมด</p>
+      <ul class="sa-action-list">
+        <li><span class="sa-arrow">ดู</span><span>เลื่อนดูรายการสินค้าได้เลย กรองด้วยชื่อหรือรหัสได้</span></li>
+        <li><span class="sa-arrow">+ เพิ่ม</span><span>กดปุ่ม <strong>"+ เพิ่ม"</strong> → กรอกชื่อสินค้าและรายละเอียด</span></li>
+        <li><span class="sa-arrow">✏️ แก้ไข</span><span>กดปุ่มดินสอหน้าสินค้าที่ต้องการแก้ไข</span></li>
+        <li><span class="sa-arrow">🔄 โอน</span><span>กดปุ่ม <strong>"โอน"</strong> เลือกปลายทาง แล้วยืนยัน</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Step 7 -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">7</div>
+      <p class="sa-step-title">รายงานน้ำมัน</p>
+    </div>
+    <div class="sa-step-body">
+      <p>คลิกเมนู <strong>"รายงานน้ำมัน"</strong> จะเห็นข้อมูลการใช้น้ำมันของแต่ละทีม เช็คได้ว่าวิ่งกี่กิโล ใช้น้ำมันไปเท่าไหร่ คุ้มแค่ไหน</p>
+      <div class="sa-tip">
+        <span>📊</span>
+        <p>กดปุ่ม <strong>"ส่งออก Excel"</strong> เพื่อดาวน์โหลดรายงานเป็นไฟล์ตาราง เปิดใน Excel ได้เลย</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 8 -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">8</div>
+      <p class="sa-step-title">ความปลอดภัยและสำรองข้อมูล</p>
+    </div>
+    <div class="sa-step-body">
+      <p>คลิกเมนู <strong>"ความปลอดภัย"</strong> มีสิ่งที่ต้องทำ 3 อย่าง</p>
+      <ul class="sa-action-list">
+        <li><span class="sa-arrow">🔒 รหัส</span><span><strong>นโยบายรหัสผ่าน</strong> — ตั้งว่ารหัสต้องกี่ตัว ต้องมีตัวเลขหรือเปล่า ฯลฯ</span></li>
+        <li><span class="sa-arrow">💾 Backup</span><span>กดปุ่ม <strong>"สำรองข้อมูล"</strong> เพื่อบันทึกข้อมูลทั้งหมดไว้</span></li>
+        <li><span class="sa-arrow">↩️ Restore</span><span>ถ้าข้อมูลหาย กดปุ่มนี้เพื่อคืนค่าจากที่สำรองไว้</span></li>
+      </ul>
+      <div class="sa-tip">
+        <span>💡</span>
+        <p>ควรทำ <strong>Backup ทุกสัปดาห์</strong> เพื่อป้องกันข้อมูลสูญหาย</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 9 -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">9</div>
+      <p class="sa-step-title">แก้ไขคู่มือการใช้งาน</p>
+    </div>
+    <div class="sa-step-body">
+      <p>ถ้าต้องการแก้ไขคู่มือนี้ ให้เข้าไปที่ <strong>File Manager</strong> แล้วเปิดไฟล์ชื่อ <code style="background:#EDE9FF;color:#6C5CE7;padding:2px 8px;border-radius:6px;font-size:13px;">USER_GUIDE.html</code> แก้ไขข้อความได้เลย แล้วกดบันทึก</p>
+    </div>
+  </div>
+
+  <!-- Step 10 -->
+  <div class="sa-step">
+    <div class="sa-step-header">
+      <div class="sa-step-num">10</div>
+      <p class="sa-step-title">ออกจากระบบ</p>
+    </div>
+    <div class="sa-step-body">
+      <p>กดชื่อหรือรูปโปรไฟล์ที่มุมบนขวา แล้วกด <strong>"ออกจากระบบ"</strong> ทุกครั้งที่ใช้งานเสร็จ</p>
+      <div class="sa-note">
+        <span class="sa-note-icon">⚠️</span>
+        <p><strong>ห้ามปิดแท็บเลยโดยไม่ Logout</strong> เพราะคนอื่นอาจเข้ามาใช้บัญชีของคุณได้</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trouble Section -->
+  <div class="sa-trouble-title">
+    🆘 ถ้าเจอปัญหา <span>แก้ได้เอง</span>
+  </div>
+
+  <table class="sa-table">
+    <thead>
+      <tr>
+        <th>อาการที่พบ</th>
+        <th>วิธีแก้ไข</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>เมนูบางอันหายไป <span class="sa-badge-danger">พบบ่อย</span></td>
+        <td>ออกจากระบบแล้วเข้าใหม่ ถ้ายังหายอยู่ ให้ติดต่อผู้พัฒนาระบบ</td>
+      </tr>
+      <tr>
+        <td>โพสต์ประกาศแล้วรูปไม่ขึ้น</td>
+        <td>รูปอาจใหญ่เกิน 5 MB ให้ย่อขนาดก่อน หรือเปลี่ยนเป็นไฟล์ .jpg / .png</td>
+      </tr>
+      <tr>
+        <td>สร้างงานแล้วไม่เห็นบนแผนที่</td>
+        <td>ตอนสร้างงาน อย่าลืมปักหมุดตำแหน่งบนแผนที่ด้วยทุกครั้ง</td>
+      </tr>
+      <tr>
+        <td>สำรองข้อมูลไม่สำเร็จ</td>
+        <td>ลองกดใหม่อีกครั้ง ถ้ายังไม่ได้ ให้แจ้งผู้พัฒนาระบบ</td>
+      </tr>
+      <tr>
+        <td>แก้ไขคู่มือจากหน้าเว็บไม่ได้</td>
+        <td>เข้าไปแก้ไฟล์ <code style="background:#EDE9FF;color:#6C5CE7;padding:1px 6px;border-radius:4px;font-size:12px;">USER_GUIDE.html</code> ตรงๆ ผ่าน File Manager แทน</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Footer -->
+  <div class="sa-footer">
+    <a href="index.php?page=home" class="sa-btn-back">
+      🏠 กลับสู่หน้าแรก
+    </a>
+  </div>
+
 </div>
