@@ -37,14 +37,12 @@
             <div class="icon"><i data-lucide="map"></i></div>
             <span class="nav-label">ระบบจัดส่งอัจฉริยะ</span>
         </a>
-        
         <?php if (hasRole('technician')): ?>
         <a href="index.php?page=job_close_history" class="nav-item <?= $page === 'job_close_history' ? 'active' : '' ?>" data-label="ประวัติปิดงาน">
             <div class="icon"><i data-lucide="clipboard-list"></i></div>
             <span class="nav-label">ประวัติปิดงาน</span>
         </a>
         <?php endif; ?>
-        
         <?php endif; ?>
 
         <?php if (hasRole(['admin', 'super_admin'])): ?>
@@ -125,15 +123,14 @@
             <div class="icon"><i data-lucide="map"></i></div>
             <span class="nav-label">ระบบจัดส่งอัจฉริยะ</span>
         </a>
-        
         <?php if (hasRole('technician')): ?>
         <a href="index.php?page=job_close_history" class="nav-item <?= $page === 'job_close_history' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="clipboard-list"></i></div>
             <span class="nav-label">ประวัติปิดงาน</span>
         </a>
         <?php endif; ?>
-        
         <?php endif; ?>
+        
         <?php if (hasRole(['admin', 'super_admin'])): ?>
         <a href="index.php?page=inventory" class="nav-item <?= $page === 'inventory' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="package"></i></div>
@@ -194,24 +191,16 @@
 </nav>
 
 <script>
-    // สั่งให้รอโหลดหน้าเว็บทั้งหมด (ทั้งจาก index.php และ sidebar.php) ก่อนค่อยทำงาน
     document.addEventListener('DOMContentLoaded', () => {
-        
-        // Desktop Sidebar Toggle Logic
         const sidebar = document.getElementById('sidebar-desktop');
         const toggleBtn = document.getElementById('sidebarToggle');
         const mainContent = document.getElementById('main-content-area');
 
-        // ตอนนี้จะหาเจอแล้วแน่นอน
         if (sidebar && toggleBtn && mainContent) {
-            
-            // อ่านค่าจาก LocalStorage ว่าเคยพับไว้ไหม
             if (localStorage.getItem('sidebarCollapsed') === 'true') {
                 sidebar.classList.add('collapsed');
                 mainContent.classList.add('sidebar-collapsed');
             }
-
-            // เวลากดปุ่ม พับ/ขยาย ให้สลับ class ให้ครบทั้งสองฝั่ง
             toggleBtn.addEventListener('click', () => {
                 sidebar.classList.toggle('collapsed');
                 mainContent.classList.toggle('sidebar-collapsed');
@@ -219,10 +208,8 @@
             });
         }
 
-        // Tooltip แสดงชื่อเวลาพับ Sidebar
         const userSect = document.querySelector('.sidebar-user');
         const userTooltip = document.querySelector('.hidden-tooltip');
-        
         if (userSect && userTooltip && sidebar) {
             userSect.addEventListener('mouseenter', () => {
                 if (sidebar.classList.contains('collapsed')) {
