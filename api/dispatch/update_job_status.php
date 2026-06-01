@@ -37,8 +37,20 @@ if ($status === 'failed' && $remark === '') {
 }
 
 if ($status === 'completed' && empty($close3bb)) {
-    echo json_encode(['success' => false, 'error' => 'กรุณากรอกข้อมูลปิดงาน 3BB ก่อนยืนยัน']);
+    echo json_encode(['success' => false, 'error' => 'กรุณากรอกข้อมูลปิดงานก่อนยืนยัน']);
     exit;
+}
+
+if ($status === 'completed') {
+    $provider = strtoupper(trim((string)($close3bb['install_provider'] ?? '')));
+    if (!in_array($provider, ['AIS', '3BB'], true)) {
+        echo json_encode(['success' => false, 'error' => 'กรุณาเลือกประเภทงานติดตั้ง (AIS หรือ 3BB)']);
+        exit;
+    }
+    if (empty($close3bb['install_date'])) {
+        echo json_encode(['success' => false, 'error' => 'กรุณาเลือกวันที่ติดตั้ง']);
+        exit;
+    }
 }
 
 function nullableStr($value) {
@@ -84,18 +96,21 @@ try {
     if ($status === 'completed') {
         $installDate = !empty($close3bb['install_date']) ? $close3bb['install_date'] : ($job['plan_arrival_date'] ?? null);
 
+        $provider = strtoupper(trim((string)($close3bb['install_provider'] ?? '3BB')));
+
         $closeStmt = $pdo->prepare("INSERT INTO job_close_3bb (
-            job_id, job_log_id, tech_id, install_date, close_case_no, order_no,
+            job_id, job_log_id, tech_id, install_provider, install_date, close_case_no, order_no,
             customer_name, package_name, main_package, equipment_soa,
             sn_playbox, sn_onu, sn_mesh, sn_sim, sn_ip_camera,
             splitter, port_used, l3_name, actual_cable_length, ref_id_3bb,
             sc_connector_blue, initial_fee, remark
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
         $closeStmt->execute([
             $job_id,
             $job_log_id,
             $user['id'],
+            $provider,
             $installDate,
             nullableStr($close3bb['close_case_no'] ?? $job['access_no']),
             nullableStr($close3bb['order_no'] ?? $job['order_no']),

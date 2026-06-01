@@ -814,7 +814,7 @@ function showJobPopup(job, color) {
         actionButtons = `
             <div class="grid grid-cols-2 gap-2 mt-3">
                 <button onclick="Swal.close(); openCompleteJobModal(${job.id})" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
-                    ปิดงาน 3BB
+                    ปิดงาน
                 </button>
                 <button onclick="Swal.close(); updateJobStatus(${job.id}, 'failed')" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
                     ทำไม่สำเร็จ
@@ -886,11 +886,31 @@ const CJ_OPTIONAL_INPUTS = [
     'cj_actual_cable_length', 'cj_ref_id_3bb', 'cj_sc_connector_blue', 'cj_initial_fee', 'cj_remark'
 ];
 
-function formatThaiDate(dateStr) {
-    if (!hasValue(dateStr)) return '-';
-    const d = new Date(dateStr + 'T00:00:00');
-    if (Number.isNaN(d.getTime())) return String(dateStr);
-    return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+function getSelectedInstallProvider() {
+    const el = document.querySelector('input[name="cj_install_provider"]:checked');
+    return el ? el.value : '';
+}
+
+function updateCompleteJobModalTitle() {
+    const provider = getSelectedInstallProvider();
+    const titleEl = document.getElementById('cj_modal_title');
+    if (!titleEl) return;
+    const label = provider ? ` ${provider}` : '';
+    titleEl.innerHTML = `<i data-lucide="clipboard-check" class="w-6 h-6"></i>ปิดงานติดตั้ง${label}`;
+    refreshLucideIcons();
+}
+
+function bindCompleteJobProviderListeners() {
+    document.querySelectorAll('input[name="cj_install_provider"]').forEach((radio) => {
+        radio.onchange = updateCompleteJobModalTitle;
+    });
+}
+
+function defaultInstallDateFromJob(job) {
+    if (hasValue(job.plan_arrival_date)) {
+        return String(job.plan_arrival_date).slice(0, 10);
+    }
+    return new Date().toISOString().slice(0, 10);
 }
 
 window.openCompleteJobModal = function(jobId) {
@@ -907,9 +927,11 @@ window.openCompleteJobModal = function(jobId) {
     }
 
     document.getElementById('cj_job_id').value = jobId;
-    const installDate = rawValue(job.plan_arrival_date, '');
-    document.getElementById('cj_install_date').value = installDate;
-    document.getElementById('cj_install_date_display').textContent = formatThaiDate(installDate);
+    document.getElementById('cj_install_date').value = defaultInstallDateFromJob(job);
+    const provider3bb = document.getElementById('cj_provider_3bb');
+    if (provider3bb) provider3bb.checked = true;
+    bindCompleteJobProviderListeners();
+    updateCompleteJobModalTitle();
     document.getElementById('cj_close_case').textContent = rawValue(job.access_no, '-');
     document.getElementById('cj_customer').textContent = rawValue(job.customer, 'ไม่ระบุ');
     document.getElementById('cj_package').textContent = rawValue(job.package, '-');
@@ -940,9 +962,21 @@ window.submitCompleteJob3BB = async function() {
     }
 
     const val = (id) => document.getElementById(id)?.value?.trim() ?? '';
+    const provider = getSelectedInstallProvider();
+    const installDate = document.getElementById('cj_install_date')?.value?.trim() ?? '';
+
+    if (!['AIS', '3BB'].includes(provider)) {
+        Swal.fire({ title: 'แจ้งเตือน', text: 'กรุณาเลือกประเภทงานติดตั้ง (AIS หรือ 3BB)', icon: 'warning', confirmButtonColor: '#10b981' });
+        return;
+    }
+    if (!installDate) {
+        Swal.fire({ title: 'แจ้งเตือน', text: 'กรุณาเลือกวันที่ติดตั้ง', icon: 'warning', confirmButtonColor: '#10b981' });
+        return;
+    }
 
     const close3bb = {
-        install_date: document.getElementById('cj_install_date')?.value || job.plan_arrival_date,
+        install_provider: provider,
+        install_date: installDate,
         close_case_no: job.access_no,
         order_no: val('cj_order_no'),
         customer_name: job.customer,
@@ -964,9 +998,15 @@ window.submitCompleteJob3BB = async function() {
         remark: val('cj_remark')
     };
 
+    const installDateLabel = new Date(installDate + 'T00:00:00').toLocaleDateString('th-TH', {
+        year: 'numeric', month: 'long', day: 'numeric'
+    });
+
     const { isConfirmed } = await Swal.fire({
-        title: 'ยืนยันปิดงาน 3BB?',
-        html: `<p class="text-sm text-slate-600">Non: <strong>${escapeHTML(job.access_no)}</strong></p>
+        title: `ยืนยันปิดงาน ${provider}?`,
+        html: `<p class="text-sm text-slate-600">ประเภท: <strong>${escapeHTML(provider)}</strong></p>
+               <p class="text-sm text-slate-600">วันที่ติดตั้ง: <strong>${escapeHTML(installDateLabel)}</strong></p>
+               <p class="text-sm text-slate-600">Non: <strong>${escapeHTML(job.access_no)}</strong></p>
                <p class="text-sm text-slate-600">ลูกค้า: <strong>${escapeHTML(job.customer || '-')}</strong></p>`,
         icon: 'question',
         showCancelButton: true,
@@ -989,7 +1029,7 @@ window.submitCompleteJob3BB = async function() {
             closeCompleteJobModal();
             Swal.fire({
                 title: 'สำเร็จ',
-                text: 'บันทึกการปิดงาน 3BB เรียบร้อย',
+                text: `บันทึกการปิดงาน ${provider} เรียบร้อย`,
                 icon: 'success',
                 timer: 1500,
                 showConfirmButton: false,
