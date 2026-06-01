@@ -37,6 +37,10 @@
             <div class="icon"><i data-lucide="map"></i></div>
             <span class="nav-label">ระบบจัดส่งอัจฉริยะ</span>
         </a>
+        <a href="index.php?page=job_close_history" class="nav-item <?= $page === 'job_close_history' ? 'active' : '' ?>" data-label="ประวัติปิดงาน">
+            <div class="icon"><i data-lucide="clipboard-list"></i></div>
+            <span class="nav-label">ประวัติปิดงาน</span>
+        </a>
         <?php endif; ?>
 
         <?php if (hasRole(['admin', 'super_admin'])): ?>
@@ -116,6 +120,10 @@
         <a href="index.php?page=dispatch" class="nav-item <?= $page === 'dispatch' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="map"></i></div>
             <span class="nav-label">ระบบจัดส่งอัจฉริยะ</span>
+        </a>
+        <a href="index.php?page=job_close_history" class="nav-item <?= $page === 'job_close_history' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="clipboard-list"></i></div>
+            <span class="nav-label">ประวัติปิดงาน</span>
         </a>
         <?php endif; ?>
         <?php if (hasRole(['admin', 'super_admin'])): ?>

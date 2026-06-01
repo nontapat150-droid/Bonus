@@ -130,6 +130,36 @@ function renderTable(type, records, tHead, tBody) {
                 </tr>`;
         });
     }
+    else if (type === 'job_close') {
+        tHead.innerHTML = `<tr>
+            <th class="px-4 py-3">วันที่ปิด</th>
+            <th class="px-4 py-3">ช่าง</th>
+            <th class="px-4 py-3">ทีม</th>
+            <th class="px-4 py-3">ประเภท</th>
+            <th class="px-4 py-3">Non</th>
+            <th class="px-4 py-3">ลูกค้า</th>
+            <th class="px-4 py-3 text-center">จัดการ</th>
+        </tr>`;
+        records.forEach(item => {
+            const date = item.created_at ? new Date(item.created_at).toLocaleString('th-TH') : '-';
+            const provider = item.install_provider === 'AIS'
+                ? '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">AIS</span>'
+                : '<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">3BB</span>';
+            const editBtn = item.can_edit
+                ? `<button type="button" onclick="openEditJobCloseModal(${item.id})" class="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-lg">แก้ไข</button>`
+                : '<span class="text-xs text-slate-400">-</span>';
+            tBody.innerHTML += `
+                <tr class="block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50">
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 font-mono text-xs"><span class="md:hidden font-black text-slate-400">วันที่ปิด</span>${date}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 font-bold"><span class="md:hidden font-black text-slate-400">ช่าง</span>${item.tech_name}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 text-xs"><span class="md:hidden font-black text-slate-400">ทีม</span>${item.team_name || '-'}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3"><span class="md:hidden font-black text-slate-400">ประเภท</span>${provider}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 font-bold text-indigo-600"><span class="md:hidden font-black text-slate-400">Non</span>${item.close_case_no || item.access_no || '-'}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3"><span class="md:hidden font-black text-slate-400">ลูกค้า</span>${item.customer_name || '-'}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center"><span class="md:hidden font-black text-slate-400">จัดการ</span>${editBtn}</td>
+                </tr>`;
+        });
+    }
     else if (type === 'inventory') {
         tHead.innerHTML = `<tr><th class="px-4 py-3">เวลา</th><th class="px-4 py-3">ผู้ทำรายการ</th><th class="px-4 py-3 text-center">แอคชั่น</th><th class="px-4 py-3">สินค้า (SN)</th><th class="px-4 py-3">เป้าหมาย (รับ)</th></tr>`;
         records.forEach(item => {

@@ -563,6 +563,7 @@ if ($page === 'home') {
                     'oil' => hasRole(['technician']) ? 'views/modules/oil_form.php' : 'views/modules/oil_report.php',
                     'start_day' => 'views/modules/start_day.php',
                     'system_history' => 'views/modules/system_history.php',
+                    'job_close_history' => 'views/modules/job_close_history.php',
                     'dispatch' => 'views/modules/dispatch_map.php',
                     'inventory' => 'views/modules/inventory_app.php',
                     'users' => 'views/modules/user_settings.php',
@@ -577,6 +578,9 @@ if ($page === 'home') {
                 }
                 // สิทธิ์อื่นๆห้ามเข้าหน้าประวัติรวม ยกเว้นแอดมิน
                 if ($page === 'system_history' && !hasRole(['admin', 'super_admin'])) {
+                    $accessDenied = true;
+                }
+                if ($page === 'job_close_history' && !hasRole('technician')) {
                     $accessDenied = true;
                 }
 

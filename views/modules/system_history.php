@@ -28,6 +28,9 @@ if (!hasRole(['admin', 'super_admin'])) exit('ไม่มีสิทธิ์�
         <button onclick="loadHistory('inventory')" id="tab-inventory" class="hist-tab px-5 py-3 rounded-xl font-bold whitespace-nowrap flex-1 text-center transition-all text-slate-500 hover:bg-slate-50">
             📦 คลังสินค้า
         </button>
+        <button onclick="loadHistory('job_close')" id="tab-job_close" class="hist-tab px-5 py-3 rounded-xl font-bold whitespace-nowrap flex-1 text-center transition-all text-slate-500 hover:bg-slate-50">
+            ✅ ปิดงานติดตั้ง
+        </button>
     </div>
 
     <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between">
@@ -57,5 +60,17 @@ if (!hasRole(['admin', 'super_admin'])) exit('ไม่มีสิทธิ์�
     </div>
 </div>
 
+<style>
+    .swal2-container { z-index: 10100 !important; }
+    .cj-provider-btn input { position: absolute; opacity: 0; pointer-events: none; }
+    .cj-provider-btn span { display: block; padding: 0.5rem 1rem; border-radius: 0.75rem; font-weight: 800; font-size: 0.8rem; border: 2px solid #e2e8f0; text-align: center; }
+    .cj-provider-btn input:checked + span { border-color: #059669; background: #ecfdf5; color: #047857; }
+    .complete-modal-scrollbar::-webkit-scrollbar { width: 6px; }
+</style>
+
+<?php include __DIR__ . '/../partials/job_close_modal.php'; ?>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="assets/js/common.js"></script>
-<script src="assets/js/system_history.js"></script>
+<script src="assets/js/job_close.js?v=<?= time() ?>"></script>
+<script src="assets/js/system_history.js?v=<?= time() ?>"></script>
