@@ -147,7 +147,9 @@ function renderTable(type, records, tHead, tBody) {
                 : '<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">3BB</span>';
             const editBtn = item.can_edit
                 ? `<button type="button" onclick="openEditJobCloseModal(${item.id})" class="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-lg">แก้ไข</button>`
-                : '<span class="text-xs text-slate-400">-</span>';
+                : '';
+            const deleteBtn = `<button type="button" onclick="deleteJobCloseRecord(${item.id})" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>`;
+            const actions = `<div class="flex flex-wrap gap-1 justify-center">${editBtn}${deleteBtn}</div>`;
             tBody.innerHTML += `
                 <tr class="block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50">
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 font-mono text-xs"><span class="md:hidden font-black text-slate-400">วันที่ปิด</span>${date}</td>
@@ -156,7 +158,7 @@ function renderTable(type, records, tHead, tBody) {
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3"><span class="md:hidden font-black text-slate-400">ประเภท</span>${provider}</td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 font-bold text-indigo-600"><span class="md:hidden font-black text-slate-400">Non</span>${item.close_case_no || item.access_no || '-'}</td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3"><span class="md:hidden font-black text-slate-400">ลูกค้า</span>${item.customer_name || '-'}</td>
-                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center"><span class="md:hidden font-black text-slate-400">จัดการ</span>${editBtn}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center"><span class="md:hidden font-black text-slate-400">จัดการ</span>${actions}</td>
                 </tr>`;
         });
     }

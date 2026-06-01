@@ -612,8 +612,9 @@ function renderMapJobList(mapJobs) {
         const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
         const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
         const coords = getJobLatLng(job);
-        const isCompleted = job.status && (job.status.toLowerCase() === 'completed' || job.status.toLowerCase() === 'failed');
-        const actionButtons = !isCompleted ? `
+        const jobStatus = (job.status || '').toLowerCase();
+        const isDone = jobStatus === 'completed' || jobStatus === 'failed';
+        const actionButtons = !isDone ? `
             <div class="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100">
                 <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
                     <i data-lucide="check-circle" class="w-3 h-3"></i>ปิดงาน
@@ -638,6 +639,7 @@ function renderMapJobList(mapJobs) {
                     </div>
                 </button>
                 ${actionButtons}
+                ${jobStatus === 'failed' ? `<div class="rounded px-2 py-1 text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-100 text-center">ไม่สำเร็จ</div>` : ''}
             </div>`;
     }).join('');
 }
@@ -745,7 +747,7 @@ function createJobRow(job, index) {
                 <i data-lucide="navigation" class="w-4 h-4"></i>นำทาง
             </button>
         </div>
-        ${job.team_id && (!job.status || (job.status.toLowerCase() !== 'completed' && job.status.toLowerCase() !== 'failed')) ? `
+        ${job.team_id && jobStatus !== 'completed' && jobStatus !== 'failed' ? `
         <div class="mt-2 grid grid-cols-2 gap-2">
             <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
                 <i data-lucide="check-circle" class="w-4 h-4"></i>ปิดงาน
@@ -753,6 +755,10 @@ function createJobRow(job, index) {
             <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'failed')">
                 <i data-lucide="x-circle" class="w-4 h-4"></i>ไม่สำเร็จ
             </button>
+        </div>` : ''}
+        ${jobStatus === 'failed' ? `
+        <div class="mt-2 rounded-lg bg-rose-50 border border-rose-100 px-3 py-2 text-center">
+            <span class="text-[10px] font-black text-rose-700">สถานะ: ไม่สำเร็จ</span>
         </div>` : ''}
     `;
 
@@ -811,7 +817,8 @@ function showJobPopup(job, color) {
     const gmapsLink = coords ? `https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}` : null;
 
     let actionButtons = '';
-    if (!IS_ADMIN) {
+    const popupStatus = (job.status || '').toLowerCase();
+    if (!IS_ADMIN && popupStatus !== 'completed' && popupStatus !== 'failed') {
         actionButtons = `
             <div class="grid grid-cols-2 gap-2 mt-3">
                 <button onclick="Swal.close(); openCompleteJobModal(${job.id})" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
@@ -820,6 +827,12 @@ function showJobPopup(job, color) {
                 <button onclick="Swal.close(); updateJobStatus(${job.id}, 'failed')" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
                     ทำไม่สำเร็จ
                 </button>
+            </div>
+        `;
+    } else if (!IS_ADMIN && popupStatus === 'failed') {
+        actionButtons = `
+            <div class="mt-3 rounded-lg bg-rose-50 border border-rose-100 px-3 py-2 text-center">
+                <span class="text-xs font-black text-rose-700">สถานะ: ไม่สำเร็จ</span>
             </div>
         `;
     }

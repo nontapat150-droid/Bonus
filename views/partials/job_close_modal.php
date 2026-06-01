@@ -38,6 +38,7 @@
                         <div>
                             <label for="cj_install_date" class="block text-[10px] font-bold text-slate-500 mb-1">วันที่ติดตั้ง <span class="text-rose-500">*</span></label>
                             <input type="date" id="cj_install_date" required class="w-full border border-slate-300 rounded-xl text-sm p-2.5 font-bold text-emerald-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200">
+                            <p id="cj_install_date_hint" class="text-[10px] font-bold text-amber-600 mt-1">กรุณาเลือกวันที่ติดตั้งทุกครั้งก่อนบันทึก</p>
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-500">ปิดเคสงาน (เลข Non)</label>
