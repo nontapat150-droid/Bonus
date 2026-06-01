@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 requireLogin(['admin', 'super_admin']);
 
 try {
-    $sql = "UPDATE jobs SET team_id = NULL, seq = NULL";
+    $sql = "UPDATE jobs SET team_id = NULL, seq = NULL, map_link = NULL";
     $pdo->exec($sql);
 
     echo json_encode(['success' => true]);

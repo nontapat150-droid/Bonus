@@ -24,15 +24,15 @@ try {
     $pdo->beginTransaction();
 
     // เตรียม SQL สำหรับเพิ่มข้อมูลงาน
-    $stmt = $pdo->prepare("INSERT INTO jobs (access_no, customer, phone, address, plan_arrival_date, package, remark, lat, lng, status) 
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
+    $stmt = $pdo->prepare("INSERT INTO jobs (access_no, customer, phone, address, plan_arrival_date, package, remark, lat, lng, product, order_no, task_order, task_type, status) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
 
     $imported = 0;
     foreach ($jobs as $job) {
         // ข้ามบรรทัดที่ไม่มีรหัสงาน (Access No)
         if (empty($job['access_no'])) continue;
 
-        $date = !empty($job['date']) ? $job['date'] : null;
+        $date = !empty($job['plan_arrival_date']) ? $job['plan_arrival_date'] : null;
 
         $stmt->execute([
             $job['access_no'],
@@ -43,7 +43,11 @@ try {
             $job['package'] ?? null,
             $job['remark'] ?? null,
             $job['lat'] ?? null,
-            $job['lng'] ?? null
+            $job['lng'] ?? null,
+            $job['product'] ?? null,
+            $job['order_no'] ?? null,
+            $job['task_order'] ?? null,
+            $job['task_type'] ?? null
         ]);
         $imported++;
     }
