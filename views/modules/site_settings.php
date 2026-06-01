@@ -8,10 +8,10 @@ if (!hasRole('super_admin')) {
 }
 
 $guideFiles = [
-    'super_admin' => 'USER_GUIDE_SUPER_ADMIN.md',
-    'admin' => 'USER_GUIDE_ADMIN.md',
-    'technician' => 'USER_GUIDE_TECHNICIAN.md',
-    'general' => 'USER_GUIDE.md',
+    'super_admin' => 'USER_GUIDE_SUPER_ADMIN.html',
+    'admin' => 'USER_GUIDE_ADMIN.html',
+    'technician' => 'USER_GUIDE_TECHNICIAN.html',
+    'general' => 'USER_GUIDE.html',
 ];
 
 $guideMessages = [];
@@ -137,7 +137,7 @@ foreach ($guideFiles as $role => $filename) {
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-2">เนื้อหาคู่มือ</label>
                     <textarea id="guideContent" name="guide_content" rows="14" class="w-full rounded-3xl border border-slate-300 px-4 py-4 text-sm text-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"></textarea>
-                    <p class="text-xs text-slate-400 mt-1">แก้ไขข้อความในรูปแบบ Markdown หรือข้อความธรรมดาได้ตามต้องการ</p>
+                    <p class="text-xs text-slate-400 mt-1">แก้ไขเนื้อหา HTML/CSS หรือข้อความธรรมดาได้ตามต้องการ</p>
                 </div>
 
                 <div class="flex justify-end gap-3 pt-2">
