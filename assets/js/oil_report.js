@@ -801,8 +801,18 @@ window.exportOilExcel = async function() {
 
             showToast('info', 'กำลังสร้างไฟล์ Excel พร้อมคำนวณยอดรวม...');
             let sortedRecords = [...recordsToExport].sort((a, b) => new Date(a.date_recorded) - new Date(b.date_recorded));
+
+            const seenRecords = new Set();
+            const uniqueRecords = [];
+            sortedRecords.forEach(row => {
+                const key = row.id ? `id:${row.id}` : `${row.date_recorded}|${row.license_plate}|${row.mileage}|${row.total_price}`;
+                if (!seenRecords.has(key)) {
+                    seenRecords.add(key);
+                    uniqueRecords.push(row);
+                }
+            });
             
-            let exportData = sortedRecords.map(row => {
+            let exportData = uniqueRecords.map(row => {
                 const d = new Date(row.date_recorded);
                 return {
                     "วันที่": d.toLocaleDateString('en-GB'),
