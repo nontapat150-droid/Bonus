@@ -16,24 +16,7 @@ $guideFiles = [
 
 $guideMessages = [];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_guide'])) {
-    $role = $_POST['guide_role'] ?? 'general';
-    $content = $_POST['guide_content'] ?? '';
-    $content = trim($content);
 
-    if (!array_key_exists($role, $guideFiles)) {
-        $guideMessages[] = ['type' => 'error', 'text' => 'บทบาทคู่มืิอไม่ถูกต้อง'];
-    } elseif ($content === '') {
-        $guideMessages[] = ['type' => 'error', 'text' => 'กรุณากรอกเนื้อหาคู่มือก่อนบันทึก'];
-    } else {
-        $filePath = __DIR__ . '/../../' . $guideFiles[$role];
-        if (file_put_contents($filePath, $content, LOCK_EX) !== false) {
-            $guideMessages[] = ['type' => 'success', 'text' => 'บันทึกคู่มือสำหรับ ' . htmlspecialchars($role) . ' เรียบร้อยแล้ว'];
-        } else {
-            $guideMessages[] = ['type' => 'error', 'text' => 'ไม่สามารถบันทึกไฟล์คู่มือได้'];
-        }
-    }
-}
 
 $guideContents = [];
 foreach ($guideFiles as $role => $filename) {
@@ -116,35 +99,7 @@ foreach ($guideFiles as $role => $filename) {
             </form>
         </section>
 
-        <section class="card p-6 rounded-3xl bg-white border border-slate-200">
-            <div class="mb-5">
-                <h3 class="text-xl font-black text-[var(--c-text-1)]">แก้ไขคู่มือ</h3>
-                <p class="text-sm text-[var(--c-text-3)] mt-1">เลือกบทบาท แล้วแก้ไขคู่มือของบทบาทนั้นได้ทันที</p>
-            </div>
-
-            <form method="post" class="space-y-5">
-                <input type="hidden" name="save_guide" value="1" />
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">คู่มือบทบาท</label>
-                    <select id="guideRole" name="guide_role" class="w-full rounded-3xl border border-slate-300 px-4 py-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none">
-                        <option value="super_admin">super_admin</option>
-                        <option value="admin">admin</option>
-                        <option value="technician">technician</option>
-                        <option value="general">ทั่วไป (user / sales)</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">เนื้อหาคู่มือ</label>
-                    <textarea id="guideContent" name="guide_content" rows="14" class="w-full rounded-3xl border border-slate-300 px-4 py-4 text-sm text-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"></textarea>
-                    <p class="text-xs text-slate-400 mt-1">แก้ไขเนื้อหา HTML/CSS หรือข้อความธรรมดาได้ตามต้องการ</p>
-                </div>
-
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="submit" class="btn-primary bg-sky-600 hover:bg-sky-700 text-white rounded-3xl px-5 py-3 font-bold">บันทึกคู่มือ</button>
-                </div>
-            </form>
-        </section>
+        
     </div>
 </div>
 
@@ -164,8 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const previewContainer = document.getElementById('announcementPreview');
     const deleteBtn = document.getElementById('deleteAnnouncementBtn');
     const refreshBtn = document.getElementById('refreshAnnouncementBtn');
-    const guideRole = document.getElementById('guideRole');
-    const guideContent = document.getElementById('guideContent');
+    
 
     async function loadAnnouncement() {
         previewContainer.innerHTML = '<div class="p-10 text-center text-slate-500">กำลังโหลดข้อมูลประกาศ...</div>';
@@ -322,11 +276,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     refreshBtn.addEventListener('click', loadAnnouncement);
-    guideRole.addEventListener('change', function() {
-        guideContent.value = GUIDE_CONTENTS[guideRole.value] || '';
-    });
-
-    guideContent.value = GUIDE_CONTENTS[guideRole.value] || '';
     loadAnnouncement();
 });
 </script>
