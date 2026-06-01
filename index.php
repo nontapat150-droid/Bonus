@@ -16,7 +16,8 @@ $stats = [
     'total_staff' => 0
 ];
 
-$announcement = null;
+$popupAnnouncement = null;
+$marqueeAnnouncement = null;
 
 if ($page === 'home') {
     try {
@@ -35,9 +36,12 @@ if ($page === 'home') {
         // --- 🚀 จัดการและดึงข้อมูลประกาศ (Marquee) ---
         // 1. ลบประกาศที่หมดอายุอัตโนมัติ
         $pdo->exec("DELETE FROM announcements WHERE expires_at IS NOT NULL AND expires_at < NOW()");
-        // 2. ดึงประกาศล่าสุดที่ยังไม่หมดอายุ
-        $stmtAnn = $pdo->query("SELECT id, message, image_url, expires_at FROM announcements ORDER BY id DESC LIMIT 1");
-        $announcement = $stmtAnn->fetch();
+        // 2. ดึงประกาศแยกระหว่างป๊อปอัปและป้ายวิ่ง
+        $stmtPopup = $pdo->query("SELECT * FROM announcements WHERE type = 'popup' ORDER BY id DESC LIMIT 1");
+        $popupAnnouncement = $stmtPopup->fetch();
+
+        $stmtMarquee = $pdo->query("SELECT * FROM announcements WHERE type = 'marquee' ORDER BY id DESC LIMIT 1");
+        $marqueeAnnouncement = $stmtMarquee->fetch();
         
     } catch (PDOException $e) {}
 }
@@ -483,27 +487,27 @@ if ($page === 'home') {
             </div>
         </div>
 
-        <?php if ($announcement): ?>
+        <?php if ($popupAnnouncement): ?>
         <div id="siteAnnouncementModal" class="hidden fixed inset-0 z-[100] bg-black/50 px-4 py-8 flex items-center justify-center">
             <div class="max-w-3xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl ring-1 ring-slate-900/10">
                 <div class="relative pb-4">
                     <button id="closeAnnouncementBtn" class="absolute right-4 top-4 text-slate-600 hover:text-slate-900 text-2xl font-bold">&times;</button>
-                    <?php if (!empty($announcement['image_url'])): ?>
-                    <img src="<?= htmlspecialchars($announcement['image_url']) ?>" alt="ประกาศ" class="w-full h-72 object-cover">
+                    <?php if (!empty($popupAnnouncement['image_url'])): ?>
+                    <img src="<?= htmlspecialchars($popupAnnouncement['image_url']) ?>" alt="ประกาศ" class="w-full h-72 object-cover">
                     <?php endif; ?>
                 </div>
                 <div class="p-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                         <div>
                             <p class="text-xs uppercase tracking-[0.22em] font-black text-slate-400">ประกาศ</p>
-                            <h2 class="text-2xl font-black text-slate-900"><?= !empty($announcement['title']) ? htmlspecialchars($announcement['title']) : 'ประกาศใหม่' ?></h2>
+                            <h2 class="text-2xl font-black text-slate-900"><?= !empty($popupAnnouncement['title']) ? htmlspecialchars($popupAnnouncement['title']) : 'ประกาศใหม่' ?></h2>
                         </div>
                         <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
                             <i data-lucide="bell" class="w-4 h-4"></i> ปิดได้
                         </span>
                     </div>
-                    <?php if (!empty($announcement['message'])): ?>
-                    <p class="text-slate-700 text-sm leading-relaxed whitespace-pre-line"><?= nl2br(htmlspecialchars($announcement['message'])) ?></p>
+                    <?php if (!empty($popupAnnouncement['message'])): ?>
+                    <p class="text-slate-700 text-sm leading-relaxed whitespace-pre-line"><?= nl2br(htmlspecialchars($popupAnnouncement['message'])) ?></p>
                     <?php else: ?>
                     <p class="text-slate-500 text-sm">ประกาศนี้เป็นภาพเท่านั้น</p>
                     <?php endif; ?>
@@ -540,9 +544,9 @@ if ($page === 'home') {
                             <p class="text-sm text-[var(--c-text-3)]">Here's what's happening with your operations today, <?= date('d M Y') ?>.</p>
                         </div>
                         <?php if (hasRole(['admin', 'super_admin'])): ?>
-                        <button onclick="manageAnnouncement()" class="btn-primary shrink-0 !bg-amber-500 hover:!bg-amber-600" style="--shadow-btn: 0 4px 14px rgba(245,158,11, 0.40); --shadow-btn-hover: 0 6px 24px rgba(245,158,11, 0.55);">
+                        <a href="index.php?page=site_settings" class="btn-primary shrink-0 !bg-amber-500 hover:!bg-amber-600 no-underline" style="--shadow-btn: 0 4px 14px rgba(245,158,11, 0.40); --shadow-btn-hover: 0 6px 24px rgba(245,158,11, 0.55);">
                             <i data-lucide="monitor-play" class="w-4 h-4"></i> จัดการประกาศวิ่ง
-                        </button>
+                        </a>
                         <?php endif; ?>
                     </div>
 
@@ -781,101 +785,9 @@ if ($page === 'home') {
             isAdmin: <?php echo hasRole(['admin', 'super_admin']) ? 'true' : 'false'; ?>
         };
 
-        // 🚨 สคริปต์จัดการป้ายประกาศวิ่ง (Admin เท่านั้น) 🚨
-        window.manageAnnouncement = function() {
-            Swal.fire({
-                title: 'ตั้งค่าประกาศหน้าเว็บ',
-                html: `
-                    <div class="text-left mt-2">
-                        <label class="block text-sm font-bold mb-2 text-slate-700">ข้อความประกาศ:</label>
-                        <textarea id="swal_ann_msg" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" rows="3" placeholder="พิมพ์ข้อความที่ต้องการให้วิ่งบนหน้าเว็บ..."></textarea>
-                    </div>
-                    <div class="text-left mt-4">
-                        <label class="block text-sm font-bold mb-2 text-slate-700">ระยะเวลาที่แสดง:</label>
-                        <div class="flex gap-2">
-                            <input type="number" id="swal_ann_val" class="w-1/2 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-100" placeholder="ตัวเลข" min="1">
-                            <select id="swal_ann_unit" class="w-1/2 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
-                                <option value="never">ตลอดไป (จนกว่าจะกดลบ)</option>
-                                <option value="minutes">นาที</option>
-                                <option value="hours">ชั่วโมง</option>
-                                <option value="days">วัน</option>
-                            </select>
-                        </div>
-                    </div>
-                `,
-                showCancelButton: true,
-                showDenyButton: true,
-                confirmButtonText: 'บันทึกประกาศ',
-                denyButtonText: 'ลบประกาศปัจจุบัน',
-                cancelButtonText: 'ยกเลิก',
-                confirmButtonColor: '#4f46e5',
-                denyButtonColor: '#ef4444',
-                didOpen: () => {
-                    const unit = document.getElementById('swal_ann_unit');
-                    const val = document.getElementById('swal_ann_val');
-                    unit.addEventListener('change', () => {
-                        val.disabled = unit.value === 'never';
-                        if(unit.value === 'never') val.value = '';
-                    });
-                    val.disabled = unit.value === 'never';
-                },
-                preConfirm: () => {
-                    const msg = document.getElementById('swal_ann_msg').value;
-                    const val = document.getElementById('swal_ann_val').value;
-                    const unit = document.getElementById('swal_ann_unit').value;
-                    
-                    if (!msg.trim()) {
-                        Swal.showValidationMessage('กรุณากรอกข้อความประกาศ');
-                        return false;
-                    }
-                    if (unit !== 'never' && (!val || val <= 0)) {
-                        Swal.showValidationMessage('กรุณาระบุตัวเลขเวลาให้ถูกต้อง');
-                        return false;
-                    }
-                    return { msg, val, unit, action: 'save' };
-                }
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    submitAnnouncement(result.value);
-                } else if (result.isDenied) {
-                    submitAnnouncement({ action: 'delete' });
-                }
-            });
-        };
-
-        async function submitAnnouncement(data) {
-            Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-            const formData = new FormData();
-            formData.append('action', data.action);
-            
-            if (data.action === 'save') {
-                formData.append('message', data.msg);
-                formData.append('duration_val', data.val);
-                formData.append('duration_unit', data.unit);
-            }
-
-            try {
-                const res = await fetch('api/announcements/manage.php', { method: 'POST', body: formData });
-                const result = await res.json();
-                if (result.success) {
-                    Swal.fire({
-                        icon: 'success', 
-                        title: 'สำเร็จ', 
-                        text: 'อัปเดตประกาศเรียบร้อยแล้ว',
-                        showConfirmButton: false,
-                        timer: 1500
-                    }).then(() => location.reload()); // รีเฟรชหน้าเว็บเพื่อให้ประกาศวิ่งทันที
-                } else {
-                    Swal.fire('ข้อผิดพลาด', result.error, 'error');
-                }
-            } catch (e) {
-                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
-            }
-        }
-
-        <?php if ($announcement): ?>
+        <?php if ($popupAnnouncement): ?>
         (function() {
-            const announcementId = <?= json_encode($announcement['id']) ?>;
+            const announcementId = <?= json_encode($popupAnnouncement['id']) ?>;
             const announcementModal = document.getElementById('siteAnnouncementModal');
             const closeBtn = document.getElementById('closeAnnouncementBtn');
             const checkbox = document.getElementById('dontShowAnnouncementToday');
