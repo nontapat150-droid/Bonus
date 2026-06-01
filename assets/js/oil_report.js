@@ -195,8 +195,9 @@ async function fetchData(silent = false) {
         }
 
         if (data.success) {
+            const uniqueRecords = dedupeRecords(data.records);
             updateStats(data.stats);
-            allRecords = data.records;
+            allRecords = uniqueRecords;
             monthlyData = data.monthly || [];
             dailyData = data.chart || [];
             
@@ -207,7 +208,7 @@ async function fetchData(silent = false) {
 
             renderAnalyticsCharts();
             if (isCompareMode) { renderComparisonCharts(); renderMonthlyCompareChart(); }
-            renderTable(data.records);
+            renderTable(uniqueRecords);
             
             if (!silent) {
                 if (data.records.length > 0) showToast('success', `โหลดข้อมูลสำเร็จ พบทั้งหมด ${data.records.length} รายการ`);
@@ -393,6 +394,19 @@ function renderMonthlyCompareChart() {
         },
         options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { position: 'top' } } }
     });
+}
+
+function dedupeRecords(records) {
+    const seenIds = new Set();
+    const uniqueRecords = [];
+    records.forEach(row => {
+        const key = row.id ? `id:${row.id}` : `${row.date_recorded}|${row.license_plate}|${row.mileage}|${row.total_price}`;
+        if (!seenIds.has(key)) {
+            seenIds.add(key);
+            uniqueRecords.push(row);
+        }
+    });
+    return uniqueRecords;
 }
 
 function renderTable(records) {
