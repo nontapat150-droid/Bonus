@@ -170,6 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('dateFilter')?.addEventListener('change', renderUI);
+    document.getElementById('statusFilter')?.addEventListener('change', renderUI);
     function getFilteredJobs() {
     let teamVal = 'all';
     const teamEl = document.getElementById('teamFilter');
@@ -223,6 +224,7 @@ function renderMapJobList(mapJobs) {
         const jobStatus = (job.status || '').toLowerCase();
         const isDone = jobStatus === 'completed' || jobStatus === 'failed';
         
+        // 🌟 แก้ไข: จัดการปุ่มให้รองรับการเปลี่ยนจาก Failed เป็น Completed
         let actionButtons = '';
         if (!isDone && job.team_id) {
             actionButtons = `
@@ -243,7 +245,7 @@ function renderMapJobList(mapJobs) {
                 </button>
             </div>`;
         }
-        
+
         return `
             <div class="p-3 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors space-y-2">
                 <button type="button" class="w-full text-left" onclick="showMapJobDetail('${escapeHTML(job.id)}')">
@@ -262,6 +264,7 @@ function renderMapJobList(mapJobs) {
                 ${actionButtons}
             </div>`;
     }).join('');
+}
 }
 
 function createJobRow(job, index) {
@@ -817,14 +820,32 @@ function renderUI() {
 function getFilteredJobs() {
     let teamVal = 'all';
     const teamEl = document.getElementById('teamFilter');
-    if (IS_ADMIN && teamEl) teamVal = teamEl.value;
+    if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN && teamEl) teamVal = teamEl.value;
 
     const dateVal = document.getElementById('dateFilter')?.value;
+    const statusVal = document.getElementById('statusFilter')?.value; // ดึงค่าจาก Dropdown ใหม่
+
     let filteredJobs = [...allJobs];
 
+    // กรองตามทีม
     if (teamVal === 'unassigned') filteredJobs = filteredJobs.filter(j => !j.team_id);
     else if (teamVal !== 'all') filteredJobs = filteredJobs.filter(j => j.team_id == teamVal);
+    
+    // กรองตามวันที่
     if (dateVal) filteredJobs = filteredJobs.filter(j => j.plan_arrival_date === dateVal);
+
+    // 🌟 กรองตามสถานะ 🌟
+    if (statusVal && statusVal !== 'all') {
+        filteredJobs = filteredJobs.filter(j => {
+            const currentStatus = (j.status || 'pending').toLowerCase();
+            if (statusVal === 'pending') {
+                return currentStatus !== 'failed' && currentStatus !== 'completed';
+            } else if (statusVal === 'failed') {
+                return currentStatus === 'failed';
+            }
+            return true;
+        });
+    }
 
     return filteredJobs;
 }
