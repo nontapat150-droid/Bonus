@@ -67,7 +67,7 @@ try {
         'success' => true, 
         'data' => $jobs, 
         'teams' => $teams,
-        'debug' => [  // 👈 เพิ่มโหมด Debug เพื่อให้เราตรวจสอบได้ว่าช่างอยู่ทีมไหน
+        'debug' => [  
             'role' => $role,
             'team_id_in_db' => $team_id,
             'username' => $username
@@ -77,3 +77,4 @@ try {
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
+// จบไฟล์แค่นี้ครับ ไม่มีปีกกา } ปิดท้ายเกินมาแล้ว
