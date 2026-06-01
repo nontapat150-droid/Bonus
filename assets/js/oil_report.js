@@ -234,10 +234,32 @@ function updateStats(stats) {
     const sl = document.getElementById('stat_total_liters');
     const sr = document.getElementById('stat_total_records');
     const sj = document.getElementById('stat_total_jobs');
+    const sd = document.getElementById('stat_total_distance');
+    const sal = document.getElementById('stat_avg_liters_per_km');
+    const sac = document.getElementById('stat_avg_cost_per_km');
+
+    let totalDistance = 0;
+    let totalLitersPerKm = 0;
+    let countLitersPerKm = 0;
+
+    allRecords.forEach(r => {
+        totalDistance += Number(r.distance) || 0;
+        if (Number(r.liters_per_km) > 0) {
+            totalLitersPerKm += Number(r.liters_per_km);
+            countLitersPerKm += 1;
+        }
+    });
+
+    const avgLitersPerKm = countLitersPerKm > 0 ? (totalLitersPerKm / countLitersPerKm) : 0;
+    const avgCostPerKm = totalDistance > 0 ? (Number(stats.total_cost) / totalDistance) : 0;
+
     if(sc) sc.textContent = Number(stats.total_cost).toLocaleString('th-TH', {minimumFractionDigits: 2});
     if(sl) sl.textContent = Number(stats.total_liters).toLocaleString('th-TH', {minimumFractionDigits: 2});
     if(sr) sr.textContent = Number(stats.total_records).toLocaleString('th-TH');
     if(sj) sj.textContent = stats.total_jobs ? Number(stats.total_jobs).toLocaleString('th-TH') : '0';
+    if(sd) sd.textContent = totalDistance.toLocaleString('th-TH', {minimumFractionDigits: 2});
+    if(sal) sal.textContent = countLitersPerKm > 0 ? Number(avgLitersPerKm).toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-';
+    if(sac) sac.textContent = totalDistance > 0 ? '฿' + Number(avgCostPerKm).toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-';
 }
 
 function renderAnalyticsCharts() {
