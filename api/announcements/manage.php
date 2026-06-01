@@ -12,9 +12,25 @@ if (!hasRole(['admin', 'super_admin'])) {
     exit;
 }
 
+function announcementHasTitleColumn($pdo) {
+    try {
+        $stmt = $pdo->prepare("SHOW COLUMNS FROM announcements LIKE 'title'");
+        $stmt->execute();
+        return (bool) $stmt->fetch();
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+$hasTitleColumn = announcementHasTitleColumn($pdo);
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
-        $stmt = $pdo->query("SELECT id, message, image_url, expires_at FROM announcements ORDER BY id DESC LIMIT 1");
+        $select = 'id, message, image_url, expires_at';
+        if ($hasTitleColumn) {
+            $select .= ', title';
+        }
+        $stmt = $pdo->query("SELECT $select FROM announcements ORDER BY id DESC LIMIT 1");
         $announcement = $stmt->fetch();
         echo json_encode(['success' => true, 'data' => $announcement]);
     } catch (Exception $e) {
@@ -26,11 +42,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 $action = $_POST['action'] ?? '';
 
 if ($action === 'save') {
+    $title = trim($_POST['title'] ?? '');
     $message = trim($_POST['message'] ?? '');
     $duration_val = intval($_POST['duration_val'] ?? 0);
     $duration_unit = $_POST['duration_unit'] ?? 'never';
     $existingImage = trim($_POST['existing_image_url'] ?? '');
 
+    if (empty($title)) {
+        echo json_encode(['success' => false, 'error' => 'กรุณากรอกหัวข้อประกาศ']);
+        exit;
+    }
     if (empty($message)) {
         echo json_encode(['success' => false, 'error' => 'กรุณากรอกข้อความประกาศ']);
         exit;
@@ -81,9 +102,23 @@ if ($action === 'save') {
     }
 
     try {
+        if (!$hasTitleColumn) {
+            try {
+                $pdo->exec("ALTER TABLE announcements ADD COLUMN title VARCHAR(255) DEFAULT NULL AFTER id");
+                $hasTitleColumn = true;
+            } catch (Exception $ignored) {
+                // If schema cannot be altered, continue with existing columns.
+            }
+        }
+
         $pdo->exec("TRUNCATE TABLE announcements");
-        $stmt = $pdo->prepare("INSERT INTO announcements (message, image_url, expires_at) VALUES (?, ?, ?)");
-        $stmt->execute([$message, $imageUrl, $expires_at]);
+        if ($hasTitleColumn) {
+            $stmt = $pdo->prepare("INSERT INTO announcements (title, message, image_url, expires_at) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$title, $message, $imageUrl, $expires_at]);
+        } else {
+            $stmt = $pdo->prepare("INSERT INTO announcements (message, image_url, expires_at) VALUES (?, ?, ?)");
+            $stmt->execute([$message, $imageUrl, $expires_at]);
+        }
         echo json_encode(['success' => true]);
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
