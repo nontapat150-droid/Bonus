@@ -802,13 +802,17 @@ window.exportOilExcel = async function() {
             showToast('info', 'กำลังสร้างไฟล์ Excel พร้อมคำนวณยอดรวม...');
             let sortedRecords = [...recordsToExport].sort((a, b) => new Date(a.date_recorded) - new Date(b.date_recorded));
             
-            let exportData = sortedRecords.map(row => ({
-                "ชื่อผู้เติม": row.tech_name,
-                "เลขไมล์": parseInt(row.mileage),
-                "ระยะทางวิ่ง(กม.)": Number(row.distance),
-                "กม./ลิตร": Number(row.km_per_liter),
-                "ยอดเติม(บาท)": Number(row.total_price)
-            }));
+            let exportData = sortedRecords.map(row => {
+                const d = new Date(row.date_recorded);
+                return {
+                    "วันที่": d.toLocaleDateString('en-GB'),
+                    "ชื่อผู้เติม": row.tech_name,
+                    "เลขไมล์": parseInt(row.mileage),
+                    "ระยะทางวิ่ง(กม.)": Number(row.distance),
+                    "กม./ลิตร": Number(row.km_per_liter),
+                    "ยอดเติม(บาท)": Number(row.total_price)
+                };
+            });
 
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
