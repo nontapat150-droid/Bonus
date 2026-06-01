@@ -402,7 +402,7 @@ function renderTable(records) {
             <td class="px-4 py-4">${teamBadge}</td>
             <td class="px-4 py-4 text-center font-bold text-slate-600">${Number(row.mileage).toLocaleString('th-TH')}</td>
             <td class="px-4 py-4 text-center font-bold text-sky-600">${row.distance} กม.</td>
-            <td class="px-4 py-4 text-center font-bold text-slate-700">${row.distance > 0 ? Number(row.liters_per_km).toLocaleString('th-TH', {minimumFractionDigits:2}) : '-'} ลิตร/กม.</td>
+            <td class="px-4 py-4 text-center font-bold text-slate-700">${Number(row.liters_per_km) > 0 ? Number(row.liters_per_km).toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ลิตร/กม.' : '-'}</td>
             <td class="px-4 py-4 text-center"><span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-black">📋 ${row.job_count} งาน</span></td>
             <td class="px-4 py-4 text-right"><span class="text-xs text-slate-400 block mb-0.5">กม. ละ</span><span class="font-bold text-rose-500">฿${Number(row.cost_per_km).toLocaleString('th-TH', {minimumFractionDigits:2})}</span></td>
             <td class="px-4 py-4 text-right"><span class="text-xs text-slate-400 block mb-0.5">งาน ละ</span><span class="font-bold text-indigo-500">฿${Number(row.cost_per_job).toLocaleString('th-TH', {minimumFractionDigits:2})}</span></td>
