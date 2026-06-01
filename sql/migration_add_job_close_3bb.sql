@@ -1,0 +1,37 @@
+-- Migration: ข้อมูลปิดงานติดตั้ง 3BB (กรอกก่อปิดงาน)
+-- Date: 2026-06-01
+
+CREATE TABLE IF NOT EXISTS `job_close_3bb` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `job_id` int(11) NOT NULL,
+  `job_log_id` int(11) DEFAULT NULL,
+  `tech_id` int(11) NOT NULL,
+  `install_date` date DEFAULT NULL COMMENT 'วันที่ติดตั้ง (จากงานที่มอบหมาย)',
+  `close_case_no` varchar(50) DEFAULT NULL COMMENT 'ปิดเคสงาน / เลข Non',
+  `order_no` varchar(50) DEFAULT NULL,
+  `customer_name` varchar(150) DEFAULT NULL,
+  `package_name` varchar(150) DEFAULT NULL COMMENT 'แพ็กเกจ',
+  `main_package` varchar(150) DEFAULT NULL COMMENT 'แพ็กเกจหลัก',
+  `equipment_soa` varchar(255) DEFAULT NULL COMMENT 'อุปกรณ์ปิด SOA',
+  `sn_playbox` varchar(100) DEFAULT NULL,
+  `sn_onu` varchar(100) DEFAULT NULL,
+  `sn_mesh` varchar(100) DEFAULT NULL,
+  `sn_sim` varchar(100) DEFAULT NULL,
+  `sn_ip_camera` varchar(100) DEFAULT NULL,
+  `splitter` varchar(100) DEFAULT NULL,
+  `port_used` varchar(50) DEFAULT NULL COMMENT 'ใช้ Port',
+  `l3_name` varchar(150) DEFAULT NULL COMMENT 'ใช้ #L3 (ชื่อ)',
+  `actual_cable_length` decimal(10,2) DEFAULT NULL COMMENT 'ระยะสายจริง (เมตร)',
+  `ref_id_3bb` varchar(100) DEFAULT NULL,
+  `sc_connector_blue` varchar(100) DEFAULT NULL COMMENT 'ตัวต่อ SC สีฟ้า',
+  `initial_fee` decimal(10,2) DEFAULT NULL COMMENT 'ค่าแรกเข้า',
+  `remark` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `job_id` (`job_id`),
+  KEY `job_log_id` (`job_log_id`),
+  KEY `tech_id` (`tech_id`),
+  CONSTRAINT `job_close_3bb_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `job_close_3bb_ibfk_2` FOREIGN KEY (`job_log_id`) REFERENCES `job_logs` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `job_close_3bb_ibfk_3` FOREIGN KEY (`tech_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
