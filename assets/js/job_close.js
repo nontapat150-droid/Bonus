@@ -185,8 +185,10 @@ window.openCompleteJobModal = function(jobId) {
 
 window.openEditJobCloseModal = async function(closeId) {
     try {
-        const res = await fetch(`api/dispatch/get_job_close_detail.php?id=${closeId}`);
+        const cb = new Date().getTime();
+        const res = await fetch(`api/dispatch/get_job_close_detail.php?id=${closeId}&_=${cb}`);
         const data = await res.json();
+        
         if (!data.success) {
             Swal.fire('ข้อผิดพลาด', data.error || 'โหลดข้อมูลไม่สำเร็จ', 'error');
             return;
@@ -296,7 +298,8 @@ const JobClose = {
         const banner = document.getElementById('jobCloseAlertBanner');
         if (!banner) return;
         try {
-            const res = await fetch('api/dispatch/get_close_alerts.php');
+            const cb = new Date().getTime();
+            const res = await fetch(`api/dispatch/get_close_alerts.php?_=${cb}`);
             const data = await res.json();
             if (!data.success || !data.alerts?.length) {
                 banner.classList.add('hidden');
