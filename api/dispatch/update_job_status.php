@@ -73,11 +73,11 @@ try {
         exit;
     }
 
-    // อนุญาตให้งานที่สถานะ "failed" สามารถถูกกดปิดงานให้กลายเป็น "completed" ได้
     if ($job['status'] === 'completed') {
-        echo json_encode(['success' => false, 'error' => 'งานนี้ถูกปิดสำเร็จไปแล้ว']);
+        echo json_encode(['success' => false, 'error' => 'งานนี้ถูกปิดสำเร็จไปแล้ว ไม่สามารถเปลี่ยนสถานะได้']);
         exit;
     }
+
     $pdo->beginTransaction();
 
     if ($status === 'completed') {
@@ -95,7 +95,6 @@ try {
 
     if ($status === 'completed') {
         $installDate = !empty($close3bb['install_date']) ? $close3bb['install_date'] : ($job['plan_arrival_date'] ?? null);
-
         $provider = strtoupper(trim((string)($close3bb['install_provider'] ?? '3BB')));
 
         $closeStmt = $pdo->prepare("INSERT INTO job_close_3bb (
@@ -143,3 +142,4 @@ try {
     }
     echo json_encode(['success' => false, 'error' => 'เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' . $e->getMessage()]);
 }
+?>
