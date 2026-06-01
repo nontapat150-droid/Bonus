@@ -18,8 +18,7 @@ try {
         // Get completed jobs for specific day (across all techs or specific tech)
         $query = "SELECT 
                     jl.tech_id,
-                    u.firstname,
-                    u.lastname,
+                    u.full_name,
                     COUNT(CASE WHEN jl.status = 'completed' THEN 1 END) as completed_jobs,
                     COUNT(CASE WHEN jl.status = 'failed' THEN 1 END) as failed_jobs,
                     COUNT(*) as total_records
@@ -90,8 +89,7 @@ try {
         // Get stats per technician
         $query = "SELECT 
                     jl.tech_id,
-                    u.firstname,
-                    u.lastname,
+                    u.full_name,
                     COUNT(CASE WHEN jl.status = 'completed' THEN 1 END) as completed_jobs,
                     COUNT(CASE WHEN jl.status = 'failed' THEN 1 END) as failed_jobs,
                     MAX(jl.timestamp) as last_update

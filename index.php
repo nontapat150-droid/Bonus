@@ -36,7 +36,7 @@ if ($page === 'home') {
         // 1. ลบประกาศที่หมดอายุอัตโนมัติ
         $pdo->exec("DELETE FROM announcements WHERE expires_at IS NOT NULL AND expires_at < NOW()");
         // 2. ดึงประกาศล่าสุดที่ยังไม่หมดอายุ
-        $stmtAnn = $pdo->query("SELECT message, expires_at FROM announcements ORDER BY id DESC LIMIT 1");
+        $stmtAnn = $pdo->query("SELECT id, message, image_url, expires_at FROM announcements ORDER BY id DESC LIMIT 1");
         $announcement = $stmtAnn->fetch();
         
     } catch (PDOException $e) {}
@@ -387,12 +387,37 @@ if ($page === 'home') {
             </button>
 
             <div class="flex items-center gap-3 ml-auto">
+                <button id="guideModalBtn" class="p-2 text-[var(--c-text-2)] hover:bg-[var(--c-surface-2)] rounded-full transition-colors" title="คู่มือการใช้งาน">
+                    <i data-lucide="book-open" class="w-6 h-6"></i>
+                </button>
                 <button id="notificationBell" class="relative p-2 text-[var(--c-text-2)] hover:bg-[var(--c-surface-2)] rounded-full transition-colors">
                     <i data-lucide="bell" class="w-6 h-6"></i>
                     <span id="notificationUnreadDot" class="hidden absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[9px] font-black rounded-full border-2 border-white shadow-sm">0</span>
                 </button>
             </div>
         </header>
+
+        <div id="guideModal" class="hidden fixed inset-0 z-50 bg-black/40 p-4 backdrop-blur-sm flex justify-center items-center">
+            <div class="w-full max-w-4xl rounded-[32px] bg-white shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+                <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-200 shrink-0 bg-white z-10">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">คู่มือการใช้งาน</h2>
+                        <p class="text-slate-500 text-sm">เลือกบทบาทเพื่อดูคู่มือ</p>
+                    </div>
+                    <button id="closeGuideModal" class="text-slate-400 hover:text-slate-700 text-xl font-bold">&times;</button>
+                </div>
+
+                <div class="px-5 py-4 overflow-y-auto custom-scrollbar flex-1">
+                    <div class="flex gap-2 mb-4 border-b border-slate-200 pb-4 flex-wrap">
+                        <button class="guide-tab-btn px-4 py-2 text-sm font-bold rounded-2xl transition-colors bg-slate-100 text-slate-700 active" data-role="super_admin">👑 Super Admin</button>
+                        <button class="guide-tab-btn px-4 py-2 text-sm font-bold rounded-2xl transition-colors hover:bg-slate-100" data-role="admin">⚙️ Admin</button>
+                        <button class="guide-tab-btn px-4 py-2 text-sm font-bold rounded-2xl transition-colors hover:bg-slate-100" data-role="technician">🔧 Technician</button>
+                        <button class="guide-tab-btn px-4 py-2 text-sm font-bold rounded-2xl transition-colors hover:bg-slate-100" data-role="general">📖 General</button>
+                    </div>
+                    <div id="guideContent" class="prose prose-slate max-w-none"></div>
+                </div>
+            </div>
+        </div>
 
         <div id="notificationModal" class="hidden fixed inset-0 z-50 bg-black/40 p-4 backdrop-blur-sm flex justify-center items-center">
             <div class="w-full max-w-3xl rounded-[32px] bg-white shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
@@ -457,6 +482,41 @@ if ($page === 'home') {
                 </div>
             </div>
         </div>
+
+        <?php if ($announcement): ?>
+        <div id="siteAnnouncementModal" class="hidden fixed inset-0 z-[100] bg-black/50 px-4 py-8 flex items-center justify-center">
+            <div class="max-w-3xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl ring-1 ring-slate-900/10">
+                <div class="relative pb-4">
+                    <button id="closeAnnouncementBtn" class="absolute right-4 top-4 text-slate-600 hover:text-slate-900 text-2xl font-bold">&times;</button>
+                    <?php if (!empty($announcement['image_url'])): ?>
+                    <img src="<?= htmlspecialchars($announcement['image_url']) ?>" alt="ประกาศ" class="w-full h-72 object-cover">
+                    <?php endif; ?>
+                </div>
+                <div class="p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.22em] font-black text-slate-400">ประกาศ</p>
+                            <h2 class="text-2xl font-black text-slate-900"><?= !empty($announcement['title']) ? htmlspecialchars($announcement['title']) : 'ประกาศใหม่' ?></h2>
+                        </div>
+                        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">
+                            <i data-lucide="bell" class="w-4 h-4"></i> ปิดได้
+                        </span>
+                    </div>
+                    <?php if (!empty($announcement['message'])): ?>
+                    <p class="text-slate-700 text-sm leading-relaxed whitespace-pre-line"><?= nl2br(htmlspecialchars($announcement['message'])) ?></p>
+                    <?php else: ?>
+                    <p class="text-slate-500 text-sm">ประกาศนี้เป็นภาพเท่านั้น</p>
+                    <?php endif; ?>
+                </div>
+                <div class="px-6 pb-6 border-t border-slate-200">
+                    <label class="flex items-center gap-3 text-sm text-slate-600">
+                        <input id="dontShowAnnouncementToday" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        ไม่ต้องแจ้งเตือนวันนี้
+                    </label>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <main class="p-4 md:p-6 page-view">
             
@@ -551,6 +611,28 @@ if ($page === 'home') {
                             </div>
                         </a>
                         <?php endif; ?>
+                        <a href="index.php?page=guide" class="card flex flex-col justify-between hover:border-[var(--c-info)] transition-colors group text-inherit no-underline">
+                            <div class="flex items-start justify-between">
+                                <div class="w-12 h-12 rounded-xl bg-[var(--c-info)] text-white flex items-center justify-center shadow-btn group-hover:scale-105 transition-transform" style="--shadow-btn: 0 4px 14px rgba(59,130,246, 0.40);"><i data-lucide="book-open"></i></div>
+                                <i data-lucide="arrow-up-right" class="text-[var(--c-text-3)] group-hover:text-[var(--c-info)] transition-colors"></i>
+                            </div>
+                            <div class="mt-6">
+                                <h3 class="text-base font-bold text-[var(--c-text-1)]">คู่มือการใช้งาน</h3>
+                                <p class="text-sm text-[var(--c-text-3)]">ดูคู่มือแยกตามบทบาท พร้อมคำแนะนำสำหรับการใช้งานระบบ</p>
+                            </div>
+                        </a>
+                        <?php if (hasRole('super_admin')): ?>
+                        <a href="index.php?page=site_settings" class="card flex flex-col justify-between hover:border-[var(--c-slate-600)] transition-colors group text-inherit no-underline">
+                            <div class="flex items-start justify-between">
+                                <div class="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-btn group-hover:scale-105 transition-transform" style="--shadow-btn: 0 4px 14px rgba(15,23,42, 0.40);"><i data-lucide="settings"></i></div>
+                                <i data-lucide="arrow-up-right" class="text-[var(--c-text-3)] group-hover:text-slate-900 transition-colors"></i>
+                            </div>
+                            <div class="mt-6">
+                                <h3 class="text-base font-bold text-[var(--c-text-1)]">ตั้งค่าระบบเว็บไซต์</h3>
+                                <p class="text-sm text-[var(--c-text-3)]">จัดการประกาศป๊อปอัปและรูปประกาศสำหรับผู้เข้าชม</p>
+                            </div>
+                        </a>
+                        <?php endif; ?>
                     </div>
 
                 </div>
@@ -565,7 +647,9 @@ if ($page === 'home') {
                     'system_history' => 'views/modules/system_history.php',
                     'job_close_history' => 'views/modules/job_close_history.php',
                     'dispatch' => 'views/modules/dispatch_map.php',
+                    'guide' => 'views/modules/user_guide.php',
                     'inventory' => 'views/modules/inventory_app.php',
+                    'site_settings' => 'views/modules/site_settings.php',
                     'users' => 'views/modules/user_settings.php',
                     'checkin' => 'views/modules/checkin.php'
                 ];
@@ -578,6 +662,9 @@ if ($page === 'home') {
                 }
                 // สิทธิ์อื่นๆห้ามเข้าหน้าประวัติรวม ยกเว้นแอดมิน
                 if ($page === 'system_history' && !hasRole(['admin', 'super_admin'])) {
+                    $accessDenied = true;
+                }
+                if ($page === 'site_settings' && !hasRole('super_admin')) {
                     $accessDenied = true;
                 }
                 if ($page === 'job_close_history' && !hasRole('technician')) {
@@ -785,9 +872,106 @@ if ($page === 'home') {
                 Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
             }
         }
+
+        <?php if ($announcement): ?>
+        (function() {
+            const announcementId = <?= json_encode($announcement['id']) ?>;
+            const announcementModal = document.getElementById('siteAnnouncementModal');
+            const closeBtn = document.getElementById('closeAnnouncementBtn');
+            const checkbox = document.getElementById('dontShowAnnouncementToday');
+            if (!announcementModal || !closeBtn || !announcementId) return;
+            const today = new Date().toISOString().slice(0, 10);
+            const storageKey = `dismissedAnnouncement_${announcementId}`;
+            const dismissed = localStorage.getItem(storageKey);
+            if (dismissed === today) return;
+
+            function showAnnouncement() {
+                announcementModal.classList.remove('hidden');
+            }
+
+            function closeAnnouncement() {
+                announcementModal.classList.add('hidden');
+                if (checkbox && checkbox.checked) {
+                    localStorage.setItem(storageKey, today);
+                }
+            }
+
+            closeBtn.addEventListener('click', closeAnnouncement);
+            announcementModal.addEventListener('click', (event) => {
+                if (event.target === announcementModal) closeAnnouncement();
+            });
+            document.addEventListener('DOMContentLoaded', showAnnouncement);
+        })();
+        <?php endif; ?>
     </script>
     <script src="assets/js/common.js"></script>
     <script src="assets/js/datepicker.js"></script>
     <script src="assets/js/notifications.js"></script>
+    
+    <script>
+        // Guide Modal Handler
+        const guideBtn = document.getElementById('guideModalBtn');
+        const guideModal = document.getElementById('guideModal');
+        const closeGuideBtn = document.getElementById('closeGuideModal');
+        const guideContent = document.getElementById('guideContent');
+        const guideTabs = document.querySelectorAll('.guide-tab-btn');
+
+        const guideContents = {
+            'super_admin': null,
+            'admin': null,
+            'technician': null,
+            'general': null
+        };
+
+        // Load guides
+        async function loadGuides() {
+            const guides = {
+                'super_admin': 'USER_GUIDE_SUPER_ADMIN.html',
+                'admin': 'USER_GUIDE_ADMIN.html',
+                'technician': 'USER_GUIDE_TECHNICIAN.html',
+                'general': 'USER_GUIDE.html'
+            };
+
+            for (const [role, file] of Object.entries(guides)) {
+                try {
+                    const response = await fetch(file);
+                    guideContents[role] = await response.text();
+                } catch (error) {
+                    guideContents[role] = `<p class="text-slate-500">ไม่สามารถโหลดคู่มือ ${role} ได้</p>`;
+                }
+            }
+        }
+
+        guideBtn.addEventListener('click', () => {
+            guideModal.classList.remove('hidden');
+            if (!guideContent.innerHTML) {
+                displayGuide('super_admin');
+            }
+        });
+
+        closeGuideBtn.addEventListener('click', () => {
+            guideModal.classList.add('hidden');
+        });
+
+        guideModal.addEventListener('click', (e) => {
+            if (e.target === guideModal) {
+                guideModal.classList.add('hidden');
+            }
+        });
+
+        guideTabs.forEach(btn => {
+            btn.addEventListener('click', () => {
+                guideTabs.forEach(b => b.classList.remove('active', 'bg-slate-100', 'text-slate-700'));
+                btn.classList.add('active', 'bg-slate-100', 'text-slate-700');
+                displayGuide(btn.dataset.role);
+            });
+        });
+
+        function displayGuide(role) {
+            guideContent.innerHTML = guideContents[role] || '<p class="text-slate-500">กำลังโหลด...</p>';
+        }
+
+        document.addEventListener('DOMContentLoaded', loadGuides);
+    </script>
 </body>
 </html>

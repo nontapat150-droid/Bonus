@@ -5,12 +5,12 @@ let currentTeams = [];
 let selectedJobIds = new Set();
 let activeDispatchView = 'jobs';
 
-// Leaflet map and markers (free, no API key)
+// Leaflet map and markers
 let map = null;
 let markersGroup = null;
 let jobMarkerMap = new Map();
 
-// Clean latitude/longitude from unwanted characters (like $)
+// Clean latitude/longitude
 function cleanCoordinate(value) {
     if (value === null || value === undefined || value === '') return null;
     const cleaned = String(value).replace(/[^0-9.-]/g, '').trim();
@@ -130,7 +130,7 @@ function updateMapMarkers(jobs) {
         map.setView([valid[0].lat, valid[0].lng], 14);
     } else {
         const bounds = markersGroup.getBounds();
-        if (bounds && bounds.isValid && bounds.isValid()) {
+        if (bounds && bounds.isValid()) {
             try { map.fitBounds(bounds.pad(0.18), { maxZoom: 13 }); } catch (e) { }
         }
     }
@@ -164,14 +164,22 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('optimizeRouteBtn')?.addEventListener('click', runOptimizeRoute);
         document.getElementById('teamFilter')?.addEventListener('change', renderUI);
         document.getElementById('bulkDeleteBtn')?.addEventListener('click', handleBulkDelete);
-        
         document.getElementById('deleteAllJobsBtn')?.addEventListener('click', handleDeleteAllJobs);
         document.getElementById('clearAssignmentsBtn')?.addEventListener('click', handleClearAssignments);
+        document.getElementById('selectAllJobs')?.addEventListener('change', handleSelectAll);
+        
+        // Add manual assign button listener if needed, but it's usually dynamic
     }
 
     document.getElementById('dateFilter')?.addEventListener('change', renderUI);
     document.getElementById('statusFilter')?.addEventListener('change', renderUI);
-    });
+    document.getElementById('limitFilter')?.addEventListener('change', renderUI);
+});
+
+function getFilteredJobs() {
+    let teamVal = 'all';
+    const teamEl = document.getElementById('teamFilter');
+    if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN && teamEl) teamVal = teamEl.value;
 
 function createJobRow(job, index) {
     const dateVal = document.getElementById('dateFilter')?.value;
@@ -197,6 +205,51 @@ function createJobRow(job, index) {
     }
 
     return filteredJobs;
+}
+
+function getLimitedJobs(jobs) {
+    const limitVal = document.getElementById('limitFilter')?.value;
+    if (limitVal && limitVal !== 'all') return jobs.slice(0, parseInt(limitVal));
+    return jobs;
+}
+
+function getMapJobs(jobs) {
+    return jobs
+        .filter(job => (job.team_id || hasValue(job.team_name)) && getJobLatLng(job))
+        .sort((a, b) => {
+            const teamA = rawValue(a.team_name, '');
+            const teamB = rawValue(b.team_name, '');
+            if (teamA !== teamB) return teamA.localeCompare(teamB, 'th');
+            return (parseInt(a.seq || 9999) - parseInt(b.seq || 9999)) || String(a.access_no || '').localeCompare(String(b.access_no || ''), 'th');
+        });
+}
+
+function renderJobList(container, filteredJobs) {
+    if (!container) return;
+    container.innerHTML = '';
+
+    const visibleJobs = getLimitedJobs(filteredJobs);
+
+    if (visibleJobs.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-full min-h-[320px] flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
+                <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center mb-3"><i data-lucide="inbox" class="w-6 h-6"></i></div>
+                <div class="text-slate-500 font-black">ไม่พบข้อมูลงาน</div>
+                <div class="text-xs text-slate-400 font-bold mt-1">ลองเปลี่ยนวันที่ ทีม หรือจำนวนรายการที่แสดง</div>
+            </div>`;
+        syncVisibleSelection([]);
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    visibleJobs.forEach((job, index) => {
+        const card = createJobRow(job, index);
+        card.style.animationDelay = `${(index % 25) * 0.025}s`;
+        fragment.appendChild(card);
+    });
+    container.appendChild(fragment);
+
+    syncVisibleSelection(visibleJobs);
 }
 
 function renderMapJobList(mapJobs) {
@@ -379,13 +432,56 @@ function createJobRow(job, index) {
     return div;
 }
 
+function showJobPopupById(jobId) {
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    if (!job) return;
+    const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
+    const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
+    focusMapOnJob(job.id);
+    showJobPopup(job, color);
+}
+
+function openJobNavigationById(jobId) {
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    const coords = getJobLatLng(job);
+    if (!coords) return Swal.fire('ไม่พบพิกัด', 'งานนี้ยังไม่มีละติจูด/ลองจิจูดที่ถูกต้อง', 'warning');
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`, '_blank');
+}
+
+function showMapJobDetail(jobId) {
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    if (!job) return;
+    const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
+    const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
+    focusMapOnJob(job.id);
+    showJobPopup(job, color);
+}
+
+function toggleJobSelection(id) {
+    const strId = String(id);
+    if (selectedJobIds.has(strId)) selectedJobIds.delete(strId);
+    else selectedJobIds.add(strId);
+    syncSelectAllState();
+    updateSelectionUI();
+}
+
+function syncSelectAllState() {
+    const selectAll = document.getElementById('selectAllJobs');
+    if (!selectAll) return;
+    const boxes = Array.from(document.querySelectorAll('.job-checkbox'));
+    const checked = boxes.filter(cb => cb.checked).length;
+    selectAll.checked = boxes.length > 0 && checked === boxes.length;
+    selectAll.indeterminate = checked > 0 && checked < boxes.length;
+}
+
 function showJobPopup(job, color) {
     const coords = getJobLatLng(job);
-    const gmapsLink = coords ? `https://www.google.com/maps/dir/?api=1&destination=$${coords.lat},${coords.lng}` : null;
+    const gmapsLink = coords ? `https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}` : null;
 
     let actionButtons = '';
     const popupStatus = (job.status || '').toLowerCase();
     
+    // Check role from global state if needed, or use IS_ADMIN
     if (typeof IS_ADMIN !== 'undefined' && !IS_ADMIN && popupStatus !== 'completed' && popupStatus !== 'failed') {
         actionButtons = `
             <div class="grid grid-cols-2 gap-2 mt-3">
@@ -540,8 +636,12 @@ async function loadJobs() {
     showLoader('ซิงค์ข้อมูล...');
     try {
         const res = await fetch('api/dispatch/get_jobs.php?_=' + new Date().getTime());
-        const data = await res.json();
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`HTTP ${res.status}: ${text.substring(0, 200)}`);
+        }
 
+        const data = await res.json();
         if (data.success) {
             allJobs = data.data;
             currentTeams = data.teams || [];
@@ -559,13 +659,12 @@ async function loadJobs() {
             renderUI();
         }
     } catch (e) {
-        Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
+        Swal.fire('ข้อผิดพลาด', `เชื่อมต่อล้มเหลว: ${escapeHTML(e.message)}`, 'error');
     } finally {
         hideLoader();
     }
 }
 
-// 🌟 เรนเดอร์ปุ่มทีมแบบ Compact (เล็กและกระชับ)
 function renderTeamList() {
     const container = document.getElementById('teamListContainer');
     if (!container) return;
@@ -699,12 +798,11 @@ async function runAutoDispatch() {
 
 function handleSelectAll(e) {
     const checked = e.target.checked;
-    e.target.indeterminate = false;
     document.querySelectorAll('.job-checkbox').forEach(cb => {
         cb.checked = checked;
         const id = cb.dataset.id;
-        if (checked) selectedJobIds.add(id);
-        else selectedJobIds.delete(id);
+        if (checked) selectedJobIds.add(String(id));
+        else selectedJobIds.delete(String(id));
     });
     updateSelectionUI();
 }
@@ -716,8 +814,59 @@ function updateSelectionUI() {
         if (selectedJobIds.size > 0) {
             bar.classList.remove('hidden'); 
             countText.textContent = selectedJobIds.size;
+            
+            // Add Assign button if it doesn't exist
+            if (IS_ADMIN && !document.getElementById('manualAssignBtn')) {
+                const btn = document.createElement('button');
+                btn.id = 'manualAssignBtn';
+                btn.className = 'text-[10px] font-black bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg uppercase transition-all shadow-sm flex items-center gap-1';
+                btn.innerHTML = '<i data-lucide="user-plus" class="w-3 h-3"></i> จ่ายงาน';
+                btn.onclick = handleManualAssign;
+                bar.querySelector('.flex.gap-2').prepend(btn);
+                if (window.lucide) window.lucide.createIcons();
+            }
         } else {
             bar.classList.add('hidden');
+        }
+    }
+}
+
+async function handleManualAssign() {
+    if (selectedJobIds.size === 0) return;
+    
+    let options = '<option value="unassigned">⏳ ดึงงานกลับ (Unassigned)</option>';
+    currentTeams.forEach(t => {
+        options += `<option value="${t.id}">${t.team_name}</option>`;
+    });
+
+    const { value: teamId } = await Swal.fire({
+        title: 'เลือกทีมที่ต้องการจ่ายงาน',
+        html: `<select id="swalTeamSelect" class="w-full p-2 border rounded font-bold text-sm">${options}</select>`,
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยัน',
+        cancelButtonText: 'ยกเลิก',
+        preConfirm: () => document.getElementById('swalTeamSelect').value
+    });
+
+    if (teamId) {
+        showLoader('กำลังปรับปรุงข้อมูล...');
+        try {
+            const res = await fetch('api/dispatch/manual_assign.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ job_ids: Array.from(selectedJobIds), team_id: teamId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                selectedJobIds.clear();
+                loadJobs();
+            } else {
+                Swal.fire('ข้อผิดพลาด', data.error, 'error');
+            }
+        } catch (e) {
+            Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
+        } finally {
+            hideLoader();
         }
     }
 }
@@ -815,84 +964,6 @@ function renderUI() {
     refreshLucideIcons();
 }
 
-function getFilteredJobs() {
-    let teamVal = 'all';
-    const teamEl = document.getElementById('teamFilter');
-    if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN && teamEl) teamVal = teamEl.value;
-
-    const dateVal = document.getElementById('dateFilter')?.value;
-    const statusVal = document.getElementById('statusFilter')?.value; // ดึงค่าจาก Dropdown ใหม่
-
-    let filteredJobs = [...allJobs];
-
-    // กรองตามทีม
-    if (teamVal === 'unassigned') filteredJobs = filteredJobs.filter(j => !j.team_id);
-    else if (teamVal !== 'all') filteredJobs = filteredJobs.filter(j => j.team_id == teamVal);
-    
-    // กรองตามวันที่
-    if (dateVal) filteredJobs = filteredJobs.filter(j => j.plan_arrival_date === dateVal);
-
-    // 🌟 กรองตามสถานะ 🌟
-    if (statusVal && statusVal !== 'all') {
-        filteredJobs = filteredJobs.filter(j => {
-            const currentStatus = (j.status || 'pending').toLowerCase();
-            if (statusVal === 'pending') {
-                return currentStatus !== 'failed' && currentStatus !== 'completed';
-            } else if (statusVal === 'failed') {
-                return currentStatus === 'failed';
-            }
-            return true;
-        });
-    }
-
-    return filteredJobs;
-}
-
-function getLimitedJobs(jobs) {
-    const limitVal = document.getElementById('limitFilter')?.value;
-    if (limitVal && limitVal !== 'all') return jobs.slice(0, parseInt(limitVal));
-    return jobs;
-}
-
-function getMapJobs(jobs) {
-    return jobs
-        .filter(job => (job.team_id || hasValue(job.team_name)) && getJobLatLng(job))
-        .sort((a, b) => {
-            const teamA = rawValue(a.team_name, '');
-            const teamB = rawValue(b.team_name, '');
-            if (teamA !== teamB) return teamA.localeCompare(teamB, 'th');
-            return (parseInt(a.seq || 9999) - parseInt(b.seq || 9999)) || String(a.access_no || '').localeCompare(String(b.access_no || ''), 'th');
-        });
-}
-
-function renderJobList(container, filteredJobs) {
-    if (!container) return;
-    container.innerHTML = '';
-
-    const visibleJobs = getLimitedJobs(filteredJobs);
-
-    if (visibleJobs.length === 0) {
-        container.innerHTML = `
-            <div class="col-span-full min-h-[320px] flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
-                <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center mb-3"><i data-lucide="inbox" class="w-6 h-6"></i></div>
-                <div class="text-slate-500 font-black">ไม่พบข้อมูลงาน</div>
-                <div class="text-xs text-slate-400 font-bold mt-1">ลองเปลี่ยนวันที่ ทีม หรือจำนวนรายการที่แสดง</div>
-            </div>`;
-        syncVisibleSelection([]);
-        return;
-    }
-
-    const fragment = document.createDocumentFragment();
-    visibleJobs.forEach((job, index) => {
-        const card = createJobRow(job, index);
-        card.style.animationDelay = `${(index % 25) * 0.025}s`;
-        fragment.appendChild(card);
-    });
-    container.appendChild(fragment);
-
-    syncVisibleSelection(visibleJobs);
-}
-
 function syncVisibleSelection(visibleJobs) {
     const selectAll = document.getElementById('selectAllJobs');
     if (selectAll) {
@@ -902,71 +973,6 @@ function syncVisibleSelection(visibleJobs) {
         selectAll.indeterminate = selectedVisible > 0 && selectedVisible < visibleIds.length;
     }
 }
-
-function renderMapJobList(mapJobs) {
-    const container = document.getElementById('mapJobList');
-    if (!container) return;
-
-    setText('mapAssignedCountBadge', mapJobs.length);
-
-    if (mapJobs.length === 0) {
-        container.innerHTML = `
-            <div class="p-4 text-center">
-                <div class="w-10 h-10 mx-auto rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center mb-2"><i data-lucide="map-pin-off" class="w-5 h-5"></i></div>
-                <div class="text-xs font-black text-slate-500">ยังไม่มีงานที่มอบหมายพร้อมพิกัด</div>
-                <div class="text-[10px] font-bold text-slate-400 mt-1">เลือกทีม/วันที่อื่น หรือกดจ่ายงานอัตโนมัติก่อน</div>
-            </div>`;
-        return;
-    }
-
-    container.innerHTML = mapJobs.map((job, index) => {
-        const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
-        const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
-        const coords = getJobLatLng(job);
-        const jobStatus = (job.status || '').toLowerCase();
-        const isDone = jobStatus === 'completed' || jobStatus === 'failed';
-        
-        let actionButtons = '';
-        if (!isDone && job.team_id) {
-            actionButtons = `
-            <div class="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100">
-                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
-                    <i data-lucide="check-circle" class="w-3 h-3"></i>ปิดงาน
-                </button>
-                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-rose-500 text-white hover:bg-rose-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'failed')">
-                    <i data-lucide="x-circle" class="w-3 h-3"></i>ไม่สำเร็จ
-                </button>
-            </div>`;
-        } else if (jobStatus === 'failed') {
-            actionButtons = `
-            <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
-                <span class="rounded px-2 py-1 text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-100 text-center">ไม่สำเร็จ</span>
-                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors shadow-sm" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
-                    <i data-lucide="check-circle" class="w-3 h-3"></i>แก้เป็นสำเร็จ
-                </button>
-            </div>`;
-        }
-
-        return `
-            <div class="p-3 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors space-y-2">
-                <button type="button" class="w-full text-left" onclick="showMapJobDetail('${escapeHTML(job.id)}')">
-                    <div class="flex items-start gap-3">
-                        <div class="w-8 h-8 rounded-lg text-white flex items-center justify-center text-xs font-black shrink-0" style="background:${color};">${displayValue(job.seq || index + 1)}</div>
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center justify-between gap-2">
-                                <div class="text-xs font-black text-slate-900 truncate">${displayValue(job.access_no, 'N/A')}</div>
-                                <div class="text-[10px] font-black whitespace-nowrap" style="color:${color};">${displayValue(job.team_name, 'ทีม')}</div>
-                            </div>
-                            <div class="text-[11px] font-bold text-slate-600 truncate mt-1">${displayValue(job.customer, 'ไม่ระบุลูกค้า')}</div>
-                            <div class="text-[10px] font-bold text-slate-400 truncate mt-1">${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}</div>
-                        </div>
-                    </div>
-                </button>
-                ${actionButtons}
-            </div>`;
-    }).join('');
-}
-
 
 function detailItem(label, value) {
     return `
@@ -983,243 +989,6 @@ function statusBadge(status) {
     return '<span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-100">รอดำเนินการ</span>';
 }
 
-function createJobRow(job, index) {
-    const div = document.createElement('article');
-    div.className = 'dispatch-job-card bg-white border border-slate-200 shadow-sm hover:border-indigo-300 transition-all duration-200 cursor-pointer flex flex-col p-4 animate-row relative group';
-
-    const isSelected = selectedJobIds.has(String(job.id));
-    const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
-    const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
-    const coords = getJobLatLng(job);
-    const jobId = escapeHTML(job.id);
-    const queueLabel = displayValue(job.seq || index + 1);
-
-    const teamBadge = job.team_name
-        ? `<div class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap" style="background-color:${color}15; color:${color}; border:1px solid ${color}30">
-             <span class="w-2 h-2 rounded-full mr-1.5" style="background-color:${color}"></span>${displayValue(job.team_name)}
-           </div>`
-        : `<div class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 whitespace-nowrap">
-             <i data-lucide="clock-3" class="w-3 h-3 mr-1"></i>รอจ่ายงาน
-           </div>`;
-
-    const coordText = coords ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}` : 'ไม่มีพิกัด';
-    const mapButtonClass = coords
-        ? 'bg-[var(--c-primary)] text-white hover:bg-[var(--c-primary-hover)]'
-        : 'bg-slate-100 text-slate-400 cursor-not-allowed';
-
-    div.innerHTML = `
-        <div class="flex items-start justify-between gap-3">
-            <div class="flex items-start gap-3 min-w-0">
-                <div class="pt-1" onclick="event.stopPropagation()">
-                    <input type="checkbox" class="job-checkbox w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                        data-id="${jobId}" ${isSelected ? 'checked' : ''} onchange="toggleJobSelection('${jobId}')">
-                </div>
-                <div class="w-9 h-9 rounded-lg flex items-center justify-center text-[12px] font-black text-white shadow-sm shrink-0" style="background-color:${color}">
-                    ${queueLabel}
-                </div>
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="font-black text-slate-900 text-sm leading-tight break-words">${displayValue(job.access_no, 'N/A')}</h3>
-                        ${statusBadge(job.status)}
-                    </div>
-                    <div class="text-[11px] font-bold text-slate-500 mt-1">${displayValue(job.plan_arrival_date)}</div>
-                </div>
-            </div>
-            ${teamBadge}
-        </div>
-
-        <div class="mt-3 space-y-2">
-            <div>
-                <div class="text-[10px] font-black text-slate-400 uppercase tracking-wide">ลูกค้า</div>
-                <div class="text-sm font-black text-slate-800 leading-snug break-words">${displayValue(job.customer, 'ไม่ระบุชื่อลูกค้า')}</div>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div class="rounded-lg bg-emerald-50 border border-emerald-100 p-2 min-w-0">
-                    <div class="text-[9px] font-black text-emerald-500 uppercase tracking-wide">โทรศัพท์</div>
-                    <div class="text-[12px] font-black text-emerald-700 mt-1 break-words">${displayValue(job.phone, 'ไม่ระบุเบอร์โทร')}</div>
-                </div>
-                <div class="rounded-lg bg-indigo-50 border border-indigo-100 p-2 min-w-0">
-                    <div class="text-[9px] font-black text-indigo-500 uppercase tracking-wide">พิกัด</div>
-                    <div class="text-[11px] font-bold ${coords ? 'text-indigo-700' : 'text-amber-700'} mt-1 break-words">${coordText}</div>
-                </div>
-            </div>
-            <div class="rounded-lg bg-slate-50 border border-slate-100 p-3">
-                <div class="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1">สถานที่ติดตั้ง</div>
-                <div class="text-[12px] text-slate-700 font-bold leading-relaxed break-words">${displayValue(job.address)}</div>
-            </div>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                ${detailItem('แพ็กเกจ', job.package)}
-                ${detailItem('สินค้า', job.product)}
-                ${detailItem('Order No.', job.order_no)}
-                ${detailItem('Task Order', job.task_order)}
-                ${detailItem('Task Type', job.task_type)}
-                ${detailItem('สร้างเมื่อ', job.created_at)}
-            </div>
-            ${hasValue(job.remark) ? `
-                <div class="rounded-lg bg-rose-50 border border-rose-100 p-3">
-                    <div class="text-[9px] font-black text-rose-500 uppercase tracking-wide mb-1">หมายเหตุ</div>
-                    <div class="text-[12px] text-rose-700 font-bold leading-relaxed break-words">${displayValue(job.remark)}</div>
-                </div>` : ''}
-        </div>
-
-        <div class="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
-            <button type="button" class="rounded-lg px-3 py-2 text-xs font-black border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 flex items-center justify-center gap-1" onclick="event.stopPropagation(); showJobPopupById('${jobId}')">
-                <i data-lucide="file-text" class="w-4 h-4"></i>รายละเอียด
-            </button>
-            <button type="button" class="rounded-lg px-3 py-2 text-xs font-black flex items-center justify-center gap-1 ${mapButtonClass}" ${coords ? '' : 'disabled'} onclick="event.stopPropagation(); openJobNavigationById('${jobId}')">
-                <i data-lucide="navigation" class="w-4 h-4"></i>นำทาง
-            </button>
-        </div>
-        ${job.team_id && jobStatus !== 'completed' && jobStatus !== 'failed' ? `
-        <div class="mt-2 grid grid-cols-2 gap-2">
-            <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
-                <i data-lucide="check-circle" class="w-4 h-4"></i>ปิดงาน
-            </button>
-            <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'failed')">
-                <i data-lucide="x-circle" class="w-4 h-4"></i>ไม่สำเร็จ
-            </button>
-        </div>` : ''}
-        ${jobStatus === 'failed' ? `
-        <div class="mt-2 rounded-lg bg-rose-50 border border-rose-100 px-3 py-2 flex items-center justify-between">
-            <span class="text-[10px] font-black text-rose-700">สถานะ: ไม่สำเร็จ</span>
-            <button type="button" class="rounded-lg px-2 py-1.5 text-[10px] font-black bg-emerald-500 hover:bg-emerald-600 text-white transition-colors flex items-center gap-1 shadow-sm" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
-                <i data-lucide="check-circle" class="w-3 h-3"></i> แก้เป็นสำเร็จ
-            </button>
-        </div>` : ''}
-    `;
-
-    div.onclick = () => {
-        focusMapOnJob(job.id);
-        showJobPopup(job, color);
-    };
-
-    return div;
-}
-
-function showJobPopupById(jobId) {
-    const job = allJobs.find(j => String(j.id) === String(jobId));
-    if (!job) return;
-    const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
-    const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
-    focusMapOnJob(job.id);
-    showJobPopup(job, color);
-}
-
-function openJobNavigationById(jobId) {
-    const job = allJobs.find(j => String(j.id) === String(jobId));
-    const coords = getJobLatLng(job);
-    if (!coords) return Swal.fire('ไม่พบพิกัด', 'งานนี้ยังไม่มีละติจูด/ลองจิจูดที่ถูกต้อง', 'warning');
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`, '_blank');
-}
-
-function showMapJobDetail(jobId) {
-    const job = allJobs.find(j => String(j.id) === String(jobId));
-    if (!job) return;
-    const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
-    const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
-    focusMapOnJob(job.id);
-    showJobPopup(job, color);
-}
-
-function toggleJobSelection(id) {
-    const strId = String(id);
-    if (selectedJobIds.has(strId)) selectedJobIds.delete(strId);
-    else selectedJobIds.add(strId);
-    syncSelectAllState();
-    updateSelectionUI();
-}
-
-function syncSelectAllState() {
-    const selectAll = document.getElementById('selectAllJobs');
-    if (!selectAll) return;
-    const boxes = Array.from(document.querySelectorAll('.job-checkbox'));
-    const checked = boxes.filter(cb => cb.checked).length;
-    selectAll.checked = boxes.length > 0 && checked === boxes.length;
-    selectAll.indeterminate = checked > 0 && checked < boxes.length;
-}
-
-function showJobPopup(job, color) {
-    const coords = getJobLatLng(job);
-    const gmapsLink = coords ? `https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}` : null;
-
-    let actionButtons = '';
-    const popupStatus = (job.status || '').toLowerCase();
-    if (!IS_ADMIN && popupStatus !== 'completed' && popupStatus !== 'failed') {
-        actionButtons = `
-            <div class="grid grid-cols-2 gap-2 mt-3">
-                <button onclick="Swal.close(); openCompleteJobModal(${job.id})" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
-                    ปิดงาน
-                </button>
-                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'failed')" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
-                    ทำไม่สำเร็จ
-                </button>
-            </div>
-        `;
-    } else if (!IS_ADMIN && popupStatus === 'failed') {
-        actionButtons = `
-            <div class="mt-3 rounded-lg bg-rose-50 border border-rose-100 px-3 py-2 text-center">
-                <span class="text-xs font-black text-rose-700">สถานะ: ไม่สำเร็จ</span>
-            </div>
-        `;
-    }
-
-    Swal.fire({
-        title: `<div class="text-left"><div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">รายละเอียดงาน</div><div class="font-black text-lg" style="color:${color};">${displayValue(job.access_no, 'N/A')}</div></div>`,
-        html: `
-            <div class="text-left mt-1 font-sans space-y-3">
-                <div class="bg-white border border-slate-100 p-4 rounded-lg shadow-sm space-y-3">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                            <p class="text-[9px] font-bold text-slate-400 uppercase">ลูกค้า</p>
-                            <p class="text-sm font-black text-slate-800">${displayValue(job.customer, 'ไม่ระบุชื่อลูกค้า')}</p>
-                        </div>
-                        ${statusBadge(job.status)}
-                    </div>
-                    <div class="rounded-lg bg-slate-50 p-3 border border-slate-100">
-                        <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">สถานที่ติดตั้ง</p>
-                        <p class="text-xs text-slate-700 font-bold leading-relaxed">${displayValue(job.address)}</p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        ${detailItem('วันที่', job.plan_arrival_date)}
-                        ${detailItem('ทีม', job.team_name || 'รอจ่าย')}
-                        ${detailItem('โทรศัพท์', job.phone)}
-                        ${detailItem('พิกัด', coords ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}` : 'ไม่มีพิกัด')}
-                        ${detailItem('แพ็กเกจ', job.package)}
-                        ${detailItem('สินค้า', job.product)}
-                        ${detailItem('Order No.', job.order_no)}
-                        ${detailItem('Task Order', job.task_order)}
-                        ${detailItem('Task Type', job.task_type)}
-                        ${detailItem('สร้างเมื่อ', job.created_at)}
-                    </div>
-                    ${hasValue(job.remark) ? `
-                    <div class="bg-rose-50 p-3 rounded-lg border border-rose-100">
-                        <p class="text-[9px] font-bold text-rose-500 uppercase mb-1">หมายเหตุ</p>
-                        <p class="text-xs font-bold text-rose-700 leading-relaxed">${displayValue(job.remark)}</p>
-                    </div>` : ''}
-                </div>
-                ${actionButtons}
-            </div>
-        `,
-        showCancelButton: true,
-        showCloseButton: true,
-        showConfirmButton: !!gmapsLink,
-        confirmButtonColor: color,
-        cancelButtonColor: '#f1f5f9',
-        confirmButtonText: 'นำทางด้วย Google Maps',
-        cancelButtonText: '<span class="text-slate-500 font-bold">ปิด</span>',
-        customClass: {
-            popup: 'rounded-2xl p-4 shadow-xl z-[9999]',
-            title: 'text-left pb-2 border-b border-slate-100',
-            confirmButton: 'rounded-lg px-4 py-2.5 font-bold w-full mt-2 text-xs',
-            cancelButton: 'rounded-lg px-4 py-2.5 font-bold w-full mt-2 text-xs hover:bg-slate-200',
-            actions: 'flex-col w-full px-2'
-        },
-        didOpen: refreshLucideIcons
-    }).then((result) => {
-        if (result.isConfirmed && gmapsLink) window.open(gmapsLink, '_blank');
-    });
-}
-
 window.updateJobStatus = async function(jobId, status) {
     const job = allJobs.find(j => String(j.id) === String(jobId));
     if (!job) return;
@@ -1230,7 +999,6 @@ window.updateJobStatus = async function(jobId, status) {
     }
 
     let remark = '';
-
     if (status === 'failed') {
         const { value: text } = await Swal.fire({
             title: 'ระบุเหตุผลที่ไม่สำเร็จ',
@@ -1243,10 +1011,7 @@ window.updateJobStatus = async function(jobId, status) {
             cancelButtonText: 'ยกเลิก',
             customClass: { popup: 'rounded-xl', confirmButton: 'rounded-lg text-xs', cancelButton: 'rounded-lg text-xs' }
         });
-        if (!text) {
-            if (text !== undefined) Swal.fire('แจ้งเตือน', 'กรุณาระบุเหตุผล', 'warning');
-            return;
-        }
+        if (!text) return;
         remark = text;
     }
 
@@ -1261,14 +1026,11 @@ window.updateJobStatus = async function(jobId, status) {
         if (data.success) {
             Swal.fire({
                 title: 'สำเร็จ',
-                text: 'บันทึกการไม่สำเร็จเรียบร้อย',
+                text: 'บันทึกเรียบร้อย',
                 icon: 'info',
                 timer: 1500,
                 showConfirmButton: false,
-                didClose: () => {
-                    loadJobs();
-                    refreshLucideIcons();
-                }
+                didClose: () => loadJobs()
             });
         } else {
             Swal.fire('ข้อผิดพลาด', data.error || 'เกิดข้อผิดพลาด', 'error');
@@ -1280,16 +1042,13 @@ window.updateJobStatus = async function(jobId, status) {
     }
 };
 
-// ==========================================
-// IMPORT EXCEL
-// ==========================================
 function handleExcelUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
 
     Swal.fire({
         title: 'นำเข้าข้อมูล Excel?',
-        text: 'ระบบจะล้างงานเดิมที่รอจ่าย และนำข้อมูลชุดใหม่เข้าสู่ระบบ',
+        text: 'ระบบจะนำข้อมูลงานเข้าสู่ระบบ (ไม่ล้างงานเดิม)',
         icon: 'question', 
         showCancelButton: true, 
         confirmButtonColor: '#4f46e5', 
@@ -1329,6 +1088,8 @@ function processExcel(file) {
             const dateIdx = findCol(['date', 'วัน', 'arrival']);
             const packageIdx = findCol(['package', 'แพ็กเกจ', 'แพคเกจ']);
             const remarkIdx = findCol(['remark', 'หมายเหตุ']);
+            const prodIdx = findCol(['product', 'สินค้า']);
+            const orderIdx = findCol(['order', 'ออเดอร์']);
 
             if (accessIdx === -1 || latIdx === -1 || lngIdx === -1) throw new Error('ไฟล์ Excel ขาดหัวคอลัมน์สำคัญ (รหัสงาน, ละติจูด, ลองจิจูด)');
 
@@ -1364,7 +1125,8 @@ function processExcel(file) {
                         plan_arrival_date: planDate || null,
                         package: packageIdx !== -1 ? row[packageIdx] : null,
                         remark: remarkIdx !== -1 ? row[remarkIdx] : null,
-                        status: 'Pending'
+                        product: prodIdx !== -1 ? row[prodIdx] : null,
+                        order_no: orderIdx !== -1 ? row[orderIdx] : null
                     });
                 }
             }
@@ -1394,18 +1156,10 @@ function processExcel(file) {
     reader.readAsArrayBuffer(file);
 }
 
-// ==========================================
-// EXPORT EXCEL
-// ==========================================
 async function handleExportExcel() {
-    exportDataToExcel('all');
-}
-
-function exportDataToExcel(filterType) {
     showLoader('เตรียมไฟล์ Excel...');
     setTimeout(() => {
-        let filtered = allJobs; // ดึงงานทั้งหมดมาออกรายงาน
-        const ws = XLSX.utils.json_to_sheet(filtered.map(j => ({
+        const ws = XLSX.utils.json_to_sheet(allJobs.map(j => ({
             'รหัสงาน': j.access_no || '', 
             'ลูกค้า': j.customer || '', 
             'เบอร์โทร': j.phone || '', 
@@ -1415,7 +1169,8 @@ function exportDataToExcel(filterType) {
             'ลองจิจูด': j.lng || '', 
             'หมายเหตุ': j.remark || '', 
             'วันที่': j.plan_arrival_date || '', 
-            'ทีม': j.team_name || ''
+            'ทีม': j.team_name || '',
+            'สถานะ': j.status || 'Pending'
         })));
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Dispatch");

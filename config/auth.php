@@ -8,6 +8,20 @@ function isLoggedIn() {
 
 function requireLogin() {
     if (!isLoggedIn()) {
+        $isApiRequest = false;
+        if (isset($_SERVER['REQUEST_URI']) && stripos($_SERVER['REQUEST_URI'], '/api/') !== false) {
+            $isApiRequest = true;
+        }
+        if (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
+            $isApiRequest = true;
+        }
+
+        if ($isApiRequest) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'กรุณาเข้าสู่ระบบใหม่']);
+            exit;
+        }
+
         header("Location: login.php");
         exit;
     }
@@ -25,6 +39,20 @@ function hasRole($roles) {
 function requireRole($roles) {
     requireLogin();
     if (!hasRole($roles)) {
+        $isApiRequest = false;
+        if (isset($_SERVER['REQUEST_URI']) && stripos($_SERVER['REQUEST_URI'], '/api/') !== false) {
+            $isApiRequest = true;
+        }
+        if (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
+            $isApiRequest = true;
+        }
+
+        if ($isApiRequest) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง API นี้']);
+            exit;
+        }
+
         // Redirect to a safe page if unauthorized
         header("Location: index.php?error=ไม่มีสิทธิ์เข้าถึง");
         exit;
