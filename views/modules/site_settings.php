@@ -148,9 +148,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             renderPopupPreview(popupData);
             populatePopupForm(popupData);
+            updateLivePopupPreview();
 
             renderMarqueePreview(marqueeData);
             populateMarqueeForm(marqueeData);
+            updateLiveMarqueePreview();
 
         } catch (error) {
             popupPreviewContainer.innerHTML = '<div class="p-10 text-center text-rose-500">เกิดข้อผิดพลาด</div>';
@@ -165,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const hasImage = data.image_url && data.image_url.trim() !== '';
 
         if (!hasMessage && !hasImage) {
-            popupPreviewContainer.innerHTML = '<div class="p-10 text-center text-slate-500 font-bold">ยังไม่มีป๊อปอัปประกาศในขณะนี้</div>';
+            popupPreviewContainer.innerHTML = '<div class="p-10 text-center text-slate-500 font-bold">เริ่มพิมพ์เพื่อดูตัวอย่างป๊อปอัปประกาศ...</div>';
             return;
         }
 
@@ -182,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderMarqueePreview(data) {
         if (!data.message || data.message.trim() === '') {
-            marqueePreviewContainer.innerHTML = '<div class="py-6 text-center text-slate-500 font-bold">ยังไม่มีป้ายวิ่งประกาศในขณะนี้</div>';
+            marqueePreviewContainer.innerHTML = '<div class="py-6 text-center text-slate-500 font-bold">เริ่มพิมพ์เพื่อดูตัวอย่างป้ายวิ่งประกาศ...</div>';
             return;
         }
         marqueePreviewContainer.innerHTML = `
