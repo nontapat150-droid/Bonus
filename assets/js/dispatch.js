@@ -170,7 +170,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('dateFilter')?.addEventListener('change', renderUI);
-    document.getElementById('limitFilter')?.addEventListener('change', renderUI);
+    function getFilteredJobs() {
+    let teamVal = 'all';
+    const teamEl = document.getElementById('teamFilter');
+    if (IS_ADMIN && teamEl) teamVal = teamEl.value;
+
+    const dateVal = document.getElementById('dateFilter')?.value;
+    const statusVal = document.getElementById('statusFilter')?.value; // อ่านค่า Status
+
+    let filteredJobs = [...allJobs];
+
+    if (teamVal === 'unassigned') filteredJobs = filteredJobs.filter(j => !j.team_id);
+    else if (teamVal !== 'all') filteredJobs = filteredJobs.filter(j => j.team_id == teamVal);
+    if (dateVal) filteredJobs = filteredJobs.filter(j => j.plan_arrival_date === dateVal);
+
+    // กรองสถานะ
+    if (statusVal && statusVal !== 'all') {
+        if (statusVal === 'pending') {
+            filteredJobs = filteredJobs.filter(j => !j.status || j.status.toLowerCase() !== 'failed');
+        } else if (statusVal === 'failed') {
+            filteredJobs = filteredJobs.filter(j => j.status && j.status.toLowerCase() === 'failed');
+        }
+    }
+
+    return filteredJobs;
+}
     document.getElementById('selectAllJobs')?.addEventListener('change', handleSelectAll);
 });
 
@@ -769,8 +793,11 @@ function createJobRow(job, index) {
             </button>
         </div>` : ''}
         ${jobStatus === 'failed' ? `
-        <div class="mt-2 rounded-lg bg-rose-50 border border-rose-100 px-3 py-2 text-center">
+        <div class="mt-2 rounded-lg bg-rose-50 border border-rose-100 px-3 py-2 flex items-center justify-between">
             <span class="text-[10px] font-black text-rose-700">สถานะ: ไม่สำเร็จ</span>
+            <button type="button" class="rounded-lg px-2 py-1.5 text-[10px] font-black bg-emerald-500 hover:bg-emerald-600 text-white transition-colors flex items-center gap-1 shadow-sm" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
+                <i data-lucide="check-circle" class="w-3 h-3"></i> แก้งานเป็นสำเร็จ
+            </button>
         </div>` : ''}
     `;
 
