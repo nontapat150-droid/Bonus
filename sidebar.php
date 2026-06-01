@@ -92,6 +92,10 @@
             <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">📸</span> <span class="sidebar-text whitespace-nowrap">ระบบเช็คอิน</span>
         </a>
 
+        <a href="index.php?page=guide" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-sky-50 hover:text-sky-600 rounded-xl transition-all <?php echo ($page === 'guide') ? 'bg-sky-50 text-sky-600 font-bold' : ''; ?>">
+            <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">📖</span> <span class="sidebar-text whitespace-nowrap">คู่มือการใช้งาน</span>
+        </a>
+
         <?php if (!hasRole('sales')): ?>
         <a href="index.php?page=oil" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all <?php echo ($page === 'oil') ? 'bg-blue-50 text-blue-600 font-bold' : ''; ?>">
             <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">⛽</span> <span class="sidebar-text whitespace-nowrap">น้ำมันและยานพาหนะ</span>
@@ -152,6 +156,7 @@
         <?php endif; ?>
         
         <?php if (hasRole('super_admin')): ?>
+            <a href="index.php?page=guide" class="px-4 py-3 text-slate-600 hover:bg-sky-50 rounded-xl font-bold">📖 คู่มือการใช้งาน</a>
             <a href="index.php?page=site_settings" class="px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">⚙️ ตั้งค่าระบบเว็บไซต์</a>
             <a href="index.php?page=users" class="px-4 py-3 text-slate-600 hover:bg-rose-50 rounded-xl font-bold">👥 จัดการผู้ใช้</a>
         <?php endif; ?>
