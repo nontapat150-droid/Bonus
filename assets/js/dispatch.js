@@ -173,24 +173,33 @@ document.addEventListener('DOMContentLoaded', () => {
     function getFilteredJobs() {
     let teamVal = 'all';
     const teamEl = document.getElementById('teamFilter');
-    if (IS_ADMIN && teamEl) teamVal = teamEl.value;
+    if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN && teamEl) teamVal = teamEl.value;
 
     const dateVal = document.getElementById('dateFilter')?.value;
-    const statusVal = document.getElementById('statusFilter')?.value; // อ่านค่า Status
+    const statusVal = document.getElementById('statusFilter')?.value; // ดึงค่าจากตัวกรอง
 
     let filteredJobs = [...allJobs];
 
+    // 1. กรองทีม
     if (teamVal === 'unassigned') filteredJobs = filteredJobs.filter(j => !j.team_id);
     else if (teamVal !== 'all') filteredJobs = filteredJobs.filter(j => j.team_id == teamVal);
+    
+    // 2. กรองวันที่
     if (dateVal) filteredJobs = filteredJobs.filter(j => j.plan_arrival_date === dateVal);
 
-    // กรองสถานะ
+    // 3. กรองสถานะ (จำแนกงาน)
     if (statusVal && statusVal !== 'all') {
-        if (statusVal === 'pending') {
-            filteredJobs = filteredJobs.filter(j => !j.status || j.status.toLowerCase() !== 'failed');
-        } else if (statusVal === 'failed') {
-            filteredJobs = filteredJobs.filter(j => j.status && j.status.toLowerCase() === 'failed');
-        }
+        filteredJobs = filteredJobs.filter(j => {
+            const currentStatus = (j.status || 'pending').toLowerCase();
+            if (statusVal === 'pending') {
+                // เอางานที่ยังไม่เสร็จ และ ยังไม่ failed
+                return currentStatus !== 'failed' && currentStatus !== 'completed';
+            } else if (statusVal === 'failed') {
+                // เอางานที่ failed เท่านั้น
+                return currentStatus === 'failed';
+            }
+            return true;
+        });
     }
 
     return filteredJobs;
@@ -649,7 +658,26 @@ function renderMapJobList(mapJobs) {
         const coords = getJobLatLng(job);
         const jobStatus = (job.status || '').toLowerCase();
         const isDone = jobStatus === 'completed' || jobStatus === 'failed';
-        const actionButtons = !isDone ? `
+        let actionButtons = '';
+        if (!isDone && job.team_id) {
+            actionButtons = `
+            <div class="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100">
+                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
+                    <i data-lucide="check-circle" class="w-3 h-3"></i>ปิดงาน
+                </button>
+                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-rose-500 text-white hover:bg-rose-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'failed')">
+                    <i data-lucide="x-circle" class="w-3 h-3"></i>ไม่สำเร็จ
+                </button>
+            </div>`;
+        } else if (jobStatus === 'failed') {
+            actionButtons = `
+            <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
+                <span class="rounded px-2 py-1 text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-100 text-center">ไม่สำเร็จ</span>
+                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors shadow-sm" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
+                    <i data-lucide="check-circle" class="w-3 h-3"></i>แก้เป็นสำเร็จ
+                </button>
+            </div>`;
+        }`
             <div class="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100">
                 <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
                     <i data-lucide="check-circle" class="w-3 h-3"></i>ปิดงาน
@@ -796,7 +824,7 @@ function createJobRow(job, index) {
         <div class="mt-2 rounded-lg bg-rose-50 border border-rose-100 px-3 py-2 flex items-center justify-between">
             <span class="text-[10px] font-black text-rose-700">สถานะ: ไม่สำเร็จ</span>
             <button type="button" class="rounded-lg px-2 py-1.5 text-[10px] font-black bg-emerald-500 hover:bg-emerald-600 text-white transition-colors flex items-center gap-1 shadow-sm" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
-                <i data-lucide="check-circle" class="w-3 h-3"></i> แก้งานเป็นสำเร็จ
+                <i data-lucide="check-circle" class="w-3 h-3"></i> แก้เป็นสำเร็จ
             </button>
         </div>` : ''}
     `;

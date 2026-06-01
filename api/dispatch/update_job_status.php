@@ -75,7 +75,7 @@ try {
 
     // อนุญาตให้งานที่สถานะ "failed" สามารถถูกกดปิดงานให้กลายเป็น "completed" ได้
     if ($job['status'] === 'completed') {
-        echo json_encode(['success' => false, 'error' => 'งานนี้ถูกปิดสำเร็จไปแล้ว ไม่สามารถเปลี่ยนสถานะได้']);
+        echo json_encode(['success' => false, 'error' => 'งานนี้ถูกปิดสำเร็จไปแล้ว']);
         exit;
     }
     $pdo->beginTransaction();
