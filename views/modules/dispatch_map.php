@@ -262,29 +262,35 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 <script src="assets/js/dispatch.js?v=<?= time() ?>"></script>
 
 <style>
-    /* Custom Scrollbar สำหรับ Modal ป้องกันการเลื่อนทับซ้อน */
-    .modal-scrollbar::-webkit-scrollbar { width: 6px; }
-    .modal-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; rounded: 8px; }
-    .modal-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
-    .modal-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    /* ปรับแต่ง Scrollbar ของ Modal ให้ดูสะอาดตาและไม่ทับซ้อน */
+    .complete-modal-scrollbar::-webkit-scrollbar { width: 6px; }
+    .complete-modal-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+    .complete-modal-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+    .complete-modal-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>
 
-<div id="completeJobModal" class="fixed inset-0 z-[9999] hidden bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden z-[10000] max-h-[95vh] flex flex-col">
+<div id="completeJobModal" class="fixed inset-0 z-[9999] hidden bg-slate-900/70 backdrop-blur-sm flex justify-center items-center p-4 transition-opacity">
+    
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden z-[10000] max-h-[95vh] flex flex-col transform transition-transform scale-100">
         
-        <div class="p-5 bg-emerald-600 text-white flex justify-between items-center shrink-0">
-            <h3 class="text-xl font-black tracking-tight">ยืนยันรายละเอียดการจบงาน</h3>
-            <button onclick="closeCompleteJobModal()" class="text-emerald-200 hover:text-white text-3xl leading-none transition-colors">&times;</button>
+        <div class="p-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex justify-between items-center shrink-0">
+            <h3 class="text-xl font-black tracking-tight flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                ยืนยันรายละเอียดการจบงาน
+            </h3>
+            <button onclick="closeCompleteJobModal()" class="text-emerald-100 hover:text-white text-3xl leading-none transition-colors focus:outline-none">&times;</button>
         </div>
         
-        <div class="p-6 overflow-y-auto flex-1 bg-slate-50 modal-scrollbar">
+        <div class="p-6 overflow-y-auto flex-1 bg-slate-50 complete-modal-scrollbar">
             <form id="completeJobForm" class="space-y-6">
                 <input type="hidden" id="cj_job_id">
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">งาน (Job)</label>
-                        <p id="cj_access_no" class="font-bold text-slate-800 text-sm mt-1">-</p>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">เลข Non</label>
+                        <p id="cj_non" class="font-black text-indigo-600 text-base mt-1">-</p>
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">ทีม (Team)</label>
@@ -295,8 +301,8 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                         <p id="cj_customer" class="font-bold text-slate-800 text-sm mt-1 truncate">-</p>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">เลข Non</label>
-                        <p id="cj_non" class="font-black text-indigo-600 text-sm mt-1">-</p>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">รหัสอ้างอิง</label>
+                        <p id="cj_access_no" class="font-bold text-slate-800 text-sm mt-1">-</p>
                     </div>
                     <div class="sm:col-span-2 md:col-span-4">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">ที่อยู่ติดตั้ง</label>
@@ -304,64 +310,73 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     </div>
                 </div>
 
-                <div>
-                    <h4 class="font-black text-slate-700 mb-4">ข้อมูลการติดตั้ง</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <h4 class="font-black text-slate-800 mb-4 flex items-center">
+                        <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] mr-2 uppercase tracking-widest">Info</span>
+                        ข้อมูลทางเทคนิค
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1.5">วันที่ติดตั้ง <span class="text-rose-500">*</span></label>
-                            <input type="datetime-local" id="cj_install_date" required class="w-full border border-slate-300 rounded-lg font-bold text-sm p-2.5 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1.5">Splitter</label>
-                            <input type="text" id="cj_splitter" class="w-full border border-slate-300 rounded-lg font-bold text-sm p-2.5 outline-none focus:border-emerald-500" placeholder="ระบุ Splitter">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1.5">Code SOA</label>
-                            <input type="text" id="cj_code_soa" class="w-full border border-slate-300 rounded-lg font-bold text-sm p-2.5 outline-none focus:border-emerald-500" placeholder="ระบุ Code SOA">
+                            <label class="block text-xs font-bold text-slate-600 mb-1.5">วันที่และเวลาติดตั้ง <span class="text-rose-500">*</span></label>
+                            <input type="datetime-local" id="cj_install_date" required class="w-full border border-slate-300 rounded-xl font-bold text-sm p-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1.5">ระยะที่ขอ (เมตร)</label>
-                            <input type="number" id="cj_distance" class="w-full border border-slate-300 rounded-lg font-bold text-sm p-2.5 outline-none focus:border-emerald-500" placeholder="เช่น 150">
+                            <input type="number" id="cj_distance" class="w-full border border-slate-300 rounded-xl font-bold text-sm p-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all" placeholder="เช่น 150">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1.5">Splitter</label>
+                            <input type="text" id="cj_splitter" class="w-full border border-slate-300 rounded-xl font-bold text-sm p-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all" placeholder="ระบุ Splitter">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1.5">Code SOA</label>
+                            <input type="text" id="cj_code_soa" class="w-full border border-slate-300 rounded-xl font-bold text-sm p-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all" placeholder="ระบุ Code SOA">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <h4 class="font-black text-slate-800 mb-4 flex items-center">
+                        <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] mr-2 uppercase tracking-widest">Material</span>
+                        วัสดุที่ใช้งานจริง
+                    </h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1.5">Patch Cord ดำ</label>
+                            <input type="number" id="cj_patch_black" min="0" class="w-full border border-slate-300 rounded-xl text-center font-bold text-base p-2.5 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1.5">Patch Cord เหลือง</label>
+                            <input type="number" id="cj_patch_yellow" min="0" class="w-full border border-slate-300 rounded-xl text-center font-bold text-base p-2.5 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1.5">ท่อดำ</label>
+                            <input type="number" id="cj_tube_black" min="0" class="w-full border border-slate-300 rounded-xl text-center font-bold text-base p-2.5 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1.5">ท่อหดขาว</label>
+                            <input type="number" id="cj_tube_white" min="0" class="w-full border border-slate-300 rounded-xl text-center font-bold text-base p-2.5 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1.5">เนมเพลท</label>
+                            <input type="number" id="cj_nameplate" min="0" class="w-full border border-slate-300 rounded-xl text-center font-bold text-base p-2.5 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all" placeholder="0">
                         </div>
                     </div>
                 </div>
 
                 <div>
-                    <h4 class="font-black text-slate-700 mb-4">วัสดุที่ใช้งานจริง</h4>
-                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Patch Cord ดำ</label>
-                            <input type="number" id="cj_patch_black" class="w-full border border-slate-300 rounded-lg text-center font-bold p-2 outline-none focus:border-emerald-500" placeholder="0">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-600 mb-1">Patch Cord เหลือง</label>
-                            <input type="number" id="cj_patch_yellow" class="w-full border border-slate-300 rounded-lg text-center font-bold p-2 outline-none focus:border-emerald-500" placeholder="0">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-600 mb-1">ท่อดำ</label>
-                            <input type="number" id="cj_tube_black" class="w-full border border-slate-300 rounded-lg text-center font-bold p-2 outline-none focus:border-emerald-500" placeholder="0">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-600 mb-1">ท่อหดขาว</label>
-                            <input type="number" id="cj_tube_white" class="w-full border border-slate-300 rounded-lg text-center font-bold p-2 outline-none focus:border-emerald-500" placeholder="0">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-600 mb-1">เนมเพลท</label>
-                            <input type="number" id="cj_nameplate" class="w-full border border-slate-300 rounded-lg text-center font-bold p-2 outline-none focus:border-emerald-500" placeholder="0">
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1.5">หมายเหตุเพิ่มเติม</label>
-                    <textarea id="cj_remark" rows="2" class="w-full border border-slate-300 rounded-lg font-bold text-sm p-2.5 outline-none focus:border-emerald-500" placeholder="รายละเอียดอื่นๆ (ถ้ามี)"></textarea>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">หมายเหตุเพิ่มเติม (ถ้ามี)</label>
+                    <textarea id="cj_remark" rows="2" class="w-full border border-slate-300 rounded-xl font-medium text-sm p-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all" placeholder="ระบุรายละเอียดเพิ่มเติมที่ต้องการบันทึก..."></textarea>
                 </div>
             </form>
         </div>
         
         <div class="p-5 bg-white border-t border-slate-200 flex justify-end gap-3 shrink-0">
-            <button type="button" onclick="closeCompleteJobModal()" class="px-6 py-3 rounded-xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">ยกเลิก</button>
-            <button type="button" onclick="submitCompleteJobDetails()" class="px-6 py-3 rounded-xl font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-md transition-colors">
+            <button type="button" onclick="closeCompleteJobModal()" class="px-6 py-3 rounded-xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 focus:outline-none transition-colors">ยกเลิก</button>
+            <button type="button" onclick="submitCompleteJobDetails()" class="px-6 py-3 rounded-xl font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/30 flex items-center focus:outline-none transition-all active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
                 บันทึกการจบงาน
             </button>
         </div>
@@ -369,50 +384,68 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 </div>
 
 <script>
-// ฟังก์ชันสำหรับเปิด Modal ยืนยันจบงาน
+/**
+ * ฟังก์ชันเปิด Modal พร้อมดึงข้อมูลจากตัวแปร Array ของแผนที่มาเติมในฟอร์ม
+ * @param {number|string} jobId - ID ของงานที่คลิก
+ */
 function openCompleteJobModal(jobId) {
-    // ดึงข้อมูลจาก allJobs (ตัวแปรแผนที่เดิมของคุณที่เก็บงานไว้)
-    // หากโค้ดเดิมคุณใช้ชื่อตัวแปรอื่น ให้เปลี่ยน allJobs เป็นชื่อนั้นครับ
+    // ดึงข้อมูลงานจาก allJobs (ตัวแปรเก็บงานของแผนที่)
     const job = (typeof allJobs !== 'undefined') ? allJobs.find(j => String(j.id) === String(jobId)) : null;
     
     document.getElementById('cj_job_id').value = jobId;
     
     if (job) {
-        document.getElementById('cj_access_no').textContent = job.access_no || 'N/A';
-        document.getElementById('cj_team_name').textContent = job.team_name || 'ไม่มีทีม';
-        document.getElementById('cj_customer').textContent = job.customer || 'ไม่ระบุ';
+        document.getElementById('cj_non').textContent = job.access_no || '-'; 
+        document.getElementById('cj_access_no').textContent = job.order_no || job.id || '-';
+        
+        // เช็คชื่อทีม ถ้ามี team_name ให้ใช้ ถ้าไม่มีให้ใช้ team_id
+        let teamDisplay = 'ไม่ได้มอบหมาย';
+        if (job.team_name) teamDisplay = job.team_name;
+        else if (job.team_id) teamDisplay = 'Team ' + job.team_id;
+        document.getElementById('cj_team_name').textContent = teamDisplay;
+        
+        document.getElementById('cj_customer').textContent = job.customer || 'ไม่ระบุชื่อ';
         document.getElementById('cj_address').textContent = job.address || '-';
-        document.getElementById('cj_non').textContent = job.task_order || job.order_no || job.access_no || '-';
     } else {
-        document.getElementById('cj_access_no').textContent = "ไม่ทราบข้อมูล";
+        document.getElementById('cj_non').textContent = "ไม่ทราบข้อมูล";
+        document.getElementById('cj_access_no').textContent = jobId;
     }
 
-    // เซ็ตวันที่ปัจจุบัน
+    // เซ็ตวันที่และเวลาปัจจุบัน (Local Time) ลงใน Input
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('cj_install_date').value = now.toISOString().slice(0, 16);
 
-    // เคลียร์ค่า input
-    const inputs = ['cj_splitter', 'cj_code_soa', 'cj_distance', 'cj_patch_black', 'cj_patch_yellow', 'cj_tube_black', 'cj_tube_white', 'cj_nameplate', 'cj_remark'];
-    inputs.forEach(id => document.getElementById(id).value = '');
+    // ล้างค่าข้อมูลการกรอกครั้งก่อนหน้า
+    const inputsToClear = ['cj_splitter', 'cj_code_soa', 'cj_distance', 'cj_patch_black', 'cj_patch_yellow', 'cj_tube_black', 'cj_tube_white', 'cj_nameplate', 'cj_remark'];
+    inputsToClear.forEach(id => {
+        document.getElementById(id).value = '';
+    });
 
-    // เปิด Modal
+    // แสดง Modal
     document.getElementById('completeJobModal').classList.remove('hidden');
 }
 
-// ฟังก์ชันสำหรับปิด Modal
+/**
+ * ฟังก์ชันปิด Modal
+ */
 function closeCompleteJobModal() {
     document.getElementById('completeJobModal').classList.add('hidden');
 }
 
-// ฟังก์ชันสำหรับส่งข้อมูลไปบันทึก
+/**
+ * ฟังก์ชันรวบรวมข้อมูลและส่ง API เพื่อบันทึกลงฐานข้อมูล
+ */
 async function submitCompleteJobDetails() {
     const installDate = document.getElementById('cj_install_date').value;
+    
+    // ตรวจสอบข้อมูลเบื้องต้น
     if (!installDate) {
-        alert('กรุณาระบุวันที่ติดตั้ง');
+        alert('กรุณาระบุวันที่และเวลาติดตั้งให้ครบถ้วน');
         return;
     }
 
+    // เตรียม Data Payload
     const payload = {
         job_id: document.getElementById('cj_job_id').value,
         install_date: installDate,
@@ -427,7 +460,11 @@ async function submitCompleteJobDetails() {
         remark: document.getElementById('cj_remark').value
     };
 
+    // เปลี่ยนปุ่มเป็นสถานะกำลังโหลด (ถ้าต้องการ)
+    // document.querySelector('#completeJobModal button.bg-emerald-600').innerText = "กำลังบันทึก...";
+
     try {
+        // ยิง API ไปที่ Backend
         const response = await fetch('api/dispatch/complete_job.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -437,17 +474,23 @@ async function submitCompleteJobDetails() {
         const result = await response.json();
 
         if (result.status === 'success') {
-            alert('บันทึกข้อมูลการจบงานเรียบร้อยแล้ว');
+            alert('บันทึกข้อมูลการจบงานสำเร็จเรียบร้อย');
             closeCompleteJobModal();
-            // รีโหลดแผนที่ (เรียกใช้ฟังก์ชันโหลดงานของคุณ เช่น loadJobs() หรือ loadMapData())
-            if (typeof loadJobs === 'function') loadJobs();
-            else location.reload(); // รีเฟรชหน้าต่างหากไม่มีฟังก์ชันดึงข้อมูลใหม่
+            
+            // รีเฟรชข้อมูลบนแผนที่
+            if (typeof loadJobs === 'function') {
+                loadJobs(); // ถ้ามีฟังก์ชันโหลดข้อมูลแผนที่ใหม่ ให้เรียกใช้
+            } else if (typeof fetchJobs === 'function') {
+                fetchJobs();
+            } else {
+                location.reload(); // รีเฟรชหน้าต่างถ้าไม่พบฟังก์ชันอัปเดต
+            }
         } else {
-            alert('เกิดข้อผิดพลาด: ' + result.message);
+            alert('เกิดข้อผิดพลาด: ' + (result.message || 'ไม่สามารถบันทึกข้อมูลได้'));
         }
     } catch (error) {
-        console.error('Error:', error);
-        alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
+        console.error('Error Complete Job:', error);
+        alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบอินเทอร์เน็ตหรือติดต่อผู้ดูแลระบบ');
     }
 }
 </script>
