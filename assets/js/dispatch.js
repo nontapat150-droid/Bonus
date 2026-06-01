@@ -679,6 +679,7 @@ function createJobRow(job, index) {
     const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
     const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
     const coords = getJobLatLng(job);
+    const jobStatus = (job.status || '').toLowerCase();
     const jobId = escapeHTML(job.id);
     const queueLabel = displayValue(job.seq || index + 1);
 
