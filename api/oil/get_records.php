@@ -70,7 +70,7 @@ try {
                  LEFT JOIN oil_images i ON o.id = i.record_id
                  $whereClause
                  GROUP BY o.id
-                 ORDER BY o.date_recorded DESC"; 
+                 ORDER BY o.date_recorded ASC, o.id ASC"; 
     
     $stmtTable = $pdo->prepare($tableSql);
     $stmtTable->execute($params);
@@ -79,6 +79,7 @@ try {
     $processed_records = [];
     $total_jobs_period = 0;
 
+    $prev_distance = null;
     foreach ($rawRecords as $row) {
         $distance = (float)$row['distance'];
         $job_count = (int)$row['stored_job_count'];
@@ -86,7 +87,10 @@ try {
 
         $cost_per_job = $job_count > 0 ? ($row['total_price'] / $job_count) : 0;
         $cost_per_km = $distance > 0 ? ($row['total_price'] / $distance) : 0;
-        $liters_per_km = $distance > 0 ? ($row['liters'] / $distance) : 0;
+        $liters_per_km = 0;
+        if ($prev_distance !== null && $prev_distance > 0) {
+            $liters_per_km = $row['liters'] > 0 ? ($row['liters'] / $prev_distance) : 0;
+        }
 
         $row['distance'] = $distance;
         $row['job_count'] = $job_count;
@@ -95,7 +99,10 @@ try {
         $row['liters_per_km'] = round($liters_per_km, 2);
 
         $processed_records[] = $row;
+        $prev_distance = $distance;
     }
+
+    $processed_records = array_reverse($processed_records);
 
     // 4. Monthly Summary for Comparison
     $monthlySql = "SELECT
