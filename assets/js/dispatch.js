@@ -379,7 +379,7 @@ function renderMapJobList(mapJobs) {
         const isDone = jobStatus === 'completed' || jobStatus === 'failed';
         
         let actionButtons = '';
-        if (!isDone && job.team_id) {
+        if (typeof IS_ADMIN !== 'undefined' && !IS_ADMIN && !isDone && job.team_id) {
             actionButtons = `
             <div class="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100">
                 <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); window.openCompleteJobModal(${job.id})">
@@ -389,7 +389,7 @@ function renderMapJobList(mapJobs) {
                     <i data-lucide="x-circle" class="w-3 h-3"></i>ไม่สำเร็จ
                 </button>
             </div>`;
-        } else if (jobStatus === 'failed') {
+        } else if (typeof IS_ADMIN !== 'undefined' && !IS_ADMIN && jobStatus === 'failed') {
             actionButtons = `
             <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
                 <span class="rounded px-2 py-1 text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-100 text-center">ไม่สำเร็จ</span>
