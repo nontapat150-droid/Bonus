@@ -1,13 +1,25 @@
 <?php
 // config/db.php
 
-date_default_timezone_set('Asia/Bangkok');
+$date_default_timezone_set('Asia/Bangkok');
 
-$host = 'sql207.infinityfree.com';
-$db   = 'if0_42036532_ro';
-$user = 'if0_42036532';
-$pass = 'Wxv8bmb9Cak';
-$charset = 'utf8';
+// Allow overriding connection via environment variables (recommended for dev/production)
+$host = getenv('DB_HOST') ?: 'sql207.infinityfree.com';
+$db   = getenv('DB_NAME') ?: 'if0_42036532_ro';
+$user = getenv('DB_USER') ?: 'if0_42036532';
+$pass = getenv('DB_PASS') ?: 'Wxv8bmb9Cak';
+$charset = getenv('DB_CHARSET') ?: 'utf8';
+
+// If running on a local development host, prefer XAMPP/MySQL defaults
+// Detect by common localhost hostnames
+$httpHost = $_SERVER['HTTP_HOST'] ?? '';
+if (stripos($httpHost, 'localhost') !== false || stripos($httpHost, '127.0.0.1') !== false) {
+    $host = getenv('DB_HOST') ?: '127.0.0.1';
+    $user = getenv('DB_USER') ?: 'root';
+    $pass = getenv('DB_PASS') ?: '';
+    // keep DB_NAME if provided; otherwise try a sensible default 'bonus'
+    $db = getenv('DB_NAME') ?: $db;
+}
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 $options = [
@@ -26,11 +38,12 @@ try {
     if ($isApiCall) {
         header('Content-Type: application/json');
         echo json_encode([
-            'success' => false, 
-            'error' => 'Database Error: ' . $e->getMessage()
+            'success' => false,
+            'error' => 'Database Error: ' . $e->getMessage(),
+            'hint' => 'ตรวจสอบ config/db.php หรือตั้งค่า DB_HOST/DB_USER/DB_PASS'
         ]);
     } else {
-        die("เชื่อมต่อฐานข้อมูลล้มเหลว: " . $e->getMessage());
+        die("เชื่อมต่อฐานข้อมูลล้มเหลว: " . $e->getMessage() . " — ตรวจสอบ config/db.php หรือตัวแปรแวดล้อม DB_HOST/DB_USER/DB_PASS");
     }
     exit;
 }
