@@ -2,6 +2,7 @@
 // api/history/get_logs.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+require_once '../../config/job_close.php';
 
 header('Content-Type: application/json');
 requireLogin();
@@ -97,6 +98,28 @@ try {
         bindDateParams($stmt, $filter_date, $filter_month);
         $stmt->execute();
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    } elseif ($type === 'job_close') {
+        $where = "WHERE 1=1 " . buildDateCondition('c.created_at', $filter_date, $filter_month);
+        $sql = "SELECT c.id, c.job_id, c.install_provider, c.install_date, c.close_case_no, c.order_no,
+                       c.customer_name, c.package_name, c.created_at,
+                       j.plan_arrival_date, j.access_no,
+                       u.full_name AS tech_name, t.team_name
+                FROM job_close_3bb c
+                JOIN jobs j ON c.job_id = j.id
+                JOIN users u ON c.tech_id = u.id
+                LEFT JOIN teams t ON u.team_id = t.id
+                $where ORDER BY c.created_at DESC LIMIT 500";
+
+        $stmt = $pdo->prepare($sql);
+        bindDateParams($stmt, $filter_date, $filter_month);
+        $stmt->execute();
+        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($data as &$row) {
+            $plan = $row['plan_arrival_date'] ?? null;
+            $row['edit_deadline_label'] = job_close_deadline_label($plan);
+            $row['can_edit'] = job_close_can_edit($plan, true);
+        }
     }
 
     echo json_encode(['success' => true, 'data' => $data]);
