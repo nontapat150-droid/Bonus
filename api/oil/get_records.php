@@ -79,25 +79,49 @@ try {
     $processed_records = [];
     $total_jobs_period = 0;
 
+    // keep track of previous mileage per vehicle to compute distance between fills
+    $prevMileageByVehicle = [];
+
     foreach ($rawRecords as $row) {
-        $distance = (float)$row['distance'];
+        $currentMileage = isset($row['mileage']) ? (int)$row['mileage'] : 0;
+        $vehicleKey = !empty($row['license_plate']) ? $row['license_plate'] : ($row['team_name'] ?? 'unknown');
+
+        // compute distance as difference between current and previous mileage for the same vehicle
+        $distance = 0;
+        if (isset($prevMileageByVehicle[$vehicleKey]) && $currentMileage > $prevMileageByVehicle[$vehicleKey]) {
+            $distance = $currentMileage - $prevMileageByVehicle[$vehicleKey];
+        } else {
+            // fallback to stored distance column if previous mileage not available
+            $distance = (float)$row['distance'];
+        }
+
+        // compute liters: prefer stored liters, otherwise derive from total_price / price_per_liter
+        $liters = isset($row['liters']) ? (float)$row['liters'] : 0.0;
+        if (($liters <= 0) && isset($row['price_per_liter']) && (float)$row['price_per_liter'] > 0) {
+            $liters = (float)$row['total_price'] / (float)$row['price_per_liter'];
+        }
+
         $job_count = (int)$row['stored_job_count'];
         $total_jobs_period += $job_count;
 
         $cost_per_job = $job_count > 0 ? ($row['total_price'] / $job_count) : 0;
         $cost_per_km = $distance > 0 ? ($row['total_price'] / $distance) : 0;
         $km_per_liter = 0;
-        if ($distance > 0 && $row['liters'] > 0) {
-            $km_per_liter = $distance / $row['liters'];
+        if ($distance > 0 && $liters > 0) {
+            $km_per_liter = $distance / $liters;
         }
 
         $row['distance'] = $distance;
+        $row['liters'] = round($liters, 2);
         $row['job_count'] = $job_count;
         $row['cost_per_job'] = round($cost_per_job, 2);
         $row['cost_per_km'] = round($cost_per_km, 2);
         $row['km_per_liter'] = round($km_per_liter, 2);
 
         $processed_records[] = $row;
+
+        // store current mileage for next iteration
+        $prevMileageByVehicle[$vehicleKey] = $currentMileage;
     }
 
     $processed_records = array_reverse($processed_records);
