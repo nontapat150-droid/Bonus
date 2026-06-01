@@ -73,8 +73,9 @@ try {
         exit;
     }
 
+    // 🌟 แก้ไขตรงนี้: ให้เช็คเฉพาะ completed ไม่ให้เช็ค failed เพื่อให้แก้งาน failed ได้
     if ($job['status'] === 'completed') {
-        echo json_encode(['success' => false, 'error' => 'งานนี้ถูกปิดสำเร็จไปแล้ว ไม่สามารถเปลี่ยนสถานะได้']);
+        echo json_encode(['success' => false, 'error' => 'งานนี้ถูกปิดสำเร็จไปแล้ว']);
         exit;
     }
 
@@ -95,6 +96,7 @@ try {
 
     if ($status === 'completed') {
         $installDate = !empty($close3bb['install_date']) ? $close3bb['install_date'] : ($job['plan_arrival_date'] ?? null);
+
         $provider = strtoupper(trim((string)($close3bb['install_provider'] ?? '3BB')));
 
         $closeStmt = $pdo->prepare("INSERT INTO job_close_3bb (

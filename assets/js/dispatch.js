@@ -274,6 +274,7 @@ function renderMapJobList(mapJobs) {
         const jobStatus = (job.status || '').toLowerCase();
         const isDone = jobStatus === 'completed' || jobStatus === 'failed';
         
+        // 🌟 แก้ไข: จัดการปุ่มให้รองรับการเปลี่ยนจาก Failed เป็น Completed
         let actionButtons = '';
         if (!isDone && job.team_id) {
             actionButtons = `
@@ -294,7 +295,7 @@ function renderMapJobList(mapJobs) {
                 </button>
             </div>`;
         }
-        
+
         return `
             <div class="p-3 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors space-y-2">
                 <button type="button" class="w-full text-left" onclick="showMapJobDetail('${escapeHTML(job.id)}')">
@@ -313,6 +314,7 @@ function renderMapJobList(mapJobs) {
                 ${actionButtons}
             </div>`;
     }).join('');
+}
 }
 
 function createJobRow(job, index) {
