@@ -112,6 +112,9 @@
 
         <?php if (hasRole('super_admin')): ?>
         <div class="module-title pt-4 pb-2 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">ตั้งค่าระบบ</div>
+        <a href="index.php?page=site_settings" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-slate-50 hover:text-slate-600 rounded-xl transition-all <?php echo ($page === 'site_settings') ? 'bg-slate-50 text-slate-600 font-bold' : ''; ?>">
+            <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">⚙️</span> <span class="sidebar-text whitespace-nowrap">ตั้งค่าระบบเว็บไซต์</span>
+        </a>
         <a href="index.php?page=users" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all <?php echo ($page === 'users') ? 'bg-rose-50 text-rose-600 font-bold' : ''; ?>">
             <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">👥</span> <span class="sidebar-text whitespace-nowrap">จัดการผู้ใช้</span>
         </a>
@@ -149,6 +152,7 @@
         <?php endif; ?>
         
         <?php if (hasRole('super_admin')): ?>
+            <a href="index.php?page=site_settings" class="px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-xl font-bold">⚙️ ตั้งค่าระบบเว็บไซต์</a>
             <a href="index.php?page=users" class="px-4 py-3 text-slate-600 hover:bg-rose-50 rounded-xl font-bold">👥 จัดการผู้ใช้</a>
         <?php endif; ?>
         
