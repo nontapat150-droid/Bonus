@@ -171,7 +171,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                     <option value="100">100</option>
                     <option value="all">ทั้งหมด</option>
                 </select>
-                <select id="statusFilter" class="text-xs font-bold input !py-2 !px-3 min-h-10">
+                <select id="statusFilter" onchange="renderUI()" class="text-xs font-bold input !py-2 !px-3 min-h-10">
                     <option value="all">ทุกสถานะ</option>
                     <option value="pending">รอดำเนินการ</option>
                     <option value="failed">ไม่สำเร็จ</option>

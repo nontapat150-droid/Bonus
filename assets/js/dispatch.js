@@ -284,6 +284,7 @@ function getFilteredJobs() {
     const teamEl = document.getElementById('teamFilter');
     if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN && teamEl) teamVal = teamEl.value;
 
+function createJobRow(job, index) {
     const dateVal = document.getElementById('dateFilter')?.value;
     const statusVal = document.getElementById('statusFilter')?.value; 
 
