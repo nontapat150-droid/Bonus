@@ -225,10 +225,47 @@ document.addEventListener('DOMContentLoaded', function() {
         return String(value || '').replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
     }
 
+    // --- Real-time Preview Logic ---
+    function updateLivePopupPreview() {
+        const currentTitle = document.getElementById('popupTitle').value;
+        const currentMessage = document.getElementById('popupMessage').value;
+        let currentImageUrl = document.getElementById('popupExistingImage').value;
+        
+        if (!popupImagePreviewWrapper.classList.contains('hidden') && popupImagePreviewImg.src) {
+            currentImageUrl = popupImagePreviewImg.src;
+        }
+
+        renderPopupPreview({
+            title: currentTitle,
+            message: currentMessage,
+            image_url: currentImageUrl
+        });
+    }
+
+    function updateLiveMarqueePreview() {
+        renderMarqueePreview({
+            message: document.getElementById('marqueeMessage').value
+        });
+    }
+
+    document.getElementById('popupTitle').addEventListener('input', updateLivePopupPreview);
+    document.getElementById('popupMessage').addEventListener('input', updateLivePopupPreview);
+    document.getElementById('marqueeMessage').addEventListener('input', updateLiveMarqueePreview);
+
     // Image Preview Logic
     popupImageField.addEventListener('change', function(e) {
         const file = e.target.files[0];
-        if (!file) return;
+        if (!file) {
+            // Revert to existing if canceled
+            if (document.getElementById('popupExistingImage').value) {
+                popupImagePreviewImg.src = document.getElementById('popupExistingImage').value;
+            } else {
+                popupImagePreviewWrapper.classList.add('hidden');
+                popupImagePreviewImg.src = '';
+            }
+            updateLivePopupPreview();
+            return;
+        }
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         if (!validTypes.includes(file.type)) {
             Swal.fire('ข้อผิดพลาด', 'รองรับเฉพาะไฟล์รูปภาพ JPG, PNG, GIF, WEBP เท่านั้น', 'warning');
@@ -239,6 +276,7 @@ document.addEventListener('DOMContentLoaded', function() {
         reader.onload = e => {
             popupImagePreviewImg.src = e.target.result;
             popupImagePreviewWrapper.classList.remove('hidden');
+            updateLivePopupPreview();
         };
         reader.readAsDataURL(file);
     });
