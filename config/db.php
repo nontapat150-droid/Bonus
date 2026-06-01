@@ -20,6 +20,18 @@ $options = [
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (\PDOException $e) {
-    die("เชื่อมต่อฐานข้อมูลล้มเหลว กรุณาตรวจสอบว่ามีฐานข้อมูล '$db' อยู่จริง ข้อผิดพลาด: " . $e->getMessage());
+    // 🌟 ดักจับ Error และส่งกลับเป็น JSON เพื่อให้ Javascript ไม่พัง
+    $isApiCall = strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false;
+    
+    if ($isApiCall) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false, 
+            'error' => 'Database Error: ' . $e->getMessage()
+        ]);
+    } else {
+        die("เชื่อมต่อฐานข้อมูลล้มเหลว: " . $e->getMessage());
+    }
+    exit;
 }
 ?>
