@@ -171,11 +171,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('dateFilter')?.addEventListener('change', renderUI);
     document.getElementById('statusFilter')?.addEventListener('change', renderUI);
-    function getFilteredJobs() {
-    let teamVal = 'all';
-    const teamEl = document.getElementById('teamFilter');
-    if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN && teamEl) teamVal = teamEl.value;
+    });
 
+function createJobRow(job, index) {
     const dateVal = document.getElementById('dateFilter')?.value;
     const statusVal = document.getElementById('statusFilter')?.value; 
 
@@ -927,6 +925,7 @@ function renderMapJobList(mapJobs) {
         const coords = getJobLatLng(job);
         const jobStatus = (job.status || '').toLowerCase();
         const isDone = jobStatus === 'completed' || jobStatus === 'failed';
+        
         let actionButtons = '';
         if (!isDone && job.team_id) {
             actionButtons = `
@@ -946,15 +945,8 @@ function renderMapJobList(mapJobs) {
                     <i data-lucide="check-circle" class="w-3 h-3"></i>แก้เป็นสำเร็จ
                 </button>
             </div>`;
-        }`
-            <div class="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100">
-                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
-                    <i data-lucide="check-circle" class="w-3 h-3"></i>ปิดงาน
-                </button>
-                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-rose-500 text-white hover:bg-rose-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'failed')">
-                    <i data-lucide="x-circle" class="w-3 h-3"></i>ไม่สำเร็จ
-                </button>
-            </div>` : '';
+        }
+
         return `
             <div class="p-3 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors space-y-2">
                 <button type="button" class="w-full text-left" onclick="showMapJobDetail('${escapeHTML(job.id)}')">
@@ -971,7 +963,6 @@ function renderMapJobList(mapJobs) {
                     </div>
                 </button>
                 ${actionButtons}
-                ${jobStatus === 'failed' ? `<div class="rounded px-2 py-1 text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-100 text-center">ไม่สำเร็จ</div>` : ''}
             </div>`;
     }).join('');
 }
