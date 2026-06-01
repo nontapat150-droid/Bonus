@@ -267,14 +267,23 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     .complete-modal-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
     .complete-modal-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
     .complete-modal-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    /* SweetAlert ต้องอยู่เหนือ Modal ปิดงาน (z-index 9999) */
+    .swal2-container { z-index: 10100 !important; }
+    .cj-provider-btn input { position: absolute; opacity: 0; pointer-events: none; }
+    .cj-provider-btn span {
+        display: block; padding: 0.625rem 1rem; border-radius: 0.75rem; font-weight: 800; font-size: 0.875rem;
+        border: 2px solid #e2e8f0; background: #fff; color: #64748b; text-align: center; transition: all 0.15s;
+    }
+    .cj-provider-btn input:checked + span { border-color: #059669; background: #ecfdf5; color: #047857; box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
+    .cj-provider-btn input:focus-visible + span { outline: 2px solid #10b981; outline-offset: 2px; }
 </style>
 
 <div id="completeJobModal" class="fixed inset-0 z-[9999] hidden bg-slate-900/70 backdrop-blur-sm flex justify-center items-center p-4 transition-opacity">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden z-[10000] max-h-[95vh] flex flex-col">
         <div class="p-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex justify-between items-center shrink-0">
-            <h3 class="text-lg sm:text-xl font-black tracking-tight flex items-center gap-2">
+            <h3 id="cj_modal_title" class="text-lg sm:text-xl font-black tracking-tight flex items-center gap-2">
                 <i data-lucide="clipboard-check" class="w-6 h-6"></i>
-                ปิดงานติดตั้ง 3BB
+                ปิดงานติดตั้ง
             </h3>
             <button type="button" onclick="closeCompleteJobModal()" class="text-emerald-100 hover:text-white text-3xl leading-none">&times;</button>
         </div>
@@ -283,13 +292,28 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             <form id="completeJobForm" class="space-y-5" onsubmit="event.preventDefault(); submitCompleteJob3BB();">
                 <input type="hidden" id="cj_job_id">
 
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">ประเภทงานติดตั้ง <span class="text-rose-500">*</span></p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="cj-provider-btn cursor-pointer">
+                                <input type="radio" name="cj_install_provider" id="cj_provider_ais" value="AIS">
+                                <span>AIS</span>
+                            </label>
+                            <label class="cj-provider-btn cursor-pointer">
+                                <input type="radio" name="cj_install_provider" id="cj_provider_3bb" value="3BB" checked>
+                                <span>3BB</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">ข้อมูลจากงานที่มอบหมาย</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="text-[10px] font-bold text-slate-500">วันที่ติดตั้ง</label>
-                            <p id="cj_install_date_display" class="font-black text-emerald-700 text-sm mt-0.5">-</p>
-                            <input type="hidden" id="cj_install_date">
+                            <label for="cj_install_date" class="block text-[10px] font-bold text-slate-500 mb-1">วันที่ติดตั้ง <span class="text-rose-500">*</span></label>
+                            <input type="date" id="cj_install_date" required class="w-full border border-slate-300 rounded-xl text-sm p-2.5 font-bold text-emerald-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-500">ปิดเคสงาน (เลข Non)</label>
