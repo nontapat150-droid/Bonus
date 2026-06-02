@@ -8,23 +8,42 @@ function isLoggedIn() {
 
 function requireLogin() {
     if (!isLoggedIn()) {
-        $isApiRequest = false;
-        if (isset($_SERVER['REQUEST_URI']) && stripos($_SERVER['REQUEST_URI'], '/api/') !== false) {
-            $isApiRequest = true;
-        }
-        if (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
-            $isApiRequest = true;
-        }
+        redirectOrJsonError('กรุณาเข้าสู่ระบบใหม่');
+    }
 
-        if ($isApiRequest) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'error' => 'กรุณาเข้าสู่ระบบใหม่']);
-            exit;
+    global $pdo;
+    if (isset($pdo)) {
+        try {
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE id = ? LIMIT 1");
+            $stmt->execute([$_SESSION['user_id']]);
+            if (!$stmt->fetch()) {
+                // User ID in session doesn't exist in DB anymore!
+                session_destroy();
+                redirectOrJsonError('เซสชันไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่');
+            }
+        } catch (Exception $e) {
+            // Ignore DB errors here, handle elsewhere
         }
+    }
+}
 
-        header("Location: login.php");
+function redirectOrJsonError($msg) {
+    $isApiRequest = false;
+    if (isset($_SERVER['REQUEST_URI']) && stripos($_SERVER['REQUEST_URI'], '/api/') !== false) {
+        $isApiRequest = true;
+    }
+    if (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
+        $isApiRequest = true;
+    }
+
+    if ($isApiRequest) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $msg]);
         exit;
     }
+
+    header("Location: login.php");
+    exit;
 }
 
 function hasRole($roles) {
@@ -39,23 +58,7 @@ function hasRole($roles) {
 function requireRole($roles) {
     requireLogin();
     if (!hasRole($roles)) {
-        $isApiRequest = false;
-        if (isset($_SERVER['REQUEST_URI']) && stripos($_SERVER['REQUEST_URI'], '/api/') !== false) {
-            $isApiRequest = true;
-        }
-        if (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
-            $isApiRequest = true;
-        }
-
-        if ($isApiRequest) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง API นี้']);
-            exit;
-        }
-
-        // Redirect to a safe page if unauthorized
-        header("Location: index.php?error=ไม่มีสิทธิ์เข้าถึง");
-        exit;
+        redirectOrJsonError('ไม่มีสิทธิ์เข้าถึง API นี้');
     }
 }
 
