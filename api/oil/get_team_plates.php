@@ -4,8 +4,19 @@
 // สำหรับระบบเติมน้ำมัน - แสดงป้ายทะเบียนทีมของตัวเอง + ทีมอื่น
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+error_reporting(0);
+ini_set('display_errors', 0);
 
 header('Content-Type: application/json');
+
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        echo json_encode(['success' => false, 'error' => 'PHP Fatal Error: ' . $error['message']]);
+        exit;
+    }
+});
+
 requireLogin();
 
 $user_id = $_SESSION['user_id'];

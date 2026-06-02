@@ -35,16 +35,6 @@ if (!defined('PDO::ATTR_ERRMODE')) {
             <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-5">
                 <h3 class="font-bold text-slate-700 flex items-center mb-2"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs mr-2 uppercase tracking-widest">Step 1</span> ข้อมูลยานพาหนะและเวลา</h3>
                 
-                <div class="bg-amber-50 p-4 rounded-xl border border-amber-200">
-                    <label class="block text-sm font-bold text-amber-800 mb-1">📅 วันที่/เวลา ตามบิลน้ำมัน <span class="text-red-500">*</span></label>
-                    <div class="relative mt-2">
-                        <input type="datetime-local" id="date_recorded" name="date_recorded" required class="input w-full pl-10">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span class="text-amber-500"><i data-lucide="clock" class="w-5 h-5 inline-block"></i></span>
-                        </div>
-                    </div>
-                    <p class="text-xs text-amber-600 mt-2 font-medium">* ระบุวันที่และเวลาตามสลิปน้ำมันจริง (ค่าเริ่มต้นคือเวลาปัจจุบัน)</p>
-                </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">ทีม / ป้ายทะเบียนรถ <span class="text-red-500">*</span></label>
@@ -137,4 +127,4 @@ if (!defined('PDO::ATTR_ERRMODE')) {
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="assets/js/common.js"></script>
-<script src="assets/js/oil.js"></script>
+<script src="assets/js/oil.js?v=<?= time() ?>"></script>
