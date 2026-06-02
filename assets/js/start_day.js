@@ -258,64 +258,32 @@ window.renderHistoryTable = function(records, isSuperAdmin = false) {
     const isAdmin = (role === 'admin' || role === 'super_admin');
 
     records.forEach(item => {
-        let statusHtml = '';
-        if (item.has_initial_fee == 1) {
-            statusHtml = '<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">✅ มีค่าแรกเข้า</span>';
-        } else if (item.has_initial_fee == 2) {
-            statusHtml = '<span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-xs font-bold border border-amber-200">💵 จ่ายหน้างาน</span>';
-        } else {
-            statusHtml = '<span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-lg text-xs font-bold border border-rose-200">❌ ไม่มี</span>';
-        }
-
-        let imgHtml = item.evidence_image
-            ? `<a href="assets/uploads/start_day/${item.evidence_image}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/start_day/${item.evidence_image}" class="w-12 h-12 object-cover rounded-xl shadow-sm border border-slate-200"></a>`
-            : '<div class="w-12 h-12 flex items-center justify-center mx-auto rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>';
-
-        // 🌟 2. สร้างปุ่มลบ (เห็นเฉพาะแอดมิน) และปุ่มแก้ไข (เห็นทุกคน)
-        let deleteBtn = isAdmin ? `<button type="button" onclick="deleteStartDayRecord(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100 shadow-sm inline-flex items-center justify-center">ลบ</button>` : '';
-
-        let manageColumn = `
-            <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center border-b border-dashed border-slate-100 md:border-none">
-                <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">จัดการ</span>
-                <div class="flex gap-2 justify-end md:justify-center w-full">
-                    <button type="button" onclick="openEditStartDayModal(${item.id})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100 shadow-sm inline-flex items-center justify-center">แก้ไข</button>
-                    ${deleteBtn}
-                </div>
-            </td>
-        `;
-
-        const tr = document.createElement('tr');
-        tr.className = 'block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50 transition-colors rounded-xl md:rounded-none shadow-sm md:shadow-none';
+        let status = item.has_initial_fee == 1 ? '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-xs font-bold border border-emerald-200">✅ มีค่าแรกเข้า</span>' : (item.has_initial_fee == 2 ? '<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-xs font-bold border border-amber-200">💵 หน้างาน</span>' : '<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded-lg text-xs font-bold border border-rose-200">❌ ไม่มี</span>');
+        let img = item.evidence_image ? `<a href="assets/uploads/start_day/${item.evidence_image}" target="_blank"><img src="assets/uploads/start_day/${item.evidence_image}" class="w-12 h-12 object-cover rounded-xl border border-slate-200"></a>` : 'ไม่มีรูป';
         
-        tr.innerHTML = `
-            <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 border-b border-dashed border-slate-100 md:border-none">
-                <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">เวลา</span>
-                <div class="text-right md:text-left">
-                    <span class="font-bold text-slate-700">${item.date_str || '-'}</span>
-                    <span class="text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded ml-1 font-bold">${item.time_str || '-'}</span>
+        let delBtn = isAdmin ? `<button type="button" onclick="deleteStartDayRecord(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg text-xs border border-rose-100 shadow-sm">ลบ</button>` : '';
+
+        // 🌟 สร้างคอลัมน์ จัดการ ที่เก็บปุ่มทั้ง 2 ไว้
+        let manageColumn = `
+            <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center">
+                <span class="md:hidden font-bold">จัดการ</span>
+                <div class="flex gap-2 justify-end md:justify-center">
+                    <button type="button" onclick="openEditStartDayModal(${item.id})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg text-xs border border-indigo-100 shadow-sm">แก้ไข</button>
+                    ${delBtn}
                 </div>
             </td>
-            <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 border-b border-dashed border-slate-100 md:border-none">
-                <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">ชื่อลูกค้า</span>
-                <span class="font-bold text-slate-800">${item.customer_name || '-'}</span>
-            </td>
-            <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 border-b border-dashed border-slate-100 md:border-none">
-                <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">เลข Non</span>
-                <span class="font-mono text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded">${item.non_number || '-'}</span>
-            </td>
-            <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 border-b border-dashed border-slate-100 md:border-none md:text-center">
-                <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">สถานะ</span>
-                ${statusHtml}
-            </td>
-            <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center border-b border-dashed border-slate-100 md:border-none">
-                <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">รูปภาพ</span>
-                <div class="md:flex md:justify-center">${imgHtml}</div>
-            </td>
-            ${manageColumn}
         `;
-        tbody.appendChild(tr);
+
+        tbody.innerHTML += `
+            <tr class="block md:table-row border-b border-slate-100 hover:bg-slate-50">
+                <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 text-xs"><span class="md:hidden font-bold">เวลา</span>${item.date_str} ${item.time_str}</td>
+                <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 font-bold"><span class="md:hidden font-bold">ลูกค้า</span>${item.customer_name}</td>
+                <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 font-mono text-indigo-600"><span class="md:hidden font-bold">Non</span>${item.non_number}</td>
+                <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center"><span class="md:hidden font-bold">สถานะ</span>${status}</td>
+                <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center"><span class="md:hidden font-bold">รูป</span>${img}</td>
+                ${manageColumn} 
+            </tr>`;
     });
-};
 
 window.deleteStartDayRecord = async function(id) {
     Swal.fire({
