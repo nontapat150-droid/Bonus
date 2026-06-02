@@ -96,7 +96,7 @@
             <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">📖</span> <span class="sidebar-text whitespace-nowrap">คู่มือการใช้งาน</span>
         </a>
 
-        <?php if (hasRole(['technician'])): ?>
+        <?php if (hasRole(['super_admin', 'admin', 'technician'])): ?>
         <a href="index.php?page=tech_bag" class="nav-item flex items-center px-4 py-3 text-slate-600 hover:bg-yellow-50 hover:text-yellow-600 rounded-xl transition-all <?php echo ($page === 'tech_bag') ? 'bg-yellow-50 text-yellow-600 font-bold' : ''; ?>">
             <span class="nav-icon mr-3 text-xl opacity-70 transition-all duration-300">🎒</span> <span class="sidebar-text whitespace-nowrap">กระเป๋าช่าง</span>
         </a>
@@ -157,7 +157,7 @@
         <a href="index.php?page=oil" class="px-4 py-3 text-slate-600 hover:bg-blue-50 rounded-xl font-bold">⛽ น้ำมันและยานพาหนะ</a>
         <a href="index.php?page=dispatch" class="px-4 py-3 text-slate-600 hover:bg-emerald-50 rounded-xl font-bold">🗺️ ระบบจัดส่งอัจฉริยะ</a>
         
-        <?php if (hasRole(['technician'])): ?>
+        <?php if (hasRole(['super_admin', 'admin', 'technician'])): ?>
             <a href="index.php?page=tech_bag" class="px-4 py-3 text-slate-600 hover:bg-yellow-50 rounded-xl font-bold">🎒 กระเป๋าช่าง</a>
         <?php endif; ?>
         

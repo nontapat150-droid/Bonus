@@ -5,6 +5,8 @@ let techConsumables = [];
 let techHistory = [];
 let availableTargets = [];
 
+let currentViewUserId = ''; // For Admin view
+
 function switchTechTab(tab) {
     document.querySelectorAll('.tech-tab').forEach(el => {
         el.classList.remove('active', 'bg-yellow-100', 'text-yellow-700', 'font-bold');
@@ -28,9 +30,36 @@ function switchTechTab(tab) {
     }
 }
 
+async function loadAdminTechDropdown() {
+    const select = document.getElementById('adminViewTechSelect');
+    if (!select) return; // Not admin view
+    try {
+        const res = await fetch('api/inventory/get_outbound_targets.php');
+        const data = await res.json();
+        if (data.success) {
+            let html = '<option value="">-- ของฉัน (หรือไม่มีช่าง) --</option>';
+            data.users.forEach(u => {
+                html += `<option value="${u.id}">${u.full_name} ${u.team_name ? `(${u.team_name})`:''}</option>`;
+            });
+            select.innerHTML = html;
+            
+            // On change, reload current tab
+            select.addEventListener('change', (e) => {
+                currentViewUserId = e.target.value;
+                const activeTab = document.querySelector('.tech-tab.active').id.replace('tab-', '');
+                if (activeTab === 'bag') loadTechBag();
+                else loadTechHistory();
+            });
+        }
+    } catch (e) { console.error(e); }
+}
+
 async function loadTechBag() {
     try {
-        const res = await fetch('api/inventory/get_tech_bag.php');
+        let url = 'api/inventory/get_tech_bag.php';
+        if (currentViewUserId) url += '?target_user_id=' + currentViewUserId;
+
+        const res = await fetch(url);
         const data = await res.json();
         
         if (data.success) {
@@ -376,7 +405,10 @@ async function loadTechHistory() {
         const tbody = document.getElementById('techHistoryBody');
         if(tbody) tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-slate-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดประวัติ...</div></td></tr>';
         
-        const res = await fetch('api/inventory/get_tech_history.php');
+        let url = 'api/inventory/get_tech_history.php';
+        if (currentViewUserId) url += '?target_user_id=' + currentViewUserId;
+
+        const res = await fetch(url);
         const data = await res.json();
 
         if (data.success) {
@@ -437,5 +469,6 @@ function renderTechHistory() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
+    loadAdminTechDropdown();
     loadTechBag();
 });

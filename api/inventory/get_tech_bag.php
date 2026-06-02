@@ -6,11 +6,19 @@ header('Content-Type: application/json');
 requireLogin();
 
 $user = getCurrentUser();
+$role = $user['role'];
 $user_id = $user['id'];
+
+// If admin, they can specify a target_user_id to view
+if (in_array($role, ['admin', 'super_admin']) && isset($_GET['target_user_id']) && $_GET['target_user_id'] !== '') {
+    $target_user_id = $_GET['target_user_id'];
+} else {
+    $target_user_id = $user_id; // Default to self
+}
 
 try {
     // หา item ทั้งหมดที่ status = 'outbound' 
-    // และถูกโอน/เบิกมาที่ $user_id (ไม่จำกัดแค่วันนี้ เพื่อให้อยู่ในกระเป๋าตลอดจนกว่าจะใช้งาน)
+    // และถูกโอน/เบิกมาที่ $target_user_id (ไม่จำกัดแค่วันนี้ เพื่อให้อยู่ในกระเป๋าตลอดจนกว่าจะใช้งาน)
     $sql = "
         SELECT 
             i.id, i.sn, pm.model_name as product_name, p.name as model_name, l.timestamp
@@ -29,7 +37,7 @@ try {
     ";
 
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([$user_id]);
+    $stmt->execute([$target_user_id]);
     $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // ดึงข้อมูลวัสดุสิ้นเปลืองที่ช่างคนนี้มีอยู่ (User Consumables)
@@ -45,7 +53,7 @@ try {
         ORDER BY ic.product_name ASC
     ";
     $stmtC = $pdo->prepare($sqlConsumables);
-    $stmtC->execute([$user_id]);
+    $stmtC->execute([$target_user_id]);
     $consumables = $stmtC->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([

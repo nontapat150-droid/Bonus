@@ -2,12 +2,12 @@
 // views/modules/tech_bag.php
 if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรงไม่ได้');
 
-// Protection: Technician Only (or Admin if they want to view it, but user requested Technician only)
-// Note: Based on user request, only Technician sees this menu.
 if (!hasRole(['technician', 'admin', 'super_admin'])) {
     echo "<div class='p-8 text-center text-red-600 font-bold text-xl'>ไม่มีสิทธิ์เข้าถึงหน้านี้</div>";
     exit;
 }
+
+$isAdmin = hasRole(['admin', 'super_admin']);
 ?>
 
 <div class="space-y-6 animate__animated animate__fadeIn">
@@ -18,10 +18,19 @@ if (!hasRole(['technician', 'admin', 'super_admin'])) {
                 <span class="bg-yellow-100 text-yellow-600 p-2 rounded-xl mr-3">
                     <i data-lucide="briefcase" class="w-6 h-6"></i>
                 </span>
-                กระเป๋าช่าง
+                กระเป๋าช่าง <?php if ($isAdmin) echo "(มุมมองผู้ดูแลระบบ)"; ?>
             </h2>
             <p class="text-slate-500 mt-1 text-sm">จัดการอุปกรณ์และวัสดุสิ้นเปลืองที่อยู่กับคุณ รวมถึงประวัติการใช้งาน</p>
         </div>
+        
+        <?php if ($isAdmin): ?>
+        <div class="w-full md:w-auto flex items-center gap-2">
+            <label class="text-sm font-bold text-slate-700 whitespace-nowrap">ดูข้อมูลของ:</label>
+            <select id="adminViewTechSelect" class="w-full md:w-64 border-gray-300 rounded-lg py-2 pl-3 pr-8 focus:ring-yellow-500 focus:border-yellow-500 text-sm">
+                <option value="">-- กำลังโหลดรายชื่อช่าง --</option>
+            </select>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Tabs -->
