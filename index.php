@@ -61,6 +61,17 @@ if ($page === 'home') {
                 $pdo->exec("ALTER TABLE announcements ADD COLUMN `title` VARCHAR(255) DEFAULT NULL AFTER `type`");
             }
             
+            // สร้างตาราง issue_reports
+            $pdo->exec("CREATE TABLE IF NOT EXISTS issue_reports (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                message TEXT,
+                image_url VARCHAR(255) DEFAULT NULL,
+                status VARCHAR(50) DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+            
             // 🚀 Tech Bag Migration: Update ENUMs
             $pdo->exec("ALTER TABLE inventory_items MODIFY COLUMN `status` enum('in_stock','outbound','used') NOT NULL DEFAULT 'in_stock'");
             $pdo->exec("ALTER TABLE inventory_logs MODIFY COLUMN `action` enum('in','out','transfer','used') NOT NULL");
@@ -432,9 +443,19 @@ if ($page === 'home') {
     <div id="main-content-area">
         
         <header class="topbar">
-            <button id="mobileMenuBtn" class="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-800">
-                <i data-lucide="menu" class="w-6 h-6"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                <button id="mobileMenuBtn" class="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-800">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <button id="openIssueReportBtn" class="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-full transition-colors hidden sm:flex">
+                    <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                    <span>รายงานปัญหา</span>
+                </button>
+                <!-- Mobile specific icon-only button -->
+                <button id="openIssueReportBtnMobile" class="p-2 text-rose-500 hover:bg-rose-50 rounded-full transition-colors sm:hidden">
+                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                </button>
+            </div>
 
             <div class="flex items-center gap-3 ml-auto">
                 <button id="guideModalBtn" class="p-2 text-[var(--c-text-2)] hover:bg-[var(--c-surface-2)] rounded-full transition-colors" title="คู่มือการใช้งาน">
@@ -765,7 +786,8 @@ if ($page === 'home') {
                     'tech_bag' => 'views/modules/tech_bag.php',
                     'site_settings' => 'views/modules/site_settings.php',
                     'users' => 'views/modules/user_settings.php',
-                    'checkin' => 'views/modules/checkin.php'
+                    'checkin' => 'views/modules/checkin.php',
+                    'issues' => 'views/modules/issues.php'
                 ];
 
                 $accessDenied = false;
@@ -782,6 +804,9 @@ if ($page === 'home') {
                     $accessDenied = true;
                 }
                 if ($page === 'job_close_history' && !hasRole('technician')) {
+                    $accessDenied = true;
+                }
+                if ($page === 'issues' && !hasRole(['admin', 'super_admin'])) {
                     $accessDenied = true;
                 }
 
@@ -1032,6 +1057,165 @@ if ($page === 'home') {
             guideScrollArea.addEventListener('scroll', updateProgress, { passive: true });
         }
     })();
+    </script>
+
+    <!-- ═══ REPORT ISSUE MODAL ═══ -->
+    <div id="issueReportModal" class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col transform scale-95 opacity-0 transition-all duration-300" id="issueReportModalInner">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
+                        <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900">รายงานปัญหา</h3>
+                        <p class="text-xs text-slate-500">แจ้งปัญหาการใช้งานไปยังผู้ดูแลระบบ</p>
+                    </div>
+                </div>
+                <button id="closeIssueReportBtn" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <form id="issueReportForm" class="p-6 flex flex-col gap-5">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">รายละเอียดปัญหา <span class="text-rose-500">*</span></label>
+                    <textarea name="message" id="issueMessage" rows="4" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none transition-all resize-none" placeholder="อธิบายปัญหาที่คุณพบ..."></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">แนบรูปภาพ (ถ้ามี)</label>
+                    <div class="flex items-center justify-center w-full">
+                        <label for="issueImage" class="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors relative overflow-hidden group">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6" id="issueImagePlaceholder">
+                                <i data-lucide="image-plus" class="w-8 h-8 text-slate-400 mb-2 group-hover:text-rose-500 transition-colors"></i>
+                                <p class="text-xs text-slate-500"><span class="font-semibold text-rose-500">คลิกเพื่ออัปโหลด</span> หรือลากไฟล์มาวาง</p>
+                                <p class="text-[10px] text-slate-400 mt-1">PNG, JPG, WEBP (สูงสุด 5MB)</p>
+                            </div>
+                            <img id="issueImagePreview" class="absolute inset-0 w-full h-full object-cover hidden" />
+                            <input id="issueImage" name="image" type="file" class="hidden" accept="image/png, image/jpeg, image/webp, image/gif" />
+                        </label>
+                    </div>
+                    <div class="flex justify-end mt-2 hidden" id="issueImageRemoveContainer">
+                        <button type="button" id="removeIssueImageBtn" class="text-xs text-rose-500 hover:text-rose-700 font-medium">ลบรูปภาพ</button>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" id="cancelIssueReportBtn" class="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">ยกเลิก</button>
+                    <button type="submit" id="submitIssueReportBtn" class="px-5 py-2.5 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md shadow-rose-200 transition-all flex items-center gap-2">
+                        <i data-lucide="send" class="w-4 h-4"></i> ส่งรายงาน
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('issueReportModal');
+        const modalInner = document.getElementById('issueReportModalInner');
+        const openBtn = document.getElementById('openIssueReportBtn');
+        const openBtnMobile = document.getElementById('openIssueReportBtnMobile');
+        const closeBtn = document.getElementById('closeIssueReportBtn');
+        const cancelBtn = document.getElementById('cancelIssueReportBtn');
+        const form = document.getElementById('issueReportForm');
+        
+        const imageInput = document.getElementById('issueImage');
+        const imagePreview = document.getElementById('issueImagePreview');
+        const imagePlaceholder = document.getElementById('issueImagePlaceholder');
+        const removeImageBtn = document.getElementById('removeIssueImageBtn');
+        const removeImageContainer = document.getElementById('issueImageRemoveContainer');
+        const submitBtn = document.getElementById('submitIssueReportBtn');
+        
+        function openModal() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Trigger reflow
+            void modal.offsetWidth;
+            modalInner.classList.remove('scale-95', 'opacity-0');
+            modalInner.classList.add('scale-100', 'opacity-100');
+        }
+        
+        function closeModal() {
+            modalInner.classList.remove('scale-100', 'opacity-100');
+            modalInner.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                form.reset();
+                resetImagePreview();
+            }, 300);
+        }
+        
+        if (openBtn) openBtn.addEventListener('click', openModal);
+        if (openBtnMobile) openBtnMobile.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        
+        // Image preview logic
+        imageInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                    imagePlaceholder.classList.add('opacity-0');
+                    removeImageContainer.classList.remove('hidden');
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+        
+        function resetImagePreview() {
+            imageInput.value = '';
+            imagePreview.src = '';
+            imagePreview.classList.add('hidden');
+            imagePlaceholder.classList.remove('opacity-0');
+            removeImageContainer.classList.add('hidden');
+        }
+        
+        if (removeImageBtn) removeImageBtn.addEventListener('click', resetImagePreview);
+        
+        // Submit logic
+        if (form) form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = document.getElementById('issueMessage').value.trim();
+            if (!message && !imageInput.files[0]) {
+                alert('กรุณากรอกข้อความหรือแนบรูปภาพ');
+                return;
+            }
+            
+            const originalBtnHtml = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> กำลังส่ง...';
+            submitBtn.disabled = true;
+            
+            try {
+                const formData = new FormData(form);
+                const res = await fetch('api/issues/submit.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    alert('ส่งรายงานสำเร็จ!');
+                    closeModal();
+                } else {
+                    alert(data.message || 'เกิดข้อผิดพลาดในการส่งรายงาน');
+                }
+            } catch (error) {
+                alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+            } finally {
+                submitBtn.innerHTML = originalBtnHtml;
+                submitBtn.disabled = false;
+                lucide.createIcons();
+            }
+        });
+    });
     </script>
 </body>
 </html>
