@@ -43,8 +43,8 @@ try {
             LEFT JOIN users u ON n.created_by = u.id
             LEFT JOIN users tu ON n.target_user_id = tu.id
             LEFT JOIN notification_reads nr ON n.id = nr.notification_id AND nr.user_id = ?
-            WHERE (n.team_id IS NULL AND n.target_user_id IS NULL)
-               OR (n.target_user_id = ?)";
+            WHERE ((n.team_id IS NULL AND n.target_user_id IS NULL AND n.type != 'admin_only')
+               OR (n.target_user_id = ?))";
         
         $params = [$user_id, $user_id];
         if ($team_id) {
