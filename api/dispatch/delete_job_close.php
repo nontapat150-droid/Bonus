@@ -36,7 +36,7 @@ try {
         $pdo->prepare("DELETE FROM job_logs WHERE id = ?")->execute([(int)$record['job_log_id']]);
     }
 
-    $pdo->prepare("UPDATE jobs SET status = NULL, remark = NULL WHERE id = ? AND status = 'completed'")
+    $pdo->prepare("UPDATE jobs SET status = 'dispatched', remark = NULL WHERE id = ? AND status = 'completed'")
         ->execute([(int)$record['job_id']]);
 
     $pdo->commit();

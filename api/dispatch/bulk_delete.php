@@ -16,7 +16,15 @@ if (empty($ids)) {
 
 try {
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $sql = "DELETE FROM {$table} WHERE id IN ($placeholders)";
+    
+    // Delete job_logs
+    $pdo->prepare("DELETE FROM job_logs WHERE job_id IN ($placeholders)")->execute($ids);
+    
+    // Delete job_close_3bb
+    $pdo->prepare("DELETE FROM job_close_3bb WHERE job_id IN ($placeholders)")->execute($ids);
+    
+    // Delete jobs
+    $sql = "DELETE FROM jobs WHERE id IN ($placeholders)";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($ids);
 

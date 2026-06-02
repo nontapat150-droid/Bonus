@@ -30,6 +30,9 @@ requireRole(['admin', 'super_admin']);
             <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 rounded-xl shadow-btn transition-all shrink-0 flex items-center gap-2">
                 <i data-lucide="search" class="w-5 h-5"></i> ค้นหา
             </button>
+            <button type="button" id="showAllBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-6 rounded-xl transition-all shrink-0 flex items-center gap-2" title="แสดงข้อมูลลูกค้าทั้งหมดล่าสุด">
+                <i data-lucide="list" class="w-5 h-5"></i> แสดงทั้งหมด
+            </button>
         </form>
     </div>
 
@@ -64,9 +67,14 @@ requireRole(['admin', 'super_admin']);
                 <i data-lucide="user" class="w-5 h-5 text-indigo-600"></i>
                 รายละเอียดลูกค้า
             </h3>
-            <button type="button" class="closeModalBtn p-2 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                <button type="button" id="deleteCustomerBtn" class="p-2 hover:bg-rose-100 text-rose-500 rounded-lg transition-colors hidden" title="ลบข้อมูลลูกค้านี้ทั้งหมด">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </button>
+                <button type="button" class="closeModalBtn p-2 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
         </div>
         
         <div class="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-6" id="modalContent">
