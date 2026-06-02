@@ -43,7 +43,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
     .dispatch-page { display: flex; flex-direction: column; gap: 1rem; min-height: 100vh; padding-bottom: 2rem; }
     .dispatch-page .card:hover { transform: none; }
-    .dispatch-view-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 10px; padding: 6px; box-shadow: var(--shadow-1); }
+    .dispatch-view-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 10px; padding: 6px; box-shadow: var(--shadow-1); }
     .dispatch-view-tab { min-height: 44px; border-radius: 8px; font-size: 13px; font-weight: 900; color: var(--c-text-2); display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background .16s ease, color .16s ease, box-shadow .16s ease; }
     .dispatch-view-tab:hover { background: var(--c-surface-2); color: var(--c-text-1); }
     .dispatch-view-tab.is-active { background: var(--c-primary); color: white; box-shadow: var(--shadow-btn); }
@@ -134,7 +134,11 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     <div class="dispatch-view-tabs shrink-0">
         <button type="button" id="dispatchViewJobsBtn" class="dispatch-view-tab is-active">
             <i data-lucide="list-checks" class="w-4 h-4"></i>
-            <span>ดูงาน</span>
+            <span>งานติดตั้ง</span>
+        </button>
+        <button type="button" id="dispatchViewMABtn" class="dispatch-view-tab">
+            <i data-lucide="wrench" class="w-4 h-4"></i>
+            <span>งาน MA</span>
         </button>
         <button type="button" id="dispatchViewMapBtn" class="dispatch-view-tab">
             <i data-lucide="map" class="w-4 h-4"></i>
