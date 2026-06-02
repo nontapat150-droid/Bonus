@@ -22,12 +22,19 @@ if ($consumable_id <= 0 || $qty <= 0) {
     exit;
 }
 
+$owner_id = $input['owner_id'] ?? '';
+if ($owner_id !== '' && hasRole(['admin', 'super_admin'])) {
+    $target_owner_id = $owner_id;
+} else {
+    $target_owner_id = $user_id;
+}
+
 try {
     $pdo->beginTransaction();
 
     // 1. ตรวจสอบว่าช่างมีของพอให้ใช้งานไหม
     $stmtCheck = $pdo->prepare("SELECT qty FROM user_consumables WHERE user_id = ? AND consumable_id = ? FOR UPDATE");
-    $stmtCheck->execute([$user_id, $consumable_id]);
+    $stmtCheck->execute([$target_owner_id, $consumable_id]);
     $current = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
     if (!$current || $current['qty'] < $qty) {
@@ -37,7 +44,7 @@ try {
     // 2. ตัดยอดออก
     $new_qty = $current['qty'] - $qty;
     $stmtUpdate = $pdo->prepare("UPDATE user_consumables SET qty = ? WHERE user_id = ? AND consumable_id = ?");
-    $stmtUpdate->execute([$new_qty, $user_id, $consumable_id]);
+    $stmtUpdate->execute([$new_qty, $target_owner_id, $consumable_id]);
 
     // 3. บันทึกประวัติ (Log)
     $stmtLog = $pdo->prepare("
@@ -54,12 +61,12 @@ try {
     
     // ลอง execute ดูก่อน
     try {
-        $stmtLog->execute([$consumable_id, $qty, $user_id]);
+        $stmtLog->execute([$consumable_id, $qty, $target_owner_id]);
     } catch (Exception $e) {
         // ถ้า action 'used' ไม่ได้ เราอาจจะต้องใช้ 'out' แล้วระบุ target_user_id เป็นตัวเอง หรือใส่หมายเหตุ
         // แต่เพื่อความถูกต้อง เราจะลองพยายามเพิ่ม enum ให้รองรับด้วย (เดี๋ยวทำ migration ให้)
         $pdo->exec("ALTER TABLE inventory_consumable_logs MODIFY COLUMN `action` enum('in','out','transfer','used') NOT NULL");
-        $stmtLog->execute([$consumable_id, $qty, $user_id]);
+        $stmtLog->execute([$consumable_id, $qty, $target_owner_id]);
     }
 
     $pdo->commit();

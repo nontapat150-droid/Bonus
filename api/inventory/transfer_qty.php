@@ -12,6 +12,13 @@ try {
     $input = json_decode(file_get_contents('php://input'), true);
     $items = $input['items'] ?? []; // [{consumable_id: 'xxx', qty: 10}]
     $target_user_id = $input['target_user_id'] ?? null;
+    $owner_id = $input['owner_id'] ?? '';
+    
+    if ($owner_id !== '' && hasRole(['admin', 'super_admin'])) {
+        $source_user_id = $owner_id;
+    } else {
+        $source_user_id = $current_user_id;
+    }
 
     if (empty($items)) {
         echo json_encode(['success' => false, 'error' => 'ไม่มีรายการ']);
@@ -23,7 +30,7 @@ try {
         exit;
     }
 
-    if ($current_user_id == $target_user_id) {
+    if ($source_user_id == $target_user_id) {
         echo json_encode(['success' => false, 'error' => 'ไม่สามารถโอนย้ายให้ตัวเองได้']);
         exit;
     }
@@ -39,7 +46,7 @@ try {
 
         // เช็คว่าคนโอนมีของพอไหม
         $stmt = $pdo->prepare("SELECT qty FROM user_consumables WHERE user_id = ? AND consumable_id = ? FOR UPDATE");
-        $stmt->execute([$current_user_id, $consumable_id]);
+        $stmt->execute([$source_user_id, $consumable_id]);
         $my_stock = $stmt->fetch();
 
         if (!$my_stock || $my_stock['qty'] < $qty) {
@@ -48,7 +55,7 @@ try {
 
         // ตัดสต็อกคนโอน
         $pdo->prepare("UPDATE user_consumables SET qty = qty - ? WHERE user_id = ? AND consumable_id = ?")
-            ->execute([$qty, $current_user_id, $consumable_id]);
+            ->execute([$qty, $source_user_id, $consumable_id]);
 
         // เพิ่มสต็อกให้คนรับ
         $stmtTarget = $pdo->prepare("SELECT id FROM user_consumables WHERE user_id = ? AND consumable_id = ?");
