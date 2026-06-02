@@ -54,7 +54,7 @@ try {
         $stmtCheck->execute([$non_number, $id]);
         $duplicate = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
-        if ($duplicate) {
+        if ($duplicate && $record['non_number'] !== $non_number) {
             $owner = $duplicate['full_name'] ? $duplicate['full_name'] : 'ช่างคนอื่น';
             throw new Exception("เลข Non '{$non_number}' ถูกใช้ไปแล้ว! (บันทึกโดย: {$owner})");
         }

@@ -46,6 +46,7 @@
                             <input id="edit_sd_images" type="file" class="sr-only" multiple accept="image/*" />
                         </label>
                     </div>
+                    <div id="editImagePreviewContainer" class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-4"></div>
                 </div>
             </form>
         </div>
