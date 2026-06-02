@@ -87,7 +87,7 @@ try {
         $logRemark = $remark;
     }
 
-    $stmt = $pdo->prepare("UPDATE {$table} SET status = ?, remark = ? WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE jobs SET status = ?, remark = ? WHERE id = ?");
     $stmt->execute([$status, $logRemark, $job_id]);
 
     $logStmt = $pdo->prepare("INSERT INTO job_logs (job_id, tech_id, status, remark) VALUES (?, ?, ?, ?)");
