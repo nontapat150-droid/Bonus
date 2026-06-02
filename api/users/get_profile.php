@@ -21,7 +21,7 @@ try {
 
     try {
         $stmt = $pdo->prepare("
-            SELECT u.id, u.username, u.full_name, u.role, u.status, u.profile_image, t.name as team_name
+            SELECT u.id, u.username, u.full_name, u.role, u.status, u.profile_image, t.team_name as team_name
             FROM users u
             LEFT JOIN teams t ON u.team_id = t.id
             WHERE u.id = ?
@@ -31,7 +31,7 @@ try {
     } catch (PDOException $e) {
         // Fallback if profile_image column is missing and migration failed
         $stmt = $pdo->prepare("
-            SELECT u.id, u.username, u.full_name, u.role, u.status, t.name as team_name
+            SELECT u.id, u.username, u.full_name, u.role, u.status, t.team_name as team_name
             FROM users u
             LEFT JOIN teams t ON u.team_id = t.id
             WHERE u.id = ?
