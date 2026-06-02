@@ -80,9 +80,13 @@
         <?php endif; ?>
     </nav>
 
-    <div class="sidebar-user flex items-center gap-3 group relative cursor-pointer interactive hover:bg-[var(--c-surface-2)] rounded-lg mx-2 mb-2 transition-colors">
-        <div class="w-10 h-10 rounded-full bg-[var(--c-primary-faint)] flex items-center justify-center text-[var(--c-primary)] font-bold shrink-0">
-            <?= strtoupper(substr($user['full_name'] ?? 'U', 0, 2)) ?>
+    <div class="sidebar-user flex items-center gap-3 group relative cursor-pointer interactive hover:bg-[var(--c-surface-2)] rounded-lg mx-2 mb-2 transition-colors" onclick="if(window.openUserProfile) window.openUserProfile()">
+        <div class="w-10 h-10 rounded-full bg-[var(--c-primary-faint)] flex items-center justify-center text-[var(--c-primary)] font-bold shrink-0 overflow-hidden">
+            <?php if (!empty($user['profile_image'])): ?>
+                <img src="<?= htmlspecialchars($user['profile_image']) ?>?t=<?= time() ?>" class="w-full h-full object-cover" alt="Profile">
+            <?php else: ?>
+                <?= strtoupper(substr($user['full_name'] ?? 'U', 0, 2)) ?>
+            <?php endif; ?>
         </div>
         <div class="nav-label flex-1 overflow-hidden">
             <p class="text-sm font-bold text-[var(--c-text-1)] truncate"><?= htmlspecialchars($user['full_name']) ?></p>
@@ -181,7 +185,20 @@
         <?php endif; ?>
     </nav>
     
-    <div class="p-4 border-t border-[var(--c-border)]">
+    <div class="p-4 border-t border-[var(--c-border)] flex flex-col gap-2">
+        <div class="flex items-center gap-3 p-2 hover:bg-[var(--c-surface-2)] rounded-lg transition-colors cursor-pointer" onclick="if(window.openUserProfile) { document.getElementById('closeDrawerBtn').click(); window.openUserProfile(); }">
+            <div class="w-10 h-10 rounded-full bg-[var(--c-primary-faint)] flex items-center justify-center text-[var(--c-primary)] font-bold shrink-0 overflow-hidden">
+                <?php if (!empty($user['profile_image'])): ?>
+                    <img src="<?= htmlspecialchars($user['profile_image']) ?>?t=<?= time() ?>" class="w-full h-full object-cover" alt="Profile">
+                <?php else: ?>
+                    <?= strtoupper(substr($user['full_name'] ?? 'U', 0, 2)) ?>
+                <?php endif; ?>
+            </div>
+            <div class="flex-1 overflow-hidden">
+                <p class="text-sm font-bold text-[var(--c-text-1)] truncate"><?= htmlspecialchars($user['full_name']) ?></p>
+                <p class="text-[10px] text-[var(--c-text-3)] font-medium uppercase tracking-tight">ดูโปรไฟล์</p>
+            </div>
+        </div>
         <a href="logout.php" class="flex items-center gap-3 text-[var(--c-danger)] font-medium p-2 hover:bg-[var(--c-danger-bg)] rounded-lg transition-colors">
             <i data-lucide="log-out" class="w-5 h-5"></i>
             <span>ออกจากระบบ</span>

@@ -5,7 +5,14 @@ require_once 'config/auth.php';
 
 requireLogin();
 $user = getCurrentUser();
-
+// Fetch profile image if exists
+try {
+    $stmtUser = $pdo->prepare("SELECT profile_image FROM users WHERE id = ?");
+    $stmtUser->execute([$user['id']]);
+    $user['profile_image'] = $stmtUser->fetchColumn();
+} catch (Exception $e) {
+    $user['profile_image'] = null;
+}
 $page = $_GET['page'] ?? 'home';
 
 // Fetch Real-time Stats for Dashboard
@@ -87,6 +94,13 @@ if ($page === 'home') {
             $chk4->execute();
             if (!$chk4->fetch()) {
                 $pdo->exec("ALTER TABLE inventory_consumable_logs ADD COLUMN `user_id` INT DEFAULT NULL AFTER `target_user_id`");
+            }
+            
+            // เพิ่มคอลัมน์ profile_image
+            $chk5 = $pdo->prepare("SHOW COLUMNS FROM users LIKE 'profile_image'");
+            $chk5->execute();
+            if (!$chk5->fetch()) {
+                $pdo->exec("ALTER TABLE users ADD COLUMN `profile_image` VARCHAR(255) DEFAULT NULL AFTER `full_name`");
             }
             
         } catch (Exception $e) { /* ignore migration errors silently */ }
@@ -1059,6 +1073,76 @@ if ($page === 'home') {
     })();
     </script>
 
+    <!-- ═══ USER PROFILE MODAL ═══ -->
+    <div id="userProfileModal" class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col transform scale-95 opacity-0 transition-all duration-300" id="userProfileModalInner">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                        <i data-lucide="user" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900">โปรไฟล์ผู้ใช้งาน</h3>
+                        <p class="text-xs text-slate-500">จัดการข้อมูลส่วนตัวและรหัสผ่าน</p>
+                    </div>
+                </div>
+                <button id="closeUserProfileBtn" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto max-h-[80vh] custom-scrollbar">
+                <!-- Profile Image & Info -->
+                <div class="flex flex-col items-center mb-6">
+                    <div class="relative group cursor-pointer mb-3" id="profileImageContainer">
+                        <div class="w-24 h-24 rounded-full bg-slate-100 border-4 border-white shadow-md flex items-center justify-center overflow-hidden">
+                            <img id="upmProfileImage" src="" class="w-full h-full object-cover hidden" alt="Profile">
+                            <span id="upmProfileInitials" class="text-3xl font-bold text-slate-400">U</span>
+                        </div>
+                        <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i data-lucide="camera" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <input type="file" id="upmImageInput" class="hidden" accept="image/*">
+                    </div>
+                    <h3 id="upmFullName" class="text-lg font-bold text-slate-900 mb-1">-</h3>
+                    <div class="flex gap-2 mb-2">
+                        <span id="upmRoleBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 uppercase">-</span>
+                        <span id="upmStatusBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 uppercase">-</span>
+                    </div>
+                    <p id="upmTeamName" class="text-sm text-slate-500 font-medium">-</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1 uppercase">ชื่อผู้ใช้งาน (Username)</label>
+                        <input type="text" id="upmUsername" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm bg-slate-50 text-slate-500 outline-none" readonly>
+                    </div>
+
+                    <hr class="border-slate-100 my-4">
+
+                    <h4 class="font-bold text-slate-800 text-sm mb-3">เปลี่ยนรหัสผ่าน</h4>
+                    <form id="upmPasswordForm" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">รหัสผ่านเดิม</label>
+                            <input type="password" name="old_password" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">รหัสผ่านใหม่</label>
+                            <input type="password" name="new_password" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all" required minlength="6">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">ยืนยันรหัสผ่านใหม่</label>
+                            <input type="password" name="confirm_password" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all" required minlength="6">
+                        </div>
+                        <button type="submit" id="upmSavePasswordBtn" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
+                            <i data-lucide="save" class="w-4 h-4"></i> บันทึกรหัสผ่าน
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ═══ REPORT ISSUE MODAL ═══ -->
     <div id="issueReportModal" class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col transform scale-95 opacity-0 transition-all duration-300" id="issueReportModalInner">
@@ -1232,6 +1316,128 @@ if ($page === 'home') {
             } finally {
                 submitBtn.innerHTML = originalBtnHtml;
                 submitBtn.disabled = false;
+                lucide.createIcons();
+            }
+        });
+    });
+    </script>
+    <!-- User Profile Modal Logic -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const profileModal = document.getElementById('userProfileModal');
+        const profileModalInner = document.getElementById('userProfileModalInner');
+        const closeProfileBtn = document.getElementById('closeUserProfileBtn');
+        
+        const imgContainer = document.getElementById('profileImageContainer');
+        const imgInput = document.getElementById('upmImageInput');
+        const pwdForm = document.getElementById('upmPasswordForm');
+        
+        function openProfileModal() {
+            profileModal.classList.remove('hidden');
+            profileModal.classList.add('flex');
+            // Animate in
+            requestAnimationFrame(() => {
+                profileModalInner.classList.remove('scale-95', 'opacity-0');
+                profileModalInner.classList.add('scale-100', 'opacity-100');
+            });
+            fetchUserProfile();
+        }
+        
+        function closeProfileModal() {
+            profileModalInner.classList.remove('scale-100', 'opacity-100');
+            profileModalInner.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                profileModal.classList.add('hidden');
+                profileModal.classList.remove('flex');
+                pwdForm.reset();
+            }, 300);
+        }
+        
+        closeProfileBtn.addEventListener('click', closeProfileModal);
+        profileModal.addEventListener('click', (e) => {
+            if (e.target === profileModal) closeProfileModal();
+        });
+        
+        window.openUserProfile = openProfileModal; // Expose globally
+        
+        async function fetchUserProfile() {
+            try {
+                const res = await fetch('api/users/get_profile.php');
+                const data = await res.json();
+                if (data.success) {
+                    const u = data.data;
+                    document.getElementById('upmFullName').textContent = u.full_name;
+                    document.getElementById('upmUsername').value = u.username;
+                    document.getElementById('upmTeamName').textContent = u.team_name ? 'ทีม: ' + u.team_name : 'ไม่มีทีม';
+                    document.getElementById('upmRoleBadge').textContent = u.role;
+                    document.getElementById('upmStatusBadge').textContent = u.status === 'approved' ? 'อนุมัติแล้ว' : (u.status === 'pending' ? 'รออนุมัติ' : u.status);
+                    
+                    const imgEl = document.getElementById('upmProfileImage');
+                    const initEl = document.getElementById('upmProfileInitials');
+                    if (u.profile_image) {
+                        imgEl.src = u.profile_image + '?t=' + new Date().getTime();
+                        imgEl.classList.remove('hidden');
+                        initEl.classList.add('hidden');
+                    } else {
+                        imgEl.classList.add('hidden');
+                        initEl.classList.remove('hidden');
+                        initEl.textContent = u.full_name.substring(0, 2).toUpperCase();
+                    }
+                }
+            } catch(e) { console.error('Failed to fetch profile', e); }
+        }
+        
+        imgContainer.addEventListener('click', () => imgInput.click());
+        imgInput.addEventListener('change', async function() {
+            if (this.files && this.files[0]) {
+                const fd = new FormData();
+                fd.append('profile_image', this.files[0]);
+                
+                try {
+                    // Show loading on image
+                    document.getElementById('upmProfileInitials').textContent = '...';
+                    
+                    const res = await fetch('api/users/update_profile_image.php', { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (data.success) {
+                        Swal.fire({icon: 'success', title: 'สำเร็จ', text: data.message, confirmButtonColor: '#10B981'});
+                        fetchUserProfile();
+                        // Also update sidebar avatar if possible
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        Swal.fire({icon: 'error', title: 'ผิดพลาด', text: data.message, confirmButtonColor: '#EF4444'});
+                        fetchUserProfile();
+                    }
+                } catch(e) {
+                    Swal.fire({icon: 'error', title: 'ผิดพลาด', text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', confirmButtonColor: '#EF4444'});
+                    fetchUserProfile();
+                }
+            }
+        });
+        
+        pwdForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('upmSavePasswordBtn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '...กำลังบันทึก';
+            btn.disabled = true;
+            
+            try {
+                const fd = new FormData(pwdForm);
+                const res = await fetch('api/users/change_password.php', { method: 'POST', body: fd });
+                const data = await res.json();
+                
+                if (data.success) {
+                    Swal.fire({icon: 'success', title: 'สำเร็จ', text: data.message, confirmButtonColor: '#10B981'});
+                    pwdForm.reset();
+                } else {
+                    Swal.fire({icon: 'error', title: 'ผิดพลาด', text: data.message, confirmButtonColor: '#EF4444'});
+                }
+            } catch(e) {
+                Swal.fire({icon: 'error', title: 'ผิดพลาด', text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', confirmButtonColor: '#EF4444'});
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
                 lucide.createIcons();
             }
         });
