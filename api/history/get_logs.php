@@ -13,25 +13,36 @@ if (!hasRole(['admin', 'super_admin'])) {
     exit;
 }
 
+// =================================================================
+// ฟังก์ชันตัวช่วยสำหรับการจัดการวันที่ (Helper Functions)
+// =================================================================
+
+// ฟังก์ชันสร้างเงื่อนไข Date (รองรับ $prefix สำหรับคิวรีประเภท UNION)
+function buildDateCondition($col, $date, $month, $prefix = '') {
+    if ($date) return " AND DATE($col) = :" . $prefix . "date";
+    if ($month) return " AND DATE_FORMAT($col, '%Y-%m') = :" . $prefix . "month";
+    return "";
+}
+
+// ฟังก์ชันยัดตัวแปร PDO อย่างปลอดภัย (รองรับ $prefix สำหรับคิวรีประเภท UNION)
+function bindDateParams($stmt, $date, $month, $prefix = '') {
+    if ($date) {
+        $stmt->bindValue(":" . $prefix . "date", $date);
+    } elseif ($month) {
+        $stmt->bindValue(":" . $prefix . "month", $month);
+    }
+}
+
+// =================================================================
+// เริ่มกระบวนการดึงข้อมูลตามประเภท (Main Logic)
+// =================================================================
+
 $type = $_GET['type'] ?? 'checkin';
 $filter_date = $_GET['date'] ?? '';
 $filter_month = $_GET['month'] ?? '';
 
 try {
     $data = [];
-    
-    // ฟังก์ชันสร้างเงื่อนไข Date
-    function buildDateCondition($col, $date, $month) {
-        if ($date) return " AND DATE($col) = :date";
-        if ($month) return " AND DATE_FORMAT($col, '%Y-%m') = :month";
-        return "";
-    }
-    
-    // ฟังก์ชันยัดตัวแปร PDO อย่างปลอดภัย
-    function bindDateParams($stmt, $date, $month) {
-        if ($date) $stmt->bindValue(':date', $date);
-        elseif ($month) $stmt->bindValue(':month', $month);
-    }
 
     if ($type === 'checkin') {
         $where = "WHERE 1=1 " . buildDateCondition('c.checkin_time', $filter_date, $filter_month);
@@ -82,8 +93,8 @@ try {
         $stmt->execute();
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    <?php
     } elseif ($type === 'inventory') {
+        // ใช้ prefix 'in_' และ 'out_' เพื่อไม่ให้ชื่อตัวแปรในระบบ UNION ชนกัน
         $sql = "SELECT 'in' as log_type, l.timestamp, i.sn, m.model_name, p.name as product_name, u.full_name as admin_name, tu.full_name as target_name
                 FROM inventory_logs l
                 LEFT JOIN inventory_items i ON l.item_id = i.id
@@ -91,7 +102,7 @@ try {
                 LEFT JOIN products p ON m.product_id = p.id
                 LEFT JOIN users u ON l.admin_id = u.id
                 LEFT JOIN users tu ON l.target_user_id = tu.id
-                WHERE l.action = 'in' " . buildDateCondition('l.timestamp', $filter_date, $filter_month) . "
+                WHERE l.action = 'in' " . buildDateCondition('l.timestamp', $filter_date, $filter_month, 'in_') . "
                 UNION ALL
                 SELECT 'out' as log_type, l.timestamp, i.sn, m.model_name, p.name as product_name, u.full_name as admin_name, tu.full_name as target_name
                 FROM inventory_logs l
@@ -100,12 +111,12 @@ try {
                 LEFT JOIN products p ON m.product_id = p.id
                 LEFT JOIN users u ON l.admin_id = u.id
                 LEFT JOIN users tu ON l.target_user_id = tu.id
-                WHERE l.action = 'out' " . buildDateCondition('l.timestamp', $filter_date, $filter_month) . "
+                WHERE l.action = 'out' " . buildDateCondition('l.timestamp', $filter_date, $filter_month, 'out_') . "
                 ORDER BY timestamp DESC LIMIT 500";
 
         $stmt = $pdo->prepare($sql);
-        bindDateParams($stmt, $filter_date, $filter_month);
-        bindDateParams($stmt, $filter_date, $filter_month);
+        bindDateParams($stmt, $filter_date, $filter_month, 'in_');
+        bindDateParams($stmt, $filter_date, $filter_month, 'out_');
         $stmt->execute();
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
