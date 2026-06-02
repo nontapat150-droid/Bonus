@@ -978,7 +978,15 @@ function showJobPopup(job, color) {
                         ${detailItem('วันที่', job.plan_arrival_date)}
                         ${detailItem('ทีม', job.team_name || 'รอจ่าย')}
                         ${detailItem('โทรศัพท์', job.phone)}
-                        ${detailItem('พิกัด', coords ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}` : 'ไม่มีพิกัด')}
+                        <div class="rounded-lg bg-slate-50 border border-slate-100 p-2 min-w-0 col-span-2 sm:col-span-1">
+                            <div class="flex justify-between items-center mb-1">
+                                <div class="text-[9px] font-black text-slate-400 uppercase tracking-wide">พิกัด</div>
+                                <button type="button" onclick="editJobCoords(${job.id}, '${coords ? coords.lat : ''}', '${coords ? coords.lng : ''}')" class="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 transition-colors">
+                                    <i data-lucide="edit-3" class="w-3 h-3 inline-block mr-0.5"></i>แก้ไข
+                                </button>
+                            </div>
+                            <div class="text-[11px] font-bold text-slate-700 break-words">${coords ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}` : 'ไม่มีพิกัด'}</div>
+                        </div>
                         ${detailItem('แพ็กเกจ', job.package)}
                         ${detailItem('สินค้า', job.product)}
                         ${detailItem('Order No.', job.order_no)}
@@ -1014,6 +1022,69 @@ function showJobPopup(job, color) {
     }).then((result) => {
         if (result.isConfirmed && gmapsLink) window.open(gmapsLink, '_blank');
     });
+}
+
+window.editJobCoords = async function(jobId, currentLat, currentLng) {
+    Swal.close();
+    const { value: formValues } = await Swal.fire({
+        title: 'แก้ไขพิกัด (Lat / Lng)',
+        html:
+            `<div class="space-y-3 text-left">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ละติจูด (Latitude)</label>
+                    <input id="swal-input-lat" type="number" step="any" class="input !py-2 !px-3 text-sm font-bold w-full" value="${currentLat || ''}">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ลองจิจูด (Longitude)</label>
+                    <input id="swal-input-lng" type="number" step="any" class="input !py-2 !px-3 text-sm font-bold w-full" value="${currentLng || ''}">
+                </div>
+            </div>`,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'บันทึกพิกัด',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#4f46e5',
+        customClass: {
+            popup: 'rounded-2xl p-4 shadow-xl z-[9999]',
+            confirmButton: 'rounded-lg px-4 py-2 text-xs font-bold w-full mt-2',
+            cancelButton: 'rounded-lg px-4 py-2 text-xs font-bold w-full mt-2',
+            actions: 'flex-col w-full px-2'
+        },
+        preConfirm: () => {
+            return {
+                lat: document.getElementById('swal-input-lat').value,
+                lng: document.getElementById('swal-input-lng').value
+            }
+        }
+    });
+
+    if (formValues) {
+        showLoader('อัปเดตพิกัด...');
+        try {
+            const res = await fetch('api/dispatch/update_job_coords.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ job_id: jobId, lat: formValues.lat, lng: formValues.lng })
+            });
+            const data = await res.json();
+            if (data.success) {
+                Swal.fire({
+                    title: 'สำเร็จ',
+                    text: 'อัปเดตพิกัดเรียบร้อยแล้ว',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                loadJobs();
+            } else {
+                Swal.fire('ข้อผิดพลาด', data.error, 'error');
+            }
+        } catch (e) {
+            Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
+        } finally {
+            hideLoader();
+        }
+    }
 }
 
 window.reassignJob = async function(jobId) {
