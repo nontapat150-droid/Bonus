@@ -65,6 +65,19 @@ if ($page === 'home') {
             $pdo->exec("ALTER TABLE inventory_items MODIFY COLUMN `status` enum('in_stock','outbound','used') NOT NULL DEFAULT 'in_stock'");
             $pdo->exec("ALTER TABLE inventory_logs MODIFY COLUMN `action` enum('in','out','transfer','used') NOT NULL");
             
+            // เพิ่มคอลัมน์ user_id ถ้ายังไม่มี สำหรับบันทึกช่างที่กดใช้
+            $chk3 = $pdo->prepare("SHOW COLUMNS FROM inventory_logs LIKE 'user_id'");
+            $chk3->execute();
+            if (!$chk3->fetch()) {
+                $pdo->exec("ALTER TABLE inventory_logs ADD COLUMN `user_id` INT DEFAULT NULL AFTER `target_user_id`");
+            }
+            
+            $chk4 = $pdo->prepare("SHOW COLUMNS FROM inventory_consumable_logs LIKE 'user_id'");
+            $chk4->execute();
+            if (!$chk4->fetch()) {
+                $pdo->exec("ALTER TABLE inventory_consumable_logs ADD COLUMN `user_id` INT DEFAULT NULL AFTER `target_user_id`");
+            }
+            
         } catch (Exception $e) { /* ignore migration errors silently */ }
 
         // 1. ลบประกาศที่หมดอายุอัตโนมัติ
