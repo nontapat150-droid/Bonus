@@ -34,11 +34,11 @@ function hasValue(value) {
 
 function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
+        '&': '&',
+        '<': '<',
+        '>': '>',
+        '"': '"',
+        "'": '''
     }[char]));
 }
 
@@ -241,25 +241,22 @@ function hideLoader() {
     }
 }
 
+// 🌟 เพิ่มระบบดักจับ Error ที่สมบูรณ์
 async function loadJobs() {
     showLoader('ซิงค์ข้อมูล...');
     try {
-        // 1. ดึงข้อมูลจาก API
         const res = await fetch('api/dispatch/get_jobs.php?_=' + new Date().getTime());
-        
-        // 🌟 2. เปลี่ยนมารับเป็น Text ก่อน เพื่อสแกนหา Error (ถ้าเซิร์ฟเวอร์พังมันจะส่งเป็น HTML)
         const text = await res.text(); 
         
         let data;
         try {
-            data = JSON.parse(text); // ลองแปลงเป็น JSON
+            data = JSON.parse(text); 
         } catch(parseErr) {
             console.error("เซิร์ฟเวอร์ไม่ได้ส่งกลับมาเป็น JSON. ข้อความที่ได้คือ:", text);
             Swal.fire('ระบบขัดข้อง', 'เซิร์ฟเวอร์ส่งข้อมูลผิดรูปแบบ (กรุณากด F12 ดู Console เพื่อดูสาเหตุ)', 'error');
             return;
         }
 
-        // 3. ถ้าทำงานสำเร็จ วาดหน้าจอตามปกติ
         if (data.success) {
             try {
                 allJobs = data.data || [];
@@ -281,7 +278,6 @@ async function loadJobs() {
                 Swal.fire('ข้อผิดพลาดหน้าเว็บ', 'เกิดปัญหาตอนสร้างหน้าจอ: ' + uiErr.message, 'error');
             }
         } else {
-            // 🌟 4. ตรงนี้แหละที่หายไป! ถ้าฐานข้อมูลมีปัญหา ต้องโชว์แจ้งเตือนออกมาให้เห็น
             Swal.fire('เซิร์ฟเวอร์แจ้งเตือน', data.error || 'ดึงข้อมูลไม่สำเร็จ', 'warning');
         }
 
@@ -534,7 +530,7 @@ function renderUI() {
     setText('unassignedCountBadgeMain', unassignedCount);
 
     renderJobList(container, filteredJobs);
-    renderMapJobList(mapJobs);
+    renderMapJobList(mapJobs); // เรียกใช้งานฟังก์ชันที่เคยมองไม่เห็นตรงนี้ครับ
 
     try { updateMapMarkers(mapJobs); } catch (e) { console.warn(e); }
     updateSelectionUI();
@@ -616,6 +612,71 @@ function renderJobList(container, filteredJobs) {
     syncVisibleSelection(visibleJobs);
 }
 
+// 🌟 นำฟังก์ชันที่หายไปกลับมาตรงนี้แล้วครับ! 🌟
+function renderMapJobList(mapJobs) {
+    const container = document.getElementById('mapJobList');
+    if (!container) return;
+
+    setText('mapAssignedCountBadge', mapJobs.length);
+
+    if (mapJobs.length === 0) {
+        container.innerHTML = `
+            <div class="p-4 text-center">
+                <div class="w-10 h-10 mx-auto rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center mb-2"><i data-lucide="map-pin-off" class="w-5 h-5"></i></div>
+                <div class="text-xs font-black text-slate-500">ยังไม่มีงานที่มอบหมายพร้อมพิกัด</div>
+                <div class="text-[10px] font-bold text-slate-400 mt-1">เลือกทีม/วันที่อื่น หรือกดจ่ายงานอัตโนมัติก่อน</div>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = mapJobs.map((job, index) => {
+        const teamIdx = currentTeams.findIndex(t => t.id == job.team_id);
+        const color = job.team_id ? getColor(teamIdx >= 0 ? teamIdx : 0) : '#64748b';
+        const coords = getJobLatLng(job);
+        const jobStatus = (job.status || '').toLowerCase();
+        const isDone = jobStatus === 'completed' || jobStatus === 'failed';
+
+        let actionButtons = '';
+        if (!isDone && job.team_id) {
+            actionButtons = `
+            <div class="grid grid-cols-2 gap-1.5 mt-2 pt-2 border-t border-slate-100">
+                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
+                    <i data-lucide="check-circle" class="w-3 h-3"></i>ปิดงาน
+                </button>
+                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-rose-500 text-white hover:bg-rose-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'failed')">
+                    <i data-lucide="x-circle" class="w-3 h-3"></i>ไม่สำเร็จ
+                </button>
+            </div>`;
+        } else if (jobStatus === 'failed') {
+            actionButtons = `
+            <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
+                <span class="rounded px-2 py-1 text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-100 text-center">ไม่สำเร็จ</span>
+                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors shadow-sm" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
+                    <i data-lucide="check-circle" class="w-3 h-3"></i>แก้เป็นสำเร็จ
+                </button>
+            </div>`;
+        }
+
+        return `
+            <div class="p-3 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors space-y-2">
+                <button type="button" class="w-full text-left" onclick="showMapJobDetail('${escapeHTML(job.id)}')">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-lg text-white flex items-center justify-center text-xs font-black shrink-0" style="background:${color};">${displayValue(job.seq || index + 1)}</div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="text-xs font-black text-slate-900 truncate">${displayValue(job.access_no, 'N/A')}</div>
+                                <div class="text-[10px] font-black whitespace-nowrap" style="color:${color};">${displayValue(job.team_name, 'ทีม')}</div>
+                            </div>
+                            <div class="text-[11px] font-bold text-slate-600 truncate mt-1">${displayValue(job.customer, 'ไม่ระบุลูกค้า')}</div>
+                            <div class="text-[10px] font-bold text-slate-400 truncate mt-1">${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}</div>
+                        </div>
+                    </div>
+                </button>
+                ${actionButtons}
+            </div>`;
+    }).join('');
+}
+
 function syncVisibleSelection(visibleJobs) {
     const selectAll = document.getElementById('selectAllJobs');
     if (selectAll) {
@@ -634,7 +695,6 @@ function detailItem(label, value) {
         </div>`;
 }
 
-// Global scope mapping for external triggers
 function showJobPopupById(jobId) {
     const job = allJobs.find(j => String(j.id) === String(jobId));
     if (!job) return;
