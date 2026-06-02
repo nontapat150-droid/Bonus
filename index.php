@@ -1404,8 +1404,13 @@ if ($page === 'home') {
                         initEl.classList.remove('hidden');
                         initEl.textContent = (u.full_name || 'U').substring(0, 2).toUpperCase();
                     }
+                } else {
+                    Swal.fire({icon: 'error', title: 'โหลดโปรไฟล์ไม่สำเร็จ', text: data.message || data.error || 'Unknown error'});
                 }
-            } catch(e) { console.error('Failed to fetch profile', e); }
+            } catch(e) { 
+                console.error('Failed to fetch profile', e);
+                Swal.fire({icon: 'error', title: 'การเชื่อมต่อผิดพลาด', text: 'ไม่สามารถโหลดข้อมูลโปรไฟล์ได้: ' + e.message});
+            }
         }
         
         const saveImageBtn = document.getElementById('upmSaveImageBtn');
