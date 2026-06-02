@@ -1,30 +1,239 @@
-<div class="space-y-6">
-  <section class="bg-slate-50 p-6 rounded-3xl border border-slate-200">
-    <h1 class="text-3xl font-black text-slate-900">คู่มือสำหรับช่างเทคนิค</h1>
-    <p class="mt-3 text-slate-600">คู่มือนี้เป็นเวอร์ชัน HTML ที่ผู้ดูแลระบบสูงสุดสามารถแก้ไขได้จากหน้า <strong>ตั้งค่าระบบเว็บไซต์</strong>.</p>
-  </section>
+<style>
+.g-wrap{font-family:'Inter','Sarabun',sans-serif;background:#F0F2FA;padding:0;margin:0;}
+.g-hero{background:linear-gradient(135deg,#064e3b 0%,#059669 50%,#10b981 100%);padding:28px 24px;color:#fff;position:relative;overflow:hidden;margin-bottom:0;}
+.g-hero::before{content:'';position:absolute;top:-50px;right:-30px;width:180px;height:180px;background:rgba(255,255,255,0.07);border-radius:50%;}
+.g-hero::after{content:'';position:absolute;bottom:-60px;right:80px;width:120px;height:120px;background:rgba(255,255,255,0.05);border-radius:50%;}
+.g-hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.35);border-radius:999px;padding:4px 14px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+.g-hero h1{font-size:22px;font-weight:900;margin:0 0 6px;line-height:1.25;}
+.g-hero p{font-size:13px;opacity:0.88;margin:0;line-height:1.65;}
+.g-access{display:flex;flex-wrap:wrap;gap:8px;padding:16px 24px;background:rgba(5,150,105,0.07);border-bottom:1px solid #E2E5F0;}
+.g-access-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+.g-access-badge.has{background:#D1FAE5;color:#065F46;}
+.g-access-badge.no{background:#FEE2E2;color:#991B1B;text-decoration:line-through;opacity:0.65;}
+.g-body{padding:20px 24px;display:flex;flex-direction:column;gap:12px;}
+.g-card{background:#fff;border-radius:14px;border:1px solid #E2E5F0;box-shadow:0 1px 2px rgba(10,10,30,.04),0 2px 8px rgba(10,10,30,.05);overflow:hidden;}
+.g-card-head{display:flex;align-items:center;gap:12px;padding:15px 18px;background:#fff;border-bottom:1px solid #F0F2FA;}
+.g-num{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 8px rgba(5,150,105,0.35);}
+.g-card-title{font-size:15px;font-weight:700;color:#0D0D1A;margin:0;flex:1;}
+.g-icon-tag{font-size:14px;margin-left:auto;}
+.g-card-body{padding:16px 18px;background:#FAFBFF;}
+.g-card-body p{color:#4B4F6A;font-size:13.5px;line-height:1.75;margin:0 0 10px;}
+.g-card-body p:last-child{margin-bottom:0;}
+.g-steps{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px;}
+.g-steps li{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:#4B4F6A;line-height:1.65;}
+.g-step-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:6px;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px;}
+.g-step-badge.num{background:#D1FAE5;color:#065F46;}
+.g-step-badge.act{background:#D1FAE5;color:#065F46;padding:0 7px;min-width:auto;}
+.g-warn{display:flex;gap:9px;align-items:flex-start;background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid #F59E0B;border-radius:10px;padding:11px 13px;margin-top:10px;}
+.g-warn p{font-size:12.5px;color:#78350F;margin:0;line-height:1.6;}
+.g-tip{display:flex;gap:9px;align-items:flex-start;background:#ECFDF5;border:1px solid #A7F3D0;border-left:4px solid #10B981;border-radius:10px;padding:11px 13px;margin-top:10px;}
+.g-tip p{font-size:12.5px;color:#065F46;margin:0;line-height:1.6;}
+.g-info{display:flex;gap:9px;align-items:flex-start;background:#EFF6FF;border:1px solid #BFDBFE;border-left:4px solid #3B82F6;border-radius:10px;padding:11px 13px;margin-top:10px;}
+.g-info p{font-size:12.5px;color:#1E40AF;margin:0;line-height:1.6;}
+.g-highlight{display:inline;background:linear-gradient(90deg,rgba(16,185,129,0.2),rgba(52,211,153,0.1));border-radius:4px;padding:1px 6px;color:#065F46;font-weight:700;font-size:0.92em;}
+.g-scope-box{background:linear-gradient(135deg,#ECFDF5,#D1FAE5);border:1px solid #A7F3D0;border-radius:12px;padding:14px 16px;margin-bottom:4px;}
+.g-scope-box p{font-size:13px;color:#065F46;margin:0;line-height:1.65;}
+.g-scope-box strong{color:#064e3b;}
+.g-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:10px 0;}
+.g-flow-step{background:#D1FAE5;color:#065F46;border-radius:8px;padding:5px 12px;font-size:12.5px;font-weight:700;white-space:nowrap;}
+.g-flow-arrow{color:#9499B5;font-size:14px;flex-shrink:0;}
+.g-faq-section{margin-top:8px;}
+.g-faq-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800;color:#0D0D1A;margin:0 0 12px;}
+.g-faq-title .faq-badge{background:#FEF2F2;color:#DC2626;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700;}
+.g-faq-table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border-radius:14px;border:1px solid #E2E5F0;overflow:hidden;box-shadow:0 1px 2px rgba(10,10,30,.04),0 2px 8px rgba(10,10,30,.05);}
+.g-faq-table thead tr{background:#F7F8FC;}
+.g-faq-table th{padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9499B5;border-bottom:1px solid #E2E5F0;text-align:left;}
+.g-faq-table td{padding:12px 16px;font-size:13px;color:#4B4F6A;border-bottom:1px solid #F0F2FA;vertical-align:top;line-height:1.65;}
+.g-faq-table tbody tr:last-child td{border-bottom:none;}
+.g-faq-table tbody tr:hover td{background:#ECFDF5;}
+.g-faq-table td:first-child{font-weight:600;color:#0D0D1A;width:42%;}
+.g-badge-freq{display:inline-block;background:#FEF2F2;color:#991B1B;border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;margin-left:5px;}
+.g-important{background:linear-gradient(135deg,#FEF3C7,#FDE68A);border:1px solid #F59E0B;border-radius:12px;padding:14px 16px;display:flex;gap:10px;align-items:flex-start;margin-top:4px;}
+.g-important p{font-size:13px;color:#78350F;margin:0;line-height:1.65;}
+.g-important strong{color:#451A03;}
+@media(max-width:600px){.g-body{padding:14px 14px;}.g-faq-table td:first-child{width:auto;}.g-hero{padding:22px 18px;}.g-access{padding:12px 16px;}.g-flow{gap:4px;}.g-flow-step{font-size:11.5px;padding:4px 10px;}}
+</style>
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">1. เข้าสู่ระบบ</h2>
-    <p class="mt-3 text-slate-700">ล็อกอินด้วยบัญชีช่างเทคนิคเพื่อเข้าถึงหน้าระบบเช็คอิน น้ำมัน และ Dispatch (หากมีสิทธิ์).</p>
-  </section>
+<div class="g-wrap">
+  <div class="g-hero">
+    <div class="g-hero-badge">🔧 ช่างเทคนิค</div>
+    <h1>คู่มือสำหรับช่างเทคนิค</h1>
+    <p>คู่มือสำหรับการทำงานภาคสนาม — เช็คอิน บันทึกน้ำมัน และดูงาน Dispatch</p>
+  </div>
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">2. ระบบเช็คอิน</h2>
-    <ul class="mt-4 list-disc list-inside space-y-2 text-slate-700">
-      <li>เลือกเมนู <strong>ระบบเช็คอิน</strong></li>
-      <li>เช็คอินเมื่อเริ่มงาน</li>
-      <li>เช็คเอาต์เมื่อเสร็จงาน</li>
-    </ul>
-  </section>
+  <div class="g-access">
+    <span class="g-access-badge has">✅ หน้าแรก</span>
+    <span class="g-access-badge has">✅ ระบบเช็คอิน</span>
+    <span class="g-access-badge has">✅ บันทึกน้ำมัน</span>
+    <span class="g-access-badge has">✅ ดูงาน Dispatch</span>
+    <span class="g-access-badge has">✅ ประวัติปิดงาน</span>
+    <span class="g-access-badge no">🚫 คลังสินค้า</span>
+    <span class="g-access-badge no">🚫 จัดการผู้ใช้</span>
+    <span class="g-access-badge no">🚫 ตั้งค่าระบบ</span>
+  </div>
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">3. น้ำมันและยานพาหนะ</h2>
-    <p class="mt-3 text-slate-700">ใช้หน้าส่วนนี้เพื่อตรวจสอบการเติมน้ำมัน และบันทึกรายการย้อนหลัง.</p>
-  </section>
+  <div class="g-body">
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">4. ระบบจัดส่ง</h2>
-    <p class="mt-3 text-slate-700">ถ้ามีเมนู Dispatch ให้ตรวจสอบงานที่ได้รับและตำแหน่งบนแผนที่ก่อนออกปฏิบัติงาน.</p>
-  </section>
+    <div class="g-scope-box">
+      <p>🔧 <strong>บทบาทของคุณ:</strong> ช่างเทคนิคมีสิทธิ์ใช้งาน <strong>เฉพาะส่วนที่เกี่ยวกับการทำงานภาคสนาม</strong> ได้แก่ เช็คอิน บันทึกน้ำมัน และดูสถานะงาน Dispatch</p>
+    </div>
+
+    <!-- 1. เข้าสู่ระบบ -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">1</div><p class="g-card-title">เข้าสู่ระบบ</p><span class="g-icon-tag">🔐</span></div>
+      <div class="g-card-body">
+        <p>เปิดเว็บเบราว์เซอร์ → เข้า URL ของระบบ → กรอก <span class="g-highlight">ชื่อผู้ใช้</span> และ <span class="g-highlight">รหัสผ่าน</span> → กดปุ่ม <strong>"เข้าสู่ระบบ"</strong></p>
+        <p>หลังล็อกอิน คุณจะเห็นเฉพาะเมนูที่เกี่ยวกับการทำงานของช่างเทคนิค เมนูอื่นจะไม่แสดงขึ้น</p>
+        <div class="g-tip"><span>💡</span><p>ถ้ากรอกรหัสแล้วเข้าไม่ได้ ตรวจสอบว่า <strong>Caps Lock</strong> ติดอยู่หรือเปล่า ถ้าลืมรหัสให้ติดต่อ Admin</p></div>
+      </div>
+    </div>
+
+    <!-- 2. เช็คอิน -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">2</div><p class="g-card-title">การเช็คอินเริ่มงาน</p><span class="g-icon-tag">✅</span></div>
+      <div class="g-card-body">
+        <p>คลิกเมนู <span class="g-highlight">ระบบเช็คอิน</span> เพื่อบันทึกการเริ่มงานประจำวัน ต้องทำทุกวันก่อนเริ่มทำงาน</p>
+
+        <div class="g-flow">
+          <span class="g-flow-step">เปิดเมนูเช็คอิน</span>
+          <span class="g-flow-arrow">→</span>
+          <span class="g-flow-step">กดปุ่ม "เช็คอิน"</span>
+          <span class="g-flow-arrow">→</span>
+          <span class="g-flow-step">ยืนยันตำแหน่ง</span>
+          <span class="g-flow-arrow">→</span>
+          <span class="g-flow-step">เริ่มทำงานได้</span>
+        </div>
+
+        <ul class="g-steps">
+          <li><span class="g-step-badge num">1</span><span>คลิกเมนู <strong>"ระบบเช็คอิน"</strong> จากแถบเมนูซ้ายมือ</span></li>
+          <li><span class="g-step-badge num">2</span><span>กดปุ่ม <strong>"เช็คอิน"</strong> หรือ <strong>"เริ่มงาน"</strong> ที่หน้าจอ</span></li>
+          <li><span class="g-step-badge num">3</span><span>ระบบอาจขอตำแหน่ง GPS → กด <strong>"อนุญาต"</strong> เพื่อบันทึกตำแหน่ง</span></li>
+          <li><span class="g-step-badge num">4</span><span>สถานะจะเปลี่ยนเป็น <strong>"กำลังทำงาน"</strong> สีเขียว</span></li>
+        </ul>
+        <div class="g-warn"><span>⚠️</span><p>ต้องเช็คอิน <strong>ก่อนเริ่มทำงานทุกวัน</strong> — ถ้าลืมเช็คอิน ให้แจ้ง Admin เพื่อบันทึกให้</p></div>
+      </div>
+    </div>
+
+    <!-- 3. เช็คเอาต์ -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">3</div><p class="g-card-title">การเช็คเอาต์เลิกงาน</p><span class="g-icon-tag">🏁</span></div>
+      <div class="g-card-body">
+        <p>เมื่อเลิกงาน ต้องเช็คเอาต์ทุกครั้งเพื่อบันทึกเวลาออกงาน</p>
+
+        <div class="g-flow">
+          <span class="g-flow-step">เปิดเมนูเช็คอิน</span>
+          <span class="g-flow-arrow">→</span>
+          <span class="g-flow-step">กดปุ่ม "เช็คเอาต์"</span>
+          <span class="g-flow-arrow">→</span>
+          <span class="g-flow-step">ยืนยัน</span>
+          <span class="g-flow-arrow">→</span>
+          <span class="g-flow-step">เลิกงานสำเร็จ</span>
+        </div>
+
+        <ul class="g-steps">
+          <li><span class="g-step-badge num">1</span><span>กลับเข้าเมนู <strong>"ระบบเช็คอิน"</strong></span></li>
+          <li><span class="g-step-badge num">2</span><span>กดปุ่ม <strong>"เช็คเอาต์"</strong> หรือ <strong>"จบงาน"</strong></span></li>
+          <li><span class="g-step-badge num">3</span><span>กด <strong>"ยืนยัน"</strong> ในกล่องข้อความที่ขึ้นมา</span></li>
+          <li><span class="g-step-badge num">4</span><span>สถานะจะเปลี่ยนเป็น <strong>"เลิกงานแล้ว"</strong></span></li>
+        </ul>
+        <div class="g-tip"><span>✅</span><p>ระบบจะบันทึกเวลาเช็คอินและเช็คเอาต์ไว้อัตโนมัติ ไม่ต้องจดเอง</p></div>
+      </div>
+    </div>
+
+    <!-- 4. บันทึกน้ำมัน -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">4</div><p class="g-card-title">บันทึกข้อมูลน้ำมัน</p><span class="g-icon-tag">⛽</span></div>
+      <div class="g-card-body">
+        <p>ทุกครั้งที่เติมน้ำมัน ต้องบันทึกข้อมูลเข้าระบบทันที คลิกเมนู <span class="g-highlight">น้ำมันและยานพาหนะ</span></p>
+
+        <p><strong>ขั้นตอนการบันทึก:</strong></p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge num">1</span><span>คลิกเมนู <strong>"น้ำมันและยานพาหนะ"</strong></span></li>
+          <li><span class="g-step-badge num">2</span><span>กดปุ่ม <strong>"+ เพิ่มข้อมูล"</strong> หรือ <strong>"บันทึกน้ำมัน"</strong></span></li>
+          <li><span class="g-step-badge num">3</span><span>กรอกข้อมูลให้ครบ:
+            <ul style="margin:6px 0 0 16px;padding:0;list-style:disc;color:#4B4F6A;">
+              <li>วันที่</li>
+              <li>เลือกรถ/ทีม</li>
+              <li>จำนวนลิตรที่เติม</li>
+              <li>เลขไมล์ปัจจุบัน (km)</li>
+              <li>ราคาต่อลิตร</li>
+            </ul>
+          </span></li>
+          <li><span class="g-step-badge num">4</span><span>กดปุ่ม <strong>"บันทึก"</strong> ระบบจะคำนวณค่าใช้จ่ายและ km/l ให้อัตโนมัติ</span></li>
+        </ul>
+        <div class="g-important"><span>📌</span><p><strong>สำคัญ:</strong> กรอก <strong>เลขไมล์ให้ถูกต้อง</strong> ทุกครั้ง เพราะระบบใช้คำนวณ km/l หากเลขผิดจะทำให้รายงานผิดพลาด</p></div>
+      </div>
+    </div>
+
+    <!-- 5. ดูงาน Dispatch -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">5</div><p class="g-card-title">ดูงาน Dispatch</p><span class="g-icon-tag">🗺️</span></div>
+      <div class="g-card-body">
+        <p>คลิกเมนู <span class="g-highlight">ระบบจัดส่งอัจฉริยะ</span> เพื่อดูรายการงานที่ได้รับมอบหมายสำหรับทีมของคุณ</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">📋 รายการ</span><span>ดูรายการงานและรายละเอียดของแต่ละงาน</span></li>
+          <li><span class="g-step-badge act">📍 แผนที่</span><span>กดปุ่ม <strong>"ดูแผนที่"</strong> หรือกดที่พิน 📍 เพื่อดูตำแหน่งของงานบนแผนที่</span></li>
+          <li><span class="g-step-badge act">📊 สถานะ</span><span>ดูสถานะงานปัจจุบัน: รอดำเนินการ / กำลังทำ / เสร็จสิ้น</span></li>
+        </ul>
+        <div class="g-info"><span>ℹ️</span><p>ช่างเทคนิคสามารถ <strong>ดู</strong> งานได้ แต่การเพิ่ม แก้ไข หรือจ่ายงานต้องทำโดย Admin หรือ Super Admin</p></div>
+      </div>
+    </div>
+
+    <!-- 6. ประวัติปิดงาน -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">6</div><p class="g-card-title">ดูประวัติปิดงาน</p><span class="g-icon-tag">📜</span></div>
+      <div class="g-card-body">
+        <p>คลิกเมนู <span class="g-highlight">ประวัติปิดงาน</span> เพื่อดูรายการงานที่เสร็จสิ้นแล้วของทีมคุณ สามารถกรองด้วยช่วงวันที่ได้</p>
+        <div class="g-tip"><span>📋</span><p>ใช้ประวัติปิดงานเพื่อ <strong>ยืนยันกับ Admin</strong> ว่างานที่ทำเสร็จแล้วถูกบันทึกครบถ้วน</p></div>
+      </div>
+    </div>
+
+    <!-- 7. ออกจากระบบ -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">7</div><p class="g-card-title">ออกจากระบบ</p><span class="g-icon-tag">🚪</span></div>
+      <div class="g-card-body">
+        <p>กดชื่อหรือปุ่ม Logout ที่มุมซ้ายล่างของเมนู หรือกดเมนู <strong>"ออกจากระบบ"</strong> ทุกครั้งหลังเลิกงาน</p>
+        <div class="g-warn"><span>⚠️</span><p>โดยเฉพาะถ้าใช้โทรศัพท์ส่วนกลาง ต้อง <strong>logout ทุกครั้ง</strong> เพื่อป้องกันคนอื่นเข้าใช้บัญชีของคุณ</p></div>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="g-faq-section">
+      <div class="g-faq-title">🆘 ปัญหาที่พบบ่อย <span class="faq-badge">แก้ได้เอง</span></div>
+      <table class="g-faq-table">
+        <thead><tr><th>อาการที่พบ</th><th>วิธีแก้ไข</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>เข้าสู่ระบบไม่ได้ <span class="g-badge-freq">พบบ่อย</span></td>
+            <td>ตรวจสอบ Caps Lock และช่องว่างในชื่อผู้ใช้ ถ้าลืมรหัสผ่านให้ติดต่อ Admin เพื่อรีเซ็ต</td>
+          </tr>
+          <tr>
+            <td>กดเช็คอินแล้วไม่บันทึก <span class="g-badge-freq">พบบ่อย</span></td>
+            <td>ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต รีเฟรชหน้า (F5) แล้วลองใหม่ ถ้ายังไม่ได้แจ้ง Admin</td>
+          </tr>
+          <tr>
+            <td>ไม่เห็นงาน Dispatch ของตัวเอง</td>
+            <td>รีเฟรชหน้าหรือล็อกอินใหม่ ถ้ายังไม่เห็นแจ้ง Admin ว่างานยังไม่ได้รับการมอบหมาย</td>
+          </tr>
+          <tr>
+            <td>กรอกข้อมูลน้ำมันผิด</td>
+            <td>แจ้ง Admin เพื่อแก้ไขหรือลบรายการที่ผิด ช่างไม่สามารถแก้ไขรายการที่บันทึกแล้วได้</td>
+          </tr>
+          <tr>
+            <td>หน้าจอค้างหรือโหลดช้า <span class="g-badge-freq">พบบ่อย</span></td>
+            <td>ตรวจสอบสัญญาณอินเทอร์เน็ต รีเฟรชหน้า (F5 หรือ pull-to-refresh บนมือถือ)</td>
+          </tr>
+          <tr>
+            <td>ไม่เห็นเมนูบางอัน</td>
+            <td>ช่างเทคนิคไม่มีสิทธิ์ใช้คลังสินค้า จัดการผู้ใช้ หรือตั้งค่าระบบ — เป็นเรื่องปกติ</td>
+          </tr>
+          <tr>
+            <td>บันทึกน้ำมันแล้วตัวเลขผิด</td>
+            <td>แจ้ง Admin ทันที เพื่อแก้ไขก่อนที่รายงานจะถูกปิด ให้บอกวันที่ เลขไมล์ และจำนวนลิตรที่ถูกต้อง</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
 </div>

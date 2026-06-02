@@ -1,38 +1,185 @@
-<div class="space-y-6">
-  <section class="bg-slate-50 p-6 rounded-3xl border border-slate-200">
-    <h1 class="text-3xl font-black text-slate-900">คู่มือสำหรับผู้ใช้งานทั่วไป</h1>
-    <p class="mt-3 text-slate-600">คู่มือนี้เป็นเวอร์ชัน HTML ที่สามารถแก้ไขได้จากหน้า <strong>ตั้งค่าระบบเว็บไซต์</strong> โดยผู้ดูแลระบบสูงสุด.</p>
-  </section>
+<style>
+.g-wrap{font-family:'Inter','Sarabun',sans-serif;background:#F0F2FA;padding:0;margin:0;}
+.g-hero{background:linear-gradient(135deg,#92400e 0%,#d97706 50%,#f59e0b 100%);padding:28px 24px;color:#fff;position:relative;overflow:hidden;margin-bottom:0;}
+.g-hero::before{content:'';position:absolute;top:-50px;right:-30px;width:180px;height:180px;background:rgba(255,255,255,0.07);border-radius:50%;}
+.g-hero::after{content:'';position:absolute;bottom:-60px;right:80px;width:120px;height:120px;background:rgba(255,255,255,0.05);border-radius:50%;}
+.g-hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.35);border-radius:999px;padding:4px 14px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+.g-hero h1{font-size:22px;font-weight:900;margin:0 0 6px;line-height:1.25;}
+.g-hero p{font-size:13px;opacity:0.88;margin:0;line-height:1.65;}
+.g-access{display:flex;flex-wrap:wrap;gap:8px;padding:16px 24px;background:rgba(217,119,6,0.07);border-bottom:1px solid #E2E5F0;}
+.g-access-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+.g-access-badge.has{background:#D1FAE5;color:#065F46;}
+.g-access-badge.no{background:#FEE2E2;color:#991B1B;text-decoration:line-through;opacity:0.65;}
+.g-body{padding:20px 24px;display:flex;flex-direction:column;gap:12px;}
+.g-card{background:#fff;border-radius:14px;border:1px solid #E2E5F0;box-shadow:0 1px 2px rgba(10,10,30,.04),0 2px 8px rgba(10,10,30,.05);overflow:hidden;}
+.g-card-head{display:flex;align-items:center;gap:12px;padding:15px 18px;background:#fff;border-bottom:1px solid #F0F2FA;}
+.g-num{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 8px rgba(217,119,6,0.35);}
+.g-card-title{font-size:15px;font-weight:700;color:#0D0D1A;margin:0;flex:1;}
+.g-icon-tag{font-size:14px;margin-left:auto;}
+.g-card-body{padding:16px 18px;background:#FAFBFF;}
+.g-card-body p{color:#4B4F6A;font-size:13.5px;line-height:1.75;margin:0 0 10px;}
+.g-card-body p:last-child{margin-bottom:0;}
+.g-steps{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px;}
+.g-steps li{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:#4B4F6A;line-height:1.65;}
+.g-step-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:6px;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px;}
+.g-step-badge.num{background:#FEF3C7;color:#92400E;}
+.g-step-badge.act{background:#FEF3C7;color:#92400E;padding:0 7px;min-width:auto;}
+.g-warn{display:flex;gap:9px;align-items:flex-start;background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid #F59E0B;border-radius:10px;padding:11px 13px;margin-top:10px;}
+.g-warn p{font-size:12.5px;color:#78350F;margin:0;line-height:1.6;}
+.g-tip{display:flex;gap:9px;align-items:flex-start;background:#FFF7ED;border:1px solid #FED7AA;border-left:4px solid #F97316;border-radius:10px;padding:11px 13px;margin-top:10px;}
+.g-tip p{font-size:12.5px;color:#7C2D12;margin:0;line-height:1.6;}
+.g-info{display:flex;gap:9px;align-items:flex-start;background:#EFF6FF;border:1px solid #BFDBFE;border-left:4px solid #3B82F6;border-radius:10px;padding:11px 13px;margin-top:10px;}
+.g-info p{font-size:12.5px;color:#1E40AF;margin:0;line-height:1.6;}
+.g-highlight{display:inline;background:linear-gradient(90deg,rgba(245,158,11,0.2),rgba(251,191,36,0.1));border-radius:4px;padding:1px 6px;color:#92400E;font-weight:700;font-size:0.92em;}
+.g-scope-box{background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:1px solid #FDE68A;border-radius:12px;padding:14px 16px;margin-bottom:4px;}
+.g-scope-box p{font-size:13px;color:#78350F;margin:0;line-height:1.65;}
+.g-scope-box strong{color:#451A03;}
+.g-faq-section{margin-top:8px;}
+.g-faq-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800;color:#0D0D1A;margin:0 0 12px;}
+.g-faq-title .faq-badge{background:#FEF2F2;color:#DC2626;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700;}
+.g-faq-table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border-radius:14px;border:1px solid #E2E5F0;overflow:hidden;box-shadow:0 1px 2px rgba(10,10,30,.04),0 2px 8px rgba(10,10,30,.05);}
+.g-faq-table thead tr{background:#F7F8FC;}
+.g-faq-table th{padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9499B5;border-bottom:1px solid #E2E5F0;text-align:left;}
+.g-faq-table td{padding:12px 16px;font-size:13px;color:#4B4F6A;border-bottom:1px solid #F0F2FA;vertical-align:top;line-height:1.65;}
+.g-faq-table tbody tr:last-child td{border-bottom:none;}
+.g-faq-table tbody tr:hover td{background:#FFFBEB;}
+.g-faq-table td:first-child{font-weight:600;color:#0D0D1A;width:42%;}
+.g-badge-freq{display:inline-block;background:#FEF2F2;color:#991B1B;border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;margin-left:5px;}
+@media(max-width:600px){.g-body{padding:14px 14px;}.g-faq-table td:first-child{width:auto;}.g-hero{padding:22px 18px;}.g-access{padding:12px 16px;}}
+</style>
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">1. เข้าสู่ระบบ</h2>
-    <ol class="mt-4 list-decimal list-inside space-y-2 text-slate-700">
-      <li>เปิดเว็บเบราว์เซอร์</li>
-      <li>กรอกชื่อผู้ใช้และรหัสผ่าน</li>
-      <li>กดปุ่ม <strong>เข้าสู่ระบบ</strong></li>
-    </ol>
-    <p class="mt-3 text-slate-600">หาก ระบบแจ้งให้ล็อกอินใหม่ ให้ลองล็อกอินใหม่อีกครั้ง.</p>
-  </section>
+<div class="g-wrap">
+  <div class="g-hero">
+    <div class="g-hero-badge">📋 ผู้ใช้งานทั่วไป</div>
+    <h1>คู่มือสำหรับผู้ใช้งานทั่วไป</h1>
+    <p>คู่มือการใช้งานสำหรับพนักงาน Sales และผู้ใช้งานทั่วไป — เน้นหน้าแรก เช็คอิน และการดูข้อมูล</p>
+  </div>
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">2. เมนูหลัก</h2>
-    <ul class="mt-4 list-disc list-inside space-y-2 text-slate-700">
-      <li>หน้าแรก</li>
-      <li>ระบบเช็คอิน</li>
-      <li>น้ำมันและยานพาหนะ</li>
-      <li>ระบบจัดส่งอัจฉริยะ</li>
-      <li>ระบบคลังสินค้า (สำหรับ admin / super_admin)</li>
-      <li>จัดการผู้ใช้ (สำหรับ super_admin)</li>
-    </ul>
-  </section>
+  <div class="g-access">
+    <span class="g-access-badge has">✅ หน้าแรก</span>
+    <span class="g-access-badge has">✅ ระบบเช็คอิน</span>
+    <span class="g-access-badge no">🚫 น้ำมัน/ยานพาหนะ</span>
+    <span class="g-access-badge no">🚫 ระบบ Dispatch</span>
+    <span class="g-access-badge no">🚫 คลังสินค้า</span>
+    <span class="g-access-badge no">🚫 จัดการผู้ใช้</span>
+    <span class="g-access-badge no">🚫 ตั้งค่าระบบ</span>
+  </div>
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">3. การใช้งานที่ควรรู้</h2>
-    <p class="mt-3 text-slate-700">เมนูที่คุณเห็นจะขึ้นอยู่กับบทบาทของคุณ หากไม่เห็นเมนูใด แปลว่าไม่มีสิทธิ์ใช้งานสำหรับเมนูนั้น.</p>
-  </section>
+  <div class="g-body">
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">4. ออกจากระบบ</h2>
-    <p class="mt-3 text-slate-700">กดปุ่ม <strong>ออกจากระบบ</strong> และล็อกอินใหม่เมื่อจำเป็น.</p>
-  </section>
+    <div class="g-scope-box">
+      <p>📋 <strong>บทบาทของคุณ:</strong> ผู้ใช้งานทั่วไป (Sales/User) มีสิทธิ์ใช้งาน <strong>หน้าแรก</strong> และ <strong>ระบบเช็คอิน</strong> เท่านั้น เมนูอื่นๆ ไม่แสดงเพื่อความเหมาะสม</p>
+    </div>
+
+    <!-- 1. เข้าสู่ระบบ -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">1</div><p class="g-card-title">เข้าสู่ระบบ</p><span class="g-icon-tag">🔐</span></div>
+      <div class="g-card-body">
+        <p>เปิดเว็บเบราว์เซอร์ → เข้า URL ของระบบ → กรอก <span class="g-highlight">ชื่อผู้ใช้</span> และ <span class="g-highlight">รหัสผ่าน</span> → กดปุ่ม <strong>"เข้าสู่ระบบ"</strong></p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge num">1</span><span>เปิดเว็บเบราว์เซอร์ (Chrome, Edge, Safari)</span></li>
+          <li><span class="g-step-badge num">2</span><span>พิมพ์ URL ของระบบที่แอดมินแจ้งให้</span></li>
+          <li><span class="g-step-badge num">3</span><span>กรอก <strong>ชื่อผู้ใช้</strong> และ <strong>รหัสผ่าน</strong> ที่ได้รับ</span></li>
+          <li><span class="g-step-badge num">4</span><span>กดปุ่ม <strong>"เข้าสู่ระบบ"</strong></span></li>
+        </ul>
+        <div class="g-tip"><span>💡</span><p>ถ้าเข้าไม่ได้ ตรวจสอบ <strong>Caps Lock</strong> และช่องว่าง ถ้าลืมรหัสให้ติดต่อ Admin</p></div>
+      </div>
+    </div>
+
+    <!-- 2. หน้าแรก -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">2</div><p class="g-card-title">หน้าแรก (Dashboard)</p><span class="g-icon-tag">🏠</span></div>
+      <div class="g-card-body">
+        <p>เมื่อเข้าสู่ระบบแล้ว คุณจะเห็นหน้าแรกที่แสดงข้อมูลสรุปและเมนูด่วน</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">📢 ประกาศ</span><span>ถ้ามีประกาศจาก Admin จะมีป๊อปอัปหรือแถบวิ่งด้านบน อ่านให้ครบก่อนปิด</span></li>
+          <li><span class="g-step-badge act">🔔 แจ้งเตือน</span><span>กดปุ่มกระดิ่ง 🔔 มุมบนขวาเพื่อดูการแจ้งเตือนจาก Admin</span></li>
+          <li><span class="g-step-badge act">📋 เมนูด่วน</span><span>กดการ์ด <strong>"ระบบเช็คอิน"</strong> เพื่อไปยังหน้าเช็คอินโดยตรง</span></li>
+        </ul>
+        <div class="g-info"><span>ℹ️</span><p>ถ้าเห็นเมนูน้อยกว่าเพื่อนร่วมงาน ไม่ต้องตกใจ — แต่ละบทบาทเห็นเมนูต่างกันตามสิทธิ์</p></div>
+      </div>
+    </div>
+
+    <!-- 3. เช็คอิน -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">3</div><p class="g-card-title">การเช็คอินเริ่มงาน</p><span class="g-icon-tag">✅</span></div>
+      <div class="g-card-body">
+        <p>ต้องเช็คอินทุกวันก่อนเริ่มงาน คลิกเมนู <span class="g-highlight">ระบบเช็คอิน</span> จากแถบเมนูด้านซ้าย</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge num">1</span><span>คลิกเมนู <strong>"ระบบเช็คอิน"</strong></span></li>
+          <li><span class="g-step-badge num">2</span><span>กดปุ่ม <strong>"เช็คอิน"</strong> หรือ <strong>"เริ่มงาน"</strong></span></li>
+          <li><span class="g-step-badge num">3</span><span>ถ้าระบบขอตำแหน่ง GPS → กด <strong>"อนุญาต"</strong></span></li>
+          <li><span class="g-step-badge num">4</span><span>สถานะเปลี่ยนเป็น <strong>"กำลังทำงาน"</strong> สีเขียว = เช็คอินสำเร็จ</span></li>
+        </ul>
+        <div class="g-warn"><span>⚠️</span><p>ต้องเช็คอิน <strong>ก่อนเริ่มทำงานทุกวัน</strong> ถ้าลืมให้รีบแจ้ง Admin ทันที</p></div>
+      </div>
+    </div>
+
+    <!-- 4. เช็คเอาต์ -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">4</div><p class="g-card-title">การเช็คเอาต์เลิกงาน</p><span class="g-icon-tag">🏁</span></div>
+      <div class="g-card-body">
+        <p>เมื่อเลิกงานต้องเช็คเอาต์เพื่อบันทึกเวลาออกงานให้ครบถ้วน</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge num">1</span><span>กลับไปที่เมนู <strong>"ระบบเช็คอิน"</strong></span></li>
+          <li><span class="g-step-badge num">2</span><span>กดปุ่ม <strong>"เช็คเอาต์"</strong> หรือ <strong>"จบงาน"</strong></span></li>
+          <li><span class="g-step-badge num">3</span><span>กด <strong>"ยืนยัน"</strong> ในกล่องยืนยัน</span></li>
+          <li><span class="g-step-badge num">4</span><span>สถานะเปลี่ยนเป็น <strong>"เลิกงานแล้ว"</strong> = เสร็จสมบูรณ์</span></li>
+        </ul>
+        <div class="g-tip"><span>✅</span><p>ระบบจะบันทึกเวลาเข้า-ออกงานให้อัตโนมัติ ไม่ต้องจดเอง</p></div>
+      </div>
+    </div>
+
+    <!-- 5. การแจ้งเตือน -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">5</div><p class="g-card-title">ดูการแจ้งเตือน</p><span class="g-icon-tag">🔔</span></div>
+      <div class="g-card-body">
+        <p>กดปุ่มกระดิ่ง 🔔 ที่มุมบนขวาของหน้า เพื่อดูการแจ้งเตือนจาก Admin และระบบ</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">🔴 ดอท</span><span>ถ้ามีจุดแดงที่กระดิ่ง แสดงว่ามีแจ้งเตือนที่ยังไม่ได้อ่าน</span></li>
+          <li><span class="g-step-badge act">👁 อ่าน</span><span>กดกระดิ่งเพื่อเปิดดูรายการแจ้งเตือนทั้งหมด</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 6. ออกจากระบบ -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">6</div><p class="g-card-title">ออกจากระบบ</p><span class="g-icon-tag">🚪</span></div>
+      <div class="g-card-body">
+        <p>กดชื่อผู้ใช้ที่มุมซ้ายล่างของเมนู → กด <strong>"ออกจากระบบ"</strong> ทุกครั้งหลังเลิกงาน</p>
+        <div class="g-warn"><span>⚠️</span><p>ถ้าใช้คอมพิวเตอร์ส่วนกลาง ต้อง <strong>logout ทุกครั้ง</strong> เพื่อความปลอดภัย</p></div>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="g-faq-section">
+      <div class="g-faq-title">🆘 ปัญหาที่พบบ่อย <span class="faq-badge">แก้ได้เอง</span></div>
+      <table class="g-faq-table">
+        <thead><tr><th>อาการที่พบ</th><th>วิธีแก้ไข</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>เข้าสู่ระบบไม่ได้ <span class="g-badge-freq">พบบ่อย</span></td>
+            <td>ตรวจสอบ Caps Lock และช่องว่างในชื่อผู้ใช้ ถ้าลืมรหัสผ่านให้ติดต่อ Admin</td>
+          </tr>
+          <tr>
+            <td>กดเช็คอินแล้วไม่บันทึก <span class="g-badge-freq">พบบ่อย</span></td>
+            <td>ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต รีเฟรชหน้า (F5) แล้วลองใหม่ ถ้ายังไม่ได้แจ้ง Admin</td>
+          </tr>
+          <tr>
+            <td>ไม่เห็นเมนูบางอัน</td>
+            <td>ผู้ใช้ทั่วไปเห็นเฉพาะเมนูตามสิทธิ์ — เป็นเรื่องปกติ ถ้าคิดว่าขาดสิทธิ์ที่ควรได้ แจ้ง Admin</td>
+          </tr>
+          <tr>
+            <td>หน้าจอค้างหรือโหลดช้า</td>
+            <td>ตรวจสอบสัญญาณอินเทอร์เน็ต รีเฟรชหน้า หรือลองปิดแล้วเปิดเบราว์เซอร์ใหม่</td>
+          </tr>
+          <tr>
+            <td>ลืมเช็คอิน/เช็คเอาต์</td>
+            <td>แจ้ง Admin ทันทีพร้อมบอกเวลาที่ถูกต้อง เพื่อให้ Admin บันทึกให้</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
 </div>
