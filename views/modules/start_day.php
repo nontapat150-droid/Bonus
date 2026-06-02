@@ -109,10 +109,14 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                         <th class="px-6 py-4">เลข Non</th>
                         <th class="px-6 py-4 text-center">สถานะค่าแรกเข้า</th>
                         <th class="px-6 py-4 text-center">รูปถ่าย</th>
+                        <!-- เพิ่มคอลัมน์จัดการสำหรับ Super Admin -->
+                        <?php if (hasRole('super_admin')): ?>
+                        <th class="px-6 py-4 text-center">จัดการ</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody id="historyTableBody" class="block md:table-row-group divide-y divide-slate-100">
-                    <tr><td colspan="5" class="text-center py-8 text-slate-400">กำลังโหลดข้อมูล...</td></tr>
+                    <tr><td colspan="<?= hasRole('super_admin') ? '6' : '5' ?>" class="text-center py-8 text-slate-400">กำลังโหลดข้อมูล...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -120,6 +124,10 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 
 </div>
 
+<script>
+    // ส่งสิทธิ์ของผู้ใช้ไปให้ Javascript
+    window.USER_ROLE = '<?= $_SESSION['role'] ?? 'user' ?>';
+</script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="assets/js/common.js"></script>
 <script src="assets/js/start_day.js"></script>

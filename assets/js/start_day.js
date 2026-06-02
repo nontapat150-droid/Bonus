@@ -251,3 +251,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+// นำไปใส่ต่อท้ายใน <tr> ของการวาดข้อมูลตาราง
+let manageColumn = '';
+if (window.USER_ROLE === 'super_admin') {
+    manageColumn = `
+        <td class="px-6 py-4 text-center">
+            <button type="button" onclick="deleteStartDayRecord(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">
+                <i data-lucide="trash-2" class="w-4 h-4 inline-block"></i> ลบ
+            </button>
+        </td>
+    `;
+}
+// แล้วเอาตัวแปร ${manageColumn} ไปต่อท้าย <tr> ก่อนปิดแท็ก </tr>
