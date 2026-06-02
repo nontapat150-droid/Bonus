@@ -342,3 +342,120 @@ window.deleteStartDayRecord = async function(id) {
         }
     });
 };
+
+// ==========================================
+// 🌟 ระบบแก้ไขข้อมูล (รองรับทุกสิทธิ์)
+// ==========================================
+window.startDayRecords = []; // เก็บตัวแปรส่วนกลาง
+
+window.openEditStartDayModal = function(id) {
+    const record = window.startDayRecords.find(r => r.id == id);
+    if(!record) return;
+
+    document.getElementById('edit_sd_id').value = record.id;
+    document.getElementById('edit_sd_customer').value = record.customer_name;
+    document.getElementById('edit_sd_non').value = record.non_number;
+    document.getElementById('edit_sd_fee').value = record.has_initial_fee;
+    document.getElementById('edit_sd_images').value = '';
+
+    const role = window.USER_ROLE;
+    const canEditAll = (role === 'admin' || role === 'super_admin');
+    
+    const customerInput = document.getElementById('edit_sd_customer');
+    const nonInput = document.getElementById('edit_sd_non');
+    const feeInput = document.getElementById('edit_sd_fee');
+
+    // ถ้าไม่ใช่แอดมิน ให้ล็อกการแก้ไขข้อความ (ช่างแก้ได้แค่รูป)
+    if (!canEditAll) {
+        customerInput.readOnly = true;
+        nonInput.readOnly = true;
+        customerInput.classList.add('bg-slate-100', 'text-slate-400');
+        nonInput.classList.add('bg-slate-100', 'text-slate-400');
+        feeInput.disabled = true;
+        feeInput.classList.add('bg-slate-100', 'text-slate-400');
+    } else {
+        customerInput.readOnly = false;
+        nonInput.readOnly = false;
+        customerInput.classList.remove('bg-slate-100', 'text-slate-400');
+        nonInput.classList.remove('bg-slate-100', 'text-slate-400');
+        feeInput.disabled = false;
+        feeInput.classList.remove('bg-slate-100', 'text-slate-400');
+    }
+
+    document.getElementById('editStartDayModal').classList.remove('hidden');
+};
+
+window.closeEditStartDayModal = function() {
+    document.getElementById('editStartDayModal').classList.add('hidden');
+};
+
+// ย่อรูปภาพก่อนส่ง
+window.compressImageGlobal = async function(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                let canvas = document.createElement('canvas');
+                let ctx = canvas.getContext('2d');
+                const ratio = Math.min(1, 1280 / Math.max(img.width, img.height));
+                canvas.width = Math.round(img.width * ratio);
+                canvas.height = Math.round(img.height * ratio);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(blob => {
+                    resolve(new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
+                }, 'image/jpeg', 0.75);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+};
+
+document.getElementById('editStartDayForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const role = window.USER_ROLE;
+    const canEditAll = (role === 'admin' || role === 'super_admin');
+    const nonVal = document.getElementById('edit_sd_non').value.trim();
+    
+    if (canEditAll && nonVal.length !== 10) {
+        return Swal.fire('แจ้งเตือน', `เลข Non ต้องมี 10 ตัวพอดี (คุณกรอกมา ${nonVal.length} ตัว)`, 'warning');
+    }
+
+    const formData = new FormData(this);
+    // ถอดข้อมูลข้อความออกถ้าเป็นแค่ช่าง (กันแฮกยิง API เข้ามา)
+    if (!canEditAll) {
+        formData.delete('customer_name');
+        formData.delete('non_number');
+        formData.delete('has_initial_fee');
+    }
+
+    const fileInput = document.getElementById('edit_sd_images');
+    if (fileInput.files.length > 0) {
+        Swal.fire({ title: 'กำลังบีบอัดรูปภาพ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+        formData.delete('start_day_images[]');
+        for (let i = 0; i < fileInput.files.length; i++) {
+            let file = fileInput.files[i];
+            if (file.size > 500 * 1024) file = await window.compressImageGlobal(file);
+            formData.append('start_day_images[]', file);
+        }
+    }
+
+    Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    try {
+        const res = await fetch('api/start_day/edit.php', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire('สำเร็จ', 'บันทึกการแก้ไขเรียบร้อย', 'success');
+            closeEditStartDayModal();
+            // เช็คว่าอยู่หน้าไหน แล้วโหลดตารางนั้นใหม่
+            if (typeof applyFilter === 'function' && document.getElementById('filterDate')) applyFilter();
+            else if (typeof loadHistory === 'function') loadHistory();
+        } else {
+            Swal.fire('ข้อผิดพลาด', data.error, 'error');
+        }
+    } catch (err) {
+        Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว', 'error');
+    }
+});
