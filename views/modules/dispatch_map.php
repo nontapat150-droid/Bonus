@@ -109,6 +109,9 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             <button onclick="document.getElementById('jobExcelFile').click()" title="นำเข้าไฟล์ Excel" class="bg-[var(--c-surface-2)] hover:bg-[var(--c-border)] text-[var(--c-text-2)] px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all border border-[var(--c-border)]">
                 <i data-lucide="download" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>นำเข้า</span>
             </button>
+            <button id="addManualJobBtn" title="สร้างงานใหม่" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all">
+                <i data-lucide="plus" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>สร้างงาน</span>
+            </button>
             <button id="exportExcelBtn" title="ส่งออกไฟล์ Excel" class="bg-[var(--c-info-bg)] text-[var(--c-info)] hover:opacity-80 px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all border border-[var(--c-info-bg)]">
                 <i data-lucide="bar-chart-2" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>ส่งออก</span>
             </button>
@@ -258,6 +261,86 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         <div class="p-3 bg-slate-50 flex gap-2 border-t border-slate-100">
             <button onclick="closeDispatchModal()" class="flex-1 py-2 bg-white text-slate-600 rounded-lg font-bold text-[10px] border border-slate-200 hover:bg-slate-100">ยกเลิก</button>
             <button id="confirmDispatchBtn" class="btn-primary flex-[2] py-2 text-[10px]">ยืนยันการจ่าย <i data-lucide="rocket" class="w-5 h-5 inline-block"></i></button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Manual Job Modal -->
+<div id="addManualJobModal" class="fixed inset-0 z-[80] hidden bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate__animated animate__zoomIn z-[90] my-8">
+        <div class="p-4 bg-indigo-600 text-white flex justify-between items-center">
+            <div>
+                <h3 class="text-sm font-black uppercase"><i data-lucide="plus-circle" class="w-4 h-4 inline-block mr-1"></i>สร้างงานใหม่</h3>
+                <p class="text-[10px] mt-1 text-indigo-100">เพิ่มข้อมูลงานเข้าระบบด้วยตนเอง</p>
+            </div>
+            <button type="button" onclick="closeManualJobModal()" class="text-white hover:text-indigo-200 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form id="manualJobForm" class="p-4 space-y-4 max-h-[70vh] overflow-y-auto complete-modal-scrollbar">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Circuit ID / Access No <span class="text-rose-500">*</span></label>
+                    <input type="text" name="access_no" required class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="ระบุรหัสงาน">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อลูกค้า</label>
+                    <input type="text" name="customer" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="ชื่อ-นามสกุลลูกค้า">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์</label>
+                    <input type="text" name="phone" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="เบอร์โทรติดต่อ">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">วันที่เข้าทำ (Plan Date) <span class="text-rose-500">*</span></label>
+                    <input type="date" name="plan_arrival_date" required class="input !py-2 !px-3 text-sm font-bold w-full">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">สถานที่ติดตั้ง / ที่อยู่</label>
+                <textarea name="address" rows="2" class="input !py-2 !px-3 text-sm font-bold w-full resize-none" placeholder="รายละเอียดที่อยู่..."></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ละติจูด (Latitude)</label>
+                    <input type="number" step="any" name="lat" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="เช่น 13.123456">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ลองจิจูด (Longitude)</label>
+                    <input type="number" step="any" name="lng" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="เช่น 100.123456">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">แพ็กเกจ</label>
+                    <input type="text" name="package" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="ชื่อแพ็กเกจ">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">สินค้า</label>
+                    <input type="text" name="product" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="สินค้า">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Order No</label>
+                    <input type="text" name="order_no" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="เลขที่ออเดอร์">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Task Order</label>
+                    <input type="text" name="task_order" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="รหัส Task">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Task Type</label>
+                    <input type="text" name="task_type" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="ประเภทงาน">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">หมายเหตุ</label>
+                <textarea name="remark" rows="2" class="input !py-2 !px-3 text-sm font-bold w-full resize-none" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"></textarea>
+            </div>
+        </form>
+        <div class="p-3 bg-slate-50 flex justify-end gap-2 border-t border-slate-100">
+            <button type="button" onclick="closeManualJobModal()" class="px-4 py-2 bg-white text-slate-600 rounded-lg font-bold text-xs border border-slate-200 hover:bg-slate-100 transition-colors">ยกเลิก</button>
+            <button type="submit" form="manualJobForm" id="submitManualJobBtn" class="btn-primary px-4 py-2 text-xs">บันทึกข้อมูล <i data-lucide="save" class="w-4 h-4 inline-block ml-1"></i></button>
         </div>
     </div>
 </div>

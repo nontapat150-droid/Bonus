@@ -251,7 +251,12 @@ async function loadTeamPlates() {
             const myTeamId = data.my_team_id;
 
             // สร้าง options
-            select.innerHTML = '<option value="">-- เลือกป้ายทะเบียนรถ --</option>';
+            const isAdmin = teamPlatesData.length > 1; // Assuming admins see multiple teams, techs see max 1
+            if (isAdmin || teamPlatesData.length === 0) {
+                select.innerHTML = '<option value="">-- เลือกป้ายทะเบียนรถ --</option>';
+            } else {
+                select.innerHTML = ''; // ช่างมีทีมเดียว ไม่ต้องมีตัวเลือกว่าง
+            }
 
             let myTeamName = null;
 
