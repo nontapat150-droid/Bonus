@@ -37,7 +37,7 @@ try {
         // Clear any previous output buffer
         if (ob_get_level()) ob_end_clean();
         header('Content-Type: application/json');
-        echo json_encode(['success'=>false,'error'=>'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้']);
+        echo json_encode(['success'=>false,'error'=>$e->getMessage()]);
         exit;
     } else {
         // Display a generic error for non‑API calls
