@@ -62,26 +62,8 @@ try {
             $title = "มีการโอนย้ายสินค้า";
             $message = "[$senderName] โอนย้ายอุปกรณ์ (มี SN) จำนวน $processed ชิ้น ให้กับ [$receiverName]";
             
-            $pdo->prepare("INSERT INTO notifications (title, message, type, is_global, created_by) VALUES (?, ?, 'system', 0, ?)")
+            $pdo->prepare("INSERT INTO notifications (title, message, type, is_global, created_by) VALUES (?, ?, 'admin_only', 0, ?)")
                 ->execute([$title, $message, $admin_id]);
-            $notif_id = $pdo->lastInsertId();
-
-            // แจ้งเฉพาะแอดมิน (admin, super_admin)
-            $stmtAdmins = $pdo->prepare("SELECT id FROM users WHERE role IN ('admin', 'super_admin')");
-            $stmtAdmins->execute();
-            $admins = $stmtAdmins->fetchAll(PDO::FETCH_COLUMN);
-
-            if (!empty($admins)) {
-                $insertReads = [];
-                $insertParams = [];
-                foreach ($admins as $ad_id) {
-                    $insertReads[] = "(?, ?)";
-                    $insertParams[] = $notif_id;
-                    $insertParams[] = $ad_id;
-                }
-                $pdo->prepare("INSERT IGNORE INTO notification_reads (notification_id, user_id) VALUES " . implode(',', $insertReads))
-                    ->execute($insertParams);
-            }
         } catch (Exception $e) {} // ignore notification errors
     }
 
