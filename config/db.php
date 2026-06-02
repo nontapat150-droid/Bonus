@@ -37,12 +37,12 @@ try {
         // Clear any previous output buffer
         if (ob_get_level()) ob_end_clean();
         header('Content-Type: application/json');
-        echo json_encode(['success'=>false,'error'=>$e->getMessage()]);
+        echo json_encode(['success'=>false,'error'=>'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้']);
         exit;
     } else {
-        // Display a user-friendly error for non-API calls
-        echo "<h2>ไม่สามารถเชื่อมต่อฐานข้อมูลได้</h2>";
-        echo "<p>" . htmlspecialchars($e->getMessage()) . "</p>";
+        // Display a generic error for non‑API calls
+        echo "<h2>ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</h2>";
+        echo "<p>กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตหรือสอบถามผู้ดูแลระบบ</p>";
         exit;
     }
     exit;
