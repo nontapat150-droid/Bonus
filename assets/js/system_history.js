@@ -11,9 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     filterMonth.value = now.toISOString().slice(0, 7);
 
     // ถ้าผู้ใช้เลือกวัน ให้ล้างค่าช่องเดือน
-    filterDate.addEventListener('change', () => { filterMonth.value = ''; });
+    if(filterDate) filterDate.addEventListener('change', () => { if(filterMonth) filterMonth.value = ''; });
     // ถ้าผู้ใช้เลือกเดือน ให้ล้างค่าช่องวัน
-    filterMonth.addEventListener('change', () => { filterDate.value = ''; });
+    if(filterMonth) filterMonth.addEventListener('change', () => { if(filterDate) filterDate.value = ''; });
 
     // โหลดครั้งแรก
     loadHistory('checkin');
@@ -42,29 +42,30 @@ async function loadHistory(type) {
     const tBody = document.getElementById('tableBody');
     const badge = document.getElementById('recordCountBadge');
     
+    if(!tBody || !tHead) return;
+
     tBody.innerHTML = '<tr class="block md:table-row"><td colspan="6" class="text-center py-10 text-slate-400 block md:table-cell"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-500"></i> กำลังดึงข้อมูล...</td></tr>';
-    badge.textContent = 'โหลด...';
-    lucide.createIcons();
+    if(badge) badge.textContent = 'โหลด...';
+    if(window.lucide) lucide.createIcons();
 
     // ดึงค่าตัวกรอง
-    const fDate = document.getElementById('filterDate').value;
-    const fMonth = document.getElementById('filterMonth').value;
+    const fDate = document.getElementById('filterDate') ? document.getElementById('filterDate').value : '';
+    const fMonth = document.getElementById('filterMonth') ? document.getElementById('filterMonth').value : '';
 
     try {
-        // ส่งตัวกรองไปให้ API ค้นหา
         const res = await fetch(`api/history/get_logs.php?type=${type}&date=${fDate}&month=${fMonth}`);
         const data = await res.json();
 
         if (data.success) {
             renderTable(type, data.data, tHead, tBody);
-            badge.textContent = `${data.data.length} รายการ`;
+            if(badge) badge.textContent = `${data.data.length} รายการ`;
         } else {
             tBody.innerHTML = `<tr class="block md:table-row"><td colspan="6" class="text-center py-10 text-rose-500 block md:table-cell">${data.error}</td></tr>`;
-            badge.textContent = '0 รายการ';
+            if(badge) badge.textContent = '0 รายการ';
         }
     } catch (e) {
         tBody.innerHTML = '<tr class="block md:table-row"><td colspan="6" class="text-center py-10 text-rose-500 block md:table-cell">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</td></tr>';
-        badge.textContent = 'Error';
+        if(badge) badge.textContent = 'Error';
     }
 }
 
@@ -95,7 +96,12 @@ function renderTable(type, records, tHead, tBody) {
         });
     } 
     else if (type === 'start_day') {
-        tHead.innerHTML = `<tr><th class="px-4 py-3">เวลาทำรายการ</th><th class="px-4 py-3">พนักงาน</th><th class="px-4 py-3">ลูกค้า (Non)</th><th class="px-4 py-3 text-center">สถานะแรกเข้า</th><th class="px-4 py-3 text-center">หลักฐาน</th></tr>`;
+        // 🌟 เช็คว่าเป็น Super Admin ไหม เพื่อเพิ่มหัวตารางคอลัมน์ จัดการ
+        const isSuperAdmin = (window.USER_ROLE === 'super_admin');
+        const manageTh = isSuperAdmin ? '<th class="px-4 py-3 text-center">จัดการ</th>' : '';
+        
+        tHead.innerHTML = `<tr><th class="px-4 py-3">เวลาทำรายการ</th><th class="px-4 py-3">พนักงาน</th><th class="px-4 py-3">ลูกค้า (Non)</th><th class="px-4 py-3 text-center">สถานะแรกเข้า</th><th class="px-4 py-3 text-center">หลักฐาน</th>${manageTh}</tr>`;
+        
         records.forEach(item => {
             const date = new Date(item.created_at).toLocaleString('th-TH');
             let status = '<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded-lg text-xs font-bold border border-rose-200">❌ ไม่มี</span>';
@@ -103,13 +109,26 @@ function renderTable(type, records, tHead, tBody) {
             if(item.has_initial_fee == 2) status = '<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-xs font-bold border border-amber-200">💵 หน้างาน</span>';
             const img = item.evidence_image ? `<a href="assets/uploads/start_day/${item.evidence_image}" target="_blank"><img src="assets/uploads/start_day/${item.evidence_image}" class="w-10 h-10 object-cover rounded-xl shadow-sm border border-slate-200 md:mx-auto"></a>` : '-';
             
+            // 🌟 เพิ่มปุ่มลบ เฉพาะ Super Admin
+            let manageTd = '';
+            if (isSuperAdmin) {
+                manageTd = `
+                <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center items-center ${isSuperAdmin ? '' : 'border-b border-dashed border-slate-100 md:border-none'}">
+                    <span class="md:hidden font-black text-slate-400">จัดการ</span>
+                    <button type="button" onclick="deleteStartDayRecordGlobal(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100 shadow-sm inline-flex items-center justify-center md:mx-auto">
+                        <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> ลบ
+                    </button>
+                </td>`;
+            }
+
             tBody.innerHTML += `
                 <tr class="block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50 rounded-xl md:rounded-none shadow-sm md:shadow-none">
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 font-mono text-xs border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">เวลา</span>${date}</td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 font-bold text-indigo-600 border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">พนักงาน</span>${item.full_name}</td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">ลูกค้า</span><div class="text-right md:text-left"><div class="font-bold">${item.customer_name}</div><div class="text-xs text-slate-400">Non: ${item.non_number}</div></div></td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">สถานะ</span>${status}</td>
-                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center items-center"><span class="md:hidden font-black text-slate-400">หลักฐาน</span>${img}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center items-center ${isSuperAdmin ? 'border-b border-dashed border-slate-100 md:border-none' : ''}"><span class="md:hidden font-black text-slate-400">หลักฐาน</span>${img}</td>
+                    ${manageTd}
                 </tr>`;
         });
     }
@@ -182,4 +201,46 @@ function renderTable(type, records, tHead, tBody) {
                 </tr>`;
         });
     }
+
+    if(window.lucide) lucide.createIcons();
 }
+
+// 🌟 ฟังก์ชันลบข้อมูลค่าแรกเข้า (ยิง API ตัวเดียวกับหน้าส่วนตัว)
+window.deleteStartDayRecordGlobal = async function(id) {
+    Swal.fire({
+        title: 'ยืนยันการลบข้อมูล?',
+        text: "ประวัติค่าแรกเข้านี้จะถูกลบออกจากระบบอย่างถาวร!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'ใช่, ลบข้อมูล',
+        cancelButtonText: 'ยกเลิก',
+        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md', cancelButton: 'rounded-xl px-6 py-2.5 font-bold' }
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            
+            try {
+                // เรียกใช้ API ลบตัวเดิมได้เลย เพราะมันเช็คสิทธิ์ super_admin ไว้อยู่แล้ว
+                const res = await fetch('api/start_day/delete.php', { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ id: id }) 
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    Swal.fire({ title: 'สำเร็จ!', text: 'ลบข้อมูลเรียบร้อยแล้ว', icon: 'success', confirmButtonText: 'ตกลง', confirmButtonColor: '#10b981', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold' } });
+                    
+                    // 🌟 ลบเสร็จให้โหลดตารางค่าแรกเข้าใหม่ทันที
+                    loadHistory('start_day');
+                } else {
+                    Swal.fire('ข้อผิดพลาด', data.error || 'ลบข้อมูลไม่สำเร็จ', 'error');
+                }
+            } catch(e) {
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+            }
+        }
+    });
+};
