@@ -109,10 +109,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ฟังก์ชันโหลดข้อมูลประวัติ
-    async function loadHistory() {
+    // ฟังก์ชันโหลดข้อมูลประวัติ (แก้ให้เรียกใช้แบบ global ได้เมื่อกดลบเสร็จ)
+    window.loadHistory = async function() {
         const tbody = document.getElementById('historyTableBody');
-        tbody.innerHTML = '<tr class="block md:table-row"><td colspan="5" class="text-center py-8 text-slate-400 block md:table-cell">กำลังโหลดข้อมูล...</td></tr>';
+        tbody.innerHTML = '<tr class="block md:table-row"><td colspan="6" class="text-center py-8 text-slate-400 block md:table-cell">กำลังโหลดข้อมูล...</td></tr>';
         
         try {
             const res = await fetch('api/start_day/get_history.php');
@@ -121,10 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 renderHistoryTable(data.data);
             } else {
-                tbody.innerHTML = `<tr class="block md:table-row"><td colspan="5" class="text-center py-8 text-rose-500 block md:table-cell">${data.error}</td></tr>`;
+                tbody.innerHTML = `<tr class="block md:table-row"><td colspan="6" class="text-center py-8 text-rose-500 block md:table-cell">${data.error}</td></tr>`;
             }
         } catch (e) {
-            tbody.innerHTML = '<tr class="block md:table-row"><td colspan="5" class="text-center py-8 text-rose-500 block md:table-cell">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</td></tr>';
+            tbody.innerHTML = '<tr class="block md:table-row"><td colspan="6" class="text-center py-8 text-rose-500 block md:table-cell">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</td></tr>';
         }
     }
 
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.innerHTML = '';
         
         if (records.length === 0) {
-            tbody.innerHTML = '<tr class="block md:table-row"><td colspan="5" class="text-center py-8 text-slate-400 italic block md:table-cell">ยังไม่มีประวัติการบันทึกของคุณ</td></tr>';
+            tbody.innerHTML = '<tr class="block md:table-row"><td colspan="6" class="text-center py-8 text-slate-400 italic block md:table-cell">ยังไม่มีประวัติการบันทึกของคุณ</td></tr>';
             return;
         }
 
@@ -151,6 +151,19 @@ document.addEventListener('DOMContentLoaded', () => {
             let imgHtml = item.evidence_image
                 ? `<a href="assets/uploads/start_day/${item.evidence_image}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/start_day/${item.evidence_image}" class="w-12 h-12 object-cover rounded-xl shadow-sm border border-slate-200"></a>`
                 : '<div class="w-12 h-12 flex items-center justify-center mx-auto rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>';
+
+            // 🌟 1. เงื่อนไขเพิ่มปุ่มลบ (เช็คว่าเป็น Super Admin ไหม)
+            let manageColumn = '';
+            if (window.USER_ROLE === 'super_admin') {
+                manageColumn = `
+                    <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center">
+                        <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">จัดการ</span>
+                        <button type="button" onclick="deleteStartDayRecord(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100 shadow-sm inline-flex items-center justify-center mx-auto">
+                            ลบข้อมูล
+                        </button>
+                    </td>
+                `;
+            }
 
             const tr = document.createElement('tr');
             tr.className = 'block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50 transition-colors rounded-xl md:rounded-none shadow-sm md:shadow-none';
@@ -175,10 +188,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">สถานะ</span>
                     ${statusHtml}
                 </td>
-                <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center">
+                <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center ${window.USER_ROLE === 'super_admin' ? 'border-b border-dashed border-slate-100 md:border-none' : ''}">
                     <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">รูปภาพ</span>
                     <div class="md:flex md:justify-center">${imgHtml}</div>
                 </td>
+                ${manageColumn}
             `;
             tbody.appendChild(tr);
         });
@@ -251,19 +265,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-// นำไปใส่ต่อท้ายใน <tr> ของการวาดข้อมูลตาราง
-let manageColumn = '';
-if (window.USER_ROLE === 'super_admin') {
-    manageColumn = `
-        <td class="px-6 py-4 text-center">
-            <button type="button" onclick="deleteStartDayRecord(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">
-                <i data-lucide="trash-2" class="w-4 h-4 inline-block"></i> ลบ
-            </button>
-        </td>
-    `;
-}
-// แล้วเอาตัวแปร ${manageColumn} ไปต่อท้าย <tr> ก่อนปิดแท็ก </tr>
-// ฟังก์ชันลบประวัติค่าแรกเข้า (เฉพาะ Super Admin)
+
+// 🌟 3. ฟังก์ชันกดยืนยันการลบ 🌟
 window.deleteStartDayRecord = async function(id) {
     Swal.fire({
         title: 'ยืนยันการลบข้อมูล?',
@@ -302,10 +305,8 @@ window.deleteStartDayRecord = async function(id) {
                     });
                     
                     // สั่งให้โหลดตารางประวัติใหม่
-                    if (typeof loadHistory === 'function') {
-                        loadHistory();
-                    } else if (typeof loadMyHistory === 'function') {
-                        loadMyHistory(); 
+                    if (typeof window.loadHistory === 'function') {
+                        window.loadHistory();
                     } else {
                         location.reload();
                     }
