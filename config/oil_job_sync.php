@@ -145,6 +145,98 @@ function syncTeamOilFromJob(PDO $pdo, int $jobId, ?string $yearMonth = null): vo
 }
 
 /**
+ * Collect team+month pairs with completed closes for these jobs (call BEFORE deleting jobs/logs).
+ *
+ * @return array<int, array{team_id: int, ym_key: string}>
+ */
+function collectTeamOilMonthsForJobIds(PDO $pdo, array $jobIds): array
+{
+    $jobIds = array_values(array_filter(array_map('intval', $jobIds)));
+    if (empty($jobIds)) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($jobIds), '?'));
+    $ym = sqlYearMonth('jl.timestamp');
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT j.team_id, {$ym} AS ym_key
+        FROM job_logs jl
+        INNER JOIN jobs j ON j.id = jl.job_id
+        WHERE jl.job_id IN ($placeholders)
+          AND jl.status = 'completed'
+          AND j.team_id IS NOT NULL
+    ");
+    $stmt->execute($jobIds);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Recount and update oil case totals for pre-collected team-month pairs.
+ */
+function syncCollectedTeamOilMonths(PDO $pdo, array $pairs): void
+{
+    $seen = [];
+    foreach ($pairs as $row) {
+        $teamId = (int)($row['team_id'] ?? 0);
+        $ym = (string)($row['ym_key'] ?? '');
+        if ($teamId <= 0 || $ym === '') {
+            continue;
+        }
+        $key = $teamId . '-' . $ym;
+        if (isset($seen[$key])) {
+            continue;
+        }
+        $seen[$key] = true;
+        syncTeamOilMonth($pdo, $teamId, $ym);
+    }
+}
+
+/**
+ * After jobs are removed: recount affected team-months (pairs collected before delete).
+ */
+function syncTeamOilAfterJobsDeleted(PDO $pdo, array $jobIds): void
+{
+    $pairs = collectTeamOilMonthsForJobIds($pdo, $jobIds);
+    syncCollectedTeamOilMonths($pdo, $pairs);
+}
+
+/**
+ * Resync all team-months that have oil records or stored case counts (e.g. after delete all jobs).
+ */
+function resyncAllKnownTeamOilMonths(PDO $pdo): void
+{
+    ensureTeamOilCasesTable($pdo);
+
+    $pairs = [];
+    $seen = [];
+
+    $fromCases = $pdo->query("SELECT team_id, `year_month` AS ym_key FROM team_oil_cases")->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($fromCases as $row) {
+        $key = (int)$row['team_id'] . '-' . $row['ym_key'];
+        if (!isset($seen[$key])) {
+            $seen[$key] = true;
+            $pairs[] = $row;
+        }
+    }
+
+    $ymOil = sqlYearMonth('o.date_recorded');
+    $fromOil = $pdo->query("
+        SELECT DISTINCT t.id AS team_id, {$ymOil} AS ym_key
+        FROM oil_records o
+        INNER JOIN teams t ON t.team_name = o.license_plate
+    ")->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($fromOil as $row) {
+        $key = (int)$row['team_id'] . '-' . $row['ym_key'];
+        if (!isset($seen[$key])) {
+            $seen[$key] = true;
+            $pairs[] = $row;
+        }
+    }
+
+    syncCollectedTeamOilMonths($pdo, $pairs);
+}
+
+/**
  * Sync all team-month pairs that have completed job_logs (for backfill).
  */
 function backfillAllTeamOilCases(PDO $pdo): array

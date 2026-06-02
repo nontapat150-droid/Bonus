@@ -2,6 +2,7 @@
 // api/customer/delete.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+require_once '../../config/oil_job_sync.php';
 
 header('Content-Type: application/json');
 requireRole(['admin', 'super_admin']);
@@ -22,9 +23,11 @@ try {
     $stmt->execute([$id, $id, $id]);
     $jobIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
+    $oilSyncPairs = [];
     if (!empty($jobIds)) {
         $inQuery = implode(',', array_fill(0, count($jobIds), '?'));
-        
+        $oilSyncPairs = collectTeamOilMonthsForJobIds($pdo, $jobIds);
+
         // Delete job_logs
         $pdo->prepare("DELETE FROM job_logs WHERE job_id IN ($inQuery)")->execute($jobIds);
         
@@ -65,6 +68,11 @@ try {
     }
 
     $pdo->commit();
+
+    if (!empty($oilSyncPairs)) {
+        syncCollectedTeamOilMonths($pdo, $oilSyncPairs);
+    }
+
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
