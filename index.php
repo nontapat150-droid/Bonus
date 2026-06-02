@@ -1092,24 +1092,36 @@ if ($page === 'home') {
             </div>
             
             <div class="p-6 overflow-y-auto max-h-[80vh] custom-scrollbar">
-                <!-- Profile Image & Info -->
-                <div class="flex flex-col items-center mb-6">
-                    <div class="relative group cursor-pointer mb-3" id="profileImageContainer">
-                        <div class="w-24 h-24 rounded-full bg-slate-100 border-4 border-white shadow-md flex items-center justify-center overflow-hidden">
-                            <img id="upmProfileImage" src="" class="w-full h-full object-cover hidden" alt="Profile">
-                            <span id="upmProfileInitials" class="text-3xl font-bold text-slate-400">U</span>
+                <!-- Profile Image & Info (ID Card Style) -->
+                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 mb-6 text-center text-white shadow-lg relative overflow-hidden">
+                    <!-- Decorative elements -->
+                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                    <div class="absolute -bottom-10 -left-10 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                    
+                    <div class="relative z-10 flex flex-col items-center">
+                        <div class="relative group cursor-pointer mb-3" id="profileImageContainer">
+                            <div class="w-24 h-24 rounded-full bg-white/20 border-4 border-white/50 shadow-lg flex items-center justify-center overflow-hidden backdrop-blur-sm">
+                                <img id="upmProfileImage" src="" class="w-full h-full object-cover hidden" alt="Profile">
+                                <span id="upmProfileInitials" class="text-3xl font-bold text-white drop-shadow-md">U</span>
+                            </div>
+                            <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i data-lucide="camera" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <input type="file" id="upmImageInput" class="hidden" accept="image/*">
                         </div>
-                        <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <i data-lucide="camera" class="w-6 h-6 text-white"></i>
+                        
+                        <button type="button" id="upmSaveImageBtn" class="hidden bg-white text-indigo-600 text-xs font-bold px-4 py-1.5 rounded-full mb-3 shadow-sm hover:bg-indigo-50 transition-colors">
+                            บันทึกรูปโปรไฟล์
+                        </button>
+                        
+                        <h3 id="upmFullName" class="text-xl font-bold mb-1 drop-shadow-sm">-</h3>
+                        <p id="upmTeamName" class="text-sm text-indigo-100 font-medium mb-3">-</p>
+                        
+                        <div class="flex justify-center gap-2">
+                            <span id="upmRoleBadge" class="px-3 py-1 rounded-full text-[10px] font-bold bg-white/20 backdrop-blur-md uppercase tracking-wider">-</span>
+                            <span id="upmStatusBadge" class="px-3 py-1 rounded-full text-[10px] font-bold bg-white/20 backdrop-blur-md uppercase tracking-wider">-</span>
                         </div>
-                        <input type="file" id="upmImageInput" class="hidden" accept="image/*">
                     </div>
-                    <h3 id="upmFullName" class="text-lg font-bold text-slate-900 mb-1">-</h3>
-                    <div class="flex gap-2 mb-2">
-                        <span id="upmRoleBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 uppercase">-</span>
-                        <span id="upmStatusBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 uppercase">-</span>
-                    </div>
-                    <p id="upmTeamName" class="text-sm text-slate-500 font-medium">-</p>
                 </div>
 
                 <div class="space-y-4">
@@ -1138,6 +1150,10 @@ if ($page === 'home') {
                             <i data-lucide="save" class="w-4 h-4"></i> บันทึกรหัสผ่าน
                         </button>
                     </form>
+                    
+                    <button type="button" class="w-full mt-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold py-2.5 rounded-xl transition-colors" onclick="document.getElementById('closeUserProfileBtn').click()">
+                        ปิดหน้าต่าง
+                    </button>
                 </div>
             </div>
         </div>
@@ -1350,6 +1366,11 @@ if ($page === 'home') {
                 profileModal.classList.add('hidden');
                 profileModal.classList.remove('flex');
                 pwdForm.reset();
+                if (selectedProfileFile) {
+                    selectedProfileFile = null;
+                    document.getElementById('upmSaveImageBtn').classList.add('hidden');
+                    fetchUserProfile();
+                }
             }, 300);
         }
         
@@ -1387,31 +1408,55 @@ if ($page === 'home') {
             } catch(e) { console.error('Failed to fetch profile', e); }
         }
         
+        const saveImageBtn = document.getElementById('upmSaveImageBtn');
+        let selectedProfileFile = null;
+        
         imgContainer.addEventListener('click', () => imgInput.click());
-        imgInput.addEventListener('change', async function() {
+        imgInput.addEventListener('change', function() {
             if (this.files && this.files[0]) {
-                const fd = new FormData();
-                fd.append('profile_image', this.files[0]);
-                
-                try {
-                    // Show loading on image
-                    document.getElementById('upmProfileInitials').textContent = '...';
-                    
-                    const res = await fetch('api/users/update_profile_image.php', { method: 'POST', body: fd });
-                    const data = await res.json();
-                    if (data.success) {
-                        Swal.fire({icon: 'success', title: 'สำเร็จ', text: data.message, confirmButtonColor: '#10B981'});
-                        fetchUserProfile();
-                        // Also update sidebar avatar if possible
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        Swal.fire({icon: 'error', title: 'ผิดพลาด', text: data.message, confirmButtonColor: '#EF4444'});
-                        fetchUserProfile();
-                    }
-                } catch(e) {
-                    Swal.fire({icon: 'error', title: 'ผิดพลาด', text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', confirmButtonColor: '#EF4444'});
+                selectedProfileFile = this.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imgEl = document.getElementById('upmProfileImage');
+                    const initEl = document.getElementById('upmProfileInitials');
+                    imgEl.src = e.target.result;
+                    imgEl.classList.remove('hidden');
+                    initEl.classList.add('hidden');
+                    saveImageBtn.classList.remove('hidden');
+                }
+                reader.readAsDataURL(selectedProfileFile);
+            }
+        });
+        
+        saveImageBtn.addEventListener('click', async function() {
+            if (!selectedProfileFile) return;
+            
+            const originalHtml = this.innerHTML;
+            this.innerHTML = 'กำลังบันทึก...';
+            this.disabled = true;
+            
+            const fd = new FormData();
+            fd.append('profile_image', selectedProfileFile);
+            
+            try {
+                const res = await fetch('api/users/update_profile_image.php', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.success) {
+                    Swal.fire({icon: 'success', title: 'สำเร็จ', text: data.message, confirmButtonColor: '#10B981'});
+                    saveImageBtn.classList.add('hidden');
+                    selectedProfileFile = null;
+                    fetchUserProfile();
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    Swal.fire({icon: 'error', title: 'ผิดพลาด', text: data.message, confirmButtonColor: '#EF4444'});
                     fetchUserProfile();
                 }
+            } catch(e) {
+                Swal.fire({icon: 'error', title: 'ผิดพลาด', text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', confirmButtonColor: '#EF4444'});
+                fetchUserProfile();
+            } finally {
+                this.innerHTML = originalHtml;
+                this.disabled = false;
             }
         });
         
