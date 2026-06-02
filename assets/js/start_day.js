@@ -5,33 +5,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const previewContainer = document.getElementById('imagePreviewContainer');
     const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
-    // ระบบจัดการเมนูสลับหน้า (Tabs)
     const tabFormBtn = document.getElementById('tabFormBtn');
     const tabHistBtn = document.getElementById('tabHistBtn');
     const formSection = document.getElementById('formSection');
     const historySection = document.getElementById('historySection');
 
     if (tabFormBtn && tabHistBtn) {
-        // เมื่อคลิกปุ่ม "บันทึกค่าแรกเข้า"
         tabFormBtn.addEventListener('click', () => {
             formSection.classList.remove('hidden');
             historySection.classList.add('hidden');
-            
-            // เปลี่ยนสีปุ่มให้รู้ว่ากำลังอยู่หน้านี้
             tabFormBtn.className = "px-6 py-2.5 text-sm font-bold rounded-xl transition-all bg-emerald-50 text-emerald-600 shadow-sm";
             tabHistBtn.className = "px-6 py-2.5 text-sm font-bold rounded-xl transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-700";
         });
 
-        // เมื่อคลิกปุ่ม "ประวัติของฉัน"
         tabHistBtn.addEventListener('click', () => {
             formSection.classList.add('hidden');
             historySection.classList.remove('hidden');
-            
-            // เปลี่ยนสีปุ่มให้รู้ว่ากำลังอยู่หน้านี้
             tabHistBtn.className = "px-6 py-2.5 text-sm font-bold rounded-xl transition-all bg-indigo-50 text-indigo-600 shadow-sm";
             tabFormBtn.className = "px-6 py-2.5 text-sm font-bold rounded-xl transition-all text-slate-500 hover:bg-slate-50 hover:text-slate-700";
             
-            loadHistory(); // โหลดข้อมูลประวัติทันทีที่กดเข้าหน้านี้
+            loadHistory(); 
         });
     }
 
@@ -40,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fileInput.addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
         if (selectedFiles.length + files.length > 10) {
-            Toast.error('อัปโหลดได้สูงสุด 10 รูป');
+            Swal.fire('แจ้งเตือน', 'อัปโหลดได้สูงสุด 10 รูป', 'warning');
             fileInput.value = ''; 
             return;
         }
@@ -53,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     processedFile = await compressImage(file, MAX_IMAGE_SIZE);
                 } catch (err) {
-                    Toast.error('รูปภาพใหญ่เกินไป บีบอัดไม่สำเร็จ');
+                    Swal.fire('แจ้งเตือน', 'รูปภาพใหญ่เกินไป บีบอัดไม่สำเร็จ', 'error');
                     continue;
                 }
             }
@@ -94,14 +87,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const ratio = Math.min(1, 1920 / Math.max(img.width, img.height));
                     let width = Math.round(img.width * ratio);
                     let height = Math.round(img.height * ratio);
-                    let quality = 0.9;
                     canvas.width = width;
                     canvas.height = height;
                     ctx.drawImage(img, 0, 0, width, height);
                     canvas.toBlob(blob => {
                         const name = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
                         resolve(new File([blob], name, { type: 'image/jpeg' }));
-                    }, 'image/jpeg', quality);
+                    }, 'image/jpeg', 0.9);
                 };
                 img.src = event.target.result;
             };
@@ -109,17 +101,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ฟังก์ชันโหลดข้อมูลประวัติ
     window.loadHistory = async function() {
         const tbody = document.getElementById('historyTableBody');
         tbody.innerHTML = '<tr class="block md:table-row"><td colspan="6" class="text-center py-8 text-slate-400 block md:table-cell">กำลังโหลดข้อมูล...</td></tr>';
         
         try {
             const res = await fetch('api/start_day/get_history.php');
-            const data = await res.json();
+            const text = await res.text();
+            
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch(e) {
+                console.error("เซิร์ฟเวอร์ส่งกลับมาผิดปกติ:", text);
+                tbody.innerHTML = '<tr class="block md:table-row"><td colspan="6" class="text-center py-8 text-rose-500 block md:table-cell">เซิร์ฟเวอร์ทำงานผิดพลาด (กด F12 ดู Console)</td></tr>';
+                return;
+            }
             
             if (data.success) {
-                // 🌟 ส่ง data.is_super_admin ไปให้ฟังก์ชันวาดตาราง
                 renderHistoryTable(data.data, data.is_super_admin);
             } else {
                 tbody.innerHTML = `<tr class="block md:table-row"><td colspan="6" class="text-center py-8 text-rose-500 block md:table-cell">${data.error}</td></tr>`;
@@ -129,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 🌟 รับค่า isSuperAdmin จาก API
     function renderHistoryTable(records, isSuperAdmin = false) {
         const tbody = document.getElementById('historyTableBody');
         tbody.innerHTML = '';
@@ -153,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<a href="assets/uploads/start_day/${item.evidence_image}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/start_day/${item.evidence_image}" class="w-12 h-12 object-cover rounded-xl shadow-sm border border-slate-200"></a>`
                 : '<div class="w-12 h-12 flex items-center justify-center mx-auto rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>';
 
-            // 🌟 เช็คสิทธิ์เพื่อโชว์ปุ่มลบ
             let manageColumn = '';
             if (isSuperAdmin) {
                 manageColumn = `
@@ -202,8 +199,17 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        // 🌟 1. ดักจับความยาวเลข Non ต้อง 10 ตัวพอดี
+        const nonInput = form.querySelector('[name="non_number"]');
+        if (nonInput) {
+            const nonVal = nonInput.value.trim();
+            if (nonVal.length !== 10) {
+                return Swal.fire('แจ้งเตือน', `เลข Non ต้องมี 10 ตัวพอดี (คุณกรอกมา ${nonVal.length} ตัว)`, 'warning');
+            }
+        }
+        
         if (selectedFiles.length === 0) {
-            return Toast.error('กรุณาถ่ายรูปหรือแนบรูปภาพอย่างน้อย 1 รูป ก่อนกดบันทึก');
+            return Swal.fire('แจ้งเตือน', 'กรุณาถ่ายรูปหรือแนบรูปภาพอย่างน้อย 1 รูป ก่อนกดบันทึก', 'warning');
         }
 
         const confirmResult = await Swal.fire({
@@ -215,11 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
             cancelButtonColor: '#94a3b8',
             confirmButtonText: '✅ ยืนยันบันทึก',
             cancelButtonText: 'ยกเลิก',
-            customClass: {
-                popup: 'rounded-3xl',
-                confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md',
-                cancelButton: 'rounded-xl px-6 py-2.5 font-bold'
-            }
+            customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md', cancelButton: 'rounded-xl px-6 py-2.5 font-bold' }
         });
 
         if (!confirmResult.isConfirmed) return;
@@ -230,12 +232,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const submitBtn = document.getElementById('submitBtn');
         const originalText = submitBtn.innerHTML;
-        Loader.show();
+        
+        Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
         submitBtn.disabled = true;
 
         try {
             const response = await fetch('api/start_day/submit.php', { method: 'POST', body: formData });
-            const result = await response.json();
+            const text = await response.text(); 
+            
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch(e) {
+                console.error(text);
+                Swal.fire('ข้อผิดพลาด', 'เซิร์ฟเวอร์ทำงานผิดพลาด (กด F12 เพื่อดู Console)', 'error');
+                submitBtn.disabled = false;
+                return;
+            }
 
             if (result.success) {
                 Swal.fire({
@@ -253,12 +266,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedFiles = [];
                 previewContainer.innerHTML = '';
             } else {
-                Toast.error(result.error);
+                // 🌟 2. แสดงแจ้งเตือนกรณีเลขซ้ำ (ดึง Error จากหลังบ้าน)
+                Swal.fire('แจ้งเตือน', result.error, 'warning');
             }
         } catch (error) {
-            Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว');
+            Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว', 'error');
         } finally {
-            Loader.hide();
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
         }
@@ -275,38 +288,19 @@ window.deleteStartDayRecord = async function(id) {
         cancelButtonColor: '#94a3b8',
         confirmButtonText: 'ใช่, ลบข้อมูล',
         cancelButtonText: 'ยกเลิก',
-        customClass: {
-            popup: 'rounded-3xl',
-            confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md',
-            cancelButton: 'rounded-xl px-6 py-2.5 font-bold'
-        }
+        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md', cancelButton: 'rounded-xl px-6 py-2.5 font-bold' }
     }).then(async (result) => {
         if (result.isConfirmed) {
             Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
             
             try {
-                const res = await fetch('api/start_day/delete.php', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ id: id })
-                });
+                const res = await fetch('api/start_day/delete.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: id }) });
                 const data = await res.json();
                 
                 if (data.success) {
-                    Swal.fire({
-                        title: 'สำเร็จ!',
-                        text: 'ลบข้อมูลเรียบร้อยแล้ว',
-                        icon: 'success',
-                        confirmButtonText: 'ตกลง',
-                        confirmButtonColor: '#10b981',
-                        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold' }
-                    });
-                    
-                    if (typeof window.loadHistory === 'function') {
-                        window.loadHistory();
-                    } else {
-                        location.reload();
-                    }
+                    Swal.fire({ title: 'สำเร็จ!', text: 'ลบข้อมูลเรียบร้อยแล้ว', icon: 'success', confirmButtonText: 'ตกลง', confirmButtonColor: '#10b981', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold' } });
+                    if (typeof window.loadHistory === 'function') window.loadHistory();
+                    else location.reload();
                 } else {
                     Swal.fire('ข้อผิดพลาด', data.error || 'ลบข้อมูลไม่สำเร็จ', 'error');
                 }

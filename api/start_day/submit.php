@@ -1,12 +1,25 @@
 <?php
 // api/start_day/submit.php
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        echo json_encode(['success' => false, 'error' => 'PHP Fatal Error: ' . $error['message']]);
+        exit;
+    }
+});
+
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
 
 header('Content-Type: application/json');
-requireLogin();
+if (!isLoggedIn()) {
+    echo json_encode(['success' => false, 'error' => 'Session Expired: กรุณาเข้าสู่ระบบใหม่']);
+    exit;
+}
 
-// 6. ตั้งเวลาโซนประเทศไทย
 date_default_timezone_set('Asia/Bangkok');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -17,27 +30,40 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 try {
     $pdo->beginTransaction();
 
-    // 2. ดึง Account ของช่างคนนั้นๆ จาก Session
     $user_id = $_SESSION['user_id'];
-    
-    // 3. รับค่า 3 ช่อง
     $customer_name = trim($_POST['customer_name'] ?? '');
     $non_number = trim($_POST['non_number'] ?? '');
     $has_initial_fee = isset($_POST['has_initial_fee']) ? (int)$_POST['has_initial_fee'] : 0;
-    
-    // 5. บันทึกเวลาตามเวลาที่อัปโหลดจริงๆ ของเซิร์ฟเวอร์
     $created_at = date('Y-m-d H:i:s');
 
     if (empty($customer_name) || empty($non_number)) {
         throw new Exception("กรุณากรอกชื่อลูกค้าและเลข Non ให้ครบถ้วน");
     }
 
-    // บันทึกข้อมูลลงฐานข้อมูล (ตารางใหม่)
+    // 🌟 1. ดักจับความยาวเลข Non ต้อง 10 หลักพอดี
+    if (mb_strlen($non_number) !== 10) {
+        throw new Exception("เลข Non ต้องมี 10 ตัวพอดี (คุณกรอกมา " . mb_strlen($non_number) . " ตัว)");
+    }
+
+    // 🌟 2. ดักจับเลข Non ซ้ำในระบบ
+    $stmtCheck = $pdo->prepare("
+        SELECT r.id, u.full_name 
+        FROM start_day_records r 
+        LEFT JOIN users u ON r.user_id = u.id 
+        WHERE r.non_number = ?
+    ");
+    $stmtCheck->execute([$non_number]);
+    $duplicate = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+    if ($duplicate) {
+        $owner = $duplicate['full_name'] ? $duplicate['full_name'] : 'ช่างคนอื่น';
+        throw new Exception("เลข Non '{$non_number}' ถูกใช้ไปแล้ว! (บันทึกโดย: {$owner})");
+    }
+
     $stmt = $pdo->prepare("INSERT INTO start_day_records (user_id, customer_name, non_number, has_initial_fee, created_at) VALUES (?, ?, ?, ?, ?)");
     $stmt->execute([$user_id, $customer_name, $non_number, $has_initial_fee, $created_at]);
     $record_id = $pdo->lastInsertId();
 
-    // 4. ระบบแนบรูปภาพ
     $upload_dir = '../../assets/uploads/start_day/';
     if (!is_dir($upload_dir)) {
         mkdir($upload_dir, 0755, true);
@@ -75,8 +101,11 @@ try {
     $pdo->commit();
     echo json_encode(['success' => true]);
 
+} catch (PDOException $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    echo json_encode(['success' => false, 'error' => 'Database SQL Error: ' . $e->getMessage()]);
 } catch (Exception $e) {
-    $pdo->rollBack();
+    if ($pdo->inTransaction()) $pdo->rollBack();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>
