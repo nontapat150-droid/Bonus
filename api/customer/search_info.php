@@ -61,12 +61,12 @@ try {
         }
         
         // ดึงประวัติการปิดงาน (ถ้ามี)
-        $stmtClose = $pdo->prepare("SELECT * FROM job_close_3bb WHERE job_id = ? ORDER BY created_at DESC");
+        $stmtClose = $pdo->prepare("SELECT jc.*, u.full_name as tech_name FROM job_close_3bb jc LEFT JOIN users u ON jc.tech_id = u.id WHERE jc.job_id = ? ORDER BY jc.created_at DESC");
         $stmtClose->execute([$job['id']]);
         $closes = $stmtClose->fetchAll(PDO::FETCH_ASSOC);
 
         // ดึง Logs
-        $stmtLogs = $pdo->prepare("SELECT jl.*, u.full_name, t.team_name FROM job_logs jl LEFT JOIN users u ON jl.user_id = u.id LEFT JOIN teams t ON u.team_id = t.id WHERE jl.job_id = ? ORDER BY jl.created_at DESC");
+        $stmtLogs = $pdo->prepare("SELECT jl.*, u.full_name, t.team_name FROM job_logs jl LEFT JOIN users u ON jl.tech_id = u.id LEFT JOIN teams t ON u.team_id = t.id WHERE jl.job_id = ? ORDER BY jl.timestamp DESC");
         $stmtLogs->execute([$job['id']]);
         $logs = $stmtLogs->fetchAll(PDO::FETCH_ASSOC);
 
