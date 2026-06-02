@@ -144,6 +144,18 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             <p class="text-[10px] uppercase tracking-[0.3em] text-slate-400 font-black">ต้นทุนเฉลี่ย/กม.</p>
             <h3 id="stat_avg_cost_per_km" class="mt-4 text-3xl font-black text-slate-900">-</h3>
         </div>
+        <div class="card !p-6 bg-emerald-50 border border-emerald-200">
+            <p class="text-[10px] uppercase tracking-[0.3em] text-emerald-600 font-black">เคสปิดสำเร็จ (ช่วงที่เลือก)</p>
+            <h3 id="stat_total_jobs" class="mt-4 text-3xl font-black text-emerald-800">0</h3>
+        </div>
+        <div class="card !p-6 bg-amber-50 border border-amber-200">
+            <p class="text-[10px] uppercase tracking-[0.3em] text-amber-700 font-black">ต้นทุนเฉลี่ยต่อเคส (บาท)</p>
+            <h3 id="stat_avg_cost_per_case" class="mt-4 text-3xl font-black text-amber-900">-</h3>
+        </div>
+    </div>
+    <div id="teamMonthStatsPanel" class="hidden mb-6 card !p-4 border border-slate-200 bg-white">
+        <p class="text-xs font-black uppercase text-slate-500 tracking-widest mb-3">สรุปต้นทุนต่อเคส แยกทีม-เดือน (จากปิดงานแจกจ่าย)</p>
+        <div id="teamMonthStatsBody" class="text-sm text-slate-700"></div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -222,7 +234,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                         <th>เลขไมล์</th>
                         <th class="px-4 py-4 text-center">ระยะทาง (กม.)</th>
                         <th class="px-4 py-4 text-center">กม./ลิตร</th>
-                        <th class="px-4 py-4 text-center">เคสงาน (รอบ)</th>
+                        <th class="px-4 py-4 text-center">เคสปิดสำเร็จ (เดือน)</th>
                         <th class="px-4 py-4 text-right">ต้นทุน/กม.</th>
                         <th class="px-4 py-4 text-right">ต้นทุน/งาน</th>
                         <th class="px-4 py-4 text-right text-[var(--c-text-1)]">ยอดรวม (บาท)</th>
@@ -287,7 +299,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                     <input type="number" step="1" id="manage_total_price" class="input w-full font-bold text-indigo-700 bg-slate-50" placeholder="Ex: 1000">
                 </div>
                 <div>
-                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">จำนวนเคสงาน (รอบ)</label>
+                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">เคสปิดสำเร็จเดือนนั้น (อัปเดตอัตโนมัติจากแจกจ่ายงาน)</label>
                     <input type="number" id="manage_job_count" class="input w-full" placeholder="Ex: 5" value="0">
                 </div>
                 <div class="md:col-span-2">

@@ -197,6 +197,7 @@ async function fetchData(silent = false) {
         if (data.success) {
             const uniqueRecords = dedupeRecords(data.records);
             updateStats(data.stats);
+            renderTeamMonthStats(data.team_month_stats || []);
             allRecords = uniqueRecords;
             monthlyData = data.monthly || [];
             dailyData = data.chart || [];
@@ -255,6 +256,36 @@ function updateStats(stats) {
     if(sd) sd.textContent = totalDistance.toLocaleString('th-TH', {minimumFractionDigits: 2});
     if(sak) sak.textContent = avgKmPerLiter > 0 ? Number(avgKmPerLiter).toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-';
     if(sac) sac.textContent = totalDistance > 0 ? '฿' + Number(avgCostPerKm).toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-';
+
+    const sacase = document.getElementById('stat_avg_cost_per_case');
+    if (sacase) {
+        const avgCase = Number(stats.avg_cost_per_case) || 0;
+        sacase.textContent = avgCase > 0 ? '฿' + avgCase.toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-';
+    }
+}
+
+function renderTeamMonthStats(rows) {
+    const panel = document.getElementById('teamMonthStatsPanel');
+    const body = document.getElementById('teamMonthStatsBody');
+    if (!panel || !body) return;
+
+    if (!rows || rows.length === 0) {
+        panel.classList.add('hidden');
+        body.innerHTML = '';
+        return;
+    }
+
+    panel.classList.remove('hidden');
+    body.innerHTML = rows.map(r => `
+        <div class="flex flex-wrap gap-x-4 gap-y-1 py-2 border-b border-slate-100 last:border-0">
+            <span class="font-bold text-slate-800">${r.team_name}</span>
+            <span class="text-slate-500">${r.year_month}</span>
+            <span>เคส: <b>${r.completed_cases}</b></span>
+            <span>น้ำมัน: ฿${Number(r.month_fuel_cost).toLocaleString('th-TH')}</span>
+            <span>ต้นทุน/เคส: <b class="text-amber-700">฿${Number(r.avg_cost_per_case).toLocaleString('th-TH', {minimumFractionDigits: 2})}</b></span>
+            <span>${Number(r.avg_km_per_liter).toFixed(2)} กม./ลิตร</span>
+        </div>
+    `).join('');
 }
 
 function renderAnalyticsCharts() {

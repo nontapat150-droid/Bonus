@@ -2,6 +2,7 @@
 // api/dispatch/update_job_status.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+require_once '../../config/oil_job_sync.php';
 
 header('Content-Type: application/json');
 requireLogin();
@@ -136,6 +137,11 @@ try {
     }
 
     $pdo->commit();
+
+    if ($status === 'completed' && !empty($job['team_id'])) {
+        $yearMonth = date('Y-m');
+        syncTeamOilMonth($pdo, (int)$job['team_id'], $yearMonth);
+    }
     
     echo json_encode(['success' => true, 'message' => 'บันทึกการปิดงานสำเร็จ']);
 

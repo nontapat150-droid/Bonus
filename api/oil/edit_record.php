@@ -2,6 +2,7 @@
 // api/oil/edit_record.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+require_once '../../config/oil_job_sync.php';
 
 header('Content-Type: application/json');
 requireLogin();
@@ -44,10 +45,19 @@ $total_price = isset($input['total_price']) && $input['total_price'] !== '' ? ro
 try {
     $pdo->beginTransaction();
 
-    // ดึงทะเบียนรถเดิมมาตรวจสอบ เผื่อว่ามีการแก้ไขเปลี่ยนทะเบียนรถ
-    $stmtOld = $pdo->prepare("SELECT license_plate FROM oil_records WHERE id = ?");
+    // ดึงข้อมูลเดิม (ทีม/เดือน) เผื่อมีการแก้ไขข้ามเดือนหรือเปลี่ยนทีม
+    $stmtOld = $pdo->prepare("SELECT license_plate, date_recorded FROM oil_records WHERE id = ?");
     $stmtOld->execute([$id]);
-    $old_plate = $stmtOld->fetchColumn();
+    $oldRecord = $stmtOld->fetch(PDO::FETCH_ASSOC);
+    $old_plate = $oldRecord['license_plate'] ?? null;
+    $old_year_month = $oldRecord['date_recorded'] ? date('Y-m', strtotime($oldRecord['date_recorded'])) : null;
+
+    $teamIdNew = getTeamIdByName($pdo, $license_plate);
+    $yearMonthNew = date('Y-m', strtotime($date_recorded_mysql));
+
+    if ($job_count <= 0 && $teamIdNew) {
+        $job_count = getTeamMonthlyCaseCount($pdo, $teamIdNew, $yearMonthNew, false);
+    }
 
     $stmtUser = $pdo->prepare("SELECT full_name FROM users WHERE id = ? LIMIT 1");
     $stmtUser->execute([$tech_id]);
@@ -88,6 +98,15 @@ try {
     }
 
     $pdo->commit();
+
+    $teamIdOld = $old_plate ? getTeamIdByName($pdo, $old_plate) : null;
+    if ($teamIdOld && $old_year_month) {
+        syncTeamOilMonth($pdo, $teamIdOld, $old_year_month);
+    }
+    if ($teamIdNew) {
+        syncTeamOilMonth($pdo, $teamIdNew, $yearMonthNew);
+    }
+
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
     $pdo->rollBack();
