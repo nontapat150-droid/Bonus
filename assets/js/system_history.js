@@ -96,11 +96,13 @@ function renderTable(type, records, tHead, tBody) {
         });
     } 
     else if (type === 'start_day') {
-        // 🌟 เช็คว่าเป็น Super Admin ไหม เพื่อเพิ่มหัวตารางคอลัมน์ จัดการ
-        const isSuperAdmin = (window.USER_ROLE === 'super_admin');
-        const manageTh = isSuperAdmin ? '<th class="px-4 py-3 text-center">จัดการ</th>' : '';
+        // 🌟 1. จำข้อมูลประวัติไว้
+        window.startDayRecords = records;
+
+        const role = window.USER_ROLE;
+        const isAdmin = (role === 'admin' || role === 'super_admin');
         
-        tHead.innerHTML = `<tr><th class="px-4 py-3">เวลาทำรายการ</th><th class="px-4 py-3">พนักงาน</th><th class="px-4 py-3">ลูกค้า (Non)</th><th class="px-4 py-3 text-center">สถานะแรกเข้า</th><th class="px-4 py-3 text-center">หลักฐาน</th>${manageTh}</tr>`;
+        tHead.innerHTML = `<tr><th class="px-4 py-3">เวลาทำรายการ</th><th class="px-4 py-3">พนักงาน</th><th class="px-4 py-3">ลูกค้า (Non)</th><th class="px-4 py-3 text-center">สถานะแรกเข้า</th><th class="px-4 py-3 text-center">หลักฐาน</th><th class="px-4 py-3 text-center">จัดการ</th></tr>`;
         
         records.forEach(item => {
             const date = new Date(item.created_at).toLocaleString('th-TH');
@@ -109,17 +111,17 @@ function renderTable(type, records, tHead, tBody) {
             if(item.has_initial_fee == 2) status = '<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-xs font-bold border border-amber-200">💵 หน้างาน</span>';
             const img = item.evidence_image ? `<a href="assets/uploads/start_day/${item.evidence_image}" target="_blank"><img src="assets/uploads/start_day/${item.evidence_image}" class="w-10 h-10 object-cover rounded-xl shadow-sm border border-slate-200 md:mx-auto"></a>` : '-';
             
-            // 🌟 เพิ่มปุ่มลบ เฉพาะ Super Admin
-            let manageTd = '';
-            if (isSuperAdmin) {
-                manageTd = `
-                <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center items-center ${isSuperAdmin ? '' : 'border-b border-dashed border-slate-100 md:border-none'}">
-                    <span class="md:hidden font-black text-slate-400">จัดการ</span>
-                    <button type="button" onclick="deleteStartDayRecordGlobal(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100 shadow-sm inline-flex items-center justify-center md:mx-auto">
-                        <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i> ลบ
-                    </button>
-                </td>`;
-            }
+            // 🌟 2. ปุ่มจัดการ สำหรับกดแก้ไข/ลบ
+            let deleteBtn = isAdmin ? `<button type="button" onclick="deleteStartDayRecordGlobal(${item.id})" class="px-2 py-1 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100 shadow-sm inline-flex items-center justify-center">ลบ</button>` : '';
+
+            let manageTd = `
+            <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center items-center border-b border-dashed border-slate-100 md:border-none">
+                <span class="md:hidden font-black text-slate-400">จัดการ</span>
+                <div class="flex gap-1 justify-end md:justify-center w-full">
+                    <button type="button" onclick="openEditStartDayModal(${item.id})" class="px-2 py-1 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100 shadow-sm inline-flex items-center justify-center">แก้ไข</button>
+                    ${deleteBtn}
+                </div>
+            </td>`;
 
             tBody.innerHTML += `
                 <tr class="block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50 rounded-xl md:rounded-none shadow-sm md:shadow-none">
@@ -127,7 +129,7 @@ function renderTable(type, records, tHead, tBody) {
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 font-bold text-indigo-600 border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">พนักงาน</span>${item.full_name}</td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">ลูกค้า</span><div class="text-right md:text-left"><div class="font-bold">${item.customer_name}</div><div class="text-xs text-slate-400">Non: ${item.non_number}</div></div></td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">สถานะ</span>${status}</td>
-                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center items-center ${isSuperAdmin ? 'border-b border-dashed border-slate-100 md:border-none' : ''}"><span class="md:hidden font-black text-slate-400">หลักฐาน</span>${img}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center items-center border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">หลักฐาน</span>${img}</td>
                     ${manageTd}
                 </tr>`;
         });
