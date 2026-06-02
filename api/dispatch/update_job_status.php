@@ -140,7 +140,7 @@ try {
     $teamId = $job['team_id'] ?? null;
     if ($teamId !== null) {
         $yearMonth = date('Y-m');
-        $stmtCase = $pdo->prepare("INSERT INTO team_oil_cases (team_id, year_month, case_count) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE case_count = case_count + 1, updated_at = CURRENT_TIMESTAMP");
+        $stmtCase = $pdo->prepare("INSERT INTO team_oil_cases (team_id, year_month) VALUES (?, ?) ON DUPLICATE KEY UPDATE case_count = case_count + 1");
         $stmtCase->execute([$teamId, $yearMonth]);
     }
     echo json_encode(['success' => true, 'message' => 'บันทึกการปิดงานสำเร็จ']);
