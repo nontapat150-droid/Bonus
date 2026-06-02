@@ -33,7 +33,7 @@ function countTeamCompletedCases(PDO $pdo, int $teamId, string $yearMonth): int
 function upsertTeamOilCases(PDO $pdo, int $teamId, string $yearMonth, int $count): void
 {
     $stmt = $pdo->prepare("
-        INSERT INTO team_oil_cases (team_id, year_month, case_count)
+        INSERT INTO team_oil_cases (team_id, `year_month`, case_count)
         VALUES (?, ?, ?)
         ON DUPLICATE KEY UPDATE case_count = VALUES(case_count), updated_at = CURRENT_TIMESTAMP
     ");
@@ -104,7 +104,7 @@ function getTeamMonthlyCaseCount(PDO $pdo, int $teamId, string $yearMonth, bool 
 
     $stmt = $pdo->prepare("
         SELECT case_count FROM team_oil_cases
-        WHERE team_id = ? AND year_month = ?
+        WHERE team_id = ? AND `year_month` = ?
         LIMIT 1
     ");
     $stmt->execute([$teamId, $yearMonth]);
@@ -151,40 +151,40 @@ function backfillAllTeamOilCases(PDO $pdo): array
 {
     $ym = sqlYearMonth('jl.timestamp');
     $stmt = $pdo->query("
-        SELECT DISTINCT j.team_id, {$ym} AS year_month
+        SELECT DISTINCT j.team_id, {$ym} AS ym_key
         FROM job_logs jl
         INNER JOIN jobs j ON j.id = jl.job_id
         WHERE j.team_id IS NOT NULL
           AND jl.status = 'completed'
-        ORDER BY j.team_id, year_month
+        ORDER BY j.team_id, ym_key
     ");
     $pairs = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $synced = 0;
 
     foreach ($pairs as $row) {
-        syncTeamOilMonth($pdo, (int)$row['team_id'], $row['year_month']);
+        syncTeamOilMonth($pdo, (int)$row['team_id'], $row['ym_key']);
         $synced++;
     }
 
     // Also sync months that have oil_records but no closes yet (job_count = 0)
     $seen = [];
     foreach ($pairs as $row) {
-        $seen[(int)$row['team_id'] . '-' . $row['year_month']] = true;
+        $seen[(int)$row['team_id'] . '-' . $row['ym_key']] = true;
     }
 
     $ymOil = sqlYearMonth('o.date_recorded');
     $stmtOil = $pdo->query("
-        SELECT DISTINCT t.id AS team_id, {$ymOil} AS year_month
+        SELECT DISTINCT t.id AS team_id, {$ymOil} AS ym_key
         FROM oil_records o
         INNER JOIN teams t ON t.team_name = o.license_plate
     ");
     foreach ($stmtOil->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $key = (int)$row['team_id'] . '-' . $row['year_month'];
+        $key = (int)$row['team_id'] . '-' . $row['ym_key'];
         if (isset($seen[$key])) {
             continue;
         }
         $seen[$key] = true;
-        syncTeamOilMonth($pdo, (int)$row['team_id'], $row['year_month']);
+        syncTeamOilMonth($pdo, (int)$row['team_id'], $row['ym_key']);
         $synced++;
     }
 
@@ -232,7 +232,7 @@ function sumTeamCasesInDateRange(PDO $pdo, ?string $startDate, ?string $endDate,
     if ($startDate && $endDate) {
         $startYm = date('Y-m', strtotime($startDate));
         $endYm = date('Y-m', strtotime($endDate));
-        $sql .= " AND toc.year_month >= ? AND toc.year_month <= ?";
+        $sql .= " AND toc.`year_month` >= ? AND toc.`year_month` <= ?";
         $params[] = $startYm;
         $params[] = $endYm;
     }

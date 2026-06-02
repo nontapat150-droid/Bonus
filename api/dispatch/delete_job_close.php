@@ -34,7 +34,7 @@ try {
     if (!empty($record['job_log_id'])) {
         $ym = sqlYearMonth('jl.timestamp');
         $stmtLog = $pdo->prepare("
-            SELECT {$ym} AS year_month, j.team_id
+            SELECT {$ym} AS ym_key, j.team_id
             FROM job_logs jl
             INNER JOIN jobs j ON j.id = jl.job_id
             WHERE jl.id = ?
@@ -43,7 +43,7 @@ try {
         $stmtLog->execute([(int)$record['job_log_id']]);
         $logRow = $stmtLog->fetch(PDO::FETCH_ASSOC);
         if ($logRow) {
-            $syncYearMonth = $logRow['year_month'];
+            $syncYearMonth = $logRow['ym_key'];
             $syncTeamId = $logRow['team_id'] ? (int)$logRow['team_id'] : null;
         }
     }

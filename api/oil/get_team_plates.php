@@ -37,7 +37,7 @@ try {
                COALESCE(toc.case_count, 0) AS monthly_completed_cases
         FROM teams t
         LEFT JOIN jobs j ON j.team_id = t.id
-        LEFT JOIN team_oil_cases toc ON toc.team_id = t.id AND toc.year_month = ?
+        LEFT JOIN team_oil_cases toc ON toc.team_id = t.id AND toc.`year_month` = ?
     ";
 
     if ($isAdmin) {
