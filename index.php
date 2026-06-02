@@ -1185,7 +1185,12 @@ if ($page === 'home') {
             e.preventDefault();
             const message = document.getElementById('issueMessage').value.trim();
             if (!message && !imageInput.files[0]) {
-                alert('กรุณากรอกข้อความหรือแนบรูปภาพ');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ข้อมูลไม่ครบถ้วน',
+                    text: 'กรุณากรอกข้อความหรือแนบรูปภาพ',
+                    confirmButtonColor: '#F59E0B'
+                });
                 return;
             }
             
@@ -1202,13 +1207,28 @@ if ($page === 'home') {
                 
                 const data = await res.json();
                 if (data.success) {
-                    alert('ส่งรายงานสำเร็จ!');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'สำเร็จ',
+                        text: data.message || 'ส่งรายงานปัญหาเรียบร้อยแล้ว',
+                        confirmButtonColor: '#10B981'
+                    });
                     closeModal();
                 } else {
-                    alert(data.message || 'เกิดข้อผิดพลาดในการส่งรายงาน');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: data.message || 'เกิดข้อผิดพลาดในการส่งรายงาน',
+                        confirmButtonColor: '#EF4444'
+                    });
                 }
             } catch (error) {
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เชื่อมต่อล้มเหลว',
+                    text: 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์',
+                    confirmButtonColor: '#EF4444'
+                });
             } finally {
                 submitBtn.innerHTML = originalBtnHtml;
                 submitBtn.disabled = false;
