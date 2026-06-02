@@ -86,6 +86,28 @@ try {
         $stmt->execute([$license_plate, $user_id]);
     }
 
+    // ผูกช่างกับทีมอัตโนมัติ (ตาม request "ในหน้าระบบน้ำมันหากล็อคอินกับชื่อช่างให้ผูกชื่อช่างกับทีมเอาไว้เลย")
+    if (!$isAdmin) {
+        // หา team_id ถ้ายังไม่ได้หาในรอบ job_count
+        if (!isset($teamId) || !$teamId) {
+            $stmtTeam = $pdo->prepare("SELECT id FROM teams WHERE team_name = ? LIMIT 1");
+            $stmtTeam->execute([$license_plate]);
+            $teamId = $stmtTeam->fetchColumn();
+        }
+        
+        if ($teamId) {
+            // ตรวจสอบว่าช่างคนนี้มีทีมหรือยัง
+            $stmtCheckUserTeam = $pdo->prepare("SELECT team_id FROM users WHERE id = ?");
+            $stmtCheckUserTeam->execute([$user_id]);
+            $currentTeamId = $stmtCheckUserTeam->fetchColumn();
+            
+            if (!$currentTeamId) {
+                $stmtUpdateUserTeam = $pdo->prepare("UPDATE users SET team_id = ? WHERE id = ?");
+                $stmtUpdateUserTeam->execute([$teamId, $user_id]);
+            }
+        }
+    }
+
     // เพิ่มข้อมูลลงตาราง โดยกำหนดให้ระยะทางเริ่มต้นเป็น 0 ชั่วคราว
     $stmt = $pdo->prepare("INSERT INTO oil_records (tech_id, license_plate, liters, mileage, price_per_liter, total_price, date_recorded, filler_name, distance, job_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)");
     $stmt->execute([$tech_id, $license_plate, $liters, $mileage, $price_per_liter, $total_price, $date_recorded, $filler_name, $job_count]);
