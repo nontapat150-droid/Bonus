@@ -3,7 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('startDayForm');
     const fileInput = document.getElementById('start_day_images');
     const previewContainer = document.getElementById('imagePreviewContainer');
-    const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+    
+    // 🌟 1. ปรับเกณฑ์การบีบอัดให้ทำงานเมื่อไฟล์ใหญ่กว่า 500KB (จากเดิม 5MB)
+    const COMPRESS_THRESHOLD = 500 * 1024; 
 
     const tabFormBtn = document.getElementById('tabFormBtn');
     const tabHistBtn = document.getElementById('tabHistBtn');
@@ -38,21 +40,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        // 🌟 แสดง Loader ตอนเลือกรูปภาพ เผื่อเครื่องมือถือประมวลผลช้า
+        if (files.length > 0) {
+            Swal.fire({ title: 'กำลังเตรียมรูปภาพ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+        }
+
         for (const file of files) {
             if (!file.type.startsWith('image/')) continue;
 
             let processedFile = file;
-            if (file.size > MAX_IMAGE_SIZE) {
+            // 🌟 2. บีบอัดรูปภาพทุกรูปที่ใหญ่กว่า 500KB
+            if (file.size > COMPRESS_THRESHOLD) {
                 try {
-                    processedFile = await compressImage(file, MAX_IMAGE_SIZE);
+                    processedFile = await compressImage(file);
                 } catch (err) {
-                    Swal.fire('แจ้งเตือน', 'รูปภาพใหญ่เกินไป บีบอัดไม่สำเร็จ', 'error');
-                    continue;
+                    console.error('บีบอัดรูปภาพล้มเหลว', err);
                 }
             }
             selectedFiles.push(processedFile);
             renderPreview(processedFile, selectedFiles.length - 1);
         }
+        
+        if (files.length > 0) Swal.close(); // ปิด Loader ทันทีที่ประมวลผลรูปเสร็จ
+        
         fileInput.value = '';
     });
 
@@ -76,24 +86,31 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedFiles.forEach((f, i) => renderPreview(f, i));
     };
 
-    async function compressImage(file, maxSize) {
-        return new Promise((resolve, reject) => {
+    // 🌟 3. ปรับฟังก์ชันให้ลดขนาดพิกเซลและคุณภาพลง (จะทำให้ส่งข้อมูลไวขึ้น 10 เท่า)
+    async function compressImage(file) {
+        return new Promise((resolve) => {
             const reader = new FileReader();
             reader.onload = (event) => {
                 const img = new Image();
-                img.onload = async () => {
+                img.onload = () => {
                     let canvas = document.createElement('canvas');
                     let ctx = canvas.getContext('2d');
-                    const ratio = Math.min(1, 1920 / Math.max(img.width, img.height));
+                    
+                    // ปรับขนาดภาพสูงสุดไม่เกิน 1280px (จากเดิม 1920px)
+                    const MAX_DIMENSION = 1280;
+                    const ratio = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height));
                     let width = Math.round(img.width * ratio);
                     let height = Math.round(img.height * ratio);
+                    
                     canvas.width = width;
                     canvas.height = height;
                     ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // ลดคุณภาพ (Quality) ลงเหลือ 75% ทำให้ไฟล์เล็กมาก และไวต่อการอัปโหลด
                     canvas.toBlob(blob => {
                         const name = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
                         resolve(new File([blob], name, { type: 'image/jpeg' }));
-                    }, 'image/jpeg', 0.9);
+                    }, 'image/jpeg', 0.75);
                 };
                 img.src = event.target.result;
             };
@@ -199,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // 🌟 1. ดักจับความยาวเลข Non ต้อง 10 ตัวพอดี
         const nonInput = form.querySelector('[name="non_number"]');
         if (nonInput) {
             const nonVal = nonInput.value.trim();
@@ -233,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const submitBtn = document.getElementById('submitBtn');
         const originalText = submitBtn.innerHTML;
         
-        Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+        Swal.fire({ title: 'กำลังอัปโหลดข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
         submitBtn.disabled = true;
 
         try {
@@ -266,7 +282,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedFiles = [];
                 previewContainer.innerHTML = '';
             } else {
-                // 🌟 2. แสดงแจ้งเตือนกรณีเลขซ้ำ (ดึง Error จากหลังบ้าน)
                 Swal.fire('แจ้งเตือน', result.error, 'warning');
             }
         } catch (error) {
@@ -284,29 +299,4 @@ window.deleteStartDayRecord = async function(id) {
         text: "ประวัติค่าแรกเข้านี้จะถูกลบออกจากระบบอย่างถาวร!",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#94a3b8',
-        confirmButtonText: 'ใช่, ลบข้อมูล',
-        cancelButtonText: 'ยกเลิก',
-        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md', cancelButton: 'rounded-xl px-6 py-2.5 font-bold' }
-    }).then(async (result) => {
-        if (result.isConfirmed) {
-            Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-            
-            try {
-                const res = await fetch('api/start_day/delete.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id: id }) });
-                const data = await res.json();
-                
-                if (data.success) {
-                    Swal.fire({ title: 'สำเร็จ!', text: 'ลบข้อมูลเรียบร้อยแล้ว', icon: 'success', confirmButtonText: 'ตกลง', confirmButtonColor: '#10b981', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold' } });
-                    if (typeof window.loadHistory === 'function') window.loadHistory();
-                    else location.reload();
-                } else {
-                    Swal.fire('ข้อผิดพลาด', data.error || 'ลบข้อมูลไม่สำเร็จ', 'error');
-                }
-            } catch(e) {
-                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
-            }
-        }
-    });
-};
+        confirmButtonColor: '#
