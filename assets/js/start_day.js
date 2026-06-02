@@ -236,21 +236,26 @@ window.renderHistoryTable = function(records, isSuperAdmin = false) {
     if(!tbody) return;
     tbody.innerHTML = '';
     
-    // จัดการหัวตารางอัตโนมัติ (ใส่/ถอดคอลัมน์ จัดการ)
+    // 🌟 1. จำข้อมูลประวัติไว้ในระบบ เพื่อดึงมาโชว์ตอนกดแก้ไข
+    window.startDayRecords = records;
+
+    // จัดการหัวตารางอัตโนมัติ (ตอนนี้ทุกคนต้องมีคอลัมน์ 'จัดการ' เพื่อกดปุ่มแก้ไข)
     const theadTr = document.querySelector('#historySection thead tr');
     if (theadTr) {
         const hasManage = theadTr.innerHTML.includes('จัดการ');
-        if (isSuperAdmin && !hasManage) {
+        if (!hasManage) {
             theadTr.innerHTML += '<th class="px-6 py-4 text-center">จัดการ</th>';
-        } else if (!isSuperAdmin && hasManage) {
-            theadTr.removeChild(theadTr.lastElementChild);
         }
     }
 
     if (records.length === 0) {
-        tbody.innerHTML = `<tr class="block md:table-row"><td colspan="${isSuperAdmin ? '6' : '5'}" class="text-center py-8 text-slate-400 italic block md:table-cell">ยังไม่มีประวัติการบันทึกของคุณ</td></tr>`;
+        tbody.innerHTML = `<tr class="block md:table-row"><td colspan="6" class="text-center py-8 text-slate-400 italic block md:table-cell">ยังไม่มีประวัติการบันทึกของคุณ</td></tr>`;
         return;
     }
+
+    // ดึงสิทธิ์ผู้ใช้งานมาเช็ค
+    const role = window.USER_ROLE;
+    const isAdmin = (role === 'admin' || role === 'super_admin');
 
     records.forEach(item => {
         let statusHtml = '';
@@ -266,17 +271,18 @@ window.renderHistoryTable = function(records, isSuperAdmin = false) {
             ? `<a href="assets/uploads/start_day/${item.evidence_image}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/start_day/${item.evidence_image}" class="w-12 h-12 object-cover rounded-xl shadow-sm border border-slate-200"></a>`
             : '<div class="w-12 h-12 flex items-center justify-center mx-auto rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>';
 
-        let manageColumn = '';
-        if (isSuperAdmin) {
-            manageColumn = `
-                <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center">
-                    <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">จัดการ</span>
-                    <button type="button" onclick="deleteStartDayRecord(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100 shadow-sm inline-flex items-center justify-center mx-auto">
-                        ลบข้อมูล
-                    </button>
-                </td>
-            `;
-        }
+        // 🌟 2. สร้างปุ่มลบ (เห็นเฉพาะแอดมิน) และปุ่มแก้ไข (เห็นทุกคน)
+        let deleteBtn = isAdmin ? `<button type="button" onclick="deleteStartDayRecord(${item.id})" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100 shadow-sm inline-flex items-center justify-center">ลบ</button>` : '';
+
+        let manageColumn = `
+            <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center border-b border-dashed border-slate-100 md:border-none">
+                <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">จัดการ</span>
+                <div class="flex gap-2 justify-end md:justify-center w-full">
+                    <button type="button" onclick="openEditStartDayModal(${item.id})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100 shadow-sm inline-flex items-center justify-center">แก้ไข</button>
+                    ${deleteBtn}
+                </div>
+            </td>
+        `;
 
         const tr = document.createElement('tr');
         tr.className = 'block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50 transition-colors rounded-xl md:rounded-none shadow-sm md:shadow-none';
@@ -301,7 +307,7 @@ window.renderHistoryTable = function(records, isSuperAdmin = false) {
                 <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">สถานะ</span>
                 ${statusHtml}
             </td>
-            <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center ${isSuperAdmin ? 'border-b border-dashed border-slate-100 md:border-none' : ''}">
+            <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center border-b border-dashed border-slate-100 md:border-none">
                 <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">รูปภาพ</span>
                 <div class="md:flex md:justify-center">${imgHtml}</div>
             </td>
