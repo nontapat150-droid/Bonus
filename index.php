@@ -33,7 +33,35 @@ if ($page === 'home') {
         $stmt = $pdo->query("SELECT COUNT(*) FROM users");
         $stats['total_staff'] = $stmt->fetchColumn();
         
-        // --- 🚀 จัดการและดึงข้อมูลประกาศ (Marquee) ---
+        // --- 🚀 จัดการและดึงข้อมูลประกาศ ---
+        // 0. Migration: สร้างตารางและเพิ่มคอลัมน์ที่ขาดหายสำหรับฐานข้อมูลเก่า
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS announcements (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                type VARCHAR(50) DEFAULT 'popup',
+                title VARCHAR(255) DEFAULT NULL,
+                message TEXT NOT NULL,
+                image_url VARCHAR(255) DEFAULT NULL,
+                expires_at DATETIME DEFAULT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            // เพิ่มคอลัมน์ type ถ้ายังไม่มี (ตารางเก่า)
+            $chk = $pdo->prepare("SHOW COLUMNS FROM announcements LIKE 'type'");
+            $chk->execute();
+            if (!$chk->fetch()) {
+                $pdo->exec("ALTER TABLE announcements ADD COLUMN `type` VARCHAR(50) DEFAULT 'popup' AFTER `id`");
+                $pdo->exec("UPDATE announcements SET `type` = 'popup' WHERE `type` IS NULL OR `type` = ''");
+            }
+
+            // เพิ่มคอลัมน์ title ถ้ายังไม่มี
+            $chk2 = $pdo->prepare("SHOW COLUMNS FROM announcements LIKE 'title'");
+            $chk2->execute();
+            if (!$chk2->fetch()) {
+                $pdo->exec("ALTER TABLE announcements ADD COLUMN `title` VARCHAR(255) DEFAULT NULL AFTER `type`");
+            }
+        } catch (Exception $e) { /* ignore migration errors silently */ }
+
         // 1. ลบประกาศที่หมดอายุอัตโนมัติ
         $pdo->exec("DELETE FROM announcements WHERE expires_at IS NOT NULL AND expires_at < NOW()");
         // 2. ดึงประกาศแยกระหว่างป๊อปอัปและป้ายวิ่ง
