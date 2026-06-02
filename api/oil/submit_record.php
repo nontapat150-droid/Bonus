@@ -29,7 +29,7 @@ try {
     }
 
     $date_recorded = date('Y-m-d H:i:s');
-    if ($isAdmin && !empty($_POST['date_recorded'])) {
+    if (!empty($_POST['date_recorded'])) {
         $date_recorded = date('Y-m-d H:i:s', strtotime($_POST['date_recorded']));
     }
 
