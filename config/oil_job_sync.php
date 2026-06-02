@@ -2,17 +2,26 @@
 // config/oil_job_sync.php — sync completed dispatch cases to oil system (team + month)
 
 /**
+ * SQL expression for YYYY-MM from a datetime column (avoids % in PDO prepared statements).
+ */
+function sqlYearMonth(string $dateColumn): string
+{
+    return "CONCAT(YEAR({$dateColumn}), '-', LPAD(MONTH({$dateColumn}), 2, '0'))";
+}
+
+/**
  * Count distinct completed jobs closed for a team in a calendar month (by job_logs.timestamp).
  */
 function countTeamCompletedCases(PDO $pdo, int $teamId, string $yearMonth): int
 {
+    $ym = sqlYearMonth('jl.timestamp');
     $stmt = $pdo->prepare("
         SELECT COUNT(DISTINCT jl.job_id)
         FROM job_logs jl
         INNER JOIN jobs j ON j.id = jl.job_id
         WHERE j.team_id = ?
           AND jl.status = 'completed'
-          AND DATE_FORMAT(jl.timestamp, '%Y-%m') = ?
+          AND {$ym} = ?
     ");
     $stmt->execute([$teamId, $yearMonth]);
     return (int)$stmt->fetchColumn();
@@ -63,11 +72,12 @@ function syncOilRecordsJobCount(PDO $pdo, int $teamId, string $yearMonth, int $c
         return;
     }
 
+    $ym = sqlYearMonth('date_recorded');
     $stmt = $pdo->prepare("
         UPDATE oil_records
         SET job_count = ?
         WHERE license_plate = ?
-          AND DATE_FORMAT(date_recorded, '%Y-%m') = ?
+          AND {$ym} = ?
     ");
     $stmt->execute([$count, $teamName, $yearMonth]);
 }
@@ -116,8 +126,9 @@ function syncTeamOilFromJob(PDO $pdo, int $jobId, ?string $yearMonth = null): vo
     $teamId = (int)$teamId;
 
     if ($yearMonth === null) {
+        $ym = sqlYearMonth('timestamp');
         $stmtLog = $pdo->prepare("
-            SELECT DATE_FORMAT(timestamp, '%Y-%m') AS ym
+            SELECT {$ym} AS ym
             FROM job_logs
             WHERE job_id = ? AND status = 'completed'
             ORDER BY timestamp DESC
@@ -138,8 +149,9 @@ function syncTeamOilFromJob(PDO $pdo, int $jobId, ?string $yearMonth = null): vo
  */
 function backfillAllTeamOilCases(PDO $pdo): array
 {
+    $ym = sqlYearMonth('jl.timestamp');
     $stmt = $pdo->query("
-        SELECT DISTINCT j.team_id, DATE_FORMAT(jl.timestamp, '%Y-%m') AS year_month
+        SELECT DISTINCT j.team_id, {$ym} AS year_month
         FROM job_logs jl
         INNER JOIN jobs j ON j.id = jl.job_id
         WHERE j.team_id IS NOT NULL
@@ -160,8 +172,9 @@ function backfillAllTeamOilCases(PDO $pdo): array
         $seen[(int)$row['team_id'] . '-' . $row['year_month']] = true;
     }
 
+    $ymOil = sqlYearMonth('o.date_recorded');
     $stmtOil = $pdo->query("
-        SELECT DISTINCT t.id AS team_id, DATE_FORMAT(o.date_recorded, '%Y-%m') AS year_month
+        SELECT DISTINCT t.id AS team_id, {$ymOil} AS year_month
         FROM oil_records o
         INNER JOIN teams t ON t.team_name = o.license_plate
     ");

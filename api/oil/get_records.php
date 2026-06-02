@@ -128,27 +128,28 @@ try {
 
     // Team-month rollup for avg cost per case in filtered period
     $teamMonthStats = [];
+    $ymOil = sqlYearMonth('o.date_recorded');
     $statsSql2 = "SELECT
                     t.team_name,
-                    DATE_FORMAT(o.date_recorded, '%Y-%m') AS year_month,
+                    {$ymOil} AS ym_label,
                     SUM(o.total_price) AS month_fuel_cost,
                     SUM(o.distance) AS month_distance,
                     SUM(o.liters) AS month_liters
                   FROM oil_records o
                   INNER JOIN teams t ON t.team_name = o.license_plate
                   $whereClause
-                  GROUP BY t.id, t.team_name, DATE_FORMAT(o.date_recorded, '%Y-%m')";
+                  GROUP BY t.id, t.team_name, {$ymOil}";
     $stmtTeamMonth = $pdo->prepare($statsSql2);
     $stmtTeamMonth->execute($params);
     foreach ($stmtTeamMonth->fetchAll(PDO::FETCH_ASSOC) as $tm) {
         $tid = getTeamIdByName($pdo, $tm['team_name']);
-        $cases = $tid ? getTeamMonthlyCaseCount($pdo, $tid, $tm['year_month'], false) : 0;
+        $cases = $tid ? getTeamMonthlyCaseCount($pdo, $tid, $tm['ym_label'], false) : 0;
         $monthLiters = (float)$tm['month_liters'];
         $monthDist = (float)$tm['month_distance'];
         $monthCost = (float)$tm['month_fuel_cost'];
         $teamMonthStats[] = [
             'team_name' => $tm['team_name'],
-            'year_month' => $tm['year_month'],
+            'year_month' => $tm['ym_label'],
             'completed_cases' => $cases,
             'month_fuel_cost' => round($monthCost, 2),
             'month_distance' => round($monthDist, 2),
@@ -159,34 +160,36 @@ try {
         ];
     }
 
+    $ymRecord = sqlYearMonth('date_recorded');
+    $currentYear = (int)date('Y');
     $monthlySql = "SELECT
                     ym.month_label,
                     COALESCE(oil.monthly_cost, 0) AS monthly_cost,
                     COALESCE(oil.monthly_liters, 0) AS monthly_liters,
                     COALESCE(cases.monthly_jobs, 0) AS monthly_jobs
                  FROM (
-                    SELECT DATE_FORMAT(date_recorded, '%Y-%m') AS month_label
+                    SELECT {$ymRecord} AS month_label
                     FROM oil_records
-                    WHERE YEAR(date_recorded) = YEAR(CURRENT_DATE)
+                    WHERE YEAR(date_recorded) = {$currentYear}
                     UNION
-                    SELECT year_month AS month_label
+                    SELECT `year_month` AS month_label
                     FROM team_oil_cases
-                    WHERE year_month LIKE CONCAT(YEAR(CURRENT_DATE), '-%')
+                    WHERE `year_month` >= '{$currentYear}-01' AND `year_month` <= '{$currentYear}-12'
                  ) ym
                  LEFT JOIN (
-                    SELECT DATE_FORMAT(date_recorded, '%Y-%m') AS month_label,
+                    SELECT {$ymRecord} AS month_label,
                            SUM(total_price) AS monthly_cost,
                            SUM(liters) AS monthly_liters
                     FROM oil_records
-                    WHERE YEAR(date_recorded) = YEAR(CURRENT_DATE)
-                    GROUP BY DATE_FORMAT(date_recorded, '%Y-%m')
+                    WHERE YEAR(date_recorded) = {$currentYear}
+                    GROUP BY {$ymRecord}
                  ) oil ON oil.month_label = ym.month_label
                  LEFT JOIN (
-                    SELECT year_month AS month_label,
+                    SELECT `year_month` AS month_label,
                            SUM(case_count) AS monthly_jobs
                     FROM team_oil_cases
-                    WHERE year_month LIKE CONCAT(YEAR(CURRENT_DATE), '-%')
-                    GROUP BY year_month
+                    WHERE `year_month` >= '{$currentYear}-01' AND `year_month` <= '{$currentYear}-12'
+                    GROUP BY `year_month`
                  ) cases ON cases.month_label = ym.month_label
                  ORDER BY ym.month_label ASC";
     $stmtMonthly = $pdo->prepare($monthlySql);
