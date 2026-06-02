@@ -20,7 +20,7 @@ $date_recorded = $input['date_recorded'] ?? null;
 $mileage = intval($input['mileage'] ?? 0);
 $liters = floatval($input['liters'] ?? 0);
 $price_per_liter = floatval($input['price_per_liter'] ?? 0);
-$job_count = intval($input['job_count'] ?? 0);
+// job_count มาจากงานที่กดจบงานสำเร็จเท่านั้น (ไม่รับค่าจากฟอร์มแอดมิน)
 
 if (!$id || !$tech_id || !$license_plate || !$date_recorded || $mileage <= 0 || $liters <= 0 || $price_per_liter <= 0) {
     echo json_encode(['success' => false, 'error' => 'ข้อมูลไม่ครบถ้วน']);
@@ -55,9 +55,7 @@ try {
     $teamIdNew = getTeamIdByName($pdo, $license_plate);
     $yearMonthNew = date('Y-m', strtotime($date_recorded_mysql));
 
-    if ($job_count <= 0 && $teamIdNew) {
-        $job_count = getTeamMonthlyCaseCount($pdo, $teamIdNew, $yearMonthNew, false);
-    }
+    $job_count = resolveTeamMonthlyJobCount($pdo, $teamIdNew, $yearMonthNew);
 
     $stmtUser = $pdo->prepare("SELECT full_name FROM users WHERE id = ? LIMIT 1");
     $stmtUser->execute([$tech_id]);

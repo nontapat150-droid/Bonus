@@ -37,5 +37,13 @@ try {
 }
 
 echo "<p><a href='backfill_team_oil_cases.php'>รัน Backfill นับเคสจากประวัติปิดงาน</a></p>";
+
+try {
+    require_once __DIR__ . '/../config/job_reschedule.php';
+    ensureJobReschedulesTable($pdo);
+    echo "<div style='color: green;'>SUCCESS: job_reschedules table ready</div>";
+} catch (PDOException $e) {
+    echo "<div style='color: orange;'>job_reschedules: " . htmlspecialchars($e->getMessage()) . "</div>";
+}
 echo "<br><a href='../index.php'>กลับหน้าหลัก</a>";
 ?>

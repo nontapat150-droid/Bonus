@@ -349,6 +349,36 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 </div>
 
+<?php if ($isAdmin): ?>
+<div id="rescheduleHistoryPanel" class="mt-6 card border border-amber-200 bg-amber-50/40 overflow-hidden">
+    <div class="px-4 py-3 border-b border-amber-200 flex flex-wrap items-center justify-between gap-2 bg-amber-50">
+        <div class="flex items-center gap-2">
+            <i data-lucide="calendar-clock" class="w-5 h-5 text-amber-700"></i>
+            <h3 class="font-black text-amber-900 text-sm">ประวัติเลื่อนนัดติดตั้ง (แจ้งจากช่าง)</h3>
+            <span id="reschedulePendingBadge" class="hidden text-[10px] font-black bg-rose-500 text-white px-2 py-0.5 rounded-full">0</span>
+        </div>
+        <button type="button" onclick="loadRescheduleHistory()" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-800 hover:bg-amber-100">รีเฟรช</button>
+    </div>
+    <div class="overflow-x-auto max-h-72">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-amber-100/80 text-amber-900 font-black uppercase tracking-wide sticky top-0">
+                <tr>
+                    <th class="px-3 py-2">วันที่แจ้ง</th>
+                    <th class="px-3 py-2">ช่าง / ทีม</th>
+                    <th class="px-3 py-2">งาน / ลูกค้า</th>
+                    <th class="px-3 py-2">เลื่อนนัด</th>
+                    <th class="px-3 py-2">หมายเหตุ</th>
+                    <th class="px-3 py-2 text-center">สถานะ</th>
+                </tr>
+            </thead>
+            <tbody id="rescheduleHistoryBody" class="divide-y divide-amber-100 bg-white">
+                <tr><td colspan="6" class="px-4 py-6 text-center text-slate-400 font-bold">กำลังโหลด...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; ?>
+
 <script>
     const IS_ADMIN = <?php echo $isAdmin ? 'true' : 'false'; ?>;
 </script>

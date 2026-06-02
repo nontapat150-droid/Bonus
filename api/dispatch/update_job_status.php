@@ -3,6 +3,7 @@
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
 require_once '../../config/oil_job_sync.php';
+require_once '../../config/job_reschedule.php';
 
 header('Content-Type: application/json');
 requireLogin();
@@ -20,21 +21,35 @@ $job_id = $input['job_id'] ?? null;
 $status = $input['status'] ?? null;
 $remark = trim($input['remark'] ?? '');
 $close3bb = $input['close_3bb'] ?? null;
+$reschedule_date = trim($input['reschedule_date'] ?? '');
 
 if (!$job_id || !$status) {
     echo json_encode(['success' => false, 'error' => 'ข้อมูลไม่ครบถ้วน']);
     exit;
 }
 
-$validStatuses = ['completed', 'failed'];
-if (!in_array($status, $validStatuses)) {
+$validStatuses = ['completed', 'failed', 'rescheduled'];
+if (!in_array($status, $validStatuses, true)) {
     echo json_encode(['success' => false, 'error' => 'สถานะไม่ถูกต้อง']);
     exit;
 }
 
 if ($status === 'failed' && $remark === '') {
-    echo json_encode(['success' => false, 'error' => 'กรุณาระบุหมายเหตุเมื่อทำงานไม่สำเร็จ']);
+    echo json_encode(['success' => false, 'error' => 'กรุณาระบุหมายเหตุสาเหตุที่ไม่สำเร็จ']);
     exit;
+}
+
+if ($status === 'rescheduled') {
+    if ($reschedule_date === '') {
+        echo json_encode(['success' => false, 'error' => 'กรุณาเลือกวันที่นัดติดตั้งใหม่']);
+        exit;
+    }
+    $parsedReschedule = date_create($reschedule_date);
+    if (!$parsedReschedule) {
+        echo json_encode(['success' => false, 'error' => 'รูปแบบวันที่ไม่ถูกต้อง']);
+        exit;
+    }
+    $reschedule_date = $parsedReschedule->format('Y-m-d');
 }
 
 if ($status === 'completed' && empty($close3bb)) {
@@ -74,7 +89,6 @@ try {
         exit;
     }
 
-    // 🌟 แก้ไขตรงนี้: ให้เช็คเฉพาะ completed ไม่ให้เช็ค failed เพื่อให้แก้งาน failed ได้
     if ($job['status'] === 'completed') {
         echo json_encode(['success' => false, 'error' => 'งานนี้ถูกปิดสำเร็จไปแล้ว']);
         exit;
@@ -82,22 +96,20 @@ try {
 
     $pdo->beginTransaction();
 
+    $previousPlanDate = $job['plan_arrival_date'] ?? null;
+    $job_log_id = null;
+    $notificationId = null;
+
     if ($status === 'completed') {
         $logRemark = nullableStr($close3bb['remark'] ?? '') ?? '';
-    } else {
-        $logRemark = $remark;
-    }
+        $stmt = $pdo->prepare("UPDATE jobs SET status = ?, remark = ? WHERE id = ?");
+        $stmt->execute([$status, $logRemark, $job_id]);
 
-    $stmt = $pdo->prepare("UPDATE jobs SET status = ?, remark = ? WHERE id = ?");
-    $stmt->execute([$status, $logRemark, $job_id]);
+        $logStmt = $pdo->prepare("INSERT INTO job_logs (job_id, tech_id, status, remark) VALUES (?, ?, ?, ?)");
+        $logStmt->execute([$job_id, $user['id'], $status, $logRemark]);
+        $job_log_id = (int)$pdo->lastInsertId();
 
-    $logStmt = $pdo->prepare("INSERT INTO job_logs (job_id, tech_id, status, remark) VALUES (?, ?, ?, ?)");
-    $logStmt->execute([$job_id, $user['id'], $status, $logRemark]);
-    $job_log_id = (int)$pdo->lastInsertId();
-
-    if ($status === 'completed') {
         $installDate = !empty($close3bb['install_date']) ? $close3bb['install_date'] : ($job['plan_arrival_date'] ?? null);
-
         $provider = strtoupper(trim((string)($close3bb['install_provider'] ?? '3BB')));
 
         $closeStmt = $pdo->prepare("INSERT INTO job_close_3bb (
@@ -134,16 +146,72 @@ try {
             nullableDecimal($close3bb['initial_fee'] ?? null),
             nullableStr($close3bb['remark'] ?? null),
         ]);
+    } elseif ($status === 'rescheduled') {
+        ensureJobReschedulesTable($pdo);
+
+        $logRemark = $remark !== '' ? $remark : 'ลูกค้าขอเลื่อนวันนัดติดตั้ง';
+        $jobRemark = $logRemark . ' (เลื่อนจาก ' . formatThaiDateShort($previousPlanDate) . ' → ' . formatThaiDateShort($reschedule_date) . ')';
+
+        $stmt = $pdo->prepare("UPDATE jobs SET status = NULL, remark = ?, plan_arrival_date = ? WHERE id = ?");
+        $stmt->execute([$jobRemark, $reschedule_date, $job_id]);
+
+        $logStmt = $pdo->prepare("INSERT INTO job_logs (job_id, tech_id, status, remark) VALUES (?, ?, 'rescheduled', ?)");
+        $logStmt->execute([$job_id, $user['id'], $logRemark]);
+        $job_log_id = (int)$pdo->lastInsertId();
+
+        $notificationId = notifyAdminJobRescheduled(
+            $pdo,
+            $job,
+            $user,
+            $job['team_name'] ?? null,
+            $previousPlanDate,
+            $reschedule_date,
+            $logRemark
+        );
+
+        $resStmt = $pdo->prepare("
+            INSERT INTO job_reschedules (
+                job_id, job_log_id, tech_id, team_id,
+                previous_plan_date, new_plan_date, remark, notification_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $resStmt->execute([
+            $job_id,
+            $job_log_id,
+            $user['id'],
+            $job['team_id'] ?? null,
+            $previousPlanDate,
+            $reschedule_date,
+            $logRemark,
+            $notificationId,
+        ]);
+    } else {
+        $logRemark = $remark;
+        $stmt = $pdo->prepare("UPDATE jobs SET status = ?, remark = ? WHERE id = ?");
+        $stmt->execute([$status, $logRemark, $job_id]);
+
+        $logStmt = $pdo->prepare("INSERT INTO job_logs (job_id, tech_id, status, remark) VALUES (?, ?, ?, ?)");
+        $logStmt->execute([$job_id, $user['id'], $status, $logRemark]);
+        $job_log_id = (int)$pdo->lastInsertId();
     }
 
     $pdo->commit();
 
     if ($status === 'completed' && !empty($job['team_id'])) {
-        $yearMonth = date('Y-m');
-        syncTeamOilMonth($pdo, (int)$job['team_id'], $yearMonth);
+        syncTeamOilMonth($pdo, (int)$job['team_id'], date('Y-m'));
     }
-    
-    echo json_encode(['success' => true, 'message' => 'บันทึกการปิดงานสำเร็จ']);
+
+    $messages = [
+        'completed' => 'บันทึกการปิดงานสำเร็จ',
+        'failed' => 'บันทึกงานไม่สำเร็จเรียบร้อย',
+        'rescheduled' => 'เลื่อนนัดติดตั้งเรียบร้อย งานจะแสดงอีกครั้งในวันที่ ' . formatThaiDateShort($reschedule_date),
+    ];
+
+    echo json_encode([
+        'success' => true,
+        'message' => $messages[$status] ?? 'บันทึกเรียบร้อย',
+        'reschedule_date' => $status === 'rescheduled' ? $reschedule_date : null,
+    ]);
 
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
@@ -151,4 +219,3 @@ try {
     }
     echo json_encode(['success' => false, 'error' => 'เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' . $e->getMessage()]);
 }
-?>

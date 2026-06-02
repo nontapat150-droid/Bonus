@@ -151,6 +151,9 @@ function focusMapOnJob(jobId) {
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
     loadJobs();
+    if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN) {
+        loadRescheduleHistory();
+    }
     if (window.JobClose?.checkAlerts) JobClose.checkAlerts();
 
     document.getElementById('dispatchViewJobsBtn')?.addEventListener('click', () => switchDispatchView('jobs'));
@@ -717,7 +720,7 @@ function renderMapJobList(mapJobs) {
                 <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
                     <i data-lucide="check-circle" class="w-3 h-3"></i>ปิดงาน
                 </button>
-                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-rose-500 text-white hover:bg-rose-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'failed')">
+                <button type="button" class="rounded px-2 py-1 text-[9px] font-bold bg-rose-500 text-white hover:bg-rose-600 flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); handleJobNotSuccess(${job.id})">
                     <i data-lucide="x-circle" class="w-3 h-3"></i>ไม่สำเร็จ
                 </button>
             </div>`;
@@ -819,6 +822,20 @@ function statusBadge(status) {
     return '<span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-100">รอดำเนินการ</span>';
 }
 
+function formatThaiDateShort(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr + 'T00:00:00');
+    if (Number.isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function rescheduleInfoBadge(job) {
+    if (!job.last_reschedule_from && !job.last_reschedule_to) return '';
+    return `<span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-black bg-sky-50 text-sky-800 border border-sky-200 ml-1">
+        <i data-lucide="calendar-clock" class="w-3 h-3 mr-1"></i>เลื่อนจาก ${formatThaiDateShort(job.last_reschedule_from)}
+    </span>`;
+}
+
 function createJobRow(job, index) {
     const div = document.createElement('article');
     div.className = 'dispatch-job-card bg-white border border-slate-200 shadow-sm hover:border-indigo-300 transition-all duration-200 cursor-pointer flex flex-col p-4 animate-row relative group';
@@ -858,8 +875,9 @@ function createJobRow(job, index) {
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="font-black text-slate-900 text-sm leading-tight break-words">${displayValue(job.access_no, 'N/A')}</h3>
                         ${statusBadge(job.status)}
+                        ${rescheduleInfoBadge(job)}
                     </div>
-                    <div class="text-[11px] font-bold text-slate-500 mt-1">${displayValue(job.plan_arrival_date)}</div>
+                    <div class="text-[11px] font-bold text-slate-500 mt-1">นัดติดตั้ง: ${displayValue(job.plan_arrival_date)}</div>
                 </div>
             </div>
             ${teamBadge}
@@ -912,7 +930,7 @@ function createJobRow(job, index) {
             <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
                 <i data-lucide="check-circle" class="w-4 h-4"></i>ปิดงาน
             </button>
-            <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); updateJobStatus(${job.id}, 'failed')">
+            <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); handleJobNotSuccess(${job.id})">
                 <i data-lucide="x-circle" class="w-4 h-4"></i>ไม่สำเร็จ
             </button>
         </div>` : ''}
@@ -946,7 +964,7 @@ function showJobPopup(job, color) {
                 <button onclick="Swal.close(); openCompleteJobModal(${job.id})" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
                     ปิดงาน
                 </button>
-                <button onclick="Swal.close(); updateJobStatus(${job.id}, 'failed')" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
+                <button onclick="Swal.close(); handleJobNotSuccess(${job.id})" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
                     ทำไม่สำเร็จ
                 </button>
             </div>
@@ -1157,45 +1175,27 @@ window.updateJobStatus = async function(jobId, status) {
         openCompleteJobModal(jobId);
         return;
     }
+};
 
-    let remark = '';
-
-    if (status === 'failed') {
-        const { value: text } = await Swal.fire({
-            title: 'ระบุเหตุผลที่ไม่สำเร็จ',
-            html: `<p class="text-sm text-slate-600 mb-3">งาน: <strong>${escapeHTML(job.access_no)}</strong></p>`,
-            input: 'textarea',
-            inputPlaceholder: 'เขียนหมายเหตุเกี่ยวกับปัญหาที่เกิดขึ้น...',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            confirmButtonText: 'ยืนยัน',
-            cancelButtonText: 'ยกเลิก',
-            customClass: { popup: 'rounded-xl', confirmButton: 'rounded-lg text-xs', cancelButton: 'rounded-lg text-xs' }
-        });
-        if (!text) {
-            if (text !== undefined) Swal.fire('แจ้งเตือน', 'กรุณาระบุเหตุผล', 'warning');
-            return;
-        }
-        remark = text;
-    }
-
-    Swal.fire({ title: 'กำลังปรับปรุงสถานะ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+async function postJobStatusUpdate(payload) {
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     try {
         const res = await fetch(getApiUrl('api/dispatch/update_job_status.php'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ job_id: jobId, status: status, remark: remark })
+            body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (data.success) {
             Swal.fire({
                 title: 'สำเร็จ',
-                text: 'บันทึกสถานะเรียบร้อย',
+                text: data.message || 'บันทึกเรียบร้อย',
                 icon: 'success',
-                timer: 1500,
+                timer: 2200,
                 showConfirmButton: false,
                 didClose: () => {
                     loadJobs();
+                    if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN) loadRescheduleHistory();
                     refreshLucideIcons();
                 }
             });
@@ -1204,8 +1204,157 @@ window.updateJobStatus = async function(jobId, status) {
         }
     } catch (e) {
         Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', 'error');
-    } finally {
-        hideLoader();
+    }
+}
+
+window.handleJobNotSuccess = async function(jobId) {
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    if (!job) return;
+
+    const choose = await Swal.fire({
+        title: 'งานไม่สำเร็จ',
+        html: `<p class="text-sm text-slate-600 mb-1">งาน: <strong>${escapeHTML(job.access_no)}</strong></p>
+               <p class="text-xs text-slate-500">เลือกกรณีที่ตรงกับสถานการณ์</p>`,
+        icon: 'question',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: 'ระบุเหตุผล (ไม่สำเร็จ)',
+        denyButtonText: 'ลูกค้าขอเลื่อนนัด',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#ef4444',
+        denyButtonColor: '#f59e0b',
+        customClass: { popup: 'rounded-xl', confirmButton: 'rounded-lg text-xs', denyButton: 'rounded-lg text-xs', cancelButton: 'rounded-lg text-xs' }
+    });
+
+    if (choose.isDismissed) return;
+
+    if (choose.isConfirmed) {
+        const { value: text } = await Swal.fire({
+            title: 'ระบุสาเหตุที่ไม่สำเร็จ',
+            html: `<p class="text-sm text-slate-600 mb-2">งาน: <strong>${escapeHTML(job.access_no)}</strong></p>`,
+            input: 'textarea',
+            inputPlaceholder: 'เขียนหมายเหตุสาเหตุที่ติดตั้งไม่สำเร็จ...',
+            inputValidator: (v) => (!v || !String(v).trim() ? 'กรุณาระบุหมายเหตุ' : undefined),
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'บันทึก',
+            cancelButtonText: 'ยกเลิก'
+        });
+        if (!text) return;
+        await postJobStatusUpdate({ job_id: jobId, status: 'failed', remark: String(text).trim() });
+        return;
+    }
+
+    if (choose.isDenied) {
+        const today = new Date().toISOString().split('T')[0];
+        const { value: form } = await Swal.fire({
+            title: 'เลื่อนวันนัดติดตั้ง',
+            html: `
+                <p class="text-sm text-slate-600 mb-3 text-left">ลูกค้า: <strong>${escapeHTML(job.customer || '-')}</strong><br>
+                นัดเดิม: <strong>${formatThaiDateShort(job.plan_arrival_date)}</strong></p>
+                <label class="block text-left text-xs font-bold text-slate-600 mb-1">วันที่นัดใหม่ <span class="text-rose-500">*</span></label>
+                <input type="date" id="swalRescheduleDate" class="swal2-input w-full mb-3" min="${today}" value="${today}">
+                <label class="block text-left text-xs font-bold text-slate-600 mb-1">หมายเหตุ (ถ้ามี)</label>
+                <textarea id="swalRescheduleRemark" class="swal2-textarea w-full" rows="3" placeholder="เช่น ลูกค้าไม่ว่าง / ขอเลื่อนเป็นวันที่..."></textarea>
+            `,
+            showCancelButton: true,
+            confirmButtonColor: '#f59e0b',
+            confirmButtonText: 'ยืนยันเลื่อนนัด',
+            cancelButtonText: 'ยกเลิก',
+            focusConfirm: false,
+            preConfirm: () => {
+                const dateEl = document.getElementById('swalRescheduleDate');
+                const remarkEl = document.getElementById('swalRescheduleRemark');
+                const newDate = dateEl?.value || '';
+                if (!newDate) {
+                    Swal.showValidationMessage('กรุณาเลือกวันที่นัดใหม่');
+                    return false;
+                }
+                return {
+                    reschedule_date: newDate,
+                    remark: (remarkEl?.value || '').trim()
+                };
+            }
+        });
+        if (!form) return;
+        await postJobStatusUpdate({
+            job_id: jobId,
+            status: 'rescheduled',
+            reschedule_date: form.reschedule_date,
+            remark: form.remark
+        });
+    }
+};
+
+window.loadRescheduleHistory = async function() {
+    if (typeof IS_ADMIN === 'undefined' || !IS_ADMIN) return;
+    const body = document.getElementById('rescheduleHistoryBody');
+    if (!body) return;
+
+    body.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-400 font-bold">กำลังโหลด...</td></tr>';
+
+    try {
+        const res = await fetch(getApiUrl('api/dispatch/get_reschedule_history.php?limit=100'));
+        const data = await res.json();
+        if (!data.success) {
+            body.innerHTML = `<tr><td colspan="6" class="px-4 py-4 text-rose-600">${escapeHTML(data.error || 'โหลดไม่สำเร็จ')}</td></tr>`;
+            return;
+        }
+
+        const records = data.records || [];
+        const pending = records.filter(r => !r.acknowledged_at).length;
+        const badge = document.getElementById('reschedulePendingBadge');
+        if (badge) {
+            if (pending > 0) {
+                badge.textContent = String(pending);
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        if (records.length === 0) {
+            body.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-400 font-bold">ยังไม่มีประวัติเลื่อนนัด</td></tr>';
+            return;
+        }
+
+        body.innerHTML = records.map(r => {
+            const created = r.created_at ? new Date(r.created_at).toLocaleString('th-TH') : '-';
+            const ack = r.acknowledged_at
+                ? `<span class="text-emerald-700 font-bold text-[10px]">รับทราบแล้ว<br>${escapeHTML(r.acknowledged_by_name || '')}</span>`
+                : `<button type="button" onclick="acknowledgeReschedule(${r.id})" class="text-[10px] font-black px-2 py-1 rounded bg-amber-500 text-white hover:bg-amber-600">รับทราบ</button>`;
+            return `<tr class="hover:bg-amber-50/50">
+                <td class="px-3 py-2 whitespace-nowrap text-slate-600">${escapeHTML(created)}</td>
+                <td class="px-3 py-2"><div class="font-bold text-slate-800">${escapeHTML(r.tech_name)}</div><div class="text-[10px] text-slate-500">${escapeHTML(r.team_name || '-')}</div></td>
+                <td class="px-3 py-2"><div class="font-bold">${escapeHTML(r.access_no)}</div><div class="text-[10px] text-slate-500">${escapeHTML(r.customer || '')}</div></td>
+                <td class="px-3 py-2 font-bold text-amber-800 whitespace-nowrap">${formatThaiDateShort(r.previous_plan_date)} → ${formatThaiDateShort(r.new_plan_date)}</td>
+                <td class="px-3 py-2 text-slate-600 max-w-[200px] break-words">${escapeHTML(r.remark || '-')}</td>
+                <td class="px-3 py-2 text-center">${ack}</td>
+            </tr>`;
+        }).join('');
+
+        refreshLucideIcons();
+    } catch (e) {
+        body.innerHTML = '<tr><td colspan="6" class="px-4 py-4 text-rose-600">เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ</td></tr>';
+    }
+};
+
+window.acknowledgeReschedule = async function(id) {
+    try {
+        const res = await fetch(getApiUrl('api/dispatch/acknowledge_reschedule.php'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            loadRescheduleHistory();
+            if (typeof loadNotifications === 'function') loadNotifications();
+        } else {
+            Swal.fire('ข้อผิดพลาด', data.error || 'ไม่สำเร็จ', 'error');
+        }
+    } catch (e) {
+        Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อไม่สำเร็จ', 'error');
     }
 };
 

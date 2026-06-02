@@ -21,7 +21,7 @@ try {
     $mileage = intval($_POST['mileage'] ?? 0);
     $liters = floatval($_POST['liters'] ?? 0);
     $price_per_liter = floatval($_POST['price_per_liter'] ?? 0);
-    $job_count = intval($_POST['job_count'] ?? 0);
+    // นับเคสจากงานที่กดจบงานสำเร็จเท่านั้น (ไม่รับค่าจากฟอร์ม)
     $filler_name = trim($_SESSION['full_name'] ?? '');
 
     $tech_id = $user_id;
@@ -55,9 +55,7 @@ try {
     $teamId = getTeamIdByName($pdo, $license_plate);
     $yearMonth = date('Y-m', strtotime($date_recorded));
 
-    if ($job_count <= 0 && $teamId) {
-        $job_count = getTeamMonthlyCaseCount($pdo, (int)$teamId, $yearMonth, true);
-    }
+    $job_count = resolveTeamMonthlyJobCount($pdo, $teamId ? (int)$teamId : null, $yearMonth);
 
     $stmt = $pdo->prepare("SELECT id, last_tech_id FROM vehicles WHERE license_plate = ?");
     $stmt->execute([$license_plate]);

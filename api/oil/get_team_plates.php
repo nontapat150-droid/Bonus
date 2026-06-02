@@ -31,34 +31,34 @@ try {
 
     $isAdmin = hasRole(['admin', 'super_admin']);
 
+    // เคสงาน = เฉพาะปิดงานสำเร็จ (จบงาน) ในเดือนนี้ ไม่นับงานที่ยังไม่จบ
     $baseSql = "
         SELECT t.id, t.team_name,
-               COUNT(j.id) AS job_count,
                COALESCE(toc.case_count, 0) AS monthly_completed_cases
         FROM teams t
-        LEFT JOIN jobs j ON j.team_id = t.id
         LEFT JOIN team_oil_cases toc ON toc.team_id = t.id AND toc.`year_month` = ?
     ";
 
     if ($isAdmin) {
-        $stmt = $pdo->prepare($baseSql . " GROUP BY t.id, t.team_name, toc.case_count ORDER BY t.team_name ASC");
+        $stmt = $pdo->prepare($baseSql . " ORDER BY t.team_name ASC");
         $stmt->execute([$currentYearMonth]);
         $teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } else {
         if ($myTeamId) {
-            $stmt = $pdo->prepare($baseSql . " WHERE t.id = ? GROUP BY t.id, t.team_name, toc.case_count");
+            $stmt = $pdo->prepare($baseSql . " WHERE t.id = ? ORDER BY t.team_name ASC");
             $stmt->execute([$currentYearMonth, $myTeamId]);
             $teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
         } else {
-            $stmt = $pdo->prepare($baseSql . " GROUP BY t.id, t.team_name, toc.case_count ORDER BY t.team_name ASC");
+            $stmt = $pdo->prepare($baseSql . " ORDER BY t.team_name ASC");
             $stmt->execute([$currentYearMonth]);
             $teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     }
 
     foreach ($teams as &$team) {
-        $team['monthly_completed_cases'] = (int)($team['monthly_completed_cases'] ?? 0);
-        $team['job_count'] = (int)($team['job_count'] ?? 0);
+        $cases = (int)($team['monthly_completed_cases'] ?? 0);
+        $team['monthly_completed_cases'] = $cases;
+        $team['job_count'] = $cases;
     }
     unset($team);
 
