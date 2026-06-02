@@ -7,6 +7,7 @@ header('Content-Type: application/json');
 requireLogin();
 
 $user_id = $_SESSION['user_id'];
+$is_super_admin = hasRole('super_admin'); // 🌟 เช็คสิทธิ์และเก็บใส่ตัวแปรไว้ตรงนี้เลยชัวร์กว่า
 
 try {
     // ดึงเฉพาะข้อมูลของตัวเอง (WHERE user_id = ?) เรียงจากใหม่ไปเก่า
@@ -29,7 +30,12 @@ try {
         return $r;
     }, $records);
 
-    echo json_encode(['success' => true, 'data' => $formatted_records]);
+    // 🌟 แนบ is_super_admin ส่งกลับไปให้ Javascript ด้วย
+    echo json_encode([
+        'success' => true, 
+        'data' => $formatted_records,
+        'is_super_admin' => $is_super_admin
+    ]);
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
