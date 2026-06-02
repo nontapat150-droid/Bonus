@@ -163,7 +163,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         ${sd.images && sd.images.length > 0 ? `
                         <div class="flex gap-2 overflow-x-auto py-2 custom-scrollbar">
-                            ${sd.images.map(img => `<img src="${img}" class="h-16 rounded cursor-pointer border border-slate-200" onclick="window.open('${img}','_blank')">`).join('')}
+                            ${sd.images.map(img => {
+                                const imgSrc = img.includes('/') ? img : `assets/uploads/start_day/${img}`;
+                                return `<img src="${imgSrc}" class="h-16 rounded cursor-pointer border border-slate-200" onclick="window.open('${imgSrc}','_blank')">`;
+                            }).join('')}
                         </div>
                         ` : ''}
                     </div>
@@ -200,9 +203,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-[10px] font-bold text-emerald-600 mb-1"><i data-lucide="check-circle" class="w-3 h-3 inline"></i> ข้อมูลการปิดงาน</p>
                             ${job.closes.map(c => `
                                 <div class="text-xs font-bold text-emerald-800 mb-1">
-                                    ประเภท: ${c.provider} • ช่าง: ${c.tech_name || 'ไม่ระบุ'} • รูปแบบ: ${c.work_type}
+                                    โครงข่าย: ${c.install_provider || '-'} • ช่าง: ${c.tech_name || 'ไม่ระบุ'}
                                 </div>
-                                <div class="text-[10px] text-emerald-600">สาย: ${c.cable_distance}m • วันที่: ${c.created_at}</div>
+                                <div class="text-[10px] text-emerald-600">ระยะสาย: ${c.actual_cable_length || 0}m • วันที่: ${c.created_at}</div>
                             `).join('')}
                         </div>
                         ` : ''}
@@ -216,9 +219,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div id="logs_${job.id}" class="hidden mt-3 space-y-2 border-l-2 border-slate-200 pl-3">
                             ${job.logs && job.logs.length > 0 ? job.logs.map(log => `
                                 <div class="text-[10px] bg-slate-50 p-2 rounded">
-                                    <span class="font-bold text-indigo-600">${log.action}</span>
+                                    <span class="font-bold text-indigo-600">${log.status}</span>
                                     <span class="text-slate-500 ml-1">โดย ${log.full_name || 'ระบบ'}</span>
-                                    <div class="text-slate-400 mt-0.5">${log.created_at}</div>
+                                    <div class="text-slate-400 mt-0.5">${log.timestamp}</div>
                                 </div>
                             `).join('') : '<div class="text-[10px] text-slate-400">ไม่มีประวัติการทำรายการ</div>'}
                         </div>
