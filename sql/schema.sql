@@ -258,6 +258,7 @@ CREATE TABLE `users` (
   `password_hash` varchar(255) NOT NULL,
   `role` enum('super_admin','admin','technician','sales') NOT NULL DEFAULT 'technician',
   `full_name` varchar(100) NOT NULL,
+  `profile_image` varchar(255) DEFAULT NULL,
   `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'approved',
   `team_id` int(11) DEFAULT NULL,
   `allow_late_time` time NOT NULL DEFAULT '08:30:00',
@@ -623,3 +624,32 @@ ALTER TABLE `ma_jobs`
 
 ALTER TABLE `ma_jobs`
   ADD CONSTRAINT `ma_jobs_ibfk_1` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE SET NULL;
+
+--
+-- Table structure for table `announcements`
+--
+CREATE TABLE `announcements` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` varchar(50) DEFAULT 'popup',
+  `title` varchar(255) DEFAULT NULL,
+  `message` text NOT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `expires_at` datetime DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `issue_reports`
+--
+CREATE TABLE `issue_reports` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `message` text DEFAULT NULL,
+  `image_url` varchar(255) DEFAULT NULL,
+  `status` varchar(50) DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `issue_reports_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
