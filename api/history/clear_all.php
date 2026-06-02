@@ -1,139 +1,143 @@
 <?php
+// api/history/clear_all.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
 
 header('Content-Type: application/json');
-requireLogin(['admin', 'super_admin']);
+requireRole(['admin', 'super_admin']);
 
 $input = json_decode(file_get_contents('php://input'), true);
-$type = $input['type'] ?? '';
-$date = $input['date'] ?? '';
-$month = $input['month'] ?? '';
+$type = $input['type'] ?? 'checkin';
+$fDate = $input['date'] ?? '';
+$fMonth = $input['month'] ?? '';
 
-if (!$type) {
-    echo json_encode(['success' => false, 'error' => 'ไม่ระบุประเภทข้อมูล']);
+if (!in_array($type, ['checkin', 'start_day', 'oil', 'inventory', 'job_close'])) {
+    echo json_encode(['success' => false, 'error' => 'ประเภทไม่รองรับ']);
     exit;
 }
 
 try {
     $pdo->beginTransaction();
     $deletedCount = 0;
-
-    $whereParams = [];
-    $whereSql = "1=1";
-
-    if ($date) {
-        $whereSql = "DATE(date_col) = ?";
-        $whereParams[] = $date;
-    } else if ($month) {
-        $whereSql = "DATE_FORMAT(date_col, '%Y-%m') = ?";
-        $whereParams[] = $month;
+    $dateCond = '';
+    $params = [];
+    if ($fDate) {
+        $dateCond = "DATE(:col) = :date"; // placeholder will be replaced per query
+    } elseif ($fMonth) {
+        $dateCond = "DATE_FORMAT(:col, '%Y-%m') = :month";
     }
 
-    if ($type === 'checkin') {
-        $sql = str_replace('date_col', 'checkin_time', "SELECT id FROM checkins WHERE $whereSql");
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($whereParams);
-        $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-        if (!empty($ids)) {
-            $inQuery = implode(',', array_fill(0, count($ids), '?'));
-            $pdo->prepare("DELETE FROM checkins WHERE id IN ($inQuery)")->execute($ids);
-            $deletedCount = count($ids);
-        }
-    } 
-    else if ($type === 'start_day') {
-        $sql = str_replace('date_col', 'created_at', "SELECT id FROM start_day_records WHERE $whereSql");
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($whereParams);
-        $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-        if (!empty($ids)) {
-            $inQuery = implode(',', array_fill(0, count($ids), '?'));
-            
-            // Delete images
-            $imgStmt = $pdo->prepare("SELECT image_path FROM start_day_images WHERE record_id IN ($inQuery)");
-            $imgStmt->execute($ids);
-            $images = $imgStmt->fetchAll(PDO::FETCH_COLUMN);
-            foreach ($images as $img) {
-                @unlink('../../assets/uploads/start_day/' . $img);
-                @unlink('../../' . $img);
-            }
-            $pdo->prepare("DELETE FROM start_day_images WHERE record_id IN ($inQuery)")->execute($ids);
-            
-            // Delete records
-            $pdo->prepare("DELETE FROM start_day_records WHERE id IN ($inQuery)")->execute($ids);
-            $deletedCount = count($ids);
-        }
-    } 
-    else if ($type === 'oil') {
-        $sql = str_replace('date_col', 'date_recorded', "SELECT id FROM oil_records WHERE $whereSql");
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($whereParams);
-        $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-        if (!empty($ids)) {
-            $inQuery = implode(',', array_fill(0, count($ids), '?'));
-            $pdo->prepare("DELETE FROM oil_records WHERE id IN ($inQuery)")->execute($ids);
-            $deletedCount = count($ids);
-        }
-    }
-    else if ($type === 'inventory') {
-        // Clear items logs
-        $sqlItems = str_replace('date_col', 'created_at', "SELECT * FROM inventory_logs WHERE $whereSql");
-        $stmtItems = $pdo->prepare($sqlItems);
-        $stmtItems->execute($whereParams);
-        $itemLogs = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($itemLogs as $log) {
-            if ($log['action'] === 'out') {
-                $pdo->prepare("UPDATE inventory_items SET status = 'in_stock' WHERE id = ?")->execute([$log['item_id']]);
-            } elseif ($log['action'] === 'in') {
-                $pdo->prepare("DELETE FROM inventory_items WHERE id = ? AND status = 'in_stock'")->execute([$log['item_id']]);
-            }
-            $pdo->prepare("DELETE FROM inventory_logs WHERE id = ?")->execute([$log['id']]);
-            $deletedCount++;
-        }
-
-        // Clear consumable logs
-        $sqlConsumables = str_replace('date_col', 'created_at', "SELECT * FROM inventory_consumable_logs WHERE $whereSql");
-        $stmtConsumables = $pdo->prepare($sqlConsumables);
-        $stmtConsumables->execute($whereParams);
-        $consumableLogs = $stmtConsumables->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($consumableLogs as $log) {
-            if ($log['action'] === 'out') {
-                $pdo->prepare("UPDATE inventory_consumable SET stock_qty = stock_qty + ? WHERE id = ?")->execute([$log['qty'], $log['consumable_id']]);
-                if ($log['target_user_id']) {
-                    $pdo->prepare("UPDATE user_consumables SET qty = GREATEST(0, qty - ?) WHERE user_id = ? AND consumable_id = ?")->execute([$log['qty'], $log['target_user_id'], $log['consumable_id']]);
+    switch ($type) {
+        case 'checkin':
+            // fetch ids and image paths for deletion
+            $sqlSelect = "SELECT id, image_path FROM checkins";
+            if ($fDate) $sqlSelect .= " WHERE DATE(checkin_time) = :date";
+            elseif ($fMonth) $sqlSelect .= " WHERE DATE_FORMAT(checkin_time, '%Y-%m') = :month";
+            $stmt = $pdo->prepare($sqlSelect);
+            if ($fDate) $stmt->bindValue(':date', $fDate);
+            elseif ($fMonth) $stmt->bindValue(':month', $fMonth);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as $row) {
+                if ($row['image_path']) {
+                    $path = '../../assets/uploads/checkins/' . $row['image_path'];
+                    if (file_exists($path) && is_file($path)) @unlink($path);
                 }
-            } elseif ($log['action'] === 'in') {
-                $pdo->prepare("UPDATE inventory_consumable SET stock_qty = GREATEST(0, stock_qty - ?) WHERE id = ?")->execute([$log['qty'], $log['consumable_id']]);
-            } elseif ($log['action'] === 'transfer') {
-                $pdo->prepare("UPDATE user_consumables SET qty = GREATEST(0, qty - ?) WHERE user_id = ? AND consumable_id = ?")->execute([$log['qty'], $log['target_user_id'], $log['consumable_id']]);
-                $pdo->prepare("UPDATE user_consumables SET qty = qty + ? WHERE user_id = ? AND consumable_id = ?")->execute([$log['qty'], $log['admin_id'], $log['consumable_id']]);
             }
-            $pdo->prepare("DELETE FROM inventory_consumable_logs WHERE id = ?")->execute([$log['id']]);
-            $deletedCount++;
-        }
-    }
-    else if ($type === 'job_close') {
-        $sql = str_replace('date_col', 'created_at', "SELECT * FROM job_close_3bb WHERE $whereSql");
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($whereParams);
-        $closes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($closes as $record) {
-            $pdo->prepare("DELETE FROM job_close_3bb WHERE id = ?")->execute([$record['id']]);
-            if (!empty($record['job_log_id'])) {
-                $pdo->prepare("DELETE FROM job_logs WHERE id = ?")->execute([(int)$record['job_log_id']]);
+            $sqlDelete = "DELETE FROM checkins";
+            if ($fDate) $sqlDelete .= " WHERE DATE(checkin_time) = :date";
+            elseif ($fMonth) $sqlDelete .= " WHERE DATE_FORMAT(checkin_time, '%Y-%m') = :month";
+            $stmtDel = $pdo->prepare($sqlDelete);
+            if ($fDate) $stmtDel->bindValue(':date', $fDate);
+            elseif ($fMonth) $stmtDel->bindValue(':month', $fMonth);
+            $stmtDel->execute();
+            $deletedCount = $stmtDel->rowCount();
+            break;
+        case 'start_day':
+            // Delete images first
+            $sqlSelect = "SELECT r.id, i.image_path FROM start_day_records r LEFT JOIN start_day_images i ON i.record_id = r.id";
+            if ($fDate) $sqlSelect .= " WHERE DATE(r.created_at) = :date";
+            elseif ($fMonth) $sqlSelect .= " WHERE DATE_FORMAT(r.created_at, '%Y-%m') = :month";
+            $stmt = $pdo->prepare($sqlSelect);
+            if ($fDate) $stmt->bindValue(':date', $fDate);
+            elseif ($fMonth) $stmt->bindValue(':month', $fMonth);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as $row) {
+                if ($row['image_path']) {
+                    $path = '../../assets/uploads/start_day/' . $row['image_path'];
+                    if (file_exists($path) && is_file($path)) @unlink($path);
+                }
             }
-            $pdo->prepare("UPDATE jobs SET status = 'dispatched', remark = NULL WHERE id = ? AND status = 'completed'")
-                ->execute([(int)$record['job_id']]);
-            $deletedCount++;
-        }
-    } else {
-        throw new Exception('ไม่รองรับประเภทข้อมูลนี้');
+            $sqlDelete = "DELETE FROM start_day_records";
+            if ($fDate) $sqlDelete .= " WHERE DATE(created_at) = :date";
+            elseif ($fMonth) $sqlDelete .= " WHERE DATE_FORMAT(created_at, '%Y-%m') = :month";
+            $stmtDel = $pdo->prepare($sqlDelete);
+            if ($fDate) $stmtDel->bindValue(':date', $fDate);
+            elseif ($fMonth) $stmtDel->bindValue(':month', $fMonth);
+            $stmtDel->execute();
+            $deletedCount = $stmtDel->rowCount();
+            break;
+        case 'oil':
+            // Delete images
+            $sqlSelect = "SELECT id, image_path FROM oil_records";
+            if ($fDate) $sqlSelect .= " WHERE DATE(date_recorded) = :date";
+            elseif ($fMonth) $sqlSelect .= " WHERE DATE_FORMAT(date_recorded, '%Y-%m') = :month";
+            $stmt = $pdo->prepare($sqlSelect);
+            if ($fDate) $stmt->bindValue(':date', $fDate);
+            elseif ($fMonth) $stmt->bindValue(':month', $fMonth);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as $row) {
+                if ($row['image_path']) {
+                    $path = '../../assets/uploads/oil_receipts/' . $row['image_path'];
+                    if (file_exists($path) && is_file($path)) @unlink($path);
+                }
+            }
+            $sqlDelete = "DELETE FROM oil_records";
+            if ($fDate) $sqlDelete .= " WHERE DATE(date_recorded) = :date";
+            elseif ($fMonth) $sqlDelete .= " WHERE DATE_FORMAT(date_recorded, '%Y-%m') = :month";
+            $stmtDel = $pdo->prepare($sqlDelete);
+            if ($fDate) $stmtDel->bindValue(':date', $fDate);
+            elseif ($fMonth) $stmtDel->bindValue(':month', $fMonth);
+            $stmtDel->execute();
+            $deletedCount = $stmtDel->rowCount();
+            break;
+        case 'inventory':
+            // Deleting inventory logs (no file cleanup needed)
+            $sqlDelete = "DELETE FROM inventory_logs";
+            if ($fDate) $sqlDelete .= " WHERE DATE(timestamp) = :date";
+            elseif ($fMonth) $sqlDelete .= " WHERE DATE_FORMAT(timestamp, '%Y-%m') = :month";
+            $stmtDel = $pdo->prepare($sqlDelete);
+            if ($fDate) $stmtDel->bindValue(':date', $fDate);
+            elseif ($fMonth) $stmtDel->bindValue(':month', $fMonth);
+            $stmtDel->execute();
+            $deletedCount = $stmtDel->rowCount();
+            break;
+        case 'job_close':
+            // Delete job close records; also revert job status to 'in_progress' if needed
+            $sqlSelect = "SELECT id, job_id FROM job_close_3bb";
+            if ($fDate) $sqlSelect .= " WHERE DATE(created_at) = :date";
+            elseif ($fMonth) $sqlSelect .= " WHERE DATE_FORMAT(created_at, '%Y-%m') = :month";
+            $stmt = $pdo->prepare($sqlSelect);
+            if ($fDate) $stmt->bindValue(':date', $fDate);
+            elseif ($fMonth) $stmt->bindValue(':month', $fMonth);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as $row) {
+                // revert job status
+                $pdo->prepare("UPDATE jobs SET status = 'in_progress' WHERE id = ?")
+                    ->execute([$row['job_id']]);
+            }
+            $sqlDelete = "DELETE FROM job_close_3bb";
+            if ($fDate) $sqlDelete .= " WHERE DATE(created_at) = :date";
+            elseif ($fMonth) $sqlDelete .= " WHERE DATE_FORMAT(created_at, '%Y-%m') = :month";
+            $stmtDel = $pdo->prepare($sqlDelete);
+            if ($fDate) $stmtDel->bindValue(':date', $fDate);
+            elseif ($fMonth) $stmtDel->bindValue(':month', $fMonth);
+            $stmtDel->execute();
+            $deletedCount = $stmtDel->rowCount();
+            break;
     }
 
     $pdo->commit();
@@ -142,3 +146,4 @@ try {
     if ($pdo->inTransaction()) $pdo->rollBack();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
+?>
