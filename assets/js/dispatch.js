@@ -32,14 +32,15 @@ function hasValue(value) {
     return text !== '' && text !== '-' && text.toLowerCase() !== 'null';
 }
 
+// 🌟 ซ่อม Syntax Error ร้ายแรงตรงนี้แล้วครับ (สาเหตุที่ทำให้ปุ่มกดไม่ได้และจอดำ)
 function escapeHTML(value) {
     return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-        '&': '&',
-        '<': '<',
-        '>': '>',
-        '"': '"',
-        "'": '''
-    }[char]));
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[char] || char));
 }
 
 function displayValue(value, fallback = '-') {
@@ -156,7 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('navigateSelectedBtn')?.addEventListener('click', handleNavigateSelected);
     document.getElementById('selectAllJobs')?.addEventListener('change', handleSelectAll);
 
-    if (IS_ADMIN) {
+    // 🌟 ดักจับป้องกัน IS_ADMIN ให้ปลอดภัย
+    if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN) {
         document.getElementById('jobExcelFile')?.addEventListener('change', handleExcelUpload);
         document.getElementById('exportExcelBtn')?.addEventListener('click', handleExportExcel);
         document.getElementById('addTeamBtn')?.addEventListener('click', handleAddTeam);
@@ -193,6 +195,7 @@ function switchDispatchView(view) {
     }
 }
 
+// 🌟 ซ่อมลิงก์นำทาง Google Maps
 function handleNavigateSelected() {
     if (selectedJobIds.size === 0) return;
     
@@ -209,7 +212,7 @@ function handleNavigateSelected() {
     
     if (validJobs.length === 1) {
         const coords = getJobLatLng(validJobs[0]);
-        window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, '_blank');
+        window.open(`https://maps.google.com/?q=${coords.lat},${coords.lng}`, '_blank');
         return;
     }
 
@@ -241,7 +244,6 @@ function hideLoader() {
     }
 }
 
-// 🌟 เพิ่มระบบดักจับ Error ที่สมบูรณ์
 async function loadJobs() {
     showLoader('ซิงค์ข้อมูล...');
     try {
@@ -530,7 +532,7 @@ function renderUI() {
     setText('unassignedCountBadgeMain', unassignedCount);
 
     renderJobList(container, filteredJobs);
-    renderMapJobList(mapJobs); // เรียกใช้งานฟังก์ชันที่เคยมองไม่เห็นตรงนี้ครับ
+    renderMapJobList(mapJobs); 
 
     try { updateMapMarkers(mapJobs); } catch (e) { console.warn(e); }
     updateSelectionUI();
@@ -612,7 +614,6 @@ function renderJobList(container, filteredJobs) {
     syncVisibleSelection(visibleJobs);
 }
 
-// 🌟 นำฟังก์ชันที่หายไปกลับมาตรงนี้แล้วครับ! 🌟
 function renderMapJobList(mapJobs) {
     const container = document.getElementById('mapJobList');
     if (!container) return;
@@ -704,11 +705,12 @@ function showJobPopupById(jobId) {
     showJobPopup(job, color);
 }
 
+// 🌟 ซ่อมลิงก์นำทางสำหรับปุ่มแต่ละงาน
 function openJobNavigationById(jobId) {
     const job = allJobs.find(j => String(j.id) === String(jobId));
     const coords = getJobLatLng(job);
     if (!coords) return Swal.fire('ไม่พบพิกัด', 'งานนี้ยังไม่มีละติจูด/ลองจิจูดที่ถูกต้อง', 'warning');
-    window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, '_blank');
+    window.open(`https://maps.google.com/?q=${coords.lat},${coords.lng}`, '_blank');
 }
 
 function showMapJobDetail(jobId) {
@@ -860,7 +862,7 @@ function createJobRow(job, index) {
 
 function showJobPopup(job, color) {
     const coords = getJobLatLng(job);
-    const gmapsLink = coords ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}` : null;
+    const gmapsLink = coords ? `https://maps.google.com/?q=${coords.lat},${coords.lng}` : null;
 
     let actionButtons = '';
     const popupStatus = (job.status || '').toLowerCase();
