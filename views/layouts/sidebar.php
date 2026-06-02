@@ -45,6 +45,13 @@
         <?php endif; ?>
         <?php endif; ?>
 
+        <?php if (hasRole(['super_admin', 'admin', 'technician'])): ?>
+        <a href="index.php?page=tech_bag" class="nav-item <?= $page === 'tech_bag' ? 'active' : '' ?>" data-label="กระเป๋าช่าง">
+            <div class="icon"><i data-lucide="briefcase"></i></div>
+            <span class="nav-label">กระเป๋าช่าง</span>
+        </a>
+        <?php endif; ?>
+
         <?php if (hasRole(['admin', 'super_admin'])): ?>
         <a href="index.php?page=inventory" class="nav-item <?= $page === 'inventory' ? 'active' : '' ?>" data-label="ระบบคลังสินค้า">
             <div class="icon"><i data-lucide="package"></i></div>
@@ -131,6 +138,13 @@
         <?php endif; ?>
         <?php endif; ?>
         
+        <?php if (hasRole(['super_admin', 'admin', 'technician'])): ?>
+        <a href="index.php?page=tech_bag" class="nav-item <?= $page === 'tech_bag' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="briefcase"></i></div>
+            <span class="nav-label">กระเป๋าช่าง</span>
+        </a>
+        <?php endif; ?>
+
         <?php if (hasRole(['admin', 'super_admin'])): ?>
         <a href="index.php?page=inventory" class="nav-item <?= $page === 'inventory' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="package"></i></div>
