@@ -363,6 +363,9 @@ window.openEditStartDayModal = function(id) {
     document.getElementById('edit_sd_non').value = record.non_number;
     document.getElementById('edit_sd_fee').value = record.has_initial_fee;
     document.getElementById('edit_sd_images').value = '';
+    
+    const previewContainer = document.getElementById('editImagePreviewContainer');
+    if (previewContainer) previewContainer.innerHTML = '';
 
     const role = window.USER_ROLE;
     const canEditAll = (role === 'admin' || role === 'super_admin');
@@ -394,6 +397,33 @@ window.openEditStartDayModal = function(id) {
 window.closeEditStartDayModal = function() {
     document.getElementById('editStartDayModal').classList.add('hidden');
 };
+
+document.getElementById('edit_sd_images')?.addEventListener('change', function(e) {
+    const files = Array.from(e.target.files);
+    const previewContainer = document.getElementById('editImagePreviewContainer');
+    if (!previewContainer) return;
+    
+    previewContainer.innerHTML = '';
+    
+    if (files.length > 10) {
+        Swal.fire('แจ้งเตือน', 'อัปโหลดได้สูงสุด 10 รูป', 'warning');
+        this.value = '';
+        return;
+    }
+
+    files.forEach((file) => {
+        if (!file.type.startsWith('image/')) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const div = document.createElement('div');
+            div.className = 'relative group rounded-lg overflow-hidden border border-gray-200 aspect-square shadow-sm';
+            div.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+            previewContainer.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+    });
+});
 
 // ย่อรูปภาพก่อนส่ง
 window.compressImageGlobal = async function(file) {
