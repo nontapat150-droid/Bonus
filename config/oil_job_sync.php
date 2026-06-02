@@ -10,7 +10,8 @@ function sqlYearMonth(string $dateColumn): string
 }
 
 /**
- * Count distinct completed jobs closed for a team in a calendar month (by job_logs.timestamp).
+ * Count distinct jobs that were closed successfully (กดจบงาน) in a calendar month.
+ * Requires jobs.status = completed AND a completed job_logs row in that month.
  */
 function countTeamCompletedCases(PDO $pdo, int $teamId, string $yearMonth): int
 {
@@ -20,11 +21,23 @@ function countTeamCompletedCases(PDO $pdo, int $teamId, string $yearMonth): int
         FROM job_logs jl
         INNER JOIN jobs j ON j.id = jl.job_id
         WHERE j.team_id = ?
+          AND j.status = 'completed'
           AND jl.status = 'completed'
           AND {$ym} = ?
     ");
     $stmt->execute([$teamId, $yearMonth]);
     return (int)$stmt->fetchColumn();
+}
+
+/**
+ * job_count for oil_records: only closed (จบงาน) cases in that team-month.
+ */
+function resolveTeamMonthlyJobCount(PDO $pdo, ?int $teamId, string $yearMonth): int
+{
+    if (!$teamId) {
+        return 0;
+    }
+    return getTeamMonthlyCaseCount($pdo, $teamId, $yearMonth, true);
 }
 
 /**
@@ -163,6 +176,7 @@ function collectTeamOilMonthsForJobIds(PDO $pdo, array $jobIds): array
         FROM job_logs jl
         INNER JOIN jobs j ON j.id = jl.job_id
         WHERE jl.job_id IN ($placeholders)
+          AND j.status = 'completed'
           AND jl.status = 'completed'
           AND j.team_id IS NOT NULL
     ");
@@ -247,6 +261,7 @@ function backfillAllTeamOilCases(PDO $pdo): array
         FROM job_logs jl
         INNER JOIN jobs j ON j.id = jl.job_id
         WHERE j.team_id IS NOT NULL
+          AND j.status = 'completed'
           AND jl.status = 'completed'
         ORDER BY j.team_id, ym_key
     ");

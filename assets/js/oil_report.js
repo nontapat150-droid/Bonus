@@ -593,8 +593,6 @@ window.saveManageOil = async function() {
     const totalPriceEl = document.getElementById('manage_total_price');
     if(totalPriceEl) total_price = totalPriceEl.value;
 
-    const job_count = document.getElementById('manage_job_count').value;
-
     if (!tech_id || !license_plate || !date_recorded || !mileage || !liters || !price_per_liter) {
         // 🚨 บังคับให้รอกด 'ตกลง' เมื่อกรอกข้อมูลไม่ครบ
         return Swal.fire({
@@ -616,7 +614,7 @@ window.saveManageOil = async function() {
             const res = await fetch('api/oil/edit_record.php', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ id, tech_id, license_plate, date_recorded, mileage, liters, price_per_liter, total_price, job_count })
+                body: JSON.stringify({ id, tech_id, license_plate, date_recorded, mileage, liters, price_per_liter, total_price })
             });
             const data = await res.json();
             if(data.success) { 
@@ -642,8 +640,6 @@ window.saveManageOil = async function() {
             formData.append('liters', liters);
             formData.append('price_per_liter', price_per_liter);
             formData.append('total_price', total_price);
-            formData.append('job_count', job_count);
-            
             const fileInput = document.getElementById('manage_images');
             if (fileInput && fileInput.files.length > 0) {
                 for (let i = 0; i < fileInput.files.length; i++) { formData.append('oil_images[]', fileInput.files[i]); }

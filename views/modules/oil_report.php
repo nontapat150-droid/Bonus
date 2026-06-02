@@ -299,8 +299,9 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
                     <input type="number" step="1" id="manage_total_price" class="input w-full font-bold text-indigo-700 bg-slate-50" placeholder="Ex: 1000">
                 </div>
                 <div>
-                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">เคสปิดสำเร็จเดือนนั้น (อัปเดตอัตโนมัติจากแจกจ่ายงาน)</label>
-                    <input type="number" id="manage_job_count" class="input w-full" placeholder="Ex: 5" value="0">
+                    <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">เคสปิดงานสำเร็จ (เดือนนั้น)</label>
+                    <input type="text" id="manage_job_count" class="input w-full bg-slate-100 text-emerald-800 font-black cursor-not-allowed" readonly value="0">
+                    <p class="text-[10px] text-slate-400 mt-1">นับเฉพาะเมื่อกดจบงานในระบบแจกจ่ายงาน งานที่ยังไม่จบไม่ถูกนับ</p>
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ระยะทาง (กม.)</label>

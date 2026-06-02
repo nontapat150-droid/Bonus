@@ -293,7 +293,7 @@ async function loadTeamPlates() {
                 const option = document.createElement('option');
                 option.value = team.id;
                 const monthlyCases = team.monthly_completed_cases ?? 0;
-                option.textContent = `🚗 ${team.team_name} (${monthlyCases} เคสเดือนนี้)`;
+                option.textContent = `🚗 ${team.team_name} (${monthlyCases} เคสจบงานเดือนนี้)`;
                 option.setAttribute('data-plate', team.team_name);
                 option.setAttribute('data-jobs', monthlyCases);
 

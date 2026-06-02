@@ -67,7 +67,8 @@ try {
     }
 
     if ($filter_status === 'active') {
-        $sql .= " AND (j.status IS NULL OR j.status <> 'completed')";
+        // ไม่แสดงงานปิดสำเร็จและงานไม่สำเร็จ (งานเลื่อนนัดกลับมาเป็น status NULL)
+        $sql .= " AND (j.status IS NULL OR j.status NOT IN ('completed', 'failed'))";
     }
 
     $sql .= " ORDER BY j.plan_arrival_date ASC, COALESCE(j.seq, 9999) ASC";
@@ -75,6 +76,39 @@ try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // ข้อมูลเลื่อนนัดล่าสุด (แสดง badge บนการ์ดงาน)
+    try {
+        $jobIds = array_column($jobs, 'id');
+        if (!empty($jobIds)) {
+            $ph = implode(',', array_fill(0, count($jobIds), '?'));
+            $rsStmt = $pdo->prepare("
+                SELECT jr.job_id, jr.previous_plan_date, jr.new_plan_date, jr.created_at
+                FROM job_reschedules jr
+                INNER JOIN (
+                    SELECT job_id, MAX(id) AS max_id
+                    FROM job_reschedules
+                    WHERE job_id IN ($ph)
+                    GROUP BY job_id
+                ) latest ON latest.max_id = jr.id
+            ");
+            $rsStmt->execute($jobIds);
+            $rsMap = [];
+            foreach ($rsStmt->fetchAll(PDO::FETCH_ASSOC) as $rs) {
+                $rsMap[(int)$rs['job_id']] = $rs;
+            }
+            foreach ($jobs as &$jobRow) {
+                $jid = (int)$jobRow['id'];
+                if (isset($rsMap[$jid])) {
+                    $jobRow['last_reschedule_from'] = $rsMap[$jid]['previous_plan_date'];
+                    $jobRow['last_reschedule_to'] = $rsMap[$jid]['new_plan_date'];
+                }
+            }
+            unset($jobRow);
+        }
+    } catch (Exception $e) {
+        // ตาราง job_reschedules อาจยังไม่มี
+    }
 
     $teams = [];
     if (hasRole(['admin', 'super_admin'])) {
