@@ -2,6 +2,19 @@
 
 let teamPlatesData = [];
 
+// Global: แสดงชื่อทีมในส่วนผู้บันทึก
+// (ต้องเป็น global เพราะ loadTeamPlates() อยู่นอก DOMContentLoaded closure)
+function updateTeamInfo(teamName) {
+    const teamInfoEl = document.getElementById('displayUserTeam');
+    if (!teamInfoEl) return;
+    if (teamName) {
+        teamInfoEl.innerHTML = `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black">🚗 ทีม: ${teamName}</span>`;
+    } else {
+        teamInfoEl.innerHTML = '<span class="text-slate-400 text-xs">ยังไม่ได้เลือกทีม/ป้ายทะเบียน</span>';
+    }
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('oilForm');
     const litersInput = document.getElementById('liters');
@@ -23,16 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
         totalInput.value = Math.round(liters * price);
     };
 
-    const updateTeamInfo = (teamName) => {
-        const teamInfoEl = document.getElementById('displayUserTeam');
-        if (!teamInfoEl) return;
-
-        if (teamName) {
-            teamInfoEl.innerHTML = `<span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg text-[10px] font-black">🚗 ทีม: ${teamName}</span>`;
-        } else {
-            teamInfoEl.innerHTML = '<span class="text-slate-400 text-xs">ยังไม่ได้เลือกทีม/ป้ายทะเบียน</span>';
-        }
-    };
 
     litersInput.addEventListener('input', calculateTotal);
     priceInput.addEventListener('input', calculateTotal);
