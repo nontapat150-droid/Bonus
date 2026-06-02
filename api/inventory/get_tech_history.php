@@ -6,7 +6,15 @@ header('Content-Type: application/json');
 requireLogin();
 
 $user = getCurrentUser();
+$role = $user['role'];
 $user_id = $user['id'];
+
+// If admin, they can specify a target_user_id to view
+if (in_array($role, ['admin', 'super_admin']) && isset($_GET['target_user_id']) && $_GET['target_user_id'] !== '') {
+    $target_user_id = $_GET['target_user_id'];
+} else {
+    $target_user_id = $user_id; // Default to self
+}
 
 try {
     // ดึงประวัติที่เกี่ยวข้องกับ technician คนนี้
@@ -63,8 +71,8 @@ try {
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
-        $user_id, $user_id, $user_id, 
-        $user_id, $user_id, $user_id
+        $target_user_id, $target_user_id, $target_user_id, 
+        $target_user_id, $target_user_id, $target_user_id
     ]);
     
     $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
