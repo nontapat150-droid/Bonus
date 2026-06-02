@@ -32,8 +32,9 @@ try {
     $syncYearMonth = null;
     $syncTeamId = null;
     if (!empty($record['job_log_id'])) {
+        $ym = sqlYearMonth('jl.timestamp');
         $stmtLog = $pdo->prepare("
-            SELECT DATE_FORMAT(jl.timestamp, '%Y-%m') AS year_month, j.team_id
+            SELECT {$ym} AS year_month, j.team_id
             FROM job_logs jl
             INNER JOIN jobs j ON j.id = jl.job_id
             WHERE jl.id = ?
