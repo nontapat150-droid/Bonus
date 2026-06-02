@@ -275,7 +275,9 @@ function hideLoader() {
 async function loadJobs() {
     showLoader('ซิงค์ข้อมูล...');
     try {
-        const res = await fetch(getApiUrl('api/dispatch/get_jobs.php') + '&_=' + new Date().getTime());
+        const apiUrl = getApiUrl('api/dispatch/get_jobs.php');
+        const separator = apiUrl.includes('?') ? '&' : '?';
+        const res = await fetch(`${apiUrl}${separator}_=${new Date().getTime()}`);
         const text = await res.text(); 
         
         let data;
