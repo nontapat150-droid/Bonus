@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ฟังก์ชันโหลดข้อมูลประวัติ (แก้ให้เรียกใช้แบบ global ได้เมื่อกดลบเสร็จ)
+    // ฟังก์ชันโหลดข้อมูลประวัติ
     window.loadHistory = async function() {
         const tbody = document.getElementById('historyTableBody');
         tbody.innerHTML = '<tr class="block md:table-row"><td colspan="6" class="text-center py-8 text-slate-400 block md:table-cell">กำลังโหลดข้อมูล...</td></tr>';
@@ -119,7 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             
             if (data.success) {
-                renderHistoryTable(data.data);
+                // 🌟 ส่ง data.is_super_admin ไปให้ฟังก์ชันวาดตาราง
+                renderHistoryTable(data.data, data.is_super_admin);
             } else {
                 tbody.innerHTML = `<tr class="block md:table-row"><td colspan="6" class="text-center py-8 text-rose-500 block md:table-cell">${data.error}</td></tr>`;
             }
@@ -128,8 +129,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ฟังก์ชันสร้างตารางประวัติ
-    function renderHistoryTable(records) {
+    // 🌟 รับค่า isSuperAdmin จาก API
+    function renderHistoryTable(records, isSuperAdmin = false) {
         const tbody = document.getElementById('historyTableBody');
         tbody.innerHTML = '';
         
@@ -152,9 +153,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<a href="assets/uploads/start_day/${item.evidence_image}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/start_day/${item.evidence_image}" class="w-12 h-12 object-cover rounded-xl shadow-sm border border-slate-200"></a>`
                 : '<div class="w-12 h-12 flex items-center justify-center mx-auto rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>';
 
-            // 🌟 1. เงื่อนไขเพิ่มปุ่มลบ (เช็คว่าเป็น Super Admin ไหม)
+            // 🌟 เช็คสิทธิ์เพื่อโชว์ปุ่มลบ
             let manageColumn = '';
-            if (window.USER_ROLE === 'super_admin') {
+            if (isSuperAdmin) {
                 manageColumn = `
                     <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center">
                         <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">จัดการ</span>
@@ -188,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">สถานะ</span>
                     ${statusHtml}
                 </td>
-                <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center ${window.USER_ROLE === 'super_admin' ? 'border-b border-dashed border-slate-100 md:border-none' : ''}">
+                <td class="flex justify-between md:table-cell px-2 md:px-6 py-3 md:text-center items-center ${isSuperAdmin ? 'border-b border-dashed border-slate-100 md:border-none' : ''}">
                     <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">รูปภาพ</span>
                     <div class="md:flex md:justify-center">${imgHtml}</div>
                 </td>
@@ -237,7 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (result.success) {
-                // แจ้งเตือนเสร็จ แล้วพอกดปุ่ม "ดูประวัติของฉัน" จะสลับหน้าจอให้อัตโนมัติ!
                 Swal.fire({
                     title: 'สำเร็จ!',
                     text: 'บันทึกข้อมูลเรียบร้อยแล้ว (ระบบบันทึกเวลาให้คุณอัตโนมัติ)',
@@ -246,7 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     confirmButtonColor: '#059669',
                     customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
                 }).then(() => {
-                    // สลับไปที่แท็บประวัติ
                     if(tabHistBtn) tabHistBtn.click();
                 });
                 
@@ -266,7 +265,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// 🌟 3. ฟังก์ชันกดยืนยันการลบ 🌟
 window.deleteStartDayRecord = async function(id) {
     Swal.fire({
         title: 'ยืนยันการลบข้อมูล?',
@@ -304,7 +302,6 @@ window.deleteStartDayRecord = async function(id) {
                         customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold' }
                     });
                     
-                    // สั่งให้โหลดตารางประวัติใหม่
                     if (typeof window.loadHistory === 'function') {
                         window.loadHistory();
                     } else {
