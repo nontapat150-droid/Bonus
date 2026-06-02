@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.deleteAnnouncement = async function(type) {
         const typeName = type === 'popup' ? 'ป๊อปอัปกลางจอ' : 'ป้ายวิ่ง';
         const confirmResult = await Swal.fire({
-            title: \`ลบ\${typeName}?\`,
+            title: `ลบ${typeName}?`,
             text: 'การดำเนินการนี้ไม่สามารถเรียกคืนได้',
             icon: 'warning',
             showCancelButton: true,

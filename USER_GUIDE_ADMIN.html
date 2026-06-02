@@ -1,512 +1,216 @@
 <style>
-  .sa-guide * { box-sizing: border-box; }
-  .sa-guide {
-    font-family: 'Inter', 'Sarabun', sans-serif;
-    background: #F0F2FA;
-    padding: 24px;
-    border-radius: 20px;
-    max-width: 860px;
-    margin: 0 auto;
-  }
-
-  /* ── Hero Banner ── */
-  .sa-hero {
-    background: linear-gradient(135deg, #6C5CE7 0%, #a855f7 100%);
-    border-radius: 18px;
-    padding: 32px 28px;
-    color: #fff;
-    margin-bottom: 24px;
-    position: relative;
-    overflow: hidden;
-  }
-  .sa-hero::before {
-    content: '';
-    position: absolute;
-    top: -40px; right: -40px;
-    width: 200px; height: 200px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 50%;
-  }
-  .sa-hero::after {
-    content: '';
-    position: absolute;
-    bottom: -60px; right: 60px;
-    width: 140px; height: 140px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 50%;
-  }
-  .sa-hero-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(255,255,255,0.2);
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 999px;
-    padding: 4px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-  }
-  .sa-hero h1 {
-    font-size: 26px;
-    font-weight: 800;
-    margin: 0 0 8px 0;
-    line-height: 1.2;
-  }
-  .sa-hero p {
-    font-size: 14px;
-    opacity: 0.85;
-    margin: 0;
-    line-height: 1.6;
-  }
-
-  /* ── Section Cards ── */
-  .sa-step {
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid #E2E5F0;
-    box-shadow: 0 1px 2px rgba(10,10,30,.04), 0 2px 8px rgba(10,10,30,.06);
-    margin-bottom: 16px;
-    overflow: hidden;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
-  }
-  .sa-step:hover {
-    box-shadow: 0 4px 8px rgba(10,10,30,.06), 0 12px 24px rgba(10,10,30,.09);
-    transform: translateY(-2px);
-  }
-  .sa-step-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 18px 22px;
-    border-bottom: 1px solid #F0F2FA;
-    cursor: pointer;
-    user-select: none;
-  }
-  .sa-step-num {
-    width: 36px; height: 36px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #6C5CE7, #a855f7);
-    color: #fff;
-    font-size: 15px;
-    font-weight: 800;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    box-shadow: 0 4px 10px rgba(108,92,231,0.35);
-  }
-  .sa-step-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #0D0D1A;
-    flex: 1;
-    margin: 0;
-  }
-  .sa-step-body {
-    padding: 18px 22px;
-    background: #FAFBFF;
-  }
-  .sa-step-body p {
-    color: #4B4F6A;
-    font-size: 14px;
-    line-height: 1.7;
-    margin: 0 0 12px 0;
-  }
-  .sa-step-body p:last-child { margin-bottom: 0; }
-
-  /* ── Action List ── */
-  .sa-action-list {
-    list-style: none;
-    padding: 0; margin: 8px 0 0 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .sa-action-list li {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    font-size: 14px;
-    color: #4B4F6A;
-    line-height: 1.6;
-  }
-  .sa-action-list li .sa-arrow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: #EDE9FF;
-    color: #6C5CE7;
-    border-radius: 6px;
-    padding: 2px 8px;
-    font-size: 12px;
-    font-weight: 700;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-  .sa-action-list li strong {
-    color: #0D0D1A;
-  }
-
-  /* ── Warning Note ── */
-  .sa-note {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    background: #FFFBEB;
-    border: 1px solid #FDE68A;
-    border-left: 4px solid #F59E0B;
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-top: 10px;
-  }
-  .sa-note-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-  .sa-note p {
-    font-size: 13px;
-    color: #78350F;
-    margin: 0;
-    line-height: 1.6;
-  }
-
-  /* ── Tip Note ── */
-  .sa-tip {
-    background: #EFF6FF;
-    border: 1px solid #BFDBFE;
-    border-left: 4px solid #3B82F6;
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-top: 10px;
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-  }
-  .sa-tip p {
-    font-size: 13px;
-    color: #1E40AF;
-    margin: 0;
-    line-height: 1.6;
-  }
-
-  /* ── Trouble Table ── */
-  .sa-trouble-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 18px;
-    font-weight: 800;
-    color: #0D0D1A;
-    margin: 28px 0 14px 0;
-  }
-  .sa-trouble-title span {
-    background: #FEF2F2;
-    color: #EF4444;
-    border-radius: 8px;
-    padding: 4px 10px;
-    font-size: 13px;
-    font-weight: 700;
-  }
-  .sa-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid #E2E5F0;
-    overflow: hidden;
-    box-shadow: 0 1px 2px rgba(10,10,30,.04), 0 2px 8px rgba(10,10,30,.06);
-  }
-  .sa-table thead tr {
-    background: #F7F8FC;
-  }
-  .sa-table th {
-    padding: 12px 18px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: #9499B5;
-    border-bottom: 1px solid #E2E5F0;
-    text-align: left;
-  }
-  .sa-table td {
-    padding: 14px 18px;
-    font-size: 14px;
-    color: #4B4F6A;
-    border-bottom: 1px solid #F0F2FA;
-    vertical-align: top;
-    line-height: 1.6;
-  }
-  .sa-table tbody tr:last-child td { border-bottom: none; }
-  .sa-table tbody tr:hover td { background: #F8F7FF; }
-  .sa-table td:first-child {
-    font-weight: 600;
-    color: #0D0D1A;
-    width: 38%;
-  }
-  .sa-badge-danger {
-    display: inline-block;
-    background: #FEF2F2;
-    color: #991B1B;
-    border-radius: 999px;
-    padding: 2px 10px;
-    font-size: 11px;
-    font-weight: 700;
-    margin-left: 6px;
-  }
-
-  /* ── Back Button ── */
-  .sa-footer {
-    margin-top: 24px;
-    display: flex;
-    justify-content: flex-end;
-  }
-  .sa-btn-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #fff;
-    border: 1.5px solid #E2E5F0;
-    border-radius: 10px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #4B4F6A;
-    text-decoration: none;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.2s;
-  }
-  .sa-btn-back:hover {
-    background: #6C5CE7;
-    border-color: #6C5CE7;
-    color: #fff;
-    box-shadow: 0 4px 14px rgba(108,92,231,0.35);
-  }
-
-  /* ── Responsive ── */
-  @media (max-width: 600px) {
-    .sa-guide { padding: 16px; }
-    .sa-hero { padding: 22px 18px; }
-    .sa-hero h1 { font-size: 20px; }
-    .sa-step-header { padding: 14px 16px; gap: 10px; }
-    .sa-step-body { padding: 14px 16px; }
-    .sa-table th, .sa-table td { padding: 10px 12px; font-size: 13px; }
-    .sa-table td:first-child { width: auto; }
-  }
+.g-wrap{font-family:'Inter','Sarabun',sans-serif;background:#F0F2FA;padding:0;margin:0;}
+.g-hero{background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 50%,#3b82f6 100%);padding:28px 24px;color:#fff;position:relative;overflow:hidden;margin-bottom:0;}
+.g-hero::before{content:'';position:absolute;top:-50px;right:-30px;width:180px;height:180px;background:rgba(255,255,255,0.07);border-radius:50%;}
+.g-hero::after{content:'';position:absolute;bottom:-60px;right:80px;width:120px;height:120px;background:rgba(255,255,255,0.05);border-radius:50%;}
+.g-hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.35);border-radius:999px;padding:4px 14px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+.g-hero h1{font-size:22px;font-weight:900;margin:0 0 6px;line-height:1.25;}
+.g-hero p{font-size:13px;opacity:0.88;margin:0;line-height:1.65;}
+.g-access{display:flex;flex-wrap:wrap;gap:8px;padding:16px 24px;background:rgba(37,99,235,0.07);border-bottom:1px solid #E2E5F0;}
+.g-access-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+.g-access-badge.has{background:#D1FAE5;color:#065F46;}
+.g-access-badge.no{background:#FEE2E2;color:#991B1B;text-decoration:line-through;opacity:0.65;}
+.g-body{padding:20px 24px;display:flex;flex-direction:column;gap:12px;}
+.g-card{background:#fff;border-radius:14px;border:1px solid #E2E5F0;box-shadow:0 1px 2px rgba(10,10,30,.04),0 2px 8px rgba(10,10,30,.05);overflow:hidden;}
+.g-card-head{display:flex;align-items:center;gap:12px;padding:15px 18px;background:#fff;border-bottom:1px solid #F0F2FA;}
+.g-num{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 8px rgba(37,99,235,0.35);}
+.g-card-title{font-size:15px;font-weight:700;color:#0D0D1A;margin:0;flex:1;}
+.g-icon-tag{font-size:14px;margin-left:auto;}
+.g-card-body{padding:16px 18px;background:#FAFBFF;}
+.g-card-body p{color:#4B4F6A;font-size:13.5px;line-height:1.75;margin:0 0 10px;}
+.g-card-body p:last-child{margin-bottom:0;}
+.g-steps{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px;}
+.g-steps li{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:#4B4F6A;line-height:1.65;}
+.g-step-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:6px;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px;}
+.g-step-badge.act{background:#DBEAFE;color:#1D4ED8;padding:0 7px;min-width:auto;}
+.g-warn{display:flex;gap:9px;align-items:flex-start;background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid #F59E0B;border-radius:10px;padding:11px 13px;margin-top:10px;}
+.g-warn p{font-size:12.5px;color:#78350F;margin:0;line-height:1.6;}
+.g-tip{display:flex;gap:9px;align-items:flex-start;background:#EFF6FF;border:1px solid #BFDBFE;border-left:4px solid #3B82F6;border-radius:10px;padding:11px 13px;margin-top:10px;}
+.g-tip p{font-size:12.5px;color:#1E40AF;margin:0;line-height:1.6;}
+.g-success{display:flex;gap:9px;align-items:flex-start;background:#ECFDF5;border:1px solid #A7F3D0;border-left:4px solid #10B981;border-radius:10px;padding:11px 13px;margin-top:10px;}
+.g-success p{font-size:12.5px;color:#065F46;margin:0;line-height:1.6;}
+.g-highlight{display:inline;background:linear-gradient(90deg,rgba(59,130,246,0.2),rgba(96,165,250,0.1));border-radius:4px;padding:1px 6px;color:#1D4ED8;font-weight:700;font-size:0.92em;}
+.g-code{background:#DBEAFE;color:#1D4ED8;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;font-family:monospace;}
+.g-faq-section{margin-top:8px;}
+.g-faq-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800;color:#0D0D1A;margin:0 0 12px;}
+.g-faq-title .faq-badge{background:#FEF2F2;color:#DC2626;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700;}
+.g-faq-table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border-radius:14px;border:1px solid #E2E5F0;overflow:hidden;box-shadow:0 1px 2px rgba(10,10,30,.04),0 2px 8px rgba(10,10,30,.05);}
+.g-faq-table thead tr{background:#F7F8FC;}
+.g-faq-table th{padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9499B5;border-bottom:1px solid #E2E5F0;text-align:left;}
+.g-faq-table td{padding:12px 16px;font-size:13px;color:#4B4F6A;border-bottom:1px solid #F0F2FA;vertical-align:top;line-height:1.65;}
+.g-faq-table tbody tr:last-child td{border-bottom:none;}
+.g-faq-table tbody tr:hover td{background:#EFF6FF;}
+.g-faq-table td:first-child{font-weight:600;color:#0D0D1A;width:42%;}
+.g-badge-freq{display:inline-block;background:#FEF2F2;color:#991B1B;border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;margin-left:5px;}
+.g-scope-box{background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border:1px solid #BFDBFE;border-radius:12px;padding:14px 16px;margin-bottom:4px;}
+.g-scope-box p{font-size:13px;color:#1E40AF;margin:0;line-height:1.65;}
+.g-scope-box strong{color:#1e3a8a;}
+@media(max-width:600px){.g-body{padding:14px 14px;}.g-faq-table td:first-child{width:auto;}.g-hero{padding:22px 18px;}.g-access{padding:12px 16px;}}
 </style>
 
-<div class="sa-guide">
-
-  <!-- Hero -->
-  <div class="sa-hero">
-    <div class="sa-hero-badge">👑 Super Admin</div>
-    <h1>คู่มือผู้ดูแลระบบสูงสุด</h1>
-    <p>คุณมีสิทธิ์เข้าถึงและจัดการได้ทุกอย่างในระบบ — ทั้งผู้ใช้งาน งาน คลังสินค้า และความปลอดภัย</p>
+<div class="g-wrap">
+  <div class="g-hero">
+    <div class="g-hero-badge">⚙️ Admin</div>
+    <h1>คู่มือผู้ดูแลระบบ (Admin)</h1>
+    <p>คุณสามารถจัดการงาน ทีม คลังสินค้า รายงานน้ำมัน และประกาศได้ — แต่ไม่สามารถจัดการผู้ใช้หรือตั้งค่าระบบได้</p>
   </div>
 
-  <!-- Step 1 -->
-  <div class="sa-step">
-    <div class="sa-step-header">
-      <div class="sa-step-num">1</div>
-      <p class="sa-step-title">เข้าสู่ระบบ</p>
+  <div class="g-access">
+    <span class="g-access-badge has">✅ หน้าแรก</span>
+    <span class="g-access-badge has">✅ ระบบเช็คอิน</span>
+    <span class="g-access-badge has">✅ น้ำมัน/ยานพาหนะ</span>
+    <span class="g-access-badge has">✅ ระบบ Dispatch</span>
+    <span class="g-access-badge has">✅ คลังสินค้า</span>
+    <span class="g-access-badge no">🚫 จัดการผู้ใช้</span>
+    <span class="g-access-badge no">🚫 ตั้งค่าระบบเว็บไซต์</span>
+  </div>
+
+  <div class="g-body">
+
+    <div class="g-scope-box">
+      <p>🛡️ <strong>ขอบเขตสิทธิ์ Admin:</strong> คุณสามารถดูและจัดการ <strong>ข้อมูลปฏิบัติการ</strong> ทั้งหมดได้ แต่การ <strong>จัดการบัญชีผู้ใช้</strong> และ <strong>ตั้งค่าระบบ</strong> ต้องติดต่อ Super Admin</p>
     </div>
-    <div class="sa-step-body">
-      <p>เปิดเว็บไซต์ขึ้นมา จะเห็นหน้าให้กรอกชื่อผู้ใช้และรหัสผ่าน กรอกให้ครบแล้วกดปุ่ม <strong>"เข้าสู่ระบบ"</strong> ระบบจะพาไปหน้าแรก (Dashboard) ที่แสดงภาพรวมทั้งหมด</p>
-      <div class="sa-tip">
-        <span>💡</span>
-        <p>ถ้ากรอกรหัสแล้วเข้าไม่ได้ ให้ตรวจสอบว่ากด Caps Lock ติดอยู่หรือเปล่า</p>
+
+    <!-- 1. เข้าสู่ระบบ -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">1</div><p class="g-card-title">เข้าสู่ระบบ</p><span class="g-icon-tag">🔐</span></div>
+      <div class="g-card-body">
+        <p>เปิดเว็บเบราว์เซอร์ → เข้า URL ของระบบ → กรอก <span class="g-highlight">ชื่อผู้ใช้</span> และ <span class="g-highlight">รหัสผ่าน</span> → กดปุ่ม <strong>"เข้าสู่ระบบ"</strong></p>
+        <p>เมื่อเข้าสู่ระบบแล้ว ระบบจะพาไปหน้า Dashboard แสดงสรุปงาน KPI วันนี้ และเมนูต่างๆ ที่คุณมีสิทธิ์ใช้งาน</p>
+        <div class="g-tip"><span>💡</span><p>ถ้ากรอกรหัสแล้วเข้าไม่ได้ ตรวจสอบว่า <strong>Caps Lock</strong> ติดอยู่หรือเปล่า หรือมีช่องว่างที่ไม่ต้องการ</p></div>
       </div>
     </div>
-  </div>
 
-  <!-- Step 2 -->
-  <div class="sa-step">
-    <div class="sa-step-header">
-      <div class="sa-step-num">2</div>
-      <p class="sa-step-title">ตั้งค่าเว็บไซต์</p>
-    </div>
-    <div class="sa-step-body">
-      <p>ที่เมนูด้านซ้ายมือ ให้มองหาคำว่า <strong>"ตั้งค่าระบบเว็บไซต์"</strong> แล้วคลิก ตรงนี้คือที่สำหรับปรับแต่งการทำงานของระบบทั้งหมด เช่น ชื่อบริษัท เวลาทำงาน ฯลฯ</p>
-      <div class="sa-note">
-        <span class="sa-note-icon">⚠️</span>
-        <p>เมื่อปรับเสร็จทุกครั้ง <strong>อย่าลืมกดบันทึก</strong> ไม่งั้นการตั้งค่าจะหายไป</p>
+    <!-- 2. ระบบ Dispatch -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">2</div><p class="g-card-title">ระบบ Dispatch — จัดการงานและทีม</p><span class="g-icon-tag">🗺️</span></div>
+      <div class="g-card-body">
+        <p>คลิกเมนู <span class="g-highlight">ระบบจัดส่งอัจฉริยะ</span> เพื่อสร้างงาน จัดทีม และติดตามสถานะงาน</p>
+
+        <p><strong>การสร้างงาน:</strong></p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">1</span><span>กดปุ่ม <strong>"+ เพิ่มงาน"</strong></span></li>
+          <li><span class="g-step-badge act">2</span><span>กรอก ชื่อลูกค้า, ที่อยู่, รายละเอียดงาน</span></li>
+          <li><span class="g-step-badge act">3</span><span><strong>ปักหมุดตำแหน่งบนแผนที่</strong> — สำคัญมาก!</span></li>
+          <li><span class="g-step-badge act">4</span><span>เลือกทีมที่จะมอบหมาย → กด <strong>"บันทึก"</strong></span></li>
+        </ul>
+
+        <p style="margin-top:12px;"><strong>การจ่ายงานอัตโนมัติ:</strong></p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">⚡</span><span>กดปุ่ม <strong>"จ่ายงานอัตโนมัติ"</strong> ระบบจะคำนวณเส้นทางที่เหมาะสมและแบ่งงานให้ทุกทีมเอง</span></li>
+        </ul>
+
+        <p style="margin-top:12px;"><strong>การจัดการทีม:</strong></p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">+ ทีม</span><span>กดปุ่ม <strong>"+ สร้างทีม"</strong> → ตั้งชื่อ → เพิ่มสมาชิก → บันทึก</span></li>
+          <li><span class="g-step-badge act">✏️ แก้ไข</span><span>กดดินสอหน้าชื่อทีม → แก้ชื่อหรือสมาชิก → บันทึก</span></li>
+        </ul>
+        <div class="g-warn"><span>⚠️</span><p><strong>ต้องปักหมุดแผนที่ทุกครั้ง</strong> มิฉะนั้นระบบ auto-assign ไม่สามารถคำนวณเส้นทางได้</p></div>
       </div>
     </div>
-  </div>
 
-  <!-- Step 3 -->
-  <div class="sa-step">
-    <div class="sa-step-header">
-      <div class="sa-step-num">3</div>
-      <p class="sa-step-title">จัดการสมาชิก</p>
-    </div>
-    <div class="sa-step-body">
-      <p>คลิกเมนู <strong>"จัดการผู้ใช้"</strong> จะเห็นรายชื่อทุกคนในระบบ ทำได้ดังนี้</p>
-      <ul class="sa-action-list">
-        <li><span class="sa-arrow">+ เพิ่ม</span><span>กดปุ่ม <strong>"+ เพิ่มผู้ใช้"</strong> แล้วกรอกข้อมูลให้ครบ</span></li>
-        <li><span class="sa-arrow">✏️ แก้ไข</span><span>กดปุ่มดินสอหน้าชื่อคนที่ต้องการเปลี่ยนข้อมูล</span></li>
-        <li><span class="sa-arrow">🗑️ ลบ</span><span>กดปุ่มถังขยะแล้วกด <strong>"ยืนยัน"</strong> อีกครั้ง</span></li>
-      </ul>
-      <div class="sa-note">
-        <span class="sa-note-icon">⚠️</span>
-        <p>กด <strong>"บันทึก"</strong> ทุกครั้งหลังทำการเปลี่ยนแปลง</p>
+    <!-- 3. คลังสินค้า -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">3</div><p class="g-card-title">ระบบคลังสินค้า</p><span class="g-icon-tag">📦</span></div>
+      <div class="g-card-body">
+        <p>คลิกเมนู <span class="g-highlight">ระบบคลังสินค้า</span> เพื่อดูและจัดการสต็อกสินค้าทั้งหมด</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">🔍 ค้นหา</span><span>พิมพ์ชื่อหรือรหัสสินค้าในช่องค้นหา ระบบจะกรองผลทันที</span></li>
+          <li><span class="g-step-badge act">+ เพิ่ม</span><span>กดปุ่ม <strong>"+ เพิ่มสินค้า"</strong> → กรอกชื่อ รหัส จำนวน → กด <strong>"บันทึก"</strong></span></li>
+          <li><span class="g-step-badge act">✏️ แก้ไข</span><span>กดปุ่มดินสอหน้าสินค้า → แก้ไข → บันทึก</span></li>
+          <li><span class="g-step-badge act">🔄 โอน</span><span>กดปุ่ม <strong>"โอนสินค้า"</strong> → เลือกปลายทางและจำนวน → ยืนยัน</span></li>
+          <li><span class="g-step-badge act">📥 Excel</span><span>กดปุ่ม <strong>"นำเข้า Excel"</strong> เพื่ออัปโหลดข้อมูลสินค้าจำนวนมากพร้อมกัน</span></li>
+        </ul>
+        <div class="g-tip"><span>📋</span><p>ก่อนนำเข้า Excel ตรวจสอบว่า <strong>หัวคอลัมน์</strong> ตรงกับรูปแบบที่ระบบกำหนด</p></div>
       </div>
     </div>
-  </div>
 
-  <!-- Step 4 -->
-  <div class="sa-step">
-    <div class="sa-step-header">
-      <div class="sa-step-num">4</div>
-      <p class="sa-step-title">โพสต์ประกาศ</p>
-    </div>
-    <div class="sa-step-body">
-      <p>คลิกเมนู <strong>"ประกาศ"</strong> หรือ <strong>"ข่าวสาร"</strong> → กรอกหัวข้อ → ใส่รายละเอียด → แนบรูป (ถ้ามี) → กดบันทึก ทุกคนในระบบจะเห็นประกาศนี้ทันที</p>
-      <div class="sa-note">
-        <span class="sa-note-icon">⚠️</span>
-        <p>รูปที่แนบต้องขนาด <strong>ไม่เกิน 5 MB</strong> และต้องเป็นไฟล์ .jpg หรือ .png เท่านั้น</p>
+    <!-- 4. รายงานน้ำมัน -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">4</div><p class="g-card-title">รายงานน้ำมันและยานพาหนะ</p><span class="g-icon-tag">⛽</span></div>
+      <div class="g-card-body">
+        <p>คลิกเมนู <span class="g-highlight">น้ำมันและยานพาหนะ</span> เพื่อดูรายงานการใช้น้ำมันและวิเคราะห์ต้นทุนของแต่ละทีม</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">📅 กรอง</span><span>เลือกช่วงวันที่ เลือกทีมหรือรถ แล้วกด <strong>"ค้นหา"</strong></span></li>
+          <li><span class="g-step-badge act">📊 วิเคราะห์</span><span>ดูตาราง km/l อัตราการสิ้นเปลืองน้ำมันของแต่ละรถแต่ละวัน</span></li>
+          <li><span class="g-step-badge act">📤 ส่งออก</span><span>กดปุ่ม <strong>"ส่งออก Excel"</strong> เพื่อดาวน์โหลดรายงานเป็นไฟล์ตาราง</span></li>
+        </ul>
+        <div class="g-success"><span>✅</span><p>ใช้รายงานน้ำมันเพื่อ <strong>ตรวจจับความผิดปกติ</strong> หากรถคันใดใช้น้ำมันมากกว่าปกติอาจต้องส่งซ่อม</p></div>
       </div>
     </div>
-  </div>
 
-  <!-- Step 5 -->
-  <div class="sa-step">
-    <div class="sa-step-header">
-      <div class="sa-step-num">5</div>
-      <p class="sa-step-title">กำหนดงานและทีม (Dispatch)</p>
-    </div>
-    <div class="sa-step-body">
-      <p>คลิกเมนู <strong>"แจกจ่ายงาน (Dispatch)"</strong> แล้วทำตามลำดับ</p>
-      <ul class="sa-action-list">
-        <li><span class="sa-arrow">ทีม</span><span>กดปุ่ม <strong>"สร้างทีม"</strong> → ตั้งชื่อทีม → เพิ่มสมาชิก</span></li>
-        <li><span class="sa-arrow">งาน</span><span>กดปุ่ม <strong>"+ เพิ่มงาน"</strong> → กรอกรายละเอียดและที่อยู่ → <strong>ปักหมุดบนแผนที่</strong></span></li>
-        <li><span class="sa-arrow">สด</span><span>ดูสถานะงานแบบเรียลไทม์ได้เลย ไม่ต้องรีเฟรช</span></li>
-      </ul>
-      <div class="sa-note">
-        <span class="sa-note-icon">⚠️</span>
-        <p><strong>สำคัญมาก:</strong> ตอนสร้างงาน ต้องปักหมุดตำแหน่งบนแผนที่ด้วยทุกครั้ง ไม่งั้นงานจะไม่แสดงในแผนที่</p>
+    <!-- 5. ระบบเช็คอิน -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">5</div><p class="g-card-title">ดูประวัติการเช็คอิน</p><span class="g-icon-tag">📋</span></div>
+      <div class="g-card-body">
+        <p>คลิกเมนู <span class="g-highlight">ระบบเช็คอิน</span> เพื่อดูสถานะการเข้า-ออกงานของพนักงานทุกคน</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">👁 สถานะ</span><span>ดูว่าพนักงานคนใดกำลังทำงาน (เช็คอินแล้ว) หรือยังไม่มา</span></li>
+          <li><span class="g-step-badge act">📜 ประวัติ</span><span>เลือกวันที่เพื่อดูประวัติย้อนหลัง</span></li>
+        </ul>
       </div>
     </div>
-  </div>
 
-  <!-- Step 6 -->
-  <div class="sa-step">
-    <div class="sa-step-header">
-      <div class="sa-step-num">6</div>
-      <p class="sa-step-title">จัดการคลังสินค้า</p>
-    </div>
-    <div class="sa-step-body">
-      <p>คลิกเมนู <strong>"คลังสินค้า"</strong> จะเห็นรายการสินค้าทั้งหมด</p>
-      <ul class="sa-action-list">
-        <li><span class="sa-arrow">ดู</span><span>เลื่อนดูรายการสินค้าได้เลย กรองด้วยชื่อหรือรหัสได้</span></li>
-        <li><span class="sa-arrow">+ เพิ่ม</span><span>กดปุ่ม <strong>"+ เพิ่ม"</strong> → กรอกชื่อสินค้าและรายละเอียด</span></li>
-        <li><span class="sa-arrow">✏️ แก้ไข</span><span>กดปุ่มดินสอหน้าสินค้าที่ต้องการแก้ไข</span></li>
-        <li><span class="sa-arrow">🔄 โอน</span><span>กดปุ่ม <strong>"โอน"</strong> เลือกปลายทาง แล้วยืนยัน</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- Step 7 -->
-  <div class="sa-step">
-    <div class="sa-step-header">
-      <div class="sa-step-num">7</div>
-      <p class="sa-step-title">รายงานน้ำมัน</p>
-    </div>
-    <div class="sa-step-body">
-      <p>คลิกเมนู <strong>"รายงานน้ำมัน"</strong> จะเห็นข้อมูลการใช้น้ำมันของแต่ละทีม เช็คได้ว่าวิ่งกี่กิโล ใช้น้ำมันไปเท่าไหร่ คุ้มแค่ไหน</p>
-      <div class="sa-tip">
-        <span>📊</span>
-        <p>กดปุ่ม <strong>"ส่งออก Excel"</strong> เพื่อดาวน์โหลดรายงานเป็นไฟล์ตาราง เปิดใน Excel ได้เลย</p>
+    <!-- 6. ส่งการแจ้งเตือน -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">6</div><p class="g-card-title">ส่งการแจ้งเตือนให้ทีม</p><span class="g-icon-tag">🔔</span></div>
+      <div class="g-card-body">
+        <p>กดปุ่มกระดิ่ง 🔔 มุมบนขวา → กดปุ่ม <span class="g-highlight">เพิ่มการแจ้งเตือน</span> เพื่อส่งข้อความถึงทีม</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">📢 ทุกคน</span><span>เลือก <strong>"ส่งให้ทุกคน"</strong> เพื่อ broadcast ข้อความไปยังพนักงานทุกคน</span></li>
+          <li><span class="g-step-badge act">🚗 ทีม</span><span>เลือก <strong>"ส่งเป็นทีม"</strong> แล้วเลือกชื่อทีมที่ต้องการ</span></li>
+          <li><span class="g-step-badge act">👤 บุคคล</span><span>เลือก <strong>"ส่งรายบุคคล"</strong> แล้วเลือกชื่อพนักงาน</span></li>
+        </ul>
+        <div class="g-tip"><span>💡</span><p>การแจ้งเตือนจะปรากฏในกระดิ่งของผู้รับทันที สามารถส่งข้อมูลเร่งด่วนได้</p></div>
       </div>
     </div>
-  </div>
 
-  <!-- Step 8 -->
-  <div class="sa-step">
-    <div class="sa-step-header">
-      <div class="sa-step-num">8</div>
-      <p class="sa-step-title">ความปลอดภัยและสำรองข้อมูล</p>
-    </div>
-    <div class="sa-step-body">
-      <p>คลิกเมนู <strong>"ความปลอดภัย"</strong> มีสิ่งที่ต้องทำ 3 อย่าง</p>
-      <ul class="sa-action-list">
-        <li><span class="sa-arrow">🔒 รหัส</span><span><strong>นโยบายรหัสผ่าน</strong> — ตั้งว่ารหัสต้องกี่ตัว ต้องมีตัวเลขหรือเปล่า ฯลฯ</span></li>
-        <li><span class="sa-arrow">💾 Backup</span><span>กดปุ่ม <strong>"สำรองข้อมูล"</strong> เพื่อบันทึกข้อมูลทั้งหมดไว้</span></li>
-        <li><span class="sa-arrow">↩️ Restore</span><span>ถ้าข้อมูลหาย กดปุ่มนี้เพื่อคืนค่าจากที่สำรองไว้</span></li>
-      </ul>
-      <div class="sa-tip">
-        <span>💡</span>
-        <p>ควรทำ <strong>Backup ทุกสัปดาห์</strong> เพื่อป้องกันข้อมูลสูญหาย</p>
+    <!-- 7. ออกจากระบบ -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">7</div><p class="g-card-title">ออกจากระบบ</p><span class="g-icon-tag">🚪</span></div>
+      <div class="g-card-body">
+        <p>กดชื่อผู้ใช้ที่มุมล่างซ้ายของ sidebar → กด <strong>"ออกจากระบบ"</strong> ทุกครั้งหลังใช้งานเสร็จ</p>
+        <div class="g-warn"><span>⚠️</span><p>อย่าปิดหน้าต่างเบราว์เซอร์โดยไม่ logout โดยเฉพาะในเครื่องสาธารณะ</p></div>
       </div>
     </div>
-  </div>
 
-  <!-- Step 9 -->
-  <div class="sa-step">
-    <div class="sa-step-header">
-      <div class="sa-step-num">9</div>
-      <p class="sa-step-title">แก้ไขคู่มือการใช้งาน</p>
+    <!-- FAQ -->
+    <div class="g-faq-section">
+      <div class="g-faq-title">🆘 ปัญหาที่พบบ่อย <span class="faq-badge">แก้ได้เอง</span></div>
+      <table class="g-faq-table">
+        <thead><tr><th>อาการที่พบ</th><th>วิธีแก้ไข</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>เข้าสู่ระบบไม่ได้ <span class="g-badge-freq">พบบ่อย</span></td>
+            <td>ตรวจสอบ Caps Lock และช่องว่าง ถ้าลืมรหัสผ่านให้ติดต่อ Super Admin เพื่อรีเซ็ต</td>
+          </tr>
+          <tr>
+            <td>ไม่เห็นเมนูคลังสินค้าหรือ Dispatch <span class="g-badge-freq">พบบ่อย</span></td>
+            <td>ออกจากระบบแล้วเข้าใหม่ หากยังไม่เห็น ติดต่อ Super Admin ตรวจสอบสิทธิ์บัญชีของคุณ</td>
+          </tr>
+          <tr>
+            <td>สร้างงานแล้วไม่ขึ้นบนแผนที่</td>
+            <td>แก้ไขงานนั้นแล้วปักหมุดตำแหน่งบนแผนที่อีกครั้ง แล้วบันทึก</td>
+          </tr>
+          <tr>
+            <td>จ่ายงานอัตโนมัติไม่ทำงาน</td>
+            <td>ตรวจสอบว่ามีทีมที่พร้อมใช้งาน และงานทุกรายการมีพิกัด GPS ครบ</td>
+          </tr>
+          <tr>
+            <td>นำเข้า Excel คลังสินค้าไม่ได้</td>
+            <td>ตรวจสอบรูปแบบไฟล์และหัวคอลัมน์ให้ตรงกับ Template ของระบบ</td>
+          </tr>
+          <tr>
+            <td>ส่งออก Excel น้ำมันไม่ได้</td>
+            <td>ตรวจสอบว่า Pop-up Blocker ในเบราว์เซอร์ไม่ได้บล็อกการดาวน์โหลด ลองใช้ Chrome</td>
+          </tr>
+          <tr>
+            <td>ต้องการแก้ไขบัญชีผู้ใช้</td>
+            <td>Admin ไม่มีสิทธิ์จัดการบัญชีผู้ใช้ ต้องติดต่อ <strong>Super Admin</strong> เพื่อดำเนินการ</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <div class="sa-step-body">
-      <p>ถ้าต้องการแก้ไขคู่มือนี้ ให้เข้าไปที่ <strong>File Manager</strong> แล้วเปิดไฟล์ชื่อ <code style="background:#EDE9FF;color:#6C5CE7;padding:2px 8px;border-radius:6px;font-size:13px;">USER_GUIDE.html</code> แก้ไขข้อความได้เลย แล้วกดบันทึก</p>
-    </div>
+
   </div>
-
-  <!-- Step 10 -->
-  <div class="sa-step">
-    <div class="sa-step-header">
-      <div class="sa-step-num">10</div>
-      <p class="sa-step-title">ออกจากระบบ</p>
-    </div>
-    <div class="sa-step-body">
-      <p>กดชื่อหรือรูปโปรไฟล์ที่มุมบนขวา แล้วกด <strong>"ออกจากระบบ"</strong> ทุกครั้งที่ใช้งานเสร็จ</p>
-      <div class="sa-note">
-        <span class="sa-note-icon">⚠️</span>
-        <p><strong>ห้ามปิดแท็บเลยโดยไม่ Logout</strong> เพราะคนอื่นอาจเข้ามาใช้บัญชีของคุณได้</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Trouble Section -->
-  <div class="sa-trouble-title">
-    🆘 ถ้าเจอปัญหา <span>แก้ได้เอง</span>
-  </div>
-
-  <table class="sa-table">
-    <thead>
-      <tr>
-        <th>อาการที่พบ</th>
-        <th>วิธีแก้ไข</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>เมนูบางอันหายไป <span class="sa-badge-danger">พบบ่อย</span></td>
-        <td>ออกจากระบบแล้วเข้าใหม่ ถ้ายังหายอยู่ ให้ติดต่อผู้พัฒนาระบบ</td>
-      </tr>
-      <tr>
-        <td>โพสต์ประกาศแล้วรูปไม่ขึ้น</td>
-        <td>รูปอาจใหญ่เกิน 5 MB ให้ย่อขนาดก่อน หรือเปลี่ยนเป็นไฟล์ .jpg / .png</td>
-      </tr>
-      <tr>
-        <td>สร้างงานแล้วไม่เห็นบนแผนที่</td>
-        <td>ตอนสร้างงาน อย่าลืมปักหมุดตำแหน่งบนแผนที่ด้วยทุกครั้ง</td>
-      </tr>
-      <tr>
-        <td>สำรองข้อมูลไม่สำเร็จ</td>
-        <td>ลองกดใหม่อีกครั้ง ถ้ายังไม่ได้ ให้แจ้งผู้พัฒนาระบบ</td>
-      </tr>
-      <tr>
-        <td>แก้ไขคู่มือจากหน้าเว็บไม่ได้</td>
-        <td>เข้าไปแก้ไฟล์ <code style="background:#EDE9FF;color:#6C5CE7;padding:1px 6px;border-radius:4px;font-size:12px;">USER_GUIDE.html</code> ตรงๆ ผ่าน File Manager แทน</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Footer -->
-  <div class="sa-footer">
-    <a href="index.php?page=home" class="sa-btn-back">
-      🏠 กลับสู่หน้าแรก
-    </a>
-  </div>
-
 </div>

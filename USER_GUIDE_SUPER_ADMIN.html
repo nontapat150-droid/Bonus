@@ -1,58 +1,221 @@
-<div class="space-y-6">
-  <section class="bg-slate-50 p-6 rounded-3xl border border-slate-200">
-    <h1 class="text-3xl font-black text-slate-900"><i data-lucide="monitor" class="w-6 h-6 mr-2"></i>คู่มือสำหรับผู้ดูแลระบบสูงสุด (Super Admin)</h1>
-    <p class="mt-3 text-slate-600">คู่มือนี้ให้ภาพรวมของทุกฟังก์ชันที่ผู้ดูแลระบบสูงสุดสามารถจัดการได้ ทั้งผู้ใช้ ระบบ การจัดส่ง คลังสินค้า และความปลอดภัยของระบบ</p>
-  </section>
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">1️⃣ Dashboard Overview</h2>
-    <p class="mt-3 text-slate-700">หน้าจอหลักแสดงเมนูสำคัญทั้งหมด เช่น การจัดการผู้ใช้ การตั้งค่าระบบ การจัดส่งและคงคลัง</p>
-    <ul class="mt-4 list-disc list-inside space-y-2 text-slate-700">
-      <li>เมนู <strong>ตั้งค่าระบบเว็บไซต์</strong> เพื่อแก้ไขคู่มือและประกาศ</li>
-      <li>เมนู <strong>จัดการผู้ใช้</strong> เพื่อเพิ่ม แก้ไข หรือลบผู้ใช้ และตั้งบทบาท</li>
-      <li>เมนู <strong>Dispatch</strong> เพื่อดูสถานะงานทั้งหมด</li>
-    </ul>
-  </section>
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">2️⃣ User Management</h2>
-    <p class="mt-3 text-slate-700">สร้าง, แก้ไข, อนุมัติผู้ใช้และกำหนดบทบาท (admin, technician, sales) รวมถึงรีเซ็ตรหัสผ่าน</p>
-  </section>
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">3️⃣ System Settings</h2>
-    <p class="mt-3 text-slate-700">แก้ไขประกาศหน้าเว็บ, อัปโหลดรูปประกาศ, ปรับข้อความโฆษณา และตั้งค่าข้อมูลพื้นฐานของเว็บไซต์</p>
-  </section>
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">4️⃣ Dispatch Management</h2>
-    <p class="mt-3 text-slate-700">ดูและกำหนดทีม, กำหนดงานให้ช่าง, ตรวจสอบสถานะการจัดส่งแบบเรียลไทม์</p>
-  </section>
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">5️⃣ Inventory & Oil Reports</h2>
-    <p class="mt-3 text-slate-700">ตรวจสอบสต็อกสินค้า, รายงานการเติมน้ำมัน, ส่งออกและนำเข้าไฟล์ Excel</p>
-  </section>
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">6️⃣ Security & Backup</h2>
-    <p class="mt-3 text-slate-700">ตั้งค่าการรักษาความปลอดภัย, นโยบายรหัสผ่าน, สำรองและกู้คืนฐานข้อมูล</p>
-  </section>
-  <div class="flex justify-end mt-4">
-    <a href="index.php?page=home" class="btn-primary bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300"><i data-lucide="home" class="w-4 h-4 mr-2"></i>กลับสู่หน้าแรก</a>
+<style>
+.g-wrap{font-family:'Inter','Sarabun',sans-serif;background:#F0F2FA;padding:0;margin:0;}
+.g-hero{background:linear-gradient(135deg,#4c1d95 0%,#7c3aed 50%,#a855f7 100%);padding:28px 24px;color:#fff;position:relative;overflow:hidden;margin-bottom:0;}
+.g-hero::before{content:'';position:absolute;top:-50px;right:-30px;width:180px;height:180px;background:rgba(255,255,255,0.07);border-radius:50%;}
+.g-hero::after{content:'';position:absolute;bottom:-60px;right:80px;width:120px;height:120px;background:rgba(255,255,255,0.05);border-radius:50%;}
+.g-hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.35);border-radius:999px;padding:4px 14px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+.g-hero h1{font-size:22px;font-weight:900;margin:0 0 6px;line-height:1.25;}
+.g-hero p{font-size:13px;opacity:0.88;margin:0;line-height:1.65;}
+.g-access{display:flex;flex-wrap:wrap;gap:8px;padding:16px 24px;background:rgba(109,40,217,0.07);border-bottom:1px solid #E2E5F0;}
+.g-access-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+.g-access-badge.has{background:#D1FAE5;color:#065F46;}
+.g-access-badge.no{background:#FEE2E2;color:#991B1B;text-decoration:line-through;opacity:0.65;}
+.g-body{padding:20px 24px;display:flex;flex-direction:column;gap:12px;}
+.g-card{background:#fff;border-radius:14px;border:1px solid #E2E5F0;box-shadow:0 1px 2px rgba(10,10,30,.04),0 2px 8px rgba(10,10,30,.05);overflow:hidden;}
+.g-card-head{display:flex;align-items:center;gap:12px;padding:15px 18px;background:#fff;border-bottom:1px solid #F0F2FA;}
+.g-num{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 8px rgba(124,58,237,0.35);}
+.g-card-title{font-size:15px;font-weight:700;color:#0D0D1A;margin:0;flex:1;}
+.g-icon-tag{font-size:14px;margin-left:auto;}
+.g-card-body{padding:16px 18px;background:#FAFBFF;}
+.g-card-body p{color:#4B4F6A;font-size:13.5px;line-height:1.75;margin:0 0 10px;}
+.g-card-body p:last-child{margin-bottom:0;}
+.g-steps{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:7px;}
+.g-steps li{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:#4B4F6A;line-height:1.65;}
+.g-step-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:6px;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px;}
+.g-step-badge.num{background:#EDE9FF;color:#7c3aed;}
+.g-step-badge.act{background:#EDE9FF;color:#7c3aed;padding:0 7px;min-width:auto;}
+.g-warn{display:flex;gap:9px;align-items:flex-start;background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid #F59E0B;border-radius:10px;padding:11px 13px;margin-top:10px;}
+.g-warn p{font-size:12.5px;color:#78350F;margin:0;line-height:1.6;}
+.g-tip{display:flex;gap:9px;align-items:flex-start;background:#EFF6FF;border:1px solid #BFDBFE;border-left:4px solid #3B82F6;border-radius:10px;padding:11px 13px;margin-top:10px;}
+.g-tip p{font-size:12.5px;color:#1E40AF;margin:0;line-height:1.6;}
+.g-success{display:flex;gap:9px;align-items:flex-start;background:#ECFDF5;border:1px solid #A7F3D0;border-left:4px solid #10B981;border-radius:10px;padding:11px 13px;margin-top:10px;}
+.g-success p{font-size:12.5px;color:#065F46;margin:0;line-height:1.6;}
+.g-highlight{display:inline;background:linear-gradient(90deg,rgba(167,139,250,0.25),rgba(196,181,253,0.15));border-radius:4px;padding:1px 6px;color:#5b21b6;font-weight:700;font-size:0.92em;}
+.g-code{background:#EDE9FF;color:#7c3aed;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;font-family:monospace;}
+.g-faq-section{margin-top:8px;}
+.g-faq-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800;color:#0D0D1A;margin:0 0 12px;}
+.g-faq-title .faq-badge{background:#FEF2F2;color:#DC2626;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700;}
+.g-faq-table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border-radius:14px;border:1px solid #E2E5F0;overflow:hidden;box-shadow:0 1px 2px rgba(10,10,30,.04),0 2px 8px rgba(10,10,30,.05);}
+.g-faq-table thead tr{background:#F7F8FC;}
+.g-faq-table th{padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:#9499B5;border-bottom:1px solid #E2E5F0;text-align:left;}
+.g-faq-table td{padding:12px 16px;font-size:13px;color:#4B4F6A;border-bottom:1px solid #F0F2FA;vertical-align:top;line-height:1.65;}
+.g-faq-table tbody tr:last-child td{border-bottom:none;}
+.g-faq-table tbody tr:hover td{background:#F8F7FF;}
+.g-faq-table td:first-child{font-weight:600;color:#0D0D1A;width:42%;}
+.g-badge-freq{display:inline-block;background:#FEF2F2;color:#991B1B;border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;margin-left:5px;}
+.g-perm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+.g-perm-item{background:#F7F8FC;border:1px solid #E2E5F0;border-radius:10px;padding:10px 12px;display:flex;align-items:flex-start;gap:8px;font-size:13px;}
+.g-perm-icon{font-size:15px;flex-shrink:0;}
+.g-perm-text{color:#4B4F6A;line-height:1.5;}
+.g-perm-text strong{display:block;color:#0D0D1A;font-size:12.5px;font-weight:700;margin-bottom:2px;}
+@media(max-width:600px){.g-body{padding:14px 14px;}.g-perm-grid{grid-template-columns:1fr;}.g-faq-table td:first-child{width:auto;}.g-hero{padding:22px 18px;}.g-access{padding:12px 16px;}}
+</style>
+
+<div class="g-wrap">
+  <div class="g-hero">
+    <div class="g-hero-badge">👑 Super Admin</div>
+    <h1>คู่มือผู้ดูแลระบบสูงสุด</h1>
+    <p>คุณมีสิทธิ์สูงสุดในระบบ — จัดการผู้ใช้ ตั้งค่าระบบ ประกาศ Dispatch คลังสินค้า และรายงานน้ำมัน</p>
   </div>
-</div>
-  <section class="bg-slate-50 p-6 rounded-3xl border border-slate-200">
-    <h1 class="text-3xl font-black text-slate-900">คู่มือสำหรับผู้ดูแลระบบสูงสุด (Super Admin)</h1>
-    <p class="mt-3 text-slate-600">คู่มือนี้เป็น HTML ที่สามารถแก้ไขได้จากหน้า <strong>ตั้งค่าระบบเว็บไซต์</strong> โดยตรง.</p>
-  </section>
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">1. จัดการผู้ใช้</h2>
-    <p class="mt-3 text-slate-700">เข้าเมนูจัดการผู้ใช้ เพื่อตรวจสอบ เพิ่ม แก้ไข หรืออนุมัติผู้ใช้งาน.</p>
-  </section>
+  <div class="g-access">
+    <span class="g-access-badge has">✅ หน้าแรก</span>
+    <span class="g-access-badge has">✅ ระบบเช็คอิน</span>
+    <span class="g-access-badge has">✅ น้ำมัน/ยานพาหนะ</span>
+    <span class="g-access-badge has">✅ ระบบ Dispatch</span>
+    <span class="g-access-badge has">✅ คลังสินค้า</span>
+    <span class="g-access-badge has">✅ จัดการผู้ใช้</span>
+    <span class="g-access-badge has">✅ ตั้งค่าระบบเว็บไซต์</span>
+    <span class="g-access-badge has">✅ ประวัติระบบ</span>
+  </div>
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">2. ตั้งค่าประกาศหน้าเว็บ</h2>
-    <p class="mt-3 text-slate-700">ใช้เมนูตั้งค่าระบบเว็บไซต์เพื่อแก้ไขข้อความประกาศและรูปประกาศที่จะแสดงเป็น modal บนหน้าแรก.</p>
-  </section>
+  <div class="g-body">
 
-  <section class="bg-white p-6 rounded-3xl border border-slate-200">
-    <h2 class="text-2xl font-bold text-slate-900">3. ดูระบบ Dispatch และคลังสินค้า</h2>
-    <p class="mt-3 text-slate-700">ตรวจสอบงานจัดส่ง สร้างทีม และบริหารคลังสินค้าในระบบได้ตามสิทธิ์.</p>
-  </section>
+    <!-- 1. เข้าสู่ระบบ -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">1</div><p class="g-card-title">เข้าสู่ระบบ</p><span class="g-icon-tag">🔐</span></div>
+      <div class="g-card-body">
+        <p>เปิดเว็บเบราว์เซอร์ → เข้า URL ของระบบ → กรอก <span class="g-highlight">ชื่อผู้ใช้</span> และ <span class="g-highlight">รหัสผ่าน</span> → กดปุ่ม <strong>"เข้าสู่ระบบ"</strong></p>
+        <p>หลังล็อกอิน ระบบจะพาไปหน้า Dashboard ซึ่งแสดง KPI สรุปงานวันนี้ ค่าน้ำมัน สต็อกสินค้า และจำนวนพนักงาน</p>
+        <div class="g-tip"><span>💡</span><p>ถ้ากรอกรหัสแล้วเข้าไม่ได้ ตรวจสอบว่า <strong>Caps Lock</strong> ติดอยู่หรือเปล่า หรือว่ามีช่องว่างต่อท้ายชื่อผู้ใช้หรือไม่</p></div>
+      </div>
+    </div>
+
+    <!-- 2. จัดการผู้ใช้ -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">2</div><p class="g-card-title">จัดการผู้ใช้และสิทธิ์</p><span class="g-icon-tag">👥</span></div>
+      <div class="g-card-body">
+        <p>คลิกเมนู <span class="g-highlight">จัดการผู้ใช้</span> ด้านซ้ายมือ เพื่อดูรายชื่อพนักงานทั้งหมดและบทบาทของแต่ละคน</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">+ เพิ่ม</span><span>กดปุ่ม <strong>"+ เพิ่มผู้ใช้"</strong> → กรอกชื่อ, ชื่อผู้ใช้, รหัสผ่าน, เลือกบทบาท → กด <strong>"บันทึก"</strong></span></li>
+          <li><span class="g-step-badge act">✏️ แก้ไข</span><span>กดปุ่มดินสอหน้าชื่อผู้ใช้ → แก้ไขข้อมูล → กด <strong>"บันทึก"</strong></span></li>
+          <li><span class="g-step-badge act">🗑️ ลบ</span><span>กดปุ่มถังขยะ → ระบบจะถามยืนยัน → กด <strong>"ยืนยัน"</strong> เพื่อลบถาวร</span></li>
+          <li><span class="g-step-badge act">🔄 บทบาท</span><span>เลือกบทบาทให้เหมาะสม: <strong>super_admin / admin / technician / sales / user</strong></span></li>
+        </ul>
+        <div class="g-warn"><span>⚠️</span><p>การ<strong>ลบผู้ใช้เป็นการลบถาวร</strong> ไม่สามารถกู้คืนได้ ควรตรวจสอบให้ดีก่อนยืนยัน</p></div>
+      </div>
+    </div>
+
+    <!-- 3. ตั้งค่าระบบเว็บไซต์ -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">3</div><p class="g-card-title">ตั้งค่าระบบเว็บไซต์</p><span class="g-icon-tag">⚙️</span></div>
+      <div class="g-card-body">
+        <p>คลิกเมนู <span class="g-highlight">ตั้งค่าระบบเว็บไซต์</span> เพื่อจัดการประกาศที่แสดงบนหน้าเว็บ มีสองรูปแบบ:</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">🪟 ป๊อปอัป</span><span>แสดงเป็นหน้าต่างกลางจอเมื่อผู้ใช้เข้าสู่ระบบ — ใส่หัวข้อ, ข้อความ, และรูปประกอบ (ไม่บังคับ)</span></li>
+          <li><span class="g-step-badge act">📢 ป้ายวิ่ง</span><span>แสดงเป็นแถบวิ่งด้านบนหน้าแรก — ใส่ข้อความที่ต้องการให้วิ่งแสดง</span></li>
+        </ul>
+        <p>กรอกข้อมูลและกด <strong>"บันทึก"</strong> ประกาศจะแสดงทันทีสำหรับทุกคน</p>
+        <div class="g-tip"><span>📅</span><p>ตั้ง <strong>"ระยะเวลาที่แสดง"</strong> ได้ (เช่น 3 วัน) เพื่อให้ประกาศหมดอายุอัตโนมัติ ไม่ต้องลบเอง</p></div>
+      </div>
+    </div>
+
+    <!-- 4. ระบบ Dispatch -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">4</div><p class="g-card-title">ระบบ Dispatch — จัดส่งอัจฉริยะ</p><span class="g-icon-tag">🗺️</span></div>
+      <div class="g-card-body">
+        <p>เมนู <span class="g-highlight">ระบบจัดส่งอัจฉริยะ</span> ใช้สำหรับสร้างและมอบหมายงานให้ทีมช่างเทคนิค</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">สร้างทีม</span><span>แถบ <strong>"ทีม"</strong> → กดปุ่ม <strong>"+ สร้างทีม"</strong> → ตั้งชื่อทีม → เพิ่มสมาชิก</span></li>
+          <li><span class="g-step-badge act">+ งาน</span><span>กดปุ่ม <strong>"+ เพิ่มงาน"</strong> → กรอกชื่อลูกค้า, ที่อยู่ → <strong>ปักหมุดบนแผนที่</strong> → เลือกทีม</span></li>
+          <li><span class="g-step-badge act">⚡ อัตโนมัติ</span><span>กดปุ่ม <strong>"จ่ายงานอัตโนมัติ"</strong> ระบบจะคำนวณเส้นทางและแบ่งงานให้ทุกทีมเอง</span></li>
+          <li><span class="g-step-badge act">📍 แผนที่</span><span>ดูตำแหน่งงานทุกจุดได้บนแผนที่แบบเรียลไทม์</span></li>
+        </ul>
+        <div class="g-warn"><span>⚠️</span><p><strong>สำคัญ:</strong> ตอนสร้างงานต้อง <strong>ปักหมุดตำแหน่งบนแผนที่ด้วยทุกครั้ง</strong> มิฉะนั้นงานจะไม่แสดงในแผนที่และระบบ auto-assign ไม่ทำงาน</p></div>
+      </div>
+    </div>
+
+    <!-- 5. คลังสินค้า -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">5</div><p class="g-card-title">ระบบคลังสินค้า</p><span class="g-icon-tag">📦</span></div>
+      <div class="g-card-body">
+        <p>เมนู <span class="g-highlight">ระบบคลังสินค้า</span> จัดการสต็อกสินค้า ตรวจสอบของคงเหลือ และโอนสินค้าระหว่างคลัง</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">🔍 ดู</span><span>เลื่อนดูรายการสินค้า กรองด้วยชื่อ รหัส หรือสถานะ</span></li>
+          <li><span class="g-step-badge act">+ เพิ่ม</span><span>กดปุ่ม <strong>"+ เพิ่มสินค้า"</strong> → กรอกชื่อ, รหัส, จำนวน → กด <strong>"บันทึก"</strong></span></li>
+          <li><span class="g-step-badge act">✏️ แก้ไข</span><span>กดปุ่มดินสอหน้าสินค้า → แก้ไขข้อมูล → บันทึก</span></li>
+          <li><span class="g-step-badge act">🔄 โอน</span><span>กดปุ่ม <strong>"โอนสินค้า"</strong> → เลือกสินค้าและปลายทาง → ยืนยัน</span></li>
+          <li><span class="g-step-badge act">📥 นำเข้า</span><span>กดปุ่ม <strong>"นำเข้า Excel"</strong> → เลือกไฟล์ → ระบบอ่านข้อมูลอัตโนมัติ</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 6. รายงานน้ำมัน -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">6</div><p class="g-card-title">รายงานน้ำมันและยานพาหนะ</p><span class="g-icon-tag">⛽</span></div>
+      <div class="g-card-body">
+        <p>เมนู <span class="g-highlight">น้ำมันและยานพาหนะ</span> แสดงรายงานการเติมน้ำมันของทุกทีม วิเคราะห์ค่าใช้จ่ายและประสิทธิภาพ</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">📅 กรอง</span><span>ใช้ตัวกรอง <strong>วันที่</strong> และ <strong>ทีม/รถ</strong> เพื่อดูข้อมูลเฉพาะกลุ่ม</span></li>
+          <li><span class="g-step-badge act">📊 วิเคราะห์</span><span>ดู km/l อัตราการสิ้นเปลืองน้ำมันของแต่ละรถ</span></li>
+          <li><span class="g-step-badge act">📤 ส่งออก</span><span>กดปุ่ม <strong>"ส่งออก Excel"</strong> ดาวน์โหลดรายงานเพื่อนำไปใช้ต่อ</span></li>
+        </ul>
+        <div class="g-tip"><span>📊</span><p>เปรียบเทียบ km/l ระหว่างรถแต่ละคัน ถ้ารถคันไหน km/l ต่ำกว่าปกติมากอาจต้องตรวจสอบสภาพเครื่อง</p></div>
+      </div>
+    </div>
+
+    <!-- 7. ระบบเช็คอิน -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">7</div><p class="g-card-title">ระบบเช็คอิน</p><span class="g-icon-tag">📋</span></div>
+      <div class="g-card-body">
+        <p>เมนู <span class="g-highlight">ระบบเช็คอิน</span> บันทึกการเข้า-ออกงานของพนักงาน คุณสามารถดูประวัติและสถานะปัจจุบันของทุกคน</p>
+        <ul class="g-steps">
+          <li><span class="g-step-badge act">👁 ดู</span><span>ดูสถานะเช็คอิน/เช็คเอาต์ปัจจุบันของพนักงานทุกคน</span></li>
+          <li><span class="g-step-badge act">📜 ประวัติ</span><span>ดูประวัติย้อนหลังรายวัน รายสัปดาห์ หรือรายเดือน</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 8. ออกจากระบบ -->
+    <div class="g-card">
+      <div class="g-card-head"><div class="g-num">8</div><p class="g-card-title">ออกจากระบบ</p><span class="g-icon-tag">🚪</span></div>
+      <div class="g-card-body">
+        <p>กดชื่อผู้ใช้หรือไอคอนที่มุมซ้ายล่างของ sidebar → กด <strong>"ออกจากระบบ"</strong> ทุกครั้งหลังใช้งานเสร็จ</p>
+        <div class="g-warn"><span>⚠️</span><p><strong>ห้ามปิดหน้าต่างเบราว์เซอร์โดยไม่ logout</strong> — บัญชี super_admin มีสิทธิ์สูงมาก หากคนอื่นเข้าถึงได้อาจเกิดความเสียหาย</p></div>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="g-faq-section">
+      <div class="g-faq-title">🆘 ปัญหาที่พบบ่อย <span class="faq-badge">แก้ได้เอง</span></div>
+      <table class="g-faq-table">
+        <thead><tr><th>อาการที่พบ</th><th>วิธีแก้ไข</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>เข้าสู่ระบบไม่ได้ <span class="g-badge-freq">พบบ่อย</span></td>
+            <td>ตรวจสอบ Caps Lock, ช่องว่าง และความถูกต้องของรหัสผ่าน ถ้ายังไม่ได้ลอง reset รหัสผ่านผ่าน File Manager</td>
+          </tr>
+          <tr>
+            <td>เมนูบางอันหายไป <span class="g-badge-freq">พบบ่อย</span></td>
+            <td>ออกจากระบบและเข้าใหม่ หรือ refresh หน้า (Ctrl+F5) เพื่อล้าง cache</td>
+          </tr>
+          <tr>
+            <td>สร้างงานแล้วไม่แสดงบนแผนที่</td>
+            <td>ตรวจสอบว่าได้ปักหมุดตำแหน่งบนแผนที่ตอนสร้างงานหรือไม่ ถ้ายังไม่มีให้แก้ไขงานแล้วปักหมุดใหม่</td>
+          </tr>
+          <tr>
+            <td>ประกาศป๊อปอัปไม่แสดง</td>
+            <td>ตรวจสอบว่า "ระยะเวลาที่แสดง" ยังไม่หมดอายุ และข้อความ/หัวข้อกรอกครบ กดรีเฟรชข้อมูลแล้วบันทึกใหม่</td>
+          </tr>
+          <tr>
+            <td>รูปประกาศอัปโหลดไม่ได้</td>
+            <td>ไฟล์รูปต้องมีขนาด <strong>ไม่เกิน 5 MB</strong> และเป็น .jpg, .png, .gif, หรือ .webp เท่านั้น</td>
+          </tr>
+          <tr>
+            <td>นำเข้า Excel คลังสินค้าไม่ได้</td>
+            <td>ตรวจสอบรูปแบบไฟล์ว่าเป็น .xlsx หรือ .csv ที่รองรับ และตรวจหัวตาราง (Header) ว่าตรงกับที่ระบบกำหนด</td>
+          </tr>
+          <tr>
+            <td>จ่ายงานอัตโนมัติไม่ทำงาน</td>
+            <td>ตรวจสอบว่ามีทีมที่พร้อมใช้งานและงานมีพิกัด GPS ครบทุกรายการ ถ้าไม่มีทีม ให้สร้างทีมก่อน</td>
+          </tr>
+          <tr>
+            <td>ส่งออก Excel น้ำมันไม่ได้</td>
+            <td>ลองใช้เบราว์เซอร์อื่น (Chrome หรือ Edge) และตรวจว่า Pop-up Blocker ไม่ได้บล็อกการดาวน์โหลด</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
 </div>

@@ -401,24 +401,86 @@ if ($page === 'home') {
             </div>
         </header>
 
-        <div id="guideModal" class="hidden fixed inset-0 z-50 bg-black/40 p-4 backdrop-blur-sm flex justify-center items-center">
-            <div class="w-full max-w-4xl rounded-[32px] bg-white shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
-                <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-200 shrink-0 bg-white z-10">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-900">คู่มือการใช้งาน</h2>
-                        <p class="text-slate-500 text-sm">เลือกบทบาทเพื่อดูคู่มือ</p>
+        <?php
+        // Map role to guide file and theme
+        $guideRoleMap = [
+            'super_admin' => ['file' => 'USER_GUIDE_SUPER_ADMIN.html', 'label' => 'ผู้ดูแลระบบสูงสุด', 'emoji' => '👑', 'color' => 'from-violet-600 to-purple-500'],
+            'admin'       => ['file' => 'USER_GUIDE_ADMIN.html',       'label' => 'ผู้ดูแลระบบ',      'emoji' => '⚙️', 'color' => 'from-blue-700 to-blue-500'],
+            'technician'  => ['file' => 'USER_GUIDE_TECHNICIAN.html',  'label' => 'ช่างเทคนิค',       'emoji' => '🔧', 'color' => 'from-emerald-700 to-emerald-500'],
+            'sales'       => ['file' => 'USER_GUIDE.html',             'label' => 'ผู้ใช้งานทั่วไป',  'emoji' => '📋', 'color' => 'from-amber-600 to-amber-400'],
+            'user'        => ['file' => 'USER_GUIDE.html',             'label' => 'ผู้ใช้งานทั่วไป',  'emoji' => '📋', 'color' => 'from-amber-600 to-amber-400'],
+        ];
+        $currentRole = $user['role'] ?? 'user';
+        $guideInfo = $guideRoleMap[$currentRole] ?? $guideRoleMap['user'];
+        ?>
+        <!-- ═══ GUIDE MODAL (Role-Based) ═══ -->
+        <style>
+            #guideModal { display:none; }
+            #guideModal.show { display:flex; }
+            @keyframes guideSlideIn {
+                from { opacity:0; transform:scale(0.94) translateY(12px); }
+                to   { opacity:1; transform:scale(1)   translateY(0); }
+            }
+            #guideModalInner { animation: guideSlideIn 0.28s cubic-bezier(0.16,1,0.3,1) both; }
+            #guideProgressBar { transition: width 0.1s linear; }
+            #guideScrollArea::-webkit-scrollbar { width: 5px; }
+            #guideScrollArea::-webkit-scrollbar-track { background: transparent; }
+            #guideScrollArea::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 99px; }
+            #guideScrollArea::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+            .guide-section-link {
+                display:flex; align-items:center; gap:8px;
+                padding:7px 10px; border-radius:8px;
+                font-size:12.5px; font-weight:600; color:#64748B;
+                cursor:pointer; transition:all 0.15s ease;
+                text-decoration:none; border:none; background:transparent; width:100%; text-align:left;
+            }
+            .guide-section-link:hover { background:#F1F5F9; color:#1E293B; }
+            .guide-section-link.active { background:#EDE9FF; color:#6C5CE7; }
+            .guide-section-dot { width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; opacity:0.6; }
+        </style>
+        <div id="guideModal" class="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center">
+            <div id="guideModalInner" class="w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col" style="max-height:92vh;">
+
+                <!-- Header -->
+                <div class="relative bg-gradient-to-br <?= $guideInfo['color'] ?> px-6 py-5 shrink-0 overflow-hidden">
+                    <div class="absolute inset-0 opacity-10" style="background-image:radial-gradient(circle at 80% 20%, rgba(255,255,255,0.4) 0%,transparent 60%);"></div>
+                    <div class="relative flex items-start justify-between gap-4">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-white/70 text-xs font-bold uppercase tracking-widest">คู่มือการใช้งาน</span>
+                            </div>
+                            <h2 class="text-white text-xl font-black leading-tight">
+                                <?= $guideInfo['emoji'] ?> <?= htmlspecialchars($guideInfo['label']) ?>
+                            </h2>
+                            <p class="text-white/75 text-xs mt-1">เนื้อหาแสดงตามสิทธิ์บัญชีของคุณ</p>
+                        </div>
+                        <button id="closeGuideModal" class="shrink-0 w-8 h-8 rounded-full bg-white/20 hover:bg-white/35 text-white flex items-center justify-center transition-colors text-lg leading-none" aria-label="ปิด">&times;</button>
                     </div>
-                    <button id="closeGuideModal" class="text-slate-400 hover:text-slate-700 text-xl font-bold">&times;</button>
+                    <!-- Reading Progress -->
+                    <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20">
+                        <div id="guideProgressBar" class="h-full bg-white/80 rounded-full" style="width:0%;"></div>
+                    </div>
                 </div>
 
-                <div class="px-5 py-4 overflow-y-auto custom-scrollbar flex-1">
-                    <div class="flex gap-2 mb-4 border-b border-slate-200 pb-4 flex-wrap">
-                        <button class="guide-tab-btn px-4 py-2 text-sm font-bold rounded-2xl transition-colors bg-slate-100 text-slate-700 active" data-role="super_admin">👑 Super Admin</button>
-                        <button class="guide-tab-btn px-4 py-2 text-sm font-bold rounded-2xl transition-colors hover:bg-slate-100" data-role="admin">⚙️ Admin</button>
-                        <button class="guide-tab-btn px-4 py-2 text-sm font-bold rounded-2xl transition-colors hover:bg-slate-100" data-role="technician">🔧 Technician</button>
-                        <button class="guide-tab-btn px-4 py-2 text-sm font-bold rounded-2xl transition-colors hover:bg-slate-100" data-role="general">📖 General</button>
+                <!-- Body: Sidebar + Content -->
+                <div class="flex flex-1 overflow-hidden">
+
+                    <!-- TOC Sidebar (hidden on very small screens) -->
+                    <div class="hidden sm:flex flex-col w-48 shrink-0 border-r border-slate-100 bg-slate-50/60 p-3 overflow-y-auto gap-1">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2 mb-1 mt-1">สารบัญ</p>
+                        <div id="guideTocList" class="flex flex-col gap-0.5"></div>
                     </div>
-                    <div id="guideContent" class="prose prose-slate max-w-none"></div>
+
+                    <!-- Scrollable Content -->
+                    <div id="guideScrollArea" class="flex-1 overflow-y-auto">
+                        <div id="guideContent">
+                            <div class="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
+                                <div class="w-8 h-8 border-2 border-slate-300 border-t-violet-500 rounded-full animate-spin"></div>
+                                <span class="text-sm">กำลังโหลดคู่มือ...</span>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -821,69 +883,107 @@ if ($page === 'home') {
     <script src="assets/js/notifications.js"></script>
     
     <script>
-        // Guide Modal Handler
-        const guideBtn = document.getElementById('guideModalBtn');
-        const guideModal = document.getElementById('guideModal');
-        const closeGuideBtn = document.getElementById('closeGuideModal');
-        const guideContent = document.getElementById('guideContent');
-        const guideTabs = document.querySelectorAll('.guide-tab-btn');
+    (function() {
+        // ─── Guide Modal: Role-Based ───
+        const GUIDE_FILE = <?= json_encode($guideInfo['file']) ?>;
 
-        const guideContents = {
-            'super_admin': null,
-            'admin': null,
-            'technician': null,
-            'general': null
-        };
+        const guideBtn       = document.getElementById('guideModalBtn');
+        const guideModal     = document.getElementById('guideModal');
+        const closeGuideBtn  = document.getElementById('closeGuideModal');
+        const guideContent   = document.getElementById('guideContent');
+        const guideScrollArea= document.getElementById('guideScrollArea');
+        const progressBar    = document.getElementById('guideProgressBar');
+        const tocList        = document.getElementById('guideTocList');
 
-        // Load guides
-        async function loadGuides() {
-            const guides = {
-                'super_admin': 'USER_GUIDE_SUPER_ADMIN.html',
-                'admin': 'USER_GUIDE_ADMIN.html',
-                'technician': 'USER_GUIDE_TECHNICIAN.html',
-                'general': 'USER_GUIDE.html'
-            };
+        let guideLoaded = false;
 
-            for (const [role, file] of Object.entries(guides)) {
-                try {
-                    const response = await fetch(file);
-                    guideContents[role] = await response.text();
-                } catch (error) {
-                    guideContents[role] = `<p class="text-slate-500">ไม่สามารถโหลดคู่มือ ${role} ได้</p>`;
-                }
+        async function loadGuide() {
+            if (guideLoaded) return;
+            try {
+                const res  = await fetch(GUIDE_FILE + '?v=' + Date.now());
+                const html = await res.text();
+                guideContent.innerHTML = html;
+                guideLoaded = true;
+                if (window.lucide) lucide.createIcons();
+                buildToc();
+            } catch (e) {
+                guideContent.innerHTML = '<div style="padding:32px;text-align:center;color:#94A3B8;"><p>ไม่สามารถโหลดคู่มือได้ กรุณารีเฟรชหน้า</p></div>';
             }
         }
 
-        guideBtn.addEventListener('click', () => {
-            guideModal.classList.remove('hidden');
-            if (!guideContent.innerHTML) {
-                displayGuide('super_admin');
-            }
-        });
+        function buildToc() {
+            if (!tocList) return;
+            tocList.innerHTML = '';
+            // Look for sa-step-title or g-card-title elements
+            const titles = guideContent.querySelectorAll('.sa-step-title, .g-card-title');
+            if (titles.length === 0) return;
+            titles.forEach((el, i) => {
+                // Give each section an ID for scroll targeting
+                const sectionId = 'guide-section-' + i;
+                const card = el.closest('.sa-step, .g-card');
+                if (card) card.id = sectionId;
 
-        closeGuideBtn.addEventListener('click', () => {
-            guideModal.classList.add('hidden');
-        });
-
-        guideModal.addEventListener('click', (e) => {
-            if (e.target === guideModal) {
-                guideModal.classList.add('hidden');
-            }
-        });
-
-        guideTabs.forEach(btn => {
-            btn.addEventListener('click', () => {
-                guideTabs.forEach(b => b.classList.remove('active', 'bg-slate-100', 'text-slate-700'));
-                btn.classList.add('active', 'bg-slate-100', 'text-slate-700');
-                displayGuide(btn.dataset.role);
+                const btn = document.createElement('button');
+                btn.className = 'guide-section-link';
+                btn.innerHTML = '<span class="guide-section-dot"></span>' + el.textContent.trim();
+                btn.addEventListener('click', () => {
+                    const target = document.getElementById(sectionId);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                    // Mark active
+                    tocList.querySelectorAll('.guide-section-link').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+                tocList.appendChild(btn);
             });
-        });
-
-        function displayGuide(role) {
-            guideContent.innerHTML = guideContents[role] || '<p class="text-slate-500">กำลังโหลด...</p>';
         }
 
-        document.addEventListener('DOMContentLoaded', loadGuides);
+        // Reading progress bar
+        function updateProgress() {
+            if (!guideScrollArea || !progressBar) return;
+            const el = guideScrollArea;
+            const scrolled = el.scrollTop;
+            const total = el.scrollHeight - el.clientHeight;
+            const pct = total > 0 ? Math.round((scrolled / total) * 100) : 0;
+            progressBar.style.width = pct + '%';
+
+            // Update TOC active based on scroll
+            if (!tocList) return;
+            const sections = guideContent.querySelectorAll('.sa-step, .g-card');
+            let activeIdx = 0;
+            sections.forEach((sec, i) => {
+                const rect = sec.getBoundingClientRect();
+                const containerRect = guideScrollArea.getBoundingClientRect();
+                if (rect.top - containerRect.top < 120) activeIdx = i;
+            });
+            const links = tocList.querySelectorAll('.guide-section-link');
+            links.forEach((l, i) => l.classList.toggle('active', i === activeIdx));
+        }
+
+        function openGuide() {
+            guideModal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            loadGuide();
+        }
+
+        function closeGuide() {
+            guideModal.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        guideBtn.addEventListener('click', openGuide);
+        closeGuideBtn.addEventListener('click', closeGuide);
+        guideModal.addEventListener('click', (e) => {
+            if (e.target === guideModal) closeGuide();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && guideModal.classList.contains('show')) closeGuide();
+        });
+        if (guideScrollArea) {
+            guideScrollArea.addEventListener('scroll', updateProgress, { passive: true });
+        }
+    })();
     </script>
 </body>
 </html>
