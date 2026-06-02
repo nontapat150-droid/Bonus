@@ -124,6 +124,8 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
 
 </div>
 
+<?php include __DIR__ . '/../partials/edit_start_day_modal.php'; ?>
+
 <script>
     // ส่งสิทธิ์ของผู้ใช้ไปให้ Javascript
     window.USER_ROLE = '<?= $_SESSION['role'] ?? 'user' ?>';
