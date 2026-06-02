@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const query = searchInput.value.trim();
         if (!query) return;
 
-        showLoader('กำลังค้นหาข้อมูล...');
+        window.Loader.show();
         try {
             const res = await fetch(`api/customer/search_info.php?q=${encodeURIComponent(query)}`);
             const data = await res.json();
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             Swal.fire('ข้อผิดพลาด', 'เกิดปัญหาในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
         } finally {
-            hideLoader();
+            window.Loader.hide();
         }
     });
 
