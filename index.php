@@ -1402,7 +1402,7 @@ if ($page === 'home') {
                     } else {
                         imgEl.classList.add('hidden');
                         initEl.classList.remove('hidden');
-                        initEl.textContent = u.full_name.substring(0, 2).toUpperCase();
+                        initEl.textContent = (u.full_name || 'U').substring(0, 2).toUpperCase();
                     }
                 }
             } catch(e) { console.error('Failed to fetch profile', e); }
