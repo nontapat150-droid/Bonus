@@ -57,6 +57,10 @@
             <div class="icon"><i data-lucide="package"></i></div>
             <span class="nav-label">ระบบคลังสินค้า</span>
         </a>
+        <a href="index.php?page=customer_info" class="nav-item <?= $page === 'customer_info' ? 'active' : '' ?>" data-label="ข้อมูลลูกค้า">
+            <div class="icon"><i data-lucide="users-2"></i></div>
+            <span class="nav-label">ข้อมูลลูกค้า</span>
+        </a>
         <?php endif; ?>
 
         <?php if (hasRole(['admin', 'super_admin'])): ?>
@@ -149,6 +153,10 @@
         <a href="index.php?page=inventory" class="nav-item <?= $page === 'inventory' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="package"></i></div>
             <span class="nav-label">ระบบคลังสินค้า</span>
+        </a>
+        <a href="index.php?page=customer_info" class="nav-item <?= $page === 'customer_info' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="users-2"></i></div>
+            <span class="nav-label">ข้อมูลลูกค้า</span>
         </a>
         <?php endif; ?>
 

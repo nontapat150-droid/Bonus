@@ -757,6 +757,7 @@ if ($page === 'home') {
                     'oil' => hasRole(['technician']) ? 'views/modules/oil_form.php' : 'views/modules/oil_report.php',
                     'start_day' => 'views/modules/start_day.php',
                     'system_history' => 'views/modules/system_history.php',
+                    'customer_info' => 'views/modules/customer_info.php',
                     'job_close_history' => 'views/modules/job_close_history.php',
                     'dispatch' => 'views/modules/dispatch_map.php',
                     'guide' => 'views/modules/user_guide.php',
