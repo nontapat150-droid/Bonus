@@ -49,6 +49,42 @@ try {
     }
 
     $pdo->commit();
+
+    // --- ส่งแจ้งเตือนอัตโนมัติ ---
+    if ($processed > 0) {
+        try {
+            $senderName = $user['full_name'] ?? 'ช่างเทคนิค';
+            $stmtT = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
+            $stmtT->execute([$target_user_id]);
+            $tUser = $stmtT->fetch();
+            $receiverName = $tUser ? $tUser['full_name'] : 'ช่างที่ไม่ทราบชื่อ';
+
+            $title = "มีการโอนย้ายสินค้า";
+            $message = "[$senderName] โอนย้ายอุปกรณ์ (มี SN) จำนวน $processed ชิ้น ให้กับ [$receiverName]";
+            
+            $pdo->prepare("INSERT INTO notifications (title, message, type, is_global, created_by) VALUES (?, ?, 'system', 0, ?)")
+                ->execute([$title, $message, $admin_id]);
+            $notif_id = $pdo->lastInsertId();
+
+            // แจ้งเฉพาะแอดมิน (admin, super_admin)
+            $stmtAdmins = $pdo->prepare("SELECT id FROM users WHERE role IN ('admin', 'super_admin')");
+            $stmtAdmins->execute();
+            $admins = $stmtAdmins->fetchAll(PDO::FETCH_COLUMN);
+
+            if (!empty($admins)) {
+                $insertReads = [];
+                $insertParams = [];
+                foreach ($admins as $ad_id) {
+                    $insertReads[] = "(?, ?)";
+                    $insertParams[] = $notif_id;
+                    $insertParams[] = $ad_id;
+                }
+                $pdo->prepare("INSERT IGNORE INTO notification_reads (notification_id, user_id) VALUES " . implode(',', $insertReads))
+                    ->execute($insertParams);
+            }
+        } catch (Exception $e) {} // ignore notification errors
+    }
+
     echo json_encode(['success' => true, 'processed' => $processed]);
 } catch (Exception $e) {
     $pdo->rollBack();

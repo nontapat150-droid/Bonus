@@ -2,13 +2,13 @@
 // views/modules/inventory_app.php
 if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรงไม่ได้');
 
-// Protection: Admin, Super Admin and Technician
-if (!hasRole(['admin', 'super_admin', 'technician'])) {
+// Protection: Admin, Super Admin
+if (!hasRole(['admin', 'super_admin'])) {
     echo "<div class='p-8 text-center text-red-600 font-bold text-xl'>ไม่มีสิทธิ์เข้าถึงหน้านี้</div>";
     exit;
 }
 
-$isAdmin = hasRole(['admin', 'super_admin']);
+$isAdmin = true;
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -36,7 +36,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 
     <div class="flex overflow-x-auto card space-x-2">       
-        <?php if ($isAdmin): ?>
         <button onclick="invTab('overview')" id="tab-overview" class="inv-tab active px-6 py-2 rounded-lg text-sm font-bold bg-purple-100 text-purple-700 transition-colors whitespace-nowrap">
             <i data-lucide="bar-chart-2" class="w-5 h-5 inline-block"></i> คลังสินค้า
         </button>
@@ -46,11 +45,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         <button onclick="invTab('outbound')" id="tab-outbound" class="inv-tab px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors whitespace-nowrap relative">
             <i data-lucide="upload" class="w-5 h-5 inline-block"></i> เบิกออก
             <span id="outboundBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
-        </button>
-        <?php endif; ?>
-        <button onclick="invTab('transfer')" id="tab-transfer" class="inv-tab <?php echo !$isAdmin ? 'active px-6 py-2 rounded-lg text-sm font-bold bg-purple-100 text-purple-700' : 'px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50'; ?> transition-colors whitespace-nowrap relative">
-            <i data-lucide="refresh-cw" class="w-5 h-5 inline-block"></i> โอนย้าย (ยืมของ)
-            <span id="transferBadge" class="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
         </button>
         <button onclick="invTab('history')" id="tab-history" class="inv-tab px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors whitespace-nowrap">
             <i data-lucide="clock" class="w-5 h-5 inline-block"></i> ประวัติ
@@ -306,6 +300,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
                 
                 <div class="flex items-center gap-3 w-full md:w-auto">
                     <?php if ($isAdmin): ?>
+                    <input type="date" id="filterHistoryDate" class="text-sm border-gray-300 rounded-lg py-2 px-3 focus:ring-purple-500 focus:border-purple-500">
                     <select id="filterHistoryTeam" class="text-sm border-gray-300 rounded-lg py-2 pl-3 pr-8 focus:ring-purple-500 focus:border-purple-500">
                         <option value="">ทุกทีม</option>
                     </select>

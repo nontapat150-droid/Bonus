@@ -11,6 +11,7 @@ $user_id = $user['id'];
 
 $filter_team_id = $_GET['team_id'] ?? '';
 $filter_user_id = $_GET['user_id'] ?? '';
+$filter_date = $_GET['date'] ?? '';
 
 try {
     $whereClauses1 = [];
@@ -35,6 +36,12 @@ try {
             $whereClauses2[] = "l2.target_user_id = ?";
             array_push($params1, $filter_user_id);
             array_push($params2, $filter_user_id);
+        }
+        if ($filter_date !== '') {
+            $whereClauses1[] = "DATE(l1.timestamp) = ?";
+            $whereClauses2[] = "DATE(l2.timestamp) = ?";
+            array_push($params1, $filter_date);
+            array_push($params2, $filter_date);
         }
     }
 
