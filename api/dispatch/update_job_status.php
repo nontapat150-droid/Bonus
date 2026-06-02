@@ -64,7 +64,7 @@ function nullableDecimal($value) {
 }
 
 try {
-    $stmtJob = $pdo->prepare("SELECT j.*, t.team_name FROM jobs j LEFT JOIN teams t ON j.team_id = t.id WHERE j.id = ?");
+    $stmtJob = $pdo->prepare("SELECT j.*, t.team_name FROM {$table} j LEFT JOIN teams t ON j.team_id = t.id WHERE j.id = ?");
     $stmtJob->execute([$job_id]);
     $job = $stmtJob->fetch();
 
@@ -87,7 +87,7 @@ try {
         $logRemark = $remark;
     }
 
-    $stmt = $pdo->prepare("UPDATE jobs SET status = ?, remark = ? WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE {$table} SET status = ?, remark = ? WHERE id = ?");
     $stmt->execute([$status, $logRemark, $job_id]);
 
     $logStmt = $pdo->prepare("INSERT INTO job_logs (job_id, tech_id, status, remark) VALUES (?, ?, ?, ?)");

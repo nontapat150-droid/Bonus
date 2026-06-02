@@ -4,6 +4,7 @@ let allJobs = [];
 let currentTeams = []; 
 let selectedJobIds = new Set();
 let activeDispatchView = 'jobs';
+let currentJobType = 'jobs';
 
 // Leaflet map and markers (free, no API key)
 let map = null;
@@ -153,6 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.JobClose?.checkAlerts) JobClose.checkAlerts();
 
     document.getElementById('dispatchViewJobsBtn')?.addEventListener('click', () => switchDispatchView('jobs'));
+    document.getElementById('dispatchViewMABtn')?.addEventListener('click', () => switchDispatchView('ma'));
     document.getElementById('dispatchViewMapBtn')?.addEventListener('click', () => switchDispatchView('map'));
     document.getElementById('navigateSelectedBtn')?.addEventListener('click', handleNavigateSelected);
     document.getElementById('selectAllJobs')?.addEventListener('change', handleSelectAll);
@@ -180,18 +182,37 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function switchDispatchView(view) {
-    activeDispatchView = view === 'map' ? 'map' : 'jobs';
+    if (view === 'jobs' || view === 'ma') {
+        currentJobType = view;
+        activeDispatchView = 'list';
+    } else {
+        activeDispatchView = 'map';
+    }
+    
     const jobsPanel = document.getElementById('jobViewPanel');
     const mapPanel = document.getElementById('mapViewPanel');
     const jobsBtn = document.getElementById('dispatchViewJobsBtn');
+    const maBtn = document.getElementById('dispatchViewMABtn');
     const mapBtn = document.getElementById('dispatchViewMapBtn');
 
-    jobsPanel?.classList.toggle('hidden', activeDispatchView !== 'jobs');
+    jobsPanel?.classList.toggle('hidden', activeDispatchView === 'map');
     mapPanel?.classList.toggle('hidden', activeDispatchView !== 'map');
-    jobsBtn?.classList.toggle('is-active', activeDispatchView === 'jobs');
-    mapBtn?.classList.toggle('is-active', activeDispatchView === 'map');
+    
+    jobsBtn?.classList.toggle('is-active', view === 'jobs');
+    if (maBtn) maBtn.classList.toggle('is-active', view === 'ma');
+    mapBtn?.classList.toggle('is-active', view === 'map');
 
-    renderUI();
+    const importBtn = document.querySelector('button[onclick="document.getElementById(\'jobExcelFile\').click()"]');
+    if (importBtn) {
+        importBtn.style.display = (currentJobType === 'ma') ? 'none' : '';
+    }
+
+    if (view === 'jobs' || view === 'ma') {
+        loadJobs();
+    } else {
+        renderUI();
+    }
+
     if (activeDispatchView === 'map') {
         setTimeout(() => { if (map) map.invalidateSize(); }, 80);
     }
@@ -228,6 +249,11 @@ function handleNavigateSelected() {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${destCoords.lat},${destCoords.lng}&waypoints=${waypoints}&travelmode=driving`, '_blank');
 }
 
+function getApiUrl(base) {
+    const symbol = base.includes('?') ? '&' : '?';
+    return currentJobType === 'ma' ? `${base}${symbol}type=ma` : base;
+}
+
 function showLoader(message = 'กำลังโหลด...') { 
     const loader = document.getElementById('mapLoader');
     const textEl = document.getElementById('loaderText');
@@ -249,7 +275,7 @@ function hideLoader() {
 async function loadJobs() {
     showLoader('ซิงค์ข้อมูล...');
     try {
-        const res = await fetch('api/dispatch/get_jobs.php?_=' + new Date().getTime());
+        const res = await fetch(getApiUrl('api/dispatch/get_jobs.php') + '&_=' + new Date().getTime());
         const text = await res.text(); 
         
         let data;
@@ -361,7 +387,7 @@ async function handleManualJobSubmit(e) {
 
     showLoader('บันทึกข้อมูลงาน...');
     try {
-        const res = await fetch('api/dispatch/add_manual_job.php', {
+        const res = await fetch(getApiUrl('api/dispatch/add_manual_job.php'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -449,7 +475,7 @@ async function runAutoDispatch() {
     closeDispatchModal();
     showLoader('กำลังกระจายงาน...');
     try {
-        const res = await fetch('api/dispatch/auto_assign.php', { 
+        const res = await fetch(getApiUrl('api/dispatch/auto_assign.php'), { 
             method: 'POST', 
             headers: {'Content-Type': 'application/json'}, 
             body: JSON.stringify({ quotas }) 
@@ -498,7 +524,7 @@ async function handleBulkDelete() {
     showLoader('ลบข้อมูล...');
     try {
         const ids = Array.from(selectedJobIds);
-        const res = await fetch('api/dispatch/bulk_delete.php', { 
+        const res = await fetch(getApiUrl('api/dispatch/bulk_delete.php'), { 
             method: 'POST', 
             headers: {'Content-Type': 'application/json'}, 
             body: JSON.stringify({ ids }) 
@@ -523,7 +549,7 @@ async function handleDeleteAllJobs() {
     
     showLoader('ล้างข้อมูล...');
     try {
-        const res = await fetch('api/dispatch/delete_all_jobs.php');
+        const res = await fetch(getApiUrl('api/dispatch/delete_all_jobs.php'));
         const data = await res.json();
         if (data.success) loadJobs();
     } catch (e) { 
@@ -538,7 +564,7 @@ async function handleClearAssignments() {
     
     showLoader('ดึงงานกลับ...');
     try {
-        const res = await fetch('api/dispatch/clear_assignments.php');
+        const res = await fetch(getApiUrl('api/dispatch/clear_assignments.php'));
         const data = await res.json();
         if (data.success) loadJobs();
     } catch (e) { 
@@ -551,7 +577,7 @@ async function handleClearAssignments() {
 async function runOptimizeRoute() {
     showLoader('คำนวณและจัดคิวเส้นทาง...');
     try {
-        const res = await fetch('api/dispatch/optimize_route.php');
+        const res = await fetch(getApiUrl('api/dispatch/optimize_route.php'));
         const data = await res.json();
         if (data.success) loadJobs(); 
     } catch (e) { 
@@ -1059,9 +1085,9 @@ window.editJobCoords = async function(jobId, currentLat, currentLng) {
     });
 
     if (formValues) {
-        showLoader('อัปเดตพิกัด...');
+        setTimeout(async () => {
         try {
-            const res = await fetch('api/dispatch/update_job_coords.php', {
+            const res = await fetch(getApiUrl('api/dispatch/update_job_coords.php'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ job_id: jobId, lat: formValues.lat, lng: formValues.lng })
@@ -1084,6 +1110,7 @@ window.editJobCoords = async function(jobId, currentLat, currentLng) {
         } finally {
             hideLoader();
         }
+        }, 100);
     }
 }
 
@@ -1095,7 +1122,7 @@ window.reassignJob = async function(jobId) {
     Swal.close();
     showLoader('กำลังเปลี่ยนทีม...');
     try {
-        const res = await fetch('api/dispatch/reassign_job.php', {
+        const res = await fetch(getApiUrl('api/dispatch/reassign_job.php'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ job_id: jobId, team_id: newTeamId || null })
@@ -1150,9 +1177,9 @@ window.updateJobStatus = async function(jobId, status) {
         remark = text;
     }
 
-    showLoader('บันทึกสถานะ...');
+    Swal.fire({ title: 'กำลังปรับปรุงสถานะ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     try {
-        const res = await fetch('api/dispatch/update_job_status.php', {
+        const res = await fetch(getApiUrl('api/dispatch/update_job_status.php'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ job_id: jobId, status: status, remark: remark })

@@ -27,7 +27,7 @@ try {
         $team_id = null;
     }
 
-    $stmt = $pdo->prepare("UPDATE jobs SET team_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE {$table} SET team_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
     $stmt->execute([$team_id, $job_id]);
 
     echo json_encode(['success' => true]);
