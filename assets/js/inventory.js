@@ -1166,7 +1166,21 @@ async function loadHistory() {
         const tbody = document.getElementById('historyTableBody');
         if(tbody) tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-400"><div class="flex flex-col items-center justify-center"><div class="loader-spinner mb-4 w-8 h-8"></div> กำลังโหลดประวัติ...</div></td></tr>';
         
-        const res = await fetch('api/inventory/get_history.php');
+        let url = 'api/inventory/get_history.php';
+        const dateFilter = document.getElementById('filterHistoryDate')?.value || '';
+        const teamFilter = document.getElementById('filterHistoryTeam')?.value || '';
+        const userFilter = document.getElementById('filterHistoryUser')?.value || '';
+        
+        const params = new URLSearchParams();
+        if (dateFilter) params.append('date', dateFilter);
+        if (teamFilter) params.append('team_id', teamFilter);
+        if (userFilter) params.append('user_id', userFilter);
+        
+        if (params.toString()) {
+            url += '?' + params.toString();
+        }
+
+        const res = await fetch(url);
         const data = await res.json();
 
         if (data.success) {
@@ -1180,6 +1194,10 @@ async function loadHistory() {
         Toast.error('ไม่สามารถโหลดประวัติการทำรายการได้');
     }
 }
+
+document.getElementById('filterHistoryDate')?.addEventListener('change', loadHistory);
+document.getElementById('filterHistoryTeam')?.addEventListener('change', loadHistory);
+document.getElementById('filterHistoryUser')?.addEventListener('change', loadHistory);
 
 function renderHistoryTable() {
     const tbody = document.getElementById('historyTableBody');
@@ -1202,6 +1220,8 @@ function renderHistoryTable() {
             actionBadge = '<span class="px-3 py-1 bg-rose-50 text-rose-700 text-xs rounded-full font-bold border border-rose-100">📤 เบิกออก</span>';
         } else if (item.action === 'transfer') {
              actionBadge = '<span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full font-bold border border-blue-100">🔄 โอนย้าย</span>';
+        } else if (item.action === 'used') {
+             actionBadge = '<span class="px-3 py-1 bg-slate-100 text-slate-700 text-xs rounded-full font-bold border border-slate-300">✅ ใช้งาน</span>';
         }
 
         const adminName = item.admin_name || 'System';

@@ -60,6 +60,11 @@ if ($page === 'home') {
             if (!$chk2->fetch()) {
                 $pdo->exec("ALTER TABLE announcements ADD COLUMN `title` VARCHAR(255) DEFAULT NULL AFTER `type`");
             }
+            
+            // 🚀 Tech Bag Migration: Update ENUMs
+            $pdo->exec("ALTER TABLE inventory_items MODIFY COLUMN `status` enum('in_stock','outbound','used') NOT NULL DEFAULT 'in_stock'");
+            $pdo->exec("ALTER TABLE inventory_logs MODIFY COLUMN `action` enum('in','out','transfer','used') NOT NULL");
+            
         } catch (Exception $e) { /* ignore migration errors silently */ }
 
         // 1. ลบประกาศที่หมดอายุอัตโนมัติ
@@ -743,6 +748,7 @@ if ($page === 'home') {
                     'dispatch' => 'views/modules/dispatch_map.php',
                     'guide' => 'views/modules/user_guide.php',
                     'inventory' => 'views/modules/inventory_app.php',
+                    'tech_bag' => 'views/modules/tech_bag.php',
                     'site_settings' => 'views/modules/site_settings.php',
                     'users' => 'views/modules/user_settings.php',
                     'checkin' => 'views/modules/checkin.php'
