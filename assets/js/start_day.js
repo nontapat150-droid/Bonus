@@ -263,3 +263,58 @@ if (window.USER_ROLE === 'super_admin') {
     `;
 }
 // แล้วเอาตัวแปร ${manageColumn} ไปต่อท้าย <tr> ก่อนปิดแท็ก </tr>
+// ฟังก์ชันลบประวัติค่าแรกเข้า (เฉพาะ Super Admin)
+window.deleteStartDayRecord = async function(id) {
+    Swal.fire({
+        title: 'ยืนยันการลบข้อมูล?',
+        text: "ประวัติค่าแรกเข้านี้จะถูกลบออกจากระบบอย่างถาวร!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'ใช่, ลบข้อมูล',
+        cancelButtonText: 'ยกเลิก',
+        customClass: {
+            popup: 'rounded-3xl',
+            confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md',
+            cancelButton: 'rounded-xl px-6 py-2.5 font-bold'
+        }
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            
+            try {
+                const res = await fetch('api/start_day/delete.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ id: id })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    Swal.fire({
+                        title: 'สำเร็จ!',
+                        text: 'ลบข้อมูลเรียบร้อยแล้ว',
+                        icon: 'success',
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#10b981',
+                        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold' }
+                    });
+                    
+                    // สั่งให้โหลดตารางประวัติใหม่
+                    if (typeof loadHistory === 'function') {
+                        loadHistory();
+                    } else if (typeof loadMyHistory === 'function') {
+                        loadMyHistory(); 
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    Swal.fire('ข้อผิดพลาด', data.error || 'ลบข้อมูลไม่สำเร็จ', 'error');
+                }
+            } catch(e) {
+                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+            }
+        }
+    });
+};
