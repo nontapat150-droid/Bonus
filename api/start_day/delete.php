@@ -21,6 +21,23 @@ if (!$id) {
 }
 
 try {
+    // ดึงข้อมูลรูปภาพเพื่อลบไฟล์จริง
+    $stmtImg = $pdo->prepare("SELECT image_path FROM start_day_images WHERE record_id = ?");
+    $stmtImg->execute([$id]);
+    $images = $stmtImg->fetchAll(PDO::FETCH_COLUMN);
+
+    foreach ($images as $img) {
+        $path = '../../assets/uploads/start_day/' . $img;
+        if (file_exists($path) && is_file($path)) @unlink($path);
+        // Fallback
+        $path2 = '../../' . $img;
+        if (file_exists($path2) && is_file($path2)) @unlink($path2);
+    }
+
+    // ลบข้อมูลรูปภาพในฐานข้อมูล
+    $stmtDelImg = $pdo->prepare("DELETE FROM start_day_images WHERE record_id = ?");
+    $stmtDelImg->execute([$id]);
+
     // ลบข้อมูลประวัติค่าแรกเข้า
     $stmt = $pdo->prepare("DELETE FROM start_day_records WHERE id = ?");
     $stmt->execute([$id]);

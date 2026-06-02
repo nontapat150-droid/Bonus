@@ -17,7 +17,7 @@ if (!hasRole(['admin', 'super_admin'])) {
 
 $data = json_decode(file_get_contents('php://input'), true);
 $id = $data['id'] ?? null;
-$log_type = $data['log_type'] ?? 'sn';
+$log_type = $data['type'] ?? 'item'; // 'item' or 'consumable'
 
 if (!$id) {
     echo json_encode(['success' => false, 'error' => 'ไม่ได้ระบุ ID']);
@@ -25,15 +25,47 @@ if (!$id) {
 }
 
 try {
-    $table = ($log_type === 'consumable') ? 'inventory_consumable_logs' : 'inventory_logs';
-    $stmt = $pdo->prepare("DELETE FROM {$table} WHERE id = ?");
-    $stmt->execute([$id]);
+    $pdo->beginTransaction();
 
-    if ($stmt->rowCount() > 0) {
-        echo json_encode(['success' => true, 'message' => 'ลบประวัติสำเร็จ']);
+    if ($log_type === 'consumable') {
+        $stmt = $pdo->prepare("SELECT * FROM inventory_consumable_logs WHERE id = ?");
+        $stmt->execute([$id]);
+        $log = $stmt->fetch();
+        if ($log) {
+            // Revert stock
+            if ($log['action'] === 'out') {
+                $pdo->prepare("UPDATE inventory_consumable SET stock_qty = stock_qty + ? WHERE id = ?")->execute([$log['qty'], $log['consumable_id']]);
+                if ($log['target_user_id']) {
+                    $pdo->prepare("UPDATE user_consumables SET qty = GREATEST(0, qty - ?) WHERE user_id = ? AND consumable_id = ?")->execute([$log['qty'], $log['target_user_id'], $log['consumable_id']]);
+                }
+            } elseif ($log['action'] === 'in') {
+                $pdo->prepare("UPDATE inventory_consumable SET stock_qty = GREATEST(0, stock_qty - ?) WHERE id = ?")->execute([$log['qty'], $log['consumable_id']]);
+            } elseif ($log['action'] === 'transfer') {
+                // Revert transfer
+                $pdo->prepare("UPDATE user_consumables SET qty = GREATEST(0, qty - ?) WHERE user_id = ? AND consumable_id = ?")->execute([$log['qty'], $log['target_user_id'], $log['consumable_id']]);
+                $pdo->prepare("UPDATE user_consumables SET qty = qty + ? WHERE user_id = ? AND consumable_id = ?")->execute([$log['qty'], $log['admin_id'], $log['consumable_id']]);
+            }
+            $pdo->prepare("DELETE FROM inventory_consumable_logs WHERE id = ?")->execute([$id]);
+        }
     } else {
-        echo json_encode(['success' => false, 'error' => 'ไม่พบรายการประวัติที่ต้องการลบ']);
+        $stmt = $pdo->prepare("SELECT * FROM inventory_logs WHERE id = ?");
+        $stmt->execute([$id]);
+        $log = $stmt->fetch();
+        if ($log) {
+            // Revert item
+            if ($log['action'] === 'out') {
+                $pdo->prepare("UPDATE inventory_items SET status = 'in_stock' WHERE id = ?")->execute([$log['item_id']]);
+            } elseif ($log['action'] === 'in') {
+                // Should we delete item? Let's just remove it if it was in_stock
+                $pdo->prepare("DELETE FROM inventory_items WHERE id = ? AND status = 'in_stock'")->execute([$log['item_id']]);
+            }
+            $pdo->prepare("DELETE FROM inventory_logs WHERE id = ?")->execute([$id]);
+        }
     }
+
+    $pdo->commit();
+    echo json_encode(['success' => true, 'message' => 'ลบประวัติและคืนยอดสำเร็จ']);
 } catch (PDOException $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

@@ -20,14 +20,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    searchForm.addEventListener('submit', async (e) => {
+    const showAllBtn = document.getElementById('showAllBtn');
+    if (showAllBtn) {
+        showAllBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            fetchCustomers('?all=1');
+        });
+    }
+
+    searchForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const query = searchInput.value.trim();
         if (!query) return;
+        fetchCustomers(`?q=${encodeURIComponent(query)}`);
+    });
 
+    async function fetchCustomers(queryString) {
         window.Loader.show();
         try {
-            const res = await fetch(`api/customer/search_info.php?q=${encodeURIComponent(query)}`);
+            const res = await fetch(`api/customer/search_info.php${queryString}`);
             const data = await res.json();
             
             if (data.success) {
@@ -41,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             window.Loader.hide();
         }
-    });
+    }
 
     function renderResults(customers) {
         if (customers.length === 0) {
@@ -147,8 +158,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i data-lucide="gauge" class="w-4 h-4 text-emerald-500"></i> ประวัติค่าแรกเข้า
                 </h4>
                 ${customer.start_days.length > 0 ? customer.start_days.map(sd => `
-                    <div class="bg-white border border-slate-200 p-4 rounded-xl mb-3 shadow-sm">
-                        <div class="flex flex-wrap justify-between gap-2 mb-3">
+                    <div class="bg-white border border-slate-200 p-4 rounded-xl mb-3 shadow-sm relative group">
+                        <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="deleteSingleStartDay(${sd.id}, '${customer.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-lg transition-colors" title="ลบรายการนี้">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap justify-between gap-2 mb-3 pr-8">
                             <div>
                                 <p class="text-[10px] font-bold text-slate-400">วันที่บันทึก</p>
                                 <p class="text-xs font-bold text-slate-700">${sd.created_at}</p>
@@ -235,6 +251,153 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+        
+        // Setup Delete Customer Button
+        const deleteBtn = document.getElementById('deleteCustomerBtn');
+        if (deleteBtn) {
+            // Show only for admin/super_admin if role is available, assuming backend handles security
+            deleteBtn.classList.remove('hidden');
+            deleteBtn.onclick = () => deleteCustomer(customer.id);
+        }
+    }
+
+    window.deleteCustomer = function(customerId) {
+        Swal.fire({
+            title: 'ยืนยันลบข้อมูลลูกค้า?',
+            html: `คุณกำลังจะลบข้อมูลลูกค้าหมายเลข <b>${customerId}</b><br>ประวัติงานและค่าแรกเข้าที่ผูกกับลูกค้านี้จะถูกลบทิ้งทั้งหมด!`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'ใช่, ลบถาวร',
+            cancelButtonText: 'ยกเลิก',
+            customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md', cancelButton: 'rounded-xl px-6 py-2.5 font-bold' }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                window.Loader.show();
+                try {
+                    const res = await fetch('api/customer/delete.php', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ id: customerId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        Swal.fire('สำเร็จ', 'ลบข้อมูลลูกค้าเรียบร้อยแล้ว', 'success');
+                        document.getElementById('customerDetailModal').classList.add('hidden');
+                        document.getElementById('customerDetailModal').classList.remove('flex');
+                        
+                        refreshData();
+                    } else {
+                        Swal.fire('ข้อผิดพลาด', data.error || 'ไม่สามารถลบข้อมูลได้', 'error');
+                    }
+                } catch(e) {
+                    Swal.fire('ข้อผิดพลาด', 'เกิดปัญหาเชื่อมต่อเซิร์ฟเวอร์', 'error');
+                } finally {
+                    window.Loader.hide();
+                }
+            }
+        });
+    }
+
+    window.deleteSingleStartDay = function(id, customerId) {
+        Swal.fire({
+            title: 'ยืนยันลบประวัติค่าแรกเข้า?',
+            text: "ข้อมูลนี้จะถูกลบและไม่สามารถกู้คืนได้",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'ลบข้อมูล',
+            cancelButtonText: 'ยกเลิก'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                window.Loader.show();
+                try {
+                    const res = await fetch('api/start_day/delete.php', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ id: id })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        Swal.fire('สำเร็จ', 'ลบประวัติเรียบร้อยแล้ว', 'success');
+                        refreshCustomerDetail(customerId);
+                    } else {
+                        Swal.fire('ข้อผิดพลาด', data.error || 'ไม่สามารถลบข้อมูลได้', 'error');
+                    }
+                } catch(e) {
+                    Swal.fire('ข้อผิดพลาด', 'เกิดปัญหาเชื่อมต่อเซิร์ฟเวอร์', 'error');
+                } finally {
+                    window.Loader.hide();
+                }
+            }
+        });
+    }
+
+    window.deleteSingleJob = function(id, customerId) {
+        Swal.fire({
+            title: 'ยืนยันลบงานติดตั้ง?',
+            text: "ข้อมูลงานนี้จะถูกลบทิ้งทั้งหมด รวมถึงประวัติย่อย",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'ลบข้อมูล',
+            cancelButtonText: 'ยกเลิก'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                window.Loader.show();
+                try {
+                    const res = await fetch('api/dispatch/bulk_delete.php', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ ids: [id] })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        Swal.fire('สำเร็จ', 'ลบงานเรียบร้อยแล้ว', 'success');
+                        refreshCustomerDetail(customerId);
+                    } else {
+                        Swal.fire('ข้อผิดพลาด', data.error || 'ไม่สามารถลบข้อมูลได้', 'error');
+                    }
+                } catch(e) {
+                    Swal.fire('ข้อผิดพลาด', 'เกิดปัญหาเชื่อมต่อเซิร์ฟเวอร์', 'error');
+                } finally {
+                    window.Loader.hide();
+                }
+            }
+        });
+    }
+
+    function refreshData() {
+        const query = searchInput.value.trim();
+        if (query) {
+            fetchCustomers(`?q=${encodeURIComponent(query)}`);
+        } else {
+            fetchCustomers('?all=1');
+        }
+    }
+
+    function refreshCustomerDetail(customerId) {
+        // Find current query to refresh data, then re-open modal for this customer
+        const query = searchInput.value.trim();
+        const url = query ? `?q=${encodeURIComponent(query)}` : '?all=1';
+        
+        fetch(`api/customer/search_info.php${url}`).then(r => r.json()).then(data => {
+            if(data.success) {
+                currentData = data.data;
+                renderResults(currentData);
+                // Re-open detail
+                const idx = currentData.findIndex(c => c.id == customerId);
+                if(idx !== -1) {
+                    openCustomerDetail(idx);
+                } else {
+                    document.getElementById('customerDetailModal').classList.add('hidden');
+                    document.getElementById('customerDetailModal').classList.remove('flex');
+                }
+            }
+        });
     }
 
     window.toggleLogs = function(id) {

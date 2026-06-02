@@ -7,8 +7,9 @@ header('Content-Type: application/json');
 requireRole(['admin', 'super_admin']);
 
 $search = $_GET['q'] ?? '';
+$showAll = $_GET['all'] ?? 0;
 
-if (empty(trim($search))) {
+if (empty(trim($search)) && !$showAll) {
     echo json_encode(['success' => false, 'error' => 'กรุณาระบุคำค้นหา']);
     exit;
 }
@@ -16,28 +17,50 @@ if (empty(trim($search))) {
 $search = trim($search);
 
 try {
-    // 1. ค้นหาในตาราง jobs
-    $stmtJobs = $pdo->prepare("
-        SELECT j.*, t.team_name 
-        FROM jobs j 
-        LEFT JOIN teams t ON j.team_id = t.id 
-        WHERE j.access_no LIKE ? OR j.customer LIKE ? OR j.phone LIKE ?
-        ORDER BY j.created_at DESC
-    ");
-    $searchTerm = "%$search%";
-    $stmtJobs->execute([$searchTerm, $searchTerm, $searchTerm]);
-    $jobs = $stmtJobs->fetchAll(PDO::FETCH_ASSOC);
+    if ($showAll) {
+        // 1. ดึงข้อมูลทั้งหมดล่าสุดจากตาราง jobs (จำกัด 300 เพื่อความรวดเร็ว)
+        $stmtJobs = $pdo->prepare("
+            SELECT j.*, t.team_name 
+            FROM jobs j 
+            LEFT JOIN teams t ON j.team_id = t.id 
+            ORDER BY j.created_at DESC LIMIT 300
+        ");
+        $stmtJobs->execute();
+        $jobs = $stmtJobs->fetchAll(PDO::FETCH_ASSOC);
 
-    // 2. ค้นหาในตาราง start_day_records (ค่าแรกเข้า)
-    $stmtStartDay = $pdo->prepare("
-        SELECT s.*, u.full_name as tech_name 
-        FROM start_day_records s
-        LEFT JOIN users u ON s.user_id = u.id
-        WHERE s.non_number LIKE ? OR s.customer_name LIKE ?
-        ORDER BY s.created_at DESC
-    ");
-    $stmtStartDay->execute([$searchTerm, $searchTerm]);
-    $startDays = $stmtStartDay->fetchAll(PDO::FETCH_ASSOC);
+        // 2. ดึงข้อมูลทั้งหมดล่าสุดจากตาราง start_day_records (จำกัด 300)
+        $stmtStartDay = $pdo->prepare("
+            SELECT s.*, u.full_name as tech_name 
+            FROM start_day_records s
+            LEFT JOIN users u ON s.user_id = u.id
+            ORDER BY s.created_at DESC LIMIT 300
+        ");
+        $stmtStartDay->execute();
+        $startDays = $stmtStartDay->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        // 1. ค้นหาในตาราง jobs
+        $stmtJobs = $pdo->prepare("
+            SELECT j.*, t.team_name 
+            FROM jobs j 
+            LEFT JOIN teams t ON j.team_id = t.id 
+            WHERE j.access_no LIKE ? OR j.customer LIKE ? OR j.phone LIKE ?
+            ORDER BY j.created_at DESC
+        ");
+        $searchTerm = "%$search%";
+        $stmtJobs->execute([$searchTerm, $searchTerm, $searchTerm]);
+        $jobs = $stmtJobs->fetchAll(PDO::FETCH_ASSOC);
+
+        // 2. ค้นหาในตาราง start_day_records (ค่าแรกเข้า)
+        $stmtStartDay = $pdo->prepare("
+            SELECT s.*, u.full_name as tech_name 
+            FROM start_day_records s
+            LEFT JOIN users u ON s.user_id = u.id
+            WHERE s.non_number LIKE ? OR s.customer_name LIKE ?
+            ORDER BY s.created_at DESC
+        ");
+        $stmtStartDay->execute([$searchTerm, $searchTerm]);
+        $startDays = $stmtStartDay->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     // Grouping by access_no / non_number
     // เราจะใช้ Access No / NON เป็น key หลักในการแสดง Card

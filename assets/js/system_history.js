@@ -79,12 +79,13 @@ function renderTable(type, records, tHead, tBody) {
     tBody.innerHTML = '';
 
     if (type === 'checkin') {
-        tHead.innerHTML = `<tr><th class="px-4 py-3">วัน-เวลา</th><th class="px-4 py-3">พนักงาน</th><th class="px-4 py-3">ทีม</th><th class="px-4 py-3 text-center">สถานะ</th><th class="px-4 py-3 text-center">รูปภาพ</th></tr>`;
+        tHead.innerHTML = `<tr><th class="px-4 py-3">วัน-เวลา</th><th class="px-4 py-3">พนักงาน</th><th class="px-4 py-3">ทีม</th><th class="px-4 py-3 text-center">สถานะ</th><th class="px-4 py-3 text-center">รูปภาพ</th><th class="px-4 py-3 text-center">จัดการ</th></tr>`;
         records.forEach(item => {
             const date = new Date(item.checkin_time).toLocaleString('th-TH');
             const badge = item.status_code === 'late' ? `<span class="bg-orange-100 text-orange-700 px-2 py-1 rounded-lg text-xs font-bold border border-orange-200">มาสาย</span>` : `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-xs font-bold border border-emerald-200">ตรงเวลา</span>`;
             const img = item.image_path ? `<a href="assets/uploads/checkins/${item.image_path}" target="_blank"><img src="assets/uploads/checkins/${item.image_path}" class="w-10 h-10 object-cover rounded-xl shadow-sm border border-slate-200 md:mx-auto"></a>` : '-';
-            
+            const deleteBtn = `<button type="button" onclick="deleteHistoryRecord('checkin', ${item.id})" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>`;
+
             tBody.innerHTML += `
                 <tr class="block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50 rounded-xl md:rounded-none shadow-sm md:shadow-none">
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 font-mono text-xs border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">เวลา</span>${date}</td>
@@ -92,6 +93,7 @@ function renderTable(type, records, tHead, tBody) {
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 text-xs border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">ทีม</span>${item.team_name || '-'}</td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">สถานะ</span>${badge}</td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center items-center"><span class="md:hidden font-black text-slate-400">รูปถ่าย</span>${img}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center items-center border-t md:border-none mt-2 md:mt-0 pt-2 md:pt-3"><span class="md:hidden font-black text-slate-400">จัดการ</span>${deleteBtn}</td>
                 </tr>`;
         });
     } 
@@ -135,11 +137,12 @@ function renderTable(type, records, tHead, tBody) {
         });
     }
     else if (type === 'oil') {
-        tHead.innerHTML = `<tr><th class="px-4 py-3">วันที่บิล</th><th class="px-4 py-3">ผู้บันทึก</th><th class="px-4 py-3">ทะเบียนรถ</th><th class="px-4 py-3">ลิตร/ราคา</th><th class="px-4 py-3 text-right">ยอดรวม</th><th class="px-4 py-3 text-center">บิล</th></tr>`;
+        tHead.innerHTML = `<tr><th class="px-4 py-3">วันที่บิล</th><th class="px-4 py-3">ผู้บันทึก</th><th class="px-4 py-3">ทะเบียนรถ</th><th class="px-4 py-3">ลิตร/ราคา</th><th class="px-4 py-3 text-right">ยอดรวม</th><th class="px-4 py-3 text-center">บิล</th><th class="px-4 py-3 text-center">จัดการ</th></tr>`;
         records.forEach(item => {
             const date = new Date(item.date_recorded).toLocaleString('th-TH');
             const img = item.evidence_image ? `<a href="assets/uploads/oil_receipts/${item.evidence_image}" target="_blank"><img src="assets/uploads/oil_receipts/${item.evidence_image}" class="w-10 h-10 object-cover rounded-xl shadow-sm border border-slate-200 md:mx-auto"></a>` : '-';
-            
+            const deleteBtn = `<button type="button" onclick="deleteHistoryRecord('oil', ${item.id})" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>`;
+
             tBody.innerHTML += `
                 <tr class="block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50 rounded-xl md:rounded-none shadow-sm md:shadow-none">
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 font-mono text-xs border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">เวลา</span>${date}</td>
@@ -148,6 +151,7 @@ function renderTable(type, records, tHead, tBody) {
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 text-xs border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">รายละเอียด</span><div class="text-right md:text-left">${item.liters} L <br> ฿${item.price_per_liter} / L</div></td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-right font-black text-rose-600 border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">ยอดรวม</span>฿${parseFloat(item.total_price).toLocaleString()}</td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center items-center"><span class="md:hidden font-black text-slate-400">บิล</span>${img}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center items-center border-t md:border-none mt-2 md:mt-0 pt-2 md:pt-3"><span class="md:hidden font-black text-slate-400">จัดการ</span>${deleteBtn}</td>
                 </tr>`;
         });
     }
@@ -184,7 +188,7 @@ function renderTable(type, records, tHead, tBody) {
         });
     }
     else if (type === 'inventory') {
-        tHead.innerHTML = `<tr><th class="px-4 py-3">เวลา</th><th class="px-4 py-3">ผู้ทำรายการ</th><th class="px-4 py-3 text-center">แอคชั่น</th><th class="px-4 py-3">สินค้า (SN)</th><th class="px-4 py-3">เป้าหมาย (รับ)</th></tr>`;
+        tHead.innerHTML = `<tr><th class="px-4 py-3">เวลา</th><th class="px-4 py-3">ผู้ทำรายการ</th><th class="px-4 py-3 text-center">แอคชั่น</th><th class="px-4 py-3">สินค้า (SN)</th><th class="px-4 py-3">เป้าหมาย (รับ)</th><th class="px-4 py-3 text-center">จัดการ</th></tr>`;
         records.forEach(item => {
             const date = new Date(item.timestamp).toLocaleString('th-TH');
             
@@ -193,13 +197,20 @@ function renderTable(type, records, tHead, tBody) {
             else if(item.action === 'out') badge = '<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">เบิกออก</span>';
             else badge = '<span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-lg text-xs font-bold border border-purple-200">โอนย้าย</span>';
 
+            // สำหรับประวัติคลัง ถ้าเป็น consumable จะมี type เป็น 'consumable'
+            const isConsumable = (item.sn === '-' && item.product_name && !item.target_name && !item.receiver_name); // simplistic check or backend must return type.
+            // จริงๆ backend ต้องส่ง type มาให้ด้วย (item.is_consumable) ให้ชัวร์ ตอนนี้ส่งไปทั้ง id และ type ใน api
+            const delType = item.type || 'item'; // 'item' or 'consumable'
+            const deleteBtn = `<button type="button" onclick="deleteHistoryRecord('inventory', ${item.id}, '${delType}')" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>`;
+
             tBody.innerHTML += `
                 <tr class="block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50 rounded-xl md:rounded-none shadow-sm md:shadow-none">
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 font-mono text-xs border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">เวลา</span>${date}</td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 font-bold border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">ผู้ทำรายการ</span>${item.admin_name}</td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">แอคชั่น</span>${badge}</td>
                     <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">สินค้า</span><div class="text-right md:text-left"><div class="font-bold text-slate-800">${item.product_name || 'ไม่ระบุ'}</div><div class="text-xs text-slate-500">SN: ${item.sn || '-'}</div></div></td>
-                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 text-sm"><span class="md:hidden font-black text-slate-400">ผู้รับโอน</span>${item.target_name || '-'}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 text-sm border-b border-dashed border-slate-100 md:border-none"><span class="md:hidden font-black text-slate-400">ผู้รับโอน</span>${item.target_name || '-'}</td>
+                    <td class="flex justify-between md:table-cell px-2 md:px-4 py-3 md:text-center items-center border-t md:border-none mt-2 md:mt-0 pt-2 md:pt-3"><span class="md:hidden font-black text-slate-400">จัดการ</span>${deleteBtn}</td>
                 </tr>`;
         });
     }
@@ -207,11 +218,24 @@ function renderTable(type, records, tHead, tBody) {
     if(window.lucide) lucide.createIcons();
 }
 
-// 🌟 ฟังก์ชันลบข้อมูลค่าแรกเข้า (ยิง API ตัวเดียวกับหน้าส่วนตัว)
-window.deleteStartDayRecordGlobal = async function(id) {
+// 🌟 ฟังก์ชันลบข้อมูลทั่วไปแบบ Single Item
+window.deleteHistoryRecord = async function(type, id, extraParam = null) {
+    let title = 'ยืนยันการลบข้อมูล?';
+    let text = 'ประวัตินี้จะถูกลบออกจากระบบ';
+    let url = '';
+    let bodyData = { id: id };
+    
+    if (type === 'checkin') { url = 'api/history/delete_checkin.php'; text = 'ประวัติการเช็คอินนี้จะถูกลบทิ้ง'; }
+    else if (type === 'oil') { url = 'api/history/delete_oil.php'; text = 'ประวัติการเติมน้ำมันและยอดค่าใช้จ่ายจะถูกลบ'; }
+    else if (type === 'inventory') { 
+        url = 'api/inventory/delete_history.php'; 
+        text = 'ประวัติการทำรายการนี้จะถูกลบ (อาจมีการคืนยอดกลับเข้าคลัง)'; 
+        bodyData.type = extraParam; 
+    }
+
     Swal.fire({
-        title: 'ยืนยันการลบข้อมูล?',
-        text: "ประวัติค่าแรกเข้านี้จะถูกลบออกจากระบบอย่างถาวร!",
+        title: title,
+        text: text,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
@@ -221,31 +245,77 @@ window.deleteStartDayRecordGlobal = async function(id) {
         customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md', cancelButton: 'rounded-xl px-6 py-2.5 font-bold' }
     }).then(async (result) => {
         if (result.isConfirmed) {
-            Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-            
+            Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
             try {
-                // เรียกใช้ API ลบตัวเดิมได้เลย เพราะมันเช็คสิทธิ์ super_admin ไว้อยู่แล้ว
-                const res = await fetch('api/start_day/delete.php', { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'}, 
-                    body: JSON.stringify({ id: id }) 
-                });
+                const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(bodyData) });
                 const data = await res.json();
-                
                 if (data.success) {
-                    Swal.fire({ title: 'สำเร็จ!', text: 'ลบข้อมูลเรียบร้อยแล้ว', icon: 'success', confirmButtonText: 'ตกลง', confirmButtonColor: '#10b981', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold' } });
-                    
-                    // 🌟 ลบเสร็จให้โหลดตารางค่าแรกเข้าใหม่ทันที
-                    loadHistory('start_day');
+                    Swal.fire({ title: 'สำเร็จ!', text: 'ลบข้อมูลเรียบร้อยแล้ว', icon: 'success', customClass: { popup: 'rounded-3xl' } });
+                    loadHistory(currentType);
                 } else {
                     Swal.fire('ข้อผิดพลาด', data.error || 'ลบข้อมูลไม่สำเร็จ', 'error');
                 }
             } catch(e) {
-                Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+                Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
             }
         }
     });
 };
+
+// 🌟 ฟังก์ชันล้างประวัติทั้งหมด (Clear All)
+window.clearHistory = async function() {
+    // Determine context based on current tab
+    const tabNames = {
+        'checkin': 'เช็คอิน',
+        'start_day': 'ค่าแรกเข้า',
+        'oil': 'เติมน้ำมัน',
+        'inventory': 'คลังสินค้า',
+        'job_close': 'ปิดงาน'
+    };
+    const tName = tabNames[currentType];
+    
+    // Check if filtering by Date/Month
+    const fDate = document.getElementById('filterDate') ? document.getElementById('filterDate').value : '';
+    const fMonth = document.getElementById('filterMonth') ? document.getElementById('filterMonth').value : '';
+    let scopeText = "ทั้งหมดในระบบ";
+    if (fDate) scopeText = `เฉพาะวันที่ ${fDate}`;
+    else if (fMonth) scopeText = `เฉพาะเดือน ${fMonth}`;
+
+    Swal.fire({
+        title: `ล้างประวัติ${tName}?`,
+        html: `คุณกำลังจะลบประวัติ <b>${tName}</b> <br><span class="text-rose-500 font-bold">${scopeText}</span><br>ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้ และอาจมีการคืนค่ายอดต่างๆ กลับสู่ระบบ!`,
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'ใช่, ล้างประวัติถาวร',
+        cancelButtonText: 'ยกเลิก',
+        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md', cancelButton: 'rounded-xl px-6 py-2.5 font-bold' }
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'กำลังดำเนินการ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            try {
+                const res = await fetch('api/history/clear_all.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ type: currentType, date: fDate, month: fMonth })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    Swal.fire({ title: 'ล้างข้อมูลสำเร็จ!', text: `ลบข้อมูล ${data.deleted_count} รายการเรียบร้อยแล้ว`, icon: 'success', customClass: { popup: 'rounded-3xl' } });
+                    loadHistory(currentType);
+                } else {
+                    Swal.fire('ข้อผิดพลาด', data.error || 'ล้างประวัติไม่สำเร็จ', 'error');
+                }
+            } catch(e) {
+                Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
+            }
+        }
+    });
+};
+
+// 🌟 ฟังก์ชันลบข้อมูลค่าแรกเข้า (ยิง API ตัวเดียวกับหน้าส่วนตัว)
+window.deleteStartDayRecordGlobal = async function(id) {
 
 // ==========================================
 // 🌟 ระบบแก้ไขข้อมูล (รองรับทุกสิทธิ์)
