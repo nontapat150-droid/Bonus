@@ -55,7 +55,16 @@ try {
             $stmt->execute([$myTeamId]);
             $teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
         } else {
-            $teams = [];
+            // ถ้าช่างยังไม่มีทีม ให้แสดงทั้งหมดเพื่อให้เลือกครั้งแรก
+            $stmt = $pdo->query("
+                SELECT t.id, t.team_name, 
+                       COUNT(j.id) as job_count
+                FROM teams t
+                LEFT JOIN jobs j ON j.team_id = t.id
+                GROUP BY t.id, t.team_name
+                ORDER BY t.team_name ASC
+            ");
+            $teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     }
 
