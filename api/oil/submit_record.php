@@ -2,6 +2,7 @@
 // api/oil/submit_record.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+require_once '../../config/oil_job_sync.php';
 
 header('Content-Type: application/json');
 requireLogin();
@@ -51,25 +52,11 @@ try {
     // ปัดเศษราคารวมอัตโนมัติ
     $total_price = isset($_POST['total_price']) && $_POST['total_price'] !== '' ? round(floatval($_POST['total_price'])) : round($liters * $price_per_liter);
 
-    if ($job_count <= 0) {
-        $stmtTeam = $pdo->prepare("SELECT id FROM teams WHERE team_name = ? LIMIT 1");
-        $stmtTeam->execute([$license_plate]);
-        $teamId = $stmtTeam->fetchColumn();
+    $teamId = getTeamIdByName($pdo, $license_plate);
+    $yearMonth = date('Y-m', strtotime($date_recorded));
 
-        if ($teamId) {
-            $stmtLast = $pdo->prepare("SELECT date_recorded FROM oil_records WHERE license_plate = ? ORDER BY date_recorded DESC LIMIT 1");
-            $stmtLast->execute([$license_plate]);
-            $lastDate = $stmtLast->fetchColumn();
-
-            if ($lastDate) {
-                $jobStmt = $pdo->prepare("SELECT COUNT(*) FROM jobs WHERE team_id = ? AND DATE(COALESCE(plan_arrival_date, created_at)) > DATE(?) AND DATE(COALESCE(plan_arrival_date, created_at)) <= DATE(?)");
-                $jobStmt->execute([$teamId, $lastDate, $date_recorded]);
-            } else {
-                $jobStmt = $pdo->prepare("SELECT COUNT(*) FROM jobs WHERE team_id = ? AND DATE(COALESCE(plan_arrival_date, created_at)) = DATE(?)");
-                $jobStmt->execute([$teamId, $date_recorded]);
-            }
-            $job_count = (int)$jobStmt->fetchColumn();
-        }
+    if ($job_count <= 0 && $teamId) {
+        $job_count = getTeamMonthlyCaseCount($pdo, (int)$teamId, $yearMonth, true);
     }
 
     $stmt = $pdo->prepare("SELECT id, last_tech_id FROM vehicles WHERE license_plate = ?");

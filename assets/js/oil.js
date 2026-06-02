@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectedTeamId) {
             const team = teamPlatesData.find(t => String(t.id) === String(selectedTeamId));
             if (team) {
-                jobCountValue.textContent = team.job_count || 0;
+                jobCountValue.textContent = team.monthly_completed_cases ?? 0;
                 jobCountDiv.classList.remove('hidden');
                 updateTeamInfo(team.team_name);
             }
@@ -292,9 +292,10 @@ async function loadTeamPlates() {
             teamPlatesData.forEach(team => {
                 const option = document.createElement('option');
                 option.value = team.id;
-                option.textContent = `🚗 ${team.team_name} (${team.job_count} งาน)`;
+                const monthlyCases = team.monthly_completed_cases ?? 0;
+                option.textContent = `🚗 ${team.team_name} (${monthlyCases} เคสเดือนนี้)`;
                 option.setAttribute('data-plate', team.team_name);
-                option.setAttribute('data-jobs', team.job_count);
+                option.setAttribute('data-jobs', monthlyCases);
 
                 if (myTeamId && String(team.id) === String(myTeamId)) {
                     option.selected = true;
@@ -313,7 +314,7 @@ async function loadTeamPlates() {
                     const jobCountDiv = document.getElementById('teamJobCount');
                     const jobCountValue = document.getElementById('jobCountValue');
                     if (jobCountDiv && jobCountValue) {
-                        jobCountValue.textContent = myTeam.job_count || 0;
+                        jobCountValue.textContent = myTeam.monthly_completed_cases ?? 0;
                         jobCountDiv.classList.remove('hidden');
                     }
                 }

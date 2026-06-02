@@ -1,6 +1,7 @@
 <?php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+require_once '../../config/oil_job_sync.php';
 
 header('Content-Type: application/json');
 requireLogin();
@@ -28,6 +29,32 @@ try {
         exit;
     }
 
+    $syncYearMonth = null;
+    $syncTeamId = null;
+    if (!empty($record['job_log_id'])) {
+        $stmtLog = $pdo->prepare("
+            SELECT DATE_FORMAT(jl.timestamp, '%Y-%m') AS year_month, j.team_id
+            FROM job_logs jl
+            INNER JOIN jobs j ON j.id = jl.job_id
+            WHERE jl.id = ?
+            LIMIT 1
+        ");
+        $stmtLog->execute([(int)$record['job_log_id']]);
+        $logRow = $stmtLog->fetch(PDO::FETCH_ASSOC);
+        if ($logRow) {
+            $syncYearMonth = $logRow['year_month'];
+            $syncTeamId = $logRow['team_id'] ? (int)$logRow['team_id'] : null;
+        }
+    }
+    if (!$syncTeamId && !empty($record['job_id'])) {
+        $stmtJob = $pdo->prepare("SELECT team_id FROM jobs WHERE id = ? LIMIT 1");
+        $stmtJob->execute([(int)$record['job_id']]);
+        $tid = $stmtJob->fetchColumn();
+        if ($tid) {
+            $syncTeamId = (int)$tid;
+        }
+    }
+
     $pdo->beginTransaction();
 
     $pdo->prepare("DELETE FROM job_close_3bb WHERE id = ?")->execute([$closeId]);
@@ -40,6 +67,12 @@ try {
         ->execute([(int)$record['job_id']]);
 
     $pdo->commit();
+
+    if ($syncTeamId && $syncYearMonth) {
+        syncTeamOilMonth($pdo, $syncTeamId, $syncYearMonth);
+    } elseif (!empty($record['job_id'])) {
+        syncTeamOilFromJob($pdo, (int)$record['job_id']);
+    }
 
     echo json_encode(['success' => true, 'message' => 'ลบประวัติปิดงานเรียบร้อย']);
 } catch (Exception $e) {

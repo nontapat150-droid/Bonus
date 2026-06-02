@@ -48,8 +48,8 @@ if (!defined('PDO::ATTR_ERRMODE')) {
                     </div>
                     <p class="text-[11px] text-slate-500 mt-1">* เลือกทีมหรือป้ายทะเบียนรถที่คุณใช้งานอยู่</p>
                     <div id="teamJobCount" class="hidden mt-2 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 text-sm">
-                        <span class="font-bold text-emerald-700"><i data-lucide="clipboard" class="w-5 h-5 inline-block"></i> เคสงานของทีมนี้:</span>
-                        <span id="jobCountValue" class="font-black text-emerald-600 ml-1">0</span> <span class="text-emerald-600">งาน</span>
+                        <span class="font-bold text-emerald-700"><i data-lucide="clipboard" class="w-5 h-5 inline-block"></i> เคสปิดสำเร็จเดือนนี้:</span>
+                        <span id="jobCountValue" class="font-black text-emerald-600 ml-1">0</span> <span class="text-emerald-600">เคสปิดสำเร็จเดือนนี้</span>
                     </div>
                 </div>
                 

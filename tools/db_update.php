@@ -28,5 +28,14 @@ foreach ($queries as $sql) {
     }
 }
 
+require_once __DIR__ . '/../config/oil_job_sync.php';
+try {
+    ensureTeamOilCasesTable($pdo);
+    echo "<div style='color: green;'>SUCCESS: team_oil_cases table ready</div>";
+} catch (PDOException $e) {
+    echo "<div style='color: orange;'>team_oil_cases: " . htmlspecialchars($e->getMessage()) . "</div>";
+}
+
+echo "<p><a href='backfill_team_oil_cases.php'>รัน Backfill นับเคสจากประวัติปิดงาน</a></p>";
 echo "<br><a href='../index.php'>กลับหน้าหลัก</a>";
 ?>

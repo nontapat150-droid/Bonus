@@ -2,6 +2,7 @@
 // api/oil/get_records.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+require_once '../../config/oil_job_sync.php';
 
 header('Content-Type: application/json');
 requireLogin();
@@ -13,7 +14,6 @@ if (!hasRole(['admin', 'super_admin'])) {
 
 $start_date = $_GET['start_date'] ?? null;
 $end_date = $_GET['end_date'] ?? null;
-// รับค่าป้ายทะเบียนเพื่อใช้ในการกรอง
 $license_plate = $_GET['license_plate'] ?? 'all';
 
 $params = [];
@@ -25,14 +25,14 @@ if ($start_date && $end_date) {
     $params[] = $end_date;
 }
 
-// กรองป้ายทะเบียนรถ (ถ้าผู้ใช้เลือกรถเฉพาะคัน)
 if ($license_plate !== 'all' && !empty($license_plate)) {
     $whereClause .= " AND o.license_plate = ?";
     $params[] = $license_plate;
 }
 
 try {
-    // 1. Fetch Aggregated Stats
+    ensureTeamOilCasesTable($pdo);
+
     $statsSql = "SELECT
                     COUNT(o.id) as total_records,
                     SUM(o.liters) as total_liters,
@@ -43,7 +43,6 @@ try {
     $stmtStats->execute($params);
     $stats = $stmtStats->fetch();
 
-    // 2. Fetch Chart Data
     $chartSql = "SELECT
                     DATE(o.date_recorded) as record_date,
                     SUM(o.total_price) as daily_cost,
@@ -56,9 +55,8 @@ try {
     $stmtChart->execute($params);
     $chartData = $stmtChart->fetchAll(PDO::FETCH_ASSOC);
 
-    // 3. ดึงข้อมูลตาราง (ใช้ข้อมูล distance และ job_count จากฐานข้อมูลโดยตรง)
     $tableSql = "SELECT
-                    o.id, o.tech_id, o.license_plate, o.liters, o.mileage, o.price_per_liter, o.total_price, o.date_recorded, 
+                    o.id, o.tech_id, o.license_plate, o.liters, o.mileage, o.price_per_liter, o.total_price, o.date_recorded,
                     o.job_count as stored_job_count, o.distance,
                     u.full_name as tech_name, u.team_id,
                     t.id as record_team_id,
@@ -70,16 +68,13 @@ try {
                  LEFT JOIN oil_images i ON o.id = i.record_id
                  $whereClause
                  GROUP BY o.id
-                 ORDER BY o.date_recorded ASC, o.id ASC"; 
-    
+                 ORDER BY o.date_recorded ASC, o.id ASC";
+
     $stmtTable = $pdo->prepare($tableSql);
     $stmtTable->execute($params);
     $rawRecords = $stmtTable->fetchAll(PDO::FETCH_ASSOC);
 
     $processed_records = [];
-    $total_jobs_period = 0;
-
-    // keep track of previous mileage and liters per vehicle to compute distance and efficiency from the prior fill
     $prevMileageByVehicle = [];
     $prevLitersByVehicle = [];
 
@@ -87,16 +82,13 @@ try {
         $currentMileage = isset($row['mileage']) ? (int)$row['mileage'] : 0;
         $vehicleKey = !empty($row['license_plate']) ? $row['license_plate'] : ($row['team_name'] ?? 'unknown');
 
-        // compute distance as difference between current and previous mileage for the same vehicle
         $distance = 0;
         if (isset($prevMileageByVehicle[$vehicleKey]) && $currentMileage > $prevMileageByVehicle[$vehicleKey]) {
             $distance = $currentMileage - $prevMileageByVehicle[$vehicleKey];
         } else {
-            // fallback to stored distance column if previous mileage not available
             $distance = (float)$row['distance'];
         }
 
-        // compute current liters from money / price per liter when possible
         $currentLiters = 0.0;
         if (isset($row['price_per_liter']) && (float)$row['price_per_liter'] > 0) {
             $currentLiters = (float)$row['total_price'] / (float)$row['price_per_liter'];
@@ -106,12 +98,10 @@ try {
         }
 
         $job_count = (int)$row['stored_job_count'];
-        $total_jobs_period += $job_count;
 
         $cost_per_job = $job_count > 0 ? ($row['total_price'] / $job_count) : 0;
         $cost_per_km = $distance > 0 ? ($row['total_price'] / $distance) : 0;
 
-        // use liters from the previous round to compute the efficiency metric for this segment
         $previousLiters = isset($prevLitersByVehicle[$vehicleKey]) ? $prevLitersByVehicle[$vehicleKey] : 0;
         $km_per_liter = 0;
         if ($distance > 0 && $previousLiters > 0) {
@@ -127,28 +117,78 @@ try {
 
         $processed_records[] = $row;
 
-        // store current mileage and liters for the next iteration
         $prevMileageByVehicle[$vehicleKey] = $currentMileage;
         $prevLitersByVehicle[$vehicleKey] = $currentLiters;
-
-        $processed_records[] = $row;
-
-        // store current mileage for next iteration
-        $prevMileageByVehicle[$vehicleKey] = $currentMileage;
     }
 
     $processed_records = array_reverse($processed_records);
 
-    // 4. Monthly Summary for Comparison
+    $teamFilter = ($license_plate !== 'all' && !empty($license_plate)) ? $license_plate : null;
+    $total_jobs_period = sumTeamCasesInDateRange($pdo, $start_date, $end_date, $teamFilter);
+
+    // Team-month rollup for avg cost per case in filtered period
+    $teamMonthStats = [];
+    $statsSql2 = "SELECT
+                    t.team_name,
+                    DATE_FORMAT(o.date_recorded, '%Y-%m') AS year_month,
+                    SUM(o.total_price) AS month_fuel_cost,
+                    SUM(o.distance) AS month_distance,
+                    SUM(o.liters) AS month_liters
+                  FROM oil_records o
+                  INNER JOIN teams t ON t.team_name = o.license_plate
+                  $whereClause
+                  GROUP BY t.id, t.team_name, DATE_FORMAT(o.date_recorded, '%Y-%m')";
+    $stmtTeamMonth = $pdo->prepare($statsSql2);
+    $stmtTeamMonth->execute($params);
+    foreach ($stmtTeamMonth->fetchAll(PDO::FETCH_ASSOC) as $tm) {
+        $tid = getTeamIdByName($pdo, $tm['team_name']);
+        $cases = $tid ? getTeamMonthlyCaseCount($pdo, $tid, $tm['year_month'], false) : 0;
+        $monthLiters = (float)$tm['month_liters'];
+        $monthDist = (float)$tm['month_distance'];
+        $monthCost = (float)$tm['month_fuel_cost'];
+        $teamMonthStats[] = [
+            'team_name' => $tm['team_name'],
+            'year_month' => $tm['year_month'],
+            'completed_cases' => $cases,
+            'month_fuel_cost' => round($monthCost, 2),
+            'month_distance' => round($monthDist, 2),
+            'month_liters' => round($monthLiters, 2),
+            'avg_cost_per_case' => $cases > 0 ? round($monthCost / $cases, 2) : 0,
+            'avg_km_per_liter' => $monthLiters > 0 ? round($monthDist / $monthLiters, 2) : 0,
+            'avg_price_per_liter' => $monthLiters > 0 ? round($monthCost / $monthLiters, 2) : 0,
+        ];
+    }
+
     $monthlySql = "SELECT
-                    DATE_FORMAT(o.date_recorded, '%Y-%m') as month_label,
-                    SUM(o.total_price) as monthly_cost,
-                    SUM(o.liters) as monthly_liters,
-                    SUM(o.job_count) as monthly_jobs
-                 FROM oil_records o
-                 WHERE YEAR(o.date_recorded) = YEAR(CURRENT_DATE)
-                 GROUP BY DATE_FORMAT(o.date_recorded, '%Y-%m')
-                 ORDER BY month_label ASC";
+                    ym.month_label,
+                    COALESCE(oil.monthly_cost, 0) AS monthly_cost,
+                    COALESCE(oil.monthly_liters, 0) AS monthly_liters,
+                    COALESCE(cases.monthly_jobs, 0) AS monthly_jobs
+                 FROM (
+                    SELECT DATE_FORMAT(date_recorded, '%Y-%m') AS month_label
+                    FROM oil_records
+                    WHERE YEAR(date_recorded) = YEAR(CURRENT_DATE)
+                    UNION
+                    SELECT year_month AS month_label
+                    FROM team_oil_cases
+                    WHERE year_month LIKE CONCAT(YEAR(CURRENT_DATE), '-%')
+                 ) ym
+                 LEFT JOIN (
+                    SELECT DATE_FORMAT(date_recorded, '%Y-%m') AS month_label,
+                           SUM(total_price) AS monthly_cost,
+                           SUM(liters) AS monthly_liters
+                    FROM oil_records
+                    WHERE YEAR(date_recorded) = YEAR(CURRENT_DATE)
+                    GROUP BY DATE_FORMAT(date_recorded, '%Y-%m')
+                 ) oil ON oil.month_label = ym.month_label
+                 LEFT JOIN (
+                    SELECT year_month AS month_label,
+                           SUM(case_count) AS monthly_jobs
+                    FROM team_oil_cases
+                    WHERE year_month LIKE CONCAT(YEAR(CURRENT_DATE), '-%')
+                    GROUP BY year_month
+                 ) cases ON cases.month_label = ym.month_label
+                 ORDER BY ym.month_label ASC";
     $stmtMonthly = $pdo->prepare($monthlySql);
     $stmtMonthly->execute();
     $monthlySummary = $stmtMonthly->fetchAll(PDO::FETCH_ASSOC);
@@ -159,14 +199,17 @@ try {
             'total_records' => (int)($stats['total_records'] ?? 0),
             'total_liters' => (float)($stats['total_liters'] ?? 0),
             'total_cost' => (float)($stats['total_cost'] ?? 0),
-            'total_jobs' => $total_jobs_period
+            'total_jobs' => $total_jobs_period,
+            'avg_cost_per_case' => $total_jobs_period > 0
+                ? round((float)($stats['total_cost'] ?? 0) / $total_jobs_period, 2)
+                : 0,
         ],
         'chart' => $chartData,
         'monthly' => $monthlySummary,
+        'team_month_stats' => $teamMonthStats,
         'records' => $processed_records
     ]);
 
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
-?>
