@@ -92,11 +92,11 @@ try {
     $pdo->beginTransaction();
 
     $activeSql = "(status IS NULL OR status NOT IN ('completed', 'failed', 'Finish'))";
-    $stmtTeams = $pdo->query("SELECT DISTINCT team_id FROM jobs WHERE team_id IS NOT NULL AND $activeSql");
+    $stmtTeams = $pdo->query("SELECT DISTINCT team_id FROM {$table} WHERE team_id IS NOT NULL AND $activeSql");
     $teams = $stmtTeams->fetchAll(PDO::FETCH_COLUMN);
 
-    $stmtJobs = $pdo->prepare("SELECT id, lat, lng FROM jobs WHERE team_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql");
-    $stmtUpdate = $pdo->prepare("UPDATE jobs SET seq = ?, map_link = ? WHERE id = ?");
+    $stmtJobs = $pdo->prepare("SELECT id, lat, lng FROM {$table} WHERE team_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql");
+    $stmtUpdate = $pdo->prepare("UPDATE {$table} SET seq = ?, map_link = ? WHERE id = ?");
 
     $processedTeams = 0;
 

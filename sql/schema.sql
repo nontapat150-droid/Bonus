@@ -584,3 +584,42 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ma_jobs`
+--
+
+CREATE TABLE `ma_jobs` (
+  `id` int(11) NOT NULL,
+  `plan_arrival_date` date DEFAULT NULL,
+  `access_no` varchar(50) NOT NULL,
+  `customer` varchar(150) DEFAULT NULL,
+  `phone` varchar(100) DEFAULT NULL,
+  `package` varchar(150) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `status` varchar(50) DEFAULT NULL,
+  `product` varchar(150) DEFAULT NULL,
+  `lat` decimal(10,8) DEFAULT NULL,
+  `lng` decimal(11,8) DEFAULT NULL,
+  `order_no` varchar(50) DEFAULT NULL,
+  `task_order` varchar(50) DEFAULT NULL,
+  `task_type` varchar(50) DEFAULT NULL,
+  `remark` text DEFAULT NULL,
+  `seq` int(11) DEFAULT NULL,
+  `map_link` text DEFAULT NULL,
+  `team_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `ma_jobs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `team_id` (`team_id`);
+
+ALTER TABLE `ma_jobs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `ma_jobs`
+  ADD CONSTRAINT `ma_jobs_ibfk_1` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE SET NULL;

@@ -23,7 +23,7 @@ if (empty($access_no) || empty($plan_date)) {
 
 try {
     $stmt = $pdo->prepare("
-        INSERT INTO jobs (
+        INSERT INTO {$table} (
             access_no, customer, phone, address, plan_arrival_date, 
             package, remark, lat, lng, product, order_no, 
             task_order, task_type, status

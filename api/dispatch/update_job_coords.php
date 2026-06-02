@@ -39,7 +39,7 @@ try {
         $currentUser = $stmtUser->fetch();
         $myTeamId = $currentUser['team_id'] ?? null;
 
-        $stmtJob = $pdo->prepare("SELECT team_id FROM jobs WHERE id = ?");
+        $stmtJob = $pdo->prepare("SELECT team_id FROM {$table} WHERE id = ?");
         $stmtJob->execute([$job_id]);
         $job = $stmtJob->fetch();
 
@@ -49,7 +49,7 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("UPDATE jobs SET lat = ?, lng = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE {$table} SET lat = ?, lng = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
     $stmt->execute([$lat, $lng, $job_id]);
 
     echo json_encode(['success' => true]);

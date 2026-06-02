@@ -41,8 +41,11 @@ try {
         $team_id = $stmtUser->fetchColumn();
     }
 
+    $jobType = $_GET['type'] ?? 'jobs';
+    $table = ($jobType === 'ma') ? 'ma_jobs' : 'jobs';
+
     $sql = "SELECT j.*, t.team_name 
-            FROM jobs j 
+            FROM {$table} j 
             LEFT JOIN teams t ON j.team_id = t.id 
             WHERE 1=1";
     $params = [];

@@ -241,7 +241,7 @@ try {
     }
 
     $activeSql = "(status IS NULL OR status NOT IN ('completed', 'failed', 'Finish'))";
-    $stmtJobs = $pdo->query("SELECT id, lat, lng FROM jobs WHERE team_id IS NULL AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql ORDER BY plan_arrival_date ASC, id ASC");
+    $stmtJobs = $pdo->query("SELECT id, lat, lng FROM {$table} WHERE team_id IS NULL AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql ORDER BY plan_arrival_date ASC, id ASC");
     $remainingJobs = array_values(array_filter($stmtJobs->fetchAll(), function($job) {
         return isValidCoordinate($job['lat'], $job['lng']);
     }));
@@ -252,7 +252,7 @@ try {
         exit;
     }
 
-    $stmtExisting = $pdo->prepare("SELECT id, lat, lng FROM jobs WHERE team_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql");
+    $stmtExisting = $pdo->prepare("SELECT id, lat, lng FROM {$table} WHERE team_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql");
     $anchors = [];
     foreach ($teamMap as $teamName => &$teamInfo) {
         $stmtExisting->execute([$teamInfo['id']]);
@@ -305,15 +305,15 @@ try {
         exit;
     }
 
-    $stmtAssign = $pdo->prepare("UPDATE jobs SET team_id = ? WHERE id = ?");
+    $stmtAssign = $pdo->prepare("UPDATE {$table} SET team_id = ? WHERE id = ?");
     foreach ($teamMap as $teamInfo) {
         foreach ($teamInfo['route'] as $job) {
             $stmtAssign->execute([$teamInfo['id'], $job['id']]);
         }
     }
 
-    $stmtTeamJobs = $pdo->prepare("SELECT id, lat, lng FROM jobs WHERE team_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql");
-    $stmtUpdateRoute = $pdo->prepare("UPDATE jobs SET seq = ?, map_link = ? WHERE id = ?");
+    $stmtTeamJobs = $pdo->prepare("SELECT id, lat, lng FROM {$table} WHERE team_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql");
+    $stmtUpdateRoute = $pdo->prepare("UPDATE {$table} SET seq = ?, map_link = ? WHERE id = ?");
     $assignedByTeam = [];
 
     foreach ($teamMap as $teamName => $teamInfo) {
