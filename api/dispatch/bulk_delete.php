@@ -2,6 +2,7 @@
 // api/dispatch/bulk_delete.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+require_once '../../config/oil_job_sync.php';
 
 header('Content-Type: application/json');
 requireLogin(['admin', 'super_admin']);
@@ -16,7 +17,8 @@ if (empty($ids)) {
 
 try {
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    
+    $oilSyncPairs = collectTeamOilMonthsForJobIds($pdo, $ids);
+
     // Delete job_logs
     $pdo->prepare("DELETE FROM job_logs WHERE job_id IN ($placeholders)")->execute($ids);
     
@@ -27,6 +29,8 @@ try {
     $sql = "DELETE FROM jobs WHERE id IN ($placeholders)";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($ids);
+
+    syncCollectedTeamOilMonths($pdo, $oilSyncPairs);
 
     echo json_encode([
         'success' => true,
