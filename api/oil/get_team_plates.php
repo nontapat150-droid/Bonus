@@ -17,16 +17,36 @@ try {
     $currentUser = $stmtUser->fetch();
     $myTeamId = $currentUser['team_id'] ?? null;
 
-    // ดึงรายการทีมทั้งหมด พร้อมนับจำนวนเคสงาน
-    $stmt = $pdo->query("
-        SELECT t.id, t.team_name, 
-               COUNT(j.id) as job_count
-        FROM teams t
-        LEFT JOIN jobs j ON j.team_id = t.id
-        GROUP BY t.id, t.team_name
-        ORDER BY t.team_name ASC
-    ");
-    $teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $isAdmin = hasRole(['admin', 'super_admin']);
+
+    if ($isAdmin) {
+        // แอดมินดูได้ทุกทีม
+        $stmt = $pdo->query("
+            SELECT t.id, t.team_name, 
+                   COUNT(j.id) as job_count
+            FROM teams t
+            LEFT JOIN jobs j ON j.team_id = t.id
+            GROUP BY t.id, t.team_name
+            ORDER BY t.team_name ASC
+        ");
+        $teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        // ช่างเทคนิคเห็นเฉพาะทีมตัวเอง
+        if ($myTeamId) {
+            $stmt = $pdo->prepare("
+                SELECT t.id, t.team_name, 
+                       COUNT(j.id) as job_count
+                FROM teams t
+                LEFT JOIN jobs j ON j.team_id = t.id
+                WHERE t.id = ?
+                GROUP BY t.id, t.team_name
+            ");
+            $stmt->execute([$myTeamId]);
+            $teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            $teams = [];
+        }
+    }
 
     echo json_encode([
         'success' => true,

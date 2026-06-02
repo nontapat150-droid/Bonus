@@ -161,6 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN) {
         document.getElementById('jobExcelFile')?.addEventListener('change', handleExcelUpload);
         document.getElementById('exportExcelBtn')?.addEventListener('click', handleExportExcel);
+        document.getElementById('addManualJobBtn')?.addEventListener('click', openManualJobModal);
+        document.getElementById('manualJobForm')?.addEventListener('submit', handleManualJobSubmit);
         document.getElementById('addTeamBtn')?.addEventListener('click', handleAddTeam);
         document.getElementById('dispatchModalBtn')?.addEventListener('click', openDispatchModal);
         document.getElementById('confirmDispatchBtn')?.addEventListener('click', runAutoDispatch);
@@ -340,6 +342,49 @@ function openDispatchModal() {
 
 function closeDispatchModal() { 
     document.getElementById('dispatchModal').classList.add('hidden'); 
+}
+
+function openManualJobModal() {
+    document.getElementById('manualJobForm')?.reset();
+    document.getElementById('addManualJobModal').classList.remove('hidden');
+}
+
+window.closeManualJobModal = function() {
+    document.getElementById('addManualJobModal').classList.add('hidden');
+};
+
+async function handleManualJobSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    showLoader('บันทึกข้อมูลงาน...');
+    try {
+        const res = await fetch('api/dispatch/add_manual_job.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.success) {
+            Swal.fire({
+                title: 'สำเร็จ',
+                text: 'เพิ่มงานเรียบร้อยแล้ว',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            closeManualJobModal();
+            loadJobs();
+        } else {
+            Swal.fire('ข้อผิดพลาด', result.error, 'error');
+        }
+    } catch (e) {
+        Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
+    } finally {
+        hideLoader();
+    }
 }
 
 async function handleAddTeam() {
@@ -891,6 +936,28 @@ function showJobPopup(job, color) {
         `;
     }
 
+    let reassignHTML = '';
+    if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN && popupStatus !== 'completed' && popupStatus !== 'failed') {
+        const teamOptions = currentTeams.map(t => 
+            `<option value="${t.id}" ${t.id == job.team_id ? 'selected' : ''}>${escapeHTML(t.team_name)}</option>`
+        ).join('');
+        
+        reassignHTML = `
+            <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-lg mt-3 flex flex-col gap-2">
+                <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-wide">เปลี่ยนทีมรับผิดชอบ</p>
+                <div class="flex gap-2">
+                    <select id="reassignTeamSelect_${job.id}" class="input !py-1.5 !px-2 text-xs font-bold flex-1">
+                        <option value="">-- รอจ่าย / ไม่ระบุทีม --</option>
+                        ${teamOptions}
+                    </select>
+                    <button onclick="reassignJob(${job.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 py-1.5 rounded shadow-sm">
+                        เปลี่ยนทีม
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
     Swal.fire({
         title: `<div class="text-left"><div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">รายละเอียดงาน</div><div class="font-black text-lg" style="color:${color};">${displayValue(job.access_no, 'N/A')}</div></div>`,
         html: `
@@ -925,6 +992,7 @@ function showJobPopup(job, color) {
                         <p class="text-xs font-bold text-rose-700 leading-relaxed">${displayValue(job.remark)}</p>
                     </div>` : ''}
                 </div>
+                ${reassignHTML}
                 ${actionButtons}
             </div>
         `,
@@ -947,6 +1015,39 @@ function showJobPopup(job, color) {
         if (result.isConfirmed && gmapsLink) window.open(gmapsLink, '_blank');
     });
 }
+
+window.reassignJob = async function(jobId) {
+    const select = document.getElementById(`reassignTeamSelect_${jobId}`);
+    if (!select) return;
+    const newTeamId = select.value;
+
+    Swal.close();
+    showLoader('กำลังเปลี่ยนทีม...');
+    try {
+        const res = await fetch('api/dispatch/reassign_job.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job_id: jobId, team_id: newTeamId || null })
+        });
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire({
+                title: 'สำเร็จ',
+                text: 'เปลี่ยนทีมรับผิดชอบเรียบร้อย',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            loadJobs();
+        } else {
+            Swal.fire('ข้อผิดพลาด', data.error, 'error');
+        }
+    } catch (e) {
+        Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
+    } finally {
+        hideLoader();
+    }
+};
 
 window.updateJobStatus = async function(jobId, status) {
     const job = allJobs.find(j => String(j.id) === String(jobId));
