@@ -83,18 +83,26 @@ try {
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     } elseif ($type === 'inventory') {
-        $where = "WHERE 1=1 " . buildDateCondition('l.timestamp', $filter_date, $filter_month);
-        $sql = "SELECT l.*, i.sn, m.model_name, p.name as product_name, u.full_name as admin_name, 
-                tu.full_name as target_name
-                FROM inventory_logs l
-                LEFT JOIN inventory_items i ON l.item_id = i.id
-                LEFT JOIN product_models m ON i.model_id = m.id
-                LEFT JOIN products p ON m.product_id = p.id
-                LEFT JOIN users u ON l.admin_id = u.id
-                LEFT JOIN users tu ON l.target_user_id = tu.id
-                $where ORDER BY l.timestamp DESC LIMIT 500";
-                
+        $sql = "SELECT 'in' as log_type, l.timestamp, i.sn, m.model_name, p.name as product_name, u.full_name as admin_name, tu.full_name as target_name 
+                FROM inventory_logs l 
+                LEFT JOIN inventory_items i ON l.item_id = i.id 
+                LEFT JOIN product_models m ON i.model_id = m.id 
+                LEFT JOIN products p ON m.product_id = p.id 
+                LEFT JOIN users u ON l.admin_id = u.id 
+                LEFT JOIN users tu ON l.target_user_id = tu.id 
+                WHERE 1=1 " . buildDateCondition('l.timestamp', $filter_date, $filter_month) . "
+                UNION ALL 
+                SELECT 'out' as log_type, l.timestamp, i.sn, m.model_name, p.name as product_name, u.full_name as admin_name, tu.full_name as target_name 
+                FROM inventory_out_logs l 
+                LEFT JOIN inventory_items i ON l.item_id = i.id 
+                LEFT JOIN product_models m ON i.model_id = m.id 
+                LEFT JOIN products p ON m.product_id = p.id 
+                LEFT JOIN users u ON l.admin_id = u.id 
+                LEFT JOIN users tu ON l.target_user_id = tu.id 
+                WHERE 1=1 " . buildDateCondition('l.timestamp', $filter_date, $filter_month) . "
+                ORDER BY timestamp DESC LIMIT 500";
         $stmt = $pdo->prepare($sql);
+        bindDateParams($stmt, $filter_date, $filter_month);
         bindDateParams($stmt, $filter_date, $filter_month);
         $stmt->execute();
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);

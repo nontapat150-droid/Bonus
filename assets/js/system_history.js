@@ -6,10 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterDate = document.getElementById('filterDate');
     const filterMonth = document.getElementById('filterMonth');
 
-    // ตั้งค่าเริ่มต้นให้โชว์เดือนปัจจุบัน
-    const now = new Date();
-    filterMonth.value = now.toISOString().slice(0, 7);
-
+    // ไม่ตั้งค่าเริ่มต้นให้กรองเดือนหรือวัน เพื่อแสดงข้อมูลทั้งหมดจากเริ่มต้น
+    // ผู้ใช้สามารถเลือกตัวกรองได้เองเมื่อต้องการ
+    if (filterMonth) filterMonth.value = '';
+    if (filterDate) filterDate.value = '';
+    
     // ถ้าผู้ใช้เลือกวัน ให้ล้างค่าช่องเดือน
     if(filterDate) filterDate.addEventListener('change', () => { if(filterMonth) filterMonth.value = ''; });
     // ถ้าผู้ใช้เลือกเดือน ให้ล้างค่าช่องวัน
@@ -60,12 +61,23 @@ async function loadHistory(type) {
             renderTable(type, data.data, tHead, tBody);
             if(badge) badge.textContent = `${data.data.length} รายการ`;
         } else {
-            tBody.innerHTML = `<tr class="block md:table-row"><td colspan="6" class="text-center py-10 text-rose-500 block md:table-cell">${data.error}</td></tr>`;
+            Swal.fire({
+                title: 'ข้อผิดพลาด',
+                text: data.error || 'ไม่สามารถดึงข้อมูลได้',
+                icon: 'error',
+                confirmButtonColor: '#ef4444'
+            });
+            // keep existing table unchanged
             if(badge) badge.textContent = '0 รายการ';
         }
     } catch (e) {
-        tBody.innerHTML = '<tr class="block md:table-row"><td colspan="6" class="text-center py-10 text-rose-500 block md:table-cell">ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</td></tr>';
-        if(badge) badge.textContent = 'Error';
+        Swal.fire({
+            title: 'ข้อผิดพลาด',
+            text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้',
+            icon: 'error',
+            confirmButtonColor: '#ef4444'
+        });
+        // keep existing table unchanged
     }
 }
 
@@ -321,6 +333,7 @@ window.deleteStartDayRecordGlobal = async function(id) {
 // 🌟 ระบบแก้ไขข้อมูล (รองรับทุกสิทธิ์)
 // ==========================================
 window.startDayRecords = []; // เก็บตัวแปรส่วนกลาง
+};
 
 window.openEditStartDayModal = function(id) {
     const record = window.startDayRecords.find(r => r.id == id);
