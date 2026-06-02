@@ -1,6 +1,6 @@
 <?php if (!defined('PDO::ATTR_ERRMODE')) exit; ?>
 <div id="editStartDayModal" class="fixed inset-0 z-[9999] hidden bg-slate-900/70 backdrop-blur-sm flex justify-center items-center p-4 transition-opacity">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden z-[10000] flex flex-col">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden z-[10000] max-h-[95vh] flex flex-col">
         <div class="p-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex justify-between items-center shrink-0">
             <h3 class="text-lg sm:text-xl font-black tracking-tight flex items-center gap-2">
                 <i data-lucide="edit" class="w-6 h-6"></i>
