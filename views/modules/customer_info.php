@@ -81,4 +81,4 @@ requireRole(['admin', 'super_admin']);
     </div>
 </div>
 
-<script src="assets/js/customer_info.js"></script>
+<script src="assets/js/customer_info.js?v=<?= time() ?>"></script>

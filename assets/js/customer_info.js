@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderResults(customers) {
         if (customers.length === 0) {
+            Swal.fire('ไม่พบข้อมูล', 'ไม่พบประวัติลูกค้าจากหมายเลขที่คุณค้นหา กรุณาตรวจสอบหมายเลขอีกครั้ง', 'info');
             emptyState.classList.remove('hidden');
             resultsArea.classList.add('hidden');
             return;
