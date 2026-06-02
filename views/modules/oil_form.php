@@ -67,7 +67,7 @@ if (!defined('PDO::ATTR_ERRMODE')) {
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">วันที่และเวลาเติมน้ำมัน <span class="text-red-500">*</span></label>
                         <div class="relative">
-                            <input type="text" id="date_recorded" name="date_recorded" required class="input w-full pl-10 text-lg cursor-pointer bg-white" placeholder="เลือกวันที่และเวลา">
+                            <input type="date" id="date_recorded" name="date_recorded" required class="input w-full pl-10 text-lg cursor-pointer bg-white" placeholder="เลือกวันที่และเวลา">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">      
                                 <span class="text-sky-500"><i data-lucide="calendar" class="w-5 h-5 inline-block"></i></span>
                             </div>
@@ -138,22 +138,6 @@ if (!defined('PDO::ATTR_ERRMODE')) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
 <script src="assets/js/common.js"></script>
+<script src="assets/js/datepicker.js"></script>
 <script src="assets/js/oil.js?v=<?= time() ?>"></script>
-<style>
-/* Custom adjustments for flatpickr to look more modern */
-.flatpickr-calendar {
-    font-family: 'Prompt', sans-serif;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
-    border: none !important;
-    border-radius: 1rem !important;
-}
-.flatpickr-day.selected {
-    background: #4f46e5 !important; /* indigo-600 */
-    border-color: #4f46e5 !important;
-}
-</style>
