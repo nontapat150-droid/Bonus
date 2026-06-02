@@ -29,17 +29,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // โหลดป้ายทะเบียนจากระบบทีม
     loadTeamPlates();
 
-    // Initialize Flatpickr
+    // Set default date for date_recorded to today in YYYY-MM-DD format
     const dateInput = document.getElementById('date_recorded');
-    if (dateInput && typeof flatpickr !== 'undefined') {
-        flatpickr(dateInput, {
-            enableTime: true,
-            dateFormat: "Y-m-d H:i",
-            defaultDate: new Date(),
-            time_24hr: true,
-            locale: "th",
-            disableMobile: "true" // บังคับใช้ UI แบบ Custom ไม่ให้ใช้ของระบบมือถือ
-        });
+    if (dateInput) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
+        // trigger change so datepicker.js updates the display value
+        dateInput.dispatchEvent(new Event('change'));
     }
 
     // Auto-calculate total price
