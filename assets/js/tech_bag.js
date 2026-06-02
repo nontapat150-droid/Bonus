@@ -300,13 +300,19 @@ document.getElementById('submitUseConsumableBtn')?.addEventListener('click', asy
         return;
     }
 
+    const ownerId = currentViewUserId || ''; 
+    
     Loader.show();
     e.target.disabled = true;
     try {
         const res = await fetch('api/inventory/use_consumable.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ consumable_id: id, qty: qty })
+            body: JSON.stringify({ 
+                consumable_id: id, 
+                qty: qty,
+                owner_id: ownerId
+            })
         });
         const data = await res.json();
         
@@ -368,6 +374,8 @@ document.getElementById('submitTransferConsBtn')?.addEventListener('click', asyn
         return;
     }
 
+    const ownerId = currentViewUserId || '';
+
     Loader.show();
     e.target.disabled = true;
     try {
@@ -375,8 +383,10 @@ document.getElementById('submitTransferConsBtn')?.addEventListener('click', asyn
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ 
-                items: [{ consumable_id: id, qty: qty }], 
-                target_user_id: targetUserId 
+                consumable_id: id, 
+                target_user_id: targetUserId, 
+                qty: qty,
+                owner_id: ownerId
             })
         });
         const data = await res.json();
