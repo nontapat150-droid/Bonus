@@ -73,6 +73,10 @@
             <div class="icon"><i data-lucide="users"></i></div>
             <span class="nav-label">จัดการผู้ใช้</span>
         </a>
+        <a href="index.php?page=issues" class="nav-item <?= $page === 'issues' ? 'active' : '' ?>" data-label="รายงานปัญหา">
+            <div class="icon"><i data-lucide="alert-circle"></i></div>
+            <span class="nav-label">รายงานปัญหา</span>
+        </a>
         <?php endif; ?>
     </nav>
 
@@ -169,6 +173,10 @@
         <a href="index.php?page=users" class="nav-item <?= $page === 'users' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="users"></i></div>
             <span class="nav-label">จัดการผู้ใช้</span>
+        </a>
+        <a href="index.php?page=issues" class="nav-item <?= $page === 'issues' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="alert-circle"></i></div>
+            <span class="nav-label">รายงานปัญหา</span>
         </a>
         <?php endif; ?>
     </nav>
