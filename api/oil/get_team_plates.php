@@ -1,21 +1,21 @@
 <?php
 // api/oil/get_team_plates.php
-// ดึงรายการป้ายทะเบียน (ทีม) ทั้งหมดในระบบ พร้อมจำนวนเคสงานของแต่ละทีม
-// สำหรับระบบเติมน้ำมัน - แสดงป้ายทะเบียนทีมของตัวเอง + ทีมอื่น
-require_once '../../config/db.php';
-require_once '../../config/auth.php';
+ob_start(); // เก็บ output ทั้งหมดก่อน เพื่อป้องกัน HTML แทรก JSON
 error_reporting(0);
 ini_set('display_errors', 0);
 
-header('Content-Type: application/json');
+require_once '../../config/db.php';
+require_once '../../config/auth.php';
 
-register_shutdown_function(function() {
-    $error = error_get_last();
-    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-        echo json_encode(['success' => false, 'error' => 'PHP Fatal Error: ' . $error['message']]);
-        exit;
-    }
-});
+// ล้าง buffer แล้วตั้งค่า header ใหม่
+ob_end_clean();
+header('Content-Type: application/json; charset=utf-8');
+
+// Guard: ถ้า pdo ยังไม่พร้อม (db.php อาจ exit ก่อน)
+if (!isset($pdo)) {
+    echo json_encode(['success' => false, 'error' => 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาลองใหม่']);
+    exit;
+}
 
 requireLogin();
 
@@ -25,8 +25,8 @@ try {
     // ดึง team_id ของผู้ใช้ปัจจุบัน
     $stmtUser = $pdo->prepare("SELECT team_id FROM users WHERE id = ?");
     $stmtUser->execute([$user_id]);
-    $currentUser = $stmtUser->fetch();
-    $myTeamId = $currentUser['team_id'] ?? null;
+    $currentUser = $stmtUser->fetch(PDO::FETCH_ASSOC);
+    $myTeamId = $currentUser ? ($currentUser['team_id'] ?? null) : null;
 
     $isAdmin = hasRole(['admin', 'super_admin']);
 
@@ -42,8 +42,9 @@ try {
         ");
         $teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } else {
-        // ช่างเทคนิคเห็นเฉพาะทีมตัวเอง
+        // ช่างเทคนิค
         if ($myTeamId) {
+            // มีทีมแล้ว: แสดงเฉพาะทีมตัวเอง
             $stmt = $pdo->prepare("
                 SELECT t.id, t.team_name, 
                        COUNT(j.id) as job_count
@@ -55,7 +56,7 @@ try {
             $stmt->execute([$myTeamId]);
             $teams = $stmt->fetchAll(PDO::FETCH_ASSOC);
         } else {
-            // ถ้าช่างยังไม่มีทีม ให้แสดงทั้งหมดเพื่อให้เลือกครั้งแรก
+            // ยังไม่มีทีม: แสดงทุกทีมให้เลือก
             $stmt = $pdo->query("
                 SELECT t.id, t.team_name, 
                        COUNT(j.id) as job_count
@@ -74,6 +75,6 @@ try {
         'my_team_id' => $myTeamId
     ]);
 
-} catch (PDOException $e) {
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()]);
 }

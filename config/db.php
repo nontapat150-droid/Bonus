@@ -20,14 +20,26 @@ $options = [
 try {
     $pdo = new PDO($dsn, $user, $pass, $options);
 } catch (\PDOException $e) {
-    // 🌟 ดักจับ Error และส่งกลับเป็น JSON เพื่อให้ Javascript ไม่พัง
-    $isApiCall = strpos($_SERVER['REQUEST_URI'] ?? '', '/api/') !== false;
+    // ดักจับ Error และส่งกลับเป็น JSON เสมอสำหรับ API endpoints
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    $script = $_SERVER['SCRIPT_NAME'] ?? '';
+    $phpSelf = $_SERVER['PHP_SELF'] ?? '';
+    $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+    
+    $isApiCall = (
+        stripos($uri, '/api/') !== false ||
+        stripos($script, '/api/') !== false ||
+        stripos($phpSelf, '/api/') !== false ||
+        stripos($accept, 'application/json') !== false
+    );
     
     if ($isApiCall) {
+        // ล้าง output buffer ที่อาจมีอยู่ก่อน
+        if (ob_get_level()) ob_end_clean();
         header('Content-Type: application/json');
         echo json_encode([
             'success' => false, 
-            'error' => 'Database Error: ' . $e->getMessage()
+            'error' => 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาลองใหม่อีกครั้ง'
         ]);
     } else {
         die("เชื่อมต่อฐานข้อมูลล้มเหลว: " . $e->getMessage());

@@ -242,8 +242,22 @@ async function loadTeamPlates() {
     const select = document.getElementById('license_plate');
     const teamInfoEl = document.getElementById('displayUserTeam');
 
+    select.innerHTML = '<option value="">⚙️ กำลังโหลดข้อมูลทีม...</option>';
+    select.disabled = true;
+
     try {
-        const res = await fetch('api/oil/get_team_plates.php');
+        const res = await fetch('api/oil/get_team_plates.php', {
+            headers: { 'Accept': 'application/json' }
+        });
+
+        // ตรวจสอบ Content-Type ก่อน parse JSON เสมอ
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            const rawText = await res.text();
+            console.error('[oil] API returned non-JSON:', rawText.substring(0, 300));
+            throw new Error('เซิร์ฟเวอร์ตอบสนองไม่ถูกต้อง (ไม่ใช่ JSON) กรุณารีเฟรชหน้า');
+        }
+
         const data = await res.json();
 
         if (data.success) {
@@ -251,11 +265,11 @@ async function loadTeamPlates() {
             const myTeamId = data.my_team_id;
 
             // สร้าง options
-            const isAdmin = teamPlatesData.length > 1; // Assuming admins see multiple teams, techs see max 1
-            if (isAdmin || teamPlatesData.length === 0) {
-                select.innerHTML = '<option value="">-- เลือกป้ายทะเบียนรถ --</option>';
+            const hasMultiple = teamPlatesData.length > 1;
+            if (hasMultiple || !myTeamId) {
+                select.innerHTML = '<option value="">-- เลือกทีม / ป้ายทะเบียนรถ --</option>';
             } else {
-                select.innerHTML = ''; // ช่างมีทีมเดียว ไม่ต้องมีตัวเลือกว่าง
+                select.innerHTML = '';
             }
 
             let myTeamName = null;
@@ -267,7 +281,6 @@ async function loadTeamPlates() {
                 option.setAttribute('data-plate', team.team_name);
                 option.setAttribute('data-jobs', team.job_count);
 
-                // เลือกทีมตัวเองอัตโนมัติ
                 if (myTeamId && String(team.id) === String(myTeamId)) {
                     option.selected = true;
                     myTeamName = team.team_name;
@@ -276,29 +289,36 @@ async function loadTeamPlates() {
                 select.appendChild(option);
             });
 
-            // แสดงข้อมูลทีมของผู้ใช้
+            select.disabled = false;
+
             if (myTeamName) {
                 updateTeamInfo(myTeamName);
-
-                // แสดงจำนวนเคสงานทันที
                 const myTeam = teamPlatesData.find(t => String(t.id) === String(myTeamId));
                 if (myTeam) {
                     const jobCountDiv = document.getElementById('teamJobCount');
                     const jobCountValue = document.getElementById('jobCountValue');
-                    jobCountValue.textContent = myTeam.job_count || 0;
-                    jobCountDiv.classList.remove('hidden');
+                    if (jobCountDiv && jobCountValue) {
+                        jobCountValue.textContent = myTeam.job_count || 0;
+                        jobCountDiv.classList.remove('hidden');
+                    }
                 }
+            } else if (teamPlatesData.length === 0) {
+                teamInfoEl.innerHTML = '<span class="text-red-500 text-xs font-bold">⚠️ ยังไม่มีทีมในระบบ กรุณาติดต่อ Admin</span>';
             } else {
-                teamInfoEl.innerHTML = '<span class="text-slate-400 text-xs">ยังไม่ได้ผูกทีม/ป้ายทะเบียน</span>';
+                teamInfoEl.innerHTML = '<span class="text-amber-600 text-xs font-bold">⚠️ ยังไม่ได้ผูกทีม กรุณาเลือกทีม</span>';
             }
         } else {
-            select.innerHTML = '<option value="">-- ไม่สามารถโหลดข้อมูลได้ --</option>';
-            teamInfoEl.textContent = 'โหลดข้อมูลทีมไม่สำเร็จ';
+            const errMsg = data.error || 'ไม่สามารถโหลดข้อมูลได้';
+            console.error('[oil] API error:', errMsg);
+            select.innerHTML = `<option value="">⚠️ ${errMsg}</option>`;
+            select.disabled = false;
+            teamInfoEl.innerHTML = `<span class="text-red-500 text-xs font-bold">⚠️ ${errMsg}</span>`;
         }
     } catch (e) {
-        console.error('Error loading team plates:', e);
-        select.innerHTML = '<option value="">-- เกิดข้อผิดพลาด --</option>';
-        teamInfoEl.textContent = 'เกิดข้อผิดพลาดในการโหลดข้อมูลทีม';
+        console.error('[oil] loadTeamPlates exception:', e);
+        select.innerHTML = '<option value="">⚠️ เชื่อมต่อไม่สำเร็จ -- ลองรีเฟรชหน้า</option>';
+        select.disabled = false;
+        teamInfoEl.innerHTML = `<span class="text-red-500 text-xs">⚠️ ${e.message}</span>`;
     }
 }
 // ฟังก์ชันสำหรับกดปุ่มคำนวณระยะทางไมล์ใหม่ทั้งหมด
