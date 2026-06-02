@@ -70,6 +70,10 @@ if (!hasRole(['admin', 'super_admin'])) exit('ไม่มีสิทธิ์�
 
 <?php include __DIR__ . '/../partials/job_close_modal.php'; ?>
 
+<script>
+    window.USER_ROLE = '<?= $_SESSION['role'] ?? 'user' ?>';
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="assets/js/common.js"></script>
 <script src="assets/js/job_close.js?v=<?= time() ?>"></script>
