@@ -29,6 +29,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // โหลดป้ายทะเบียนจากระบบทีม
     loadTeamPlates();
 
+    // Initialize Flatpickr
+    const dateInput = document.getElementById('date_recorded');
+    if (dateInput && typeof flatpickr !== 'undefined') {
+        flatpickr(dateInput, {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            defaultDate: new Date(),
+            time_24hr: true,
+            locale: "th",
+            disableMobile: "true" // บังคับใช้ UI แบบ Custom ไม่ให้ใช้ของระบบมือถือ
+        });
+    }
+
     // Auto-calculate total price
     const calculateTotal = () => {
         const liters = parseFloat(litersInput.value) || 0;
