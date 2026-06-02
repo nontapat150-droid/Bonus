@@ -244,27 +244,50 @@ function hideLoader() {
 async function loadJobs() {
     showLoader('ซิงค์ข้อมูล...');
     try {
+        // 1. ดึงข้อมูลจาก API
         const res = await fetch('api/dispatch/get_jobs.php?_=' + new Date().getTime());
-        const data = await res.json();
-
-        if (data.success) {
-            allJobs = data.data;
-            currentTeams = data.teams || [];
-
-            if (IS_ADMIN) {
-                const filter = document.getElementById('teamFilter');
-                if (filter) {
-                    filter.innerHTML = '<option value="all">📍 ทุกทีม</option><option value="unassigned">⏳ ยังไม่จ่าย</option>';
-                    currentTeams.forEach(t => { 
-                        filter.innerHTML += `<option value="${t.id}">${t.team_name}</option>`; 
-                    });
-                }
-            }
-            renderTeamList();
-            renderUI();
+        
+        // 🌟 2. เปลี่ยนมารับเป็น Text ก่อน เพื่อสแกนหา Error (ถ้าเซิร์ฟเวอร์พังมันจะส่งเป็น HTML)
+        const text = await res.text(); 
+        
+        let data;
+        try {
+            data = JSON.parse(text); // ลองแปลงเป็น JSON
+        } catch(parseErr) {
+            console.error("เซิร์ฟเวอร์ไม่ได้ส่งกลับมาเป็น JSON. ข้อความที่ได้คือ:", text);
+            Swal.fire('ระบบขัดข้อง', 'เซิร์ฟเวอร์ส่งข้อมูลผิดรูปแบบ (กรุณากด F12 ดู Console เพื่อดูสาเหตุ)', 'error');
+            return;
         }
-    } catch (e) {
-        Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
+
+        // 3. ถ้าทำงานสำเร็จ วาดหน้าจอตามปกติ
+        if (data.success) {
+            try {
+                allJobs = data.data || [];
+                currentTeams = data.teams || [];
+
+                if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN) {
+                    const filter = document.getElementById('teamFilter');
+                    if (filter) {
+                        filter.innerHTML = '<option value="all">📍 ทุกทีม</option><option value="unassigned">⏳ ยังไม่จ่าย</option>';
+                        currentTeams.forEach(t => { 
+                            filter.innerHTML += `<option value="${t.id}">${escapeHTML(t.team_name)}</option>`; 
+                        });
+                    }
+                }
+                renderTeamList();
+                renderUI();
+            } catch (uiErr) {
+                console.error("ข้อผิดพลาดในการวาดหน้าจอ:", uiErr);
+                Swal.fire('ข้อผิดพลาดหน้าเว็บ', 'เกิดปัญหาตอนสร้างหน้าจอ: ' + uiErr.message, 'error');
+            }
+        } else {
+            // 🌟 4. ตรงนี้แหละที่หายไป! ถ้าฐานข้อมูลมีปัญหา ต้องโชว์แจ้งเตือนออกมาให้เห็น
+            Swal.fire('เซิร์ฟเวอร์แจ้งเตือน', data.error || 'ดึงข้อมูลไม่สำเร็จ', 'warning');
+        }
+
+    } catch (netErr) {
+        console.error("ข้อผิดพลาดเครือข่าย:", netErr);
+        Swal.fire('การเชื่อมต่อล้มเหลว', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ หรือเน็ตหลุด', 'error');
     } finally {
         hideLoader();
     }
