@@ -64,7 +64,7 @@ function nullableDecimal($value) {
 }
 
 try {
-    $stmtJob = $pdo->prepare("SELECT j.*, t.team_name FROM {$table} j LEFT JOIN teams t ON j.team_id = t.id WHERE j.id = ?");
+    $stmtJob = $pdo->prepare("SELECT j.*, t.team_name FROM jobs j LEFT JOIN teams t ON j.team_id = t.id WHERE j.id = ?");
     $stmtJob->execute([$job_id]);
     $job = $stmtJob->fetch();
 
