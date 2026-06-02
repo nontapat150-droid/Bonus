@@ -136,13 +136,7 @@ try {
     }
 
     $pdo->commit();
-    // Record oil case count per team for the month of completion
-    $teamId = $job['team_id'] ?? null;
-    if ($teamId !== null) {
-        $yearMonth = date('Y-m');
-        $stmtCase = $pdo->prepare("INSERT INTO team_oil_cases (team_id, year_month, case_count) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE case_count = case_count + 1");
-        $stmtCase->execute([$teamId, $yearMonth]);
-    }
+    
     echo json_encode(['success' => true, 'message' => 'บันทึกการปิดงานสำเร็จ']);
 
 } catch (Exception $e) {
