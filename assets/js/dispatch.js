@@ -1255,28 +1255,96 @@ window.handleJobNotSuccess = async function(jobId) {
     }
 
     if (choose.isDenied) {
-        const today = new Date().toISOString().split('T')[0];
+        const todayObj = new Date();
+        const todayD = String(todayObj.getDate()).padStart(2, '0');
+        const todayM = String(todayObj.getMonth() + 1).padStart(2, '0');
+        const todayY = todayObj.getFullYear();
+
+        // สร้าง option วัน 1-31
+        let dayOptions = '';
+        for (let i = 1; i <= 31; i++) {
+            const v = String(i).padStart(2, '0');
+            dayOptions += `<option value="${v}" ${v === todayD ? 'selected' : ''}>${i}</option>`;
+        }
+        // สร้าง option เดือน
+        const monthNames = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                            'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+        let monthOptions = '';
+        monthNames.forEach((name, idx) => {
+            const v = String(idx + 1).padStart(2, '0');
+            monthOptions += `<option value="${v}" ${v === todayM ? 'selected' : ''}>${name}</option>`;
+        });
+        // สร้าง option ปี (ปีนี้ถึง +2)
+        let yearOptions = '';
+        for (let y = todayY; y <= todayY + 2; y++) {
+            yearOptions += `<option value="${y}" ${y === todayY ? 'selected' : ''}>${y + 543} (${y})</option>`;
+        }
+
         const { value: form } = await Swal.fire({
-            title: 'เลื่อนวันนัดติดตั้ง',
+            title: '<span style="font-size:1rem;font-weight:900;">เลื่อนวันนัดติดตั้ง</span>',
             html: `
-                <p class="text-sm text-slate-600 mb-3 text-left">ลูกค้า: <strong>${escapeHTML(job.customer || '-')}</strong><br>
-                นัดเดิม: <strong>${formatThaiDateShort(job.plan_arrival_date)}</strong></p>
-                <label class="block text-left text-xs font-bold text-slate-600 mb-1">วันที่นัดใหม่ <span class="text-rose-500">*</span></label>
-                <input type="date" id="swalRescheduleDate" class="swal2-input w-full mb-3" min="${today}" value="${today}">
-                <label class="block text-left text-xs font-bold text-slate-600 mb-1">หมายเหตุ (ถ้ามี)</label>
-                <textarea id="swalRescheduleRemark" class="swal2-textarea w-full" rows="3" placeholder="เช่น ลูกค้าไม่ว่าง / ขอเลื่อนเป็นวันที่..."></textarea>
+                <div style="text-align:left;font-size:0.8rem;color:#475569;margin-bottom:12px;line-height:1.6;">
+                    <span style="color:#94a3b8;font-size:0.7rem;font-weight:700;text-transform:uppercase;">ลูกค้า</span><br>
+                    <strong style="color:#1e293b;font-size:0.9rem;">${escapeHTML(job.customer || '-')}</strong><br>
+                    <span style="color:#94a3b8;font-size:0.7rem;font-weight:700;text-transform:uppercase;">นัดเดิม</span><br>
+                    <strong style="color:#f59e0b;">${formatThaiDateShort(job.plan_arrival_date)}</strong>
+                </div>
+                <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px;margin-bottom:10px;">
+                    <label style="display:block;text-align:left;font-size:0.7rem;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">
+                        วันที่นัดใหม่ <span style="color:#ef4444;">*</span>
+                    </label>
+                    <div style="display:grid;grid-template-columns:1fr 2fr 1.4fr;gap:6px;align-items:center;">
+                        <div>
+                            <div style="font-size:0.6rem;font-weight:800;color:#92400e;text-align:center;margin-bottom:3px;">วัน</div>
+                            <select id="swalResDay" style="width:100%;padding:7px 4px;border:1.5px solid #fcd34d;border-radius:8px;font-size:0.85rem;font-weight:800;text-align:center;background:#fff;color:#1e293b;">
+                                ${dayOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <div style="font-size:0.6rem;font-weight:800;color:#92400e;text-align:center;margin-bottom:3px;">เดือน</div>
+                            <select id="swalResMonth" style="width:100%;padding:7px 4px;border:1.5px solid #fcd34d;border-radius:8px;font-size:0.8rem;font-weight:800;background:#fff;color:#1e293b;">
+                                ${monthOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <div style="font-size:0.6rem;font-weight:800;color:#92400e;text-align:center;margin-bottom:3px;">ปี (ค.ศ.)</div>
+                            <select id="swalResYear" style="width:100%;padding:7px 4px;border:1.5px solid #fcd34d;border-radius:8px;font-size:0.8rem;font-weight:800;text-align:center;background:#fff;color:#1e293b;">
+                                ${yearOptions}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align:left;">
+                    <label style="display:block;font-size:0.7rem;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">หมายเหตุ (ถ้ามี)</label>
+                    <textarea id="swalRescheduleRemark" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.82rem;font-weight:600;resize:none;box-sizing:border-box;" rows="3" placeholder="เช่น ลูกค้าไม่ว่าง / ขอเลื่อนเป็นวันที่..."></textarea>
+                </div>
             `,
             showCancelButton: true,
             confirmButtonColor: '#f59e0b',
-            confirmButtonText: 'ยืนยันเลื่อนนัด',
+            confirmButtonText: '✔ ยืนยันเลื่อนนัด',
             cancelButtonText: 'ยกเลิก',
             focusConfirm: false,
+            width: '420px',
+            customClass: {
+                popup: 'rounded-2xl shadow-xl',
+                title: 'pt-4 pb-2',
+                htmlContainer: 'px-4 pb-2',
+                confirmButton: 'rounded-lg px-5 py-2.5 text-sm font-black',
+                cancelButton: 'rounded-lg px-5 py-2.5 text-sm font-bold',
+            },
             preConfirm: () => {
-                const dateEl = document.getElementById('swalRescheduleDate');
+                const day   = document.getElementById('swalResDay')?.value || '';
+                const month = document.getElementById('swalResMonth')?.value || '';
+                const year  = document.getElementById('swalResYear')?.value || '';
                 const remarkEl = document.getElementById('swalRescheduleRemark');
-                const newDate = dateEl?.value || '';
-                if (!newDate) {
-                    Swal.showValidationMessage('กรุณาเลือกวันที่นัดใหม่');
+                if (!day || !month || !year) {
+                    Swal.showValidationMessage('กรุณาเลือกวันที่นัดใหม่ให้ครบ');
+                    return false;
+                }
+                const newDate = `${year}-${month}-${day}`;
+                const testDate = new Date(newDate);
+                if (isNaN(testDate.getTime())) {
+                    Swal.showValidationMessage('วันที่ที่เลือกไม่ถูกต้อง');
                     return false;
                 }
                 return {
