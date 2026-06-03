@@ -102,8 +102,26 @@ if ($page === 'home') {
             if (!$chk5->fetch()) {
                 $pdo->exec("ALTER TABLE users ADD COLUMN `profile_image` VARCHAR(255) DEFAULT NULL AFTER `full_name`");
             }
-            
         } catch (Exception $e) { /* ignore migration errors silently */ }
+
+        // Migration เพิ่มเติม (แยก try-catch เพื่อป้องกันการข้ามเมื่อเกิด error)
+        try {
+            // สร้างตาราง work_records สำหรับเด็กฝึกงาน
+            $pdo->exec("CREATE TABLE IF NOT EXISTS work_records (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                record_date DATE NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                content TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        } catch (Exception $e) { }
+
+        try {
+            // อัปเดต ENUM ของ users ให้รองรับ intern
+            $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('super_admin', 'admin', 'technician', 'sales', 'intern') NOT NULL DEFAULT 'technician'");
+        } catch (Exception $e) { }
 
         // 1. ลบประกาศที่หมดอายุอัตโนมัติ
         $pdo->exec("DELETE FROM announcements WHERE expires_at IS NOT NULL AND expires_at < NOW()");
