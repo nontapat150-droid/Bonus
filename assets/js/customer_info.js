@@ -70,8 +70,9 @@ document.addEventListener('DOMContentLoaded', () => {
         customers.forEach((customer, index) => {
             const hasStartDay = customer.start_days.length > 0;
             const jobsCount = customer.jobs.length;
+            const maJobsCount = customer.ma_jobs ? customer.ma_jobs.length : 0;
             
-            let statusBadge = '<span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-bold">ไม่มีงานติดตั้ง</span>';
+            let statusBadge = '<span class="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[10px] font-bold">ไม่มีงานในระบบ</span>';
             if (jobsCount > 0) {
                 const latestJob = customer.jobs[0];
                 if (latestJob.status === 'completed') {
@@ -114,6 +115,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="flex-1 text-center bg-slate-50 p-2 rounded-lg">
                         <p class="text-[10px] font-bold text-slate-400">งานติดตั้ง</p>
                         <p class="font-black text-slate-700">${jobsCount}</p>
+                    </div>
+                    <div class="flex-1 text-center bg-slate-50 p-2 rounded-lg">
+                        <p class="text-[10px] font-bold text-slate-400">งาน MA</p>
+                        <p class="font-black ${maJobsCount > 0 ? 'text-violet-600' : 'text-slate-400'}">${maJobsCount}</p>
                     </div>
                     <div class="flex-1 text-center bg-slate-50 p-2 rounded-lg">
                         <p class="text-[10px] font-bold text-slate-400">ค่าแรกเข้า</p>
@@ -244,6 +249,58 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 `).join('') : '<div class="text-xs text-slate-500 bg-slate-50 p-4 rounded-xl text-center border border-slate-100 font-bold">ไม่พบประวัติการติดตั้ง</div>'}
+            </div>
+
+            <!-- MA Jobs -->
+            <div class="mt-4">
+                <h4 class="text-sm font-black text-slate-800 mb-3 flex items-center gap-2">
+                    <i data-lucide="wrench" class="w-4 h-4 text-violet-500"></i> ประวัติงาน MA (ซ่อมบำรุง)
+                </h4>
+                ${(customer.ma_jobs && customer.ma_jobs.length > 0) ? customer.ma_jobs.map(job => `
+                    <div class="bg-white border border-slate-200 p-4 rounded-xl mb-3 shadow-sm">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400">วันที่นัดหมาย / ทีม (ช่าง)</p>
+                                <p class="text-sm font-bold text-slate-800">${job.plan_arrival_date || '-'} • ${job.team_name || job.tech_name || 'รอจ่าย'}</p>
+                            </div>
+                            ${statusBadge(job.status)}
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <div class="bg-slate-50 p-2 rounded">
+                                <p class="text-[9px] font-bold text-slate-400">อาการ</p>
+                                <p class="text-xs font-bold text-slate-700">${displayValue(job.symptoms)}</p>
+                            </div>
+                            <div class="bg-slate-50 p-2 rounded">
+                                <p class="text-[9px] font-bold text-slate-400">โครงข่าย</p>
+                                <p class="text-xs font-bold text-slate-700">${displayValue(job.area_provider)}</p>
+                            </div>
+                        </div>
+                        
+                        ${job.status === 'completed' ? `
+                        <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-lg mb-3">
+                            <p class="text-[10px] font-bold text-emerald-600 mb-1"><i data-lucide="check-circle" class="w-3 h-3 inline"></i> ข้อมูลการปิดงาน</p>
+                            <div class="text-[10px] text-emerald-700 grid grid-cols-2 gap-2 mt-2">
+                                <div><b>Signal After:</b> ${displayValue(job.signal_after)}</div>
+                                <div><b>Power RX:</b> ${displayValue(job.power_rx)}</div>
+                            </div>
+                            <div class="text-[10px] text-emerald-700 mt-2 space-y-1">
+                                <div><b>สาเหตุ:</b> ${displayValue(job.problem_cause)}</div>
+                                <div><b>วิธีแก้ไข:</b> ${displayValue(job.solution)}</div>
+                                <div><b>หมายเหตุ:</b> ${displayValue(job.remark)}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${job.images && job.images.length > 0 ? `
+                        <div class="flex gap-2 overflow-x-auto py-2 custom-scrollbar">
+                            ${job.images.map(img => {
+                                const imgSrc = img.includes('/') ? img : 'assets/uploads/ma_jobs/' + img;
+                                return '<img src="' + imgSrc + '" class="h-16 rounded cursor-pointer border border-slate-200" onclick="window.open(\\'' + imgSrc + '\\',\\'_blank\\')">';
+                            }).join('')}
+                        </div>
+                        ` : ''}
+                    </div>
+                `).join('') : '<div class="text-xs text-slate-500 bg-slate-50 p-4 rounded-xl text-center border border-slate-100 font-bold">ไม่พบประวัติงาน MA</div>'}
             </div>
         `;
 

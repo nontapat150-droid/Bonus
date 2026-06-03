@@ -40,6 +40,17 @@ try {
         ");
         $stmtStartDay->execute();
         $startDays = $stmtStartDay->fetchAll(PDO::FETCH_ASSOC);
+        
+        // 3. ดึงข้อมูลทั้งหมดล่าสุดจากตาราง ma_jobs (จำกัด 300)
+        $stmtMaJobs = $pdo->prepare("
+            SELECT j.*, t.team_name, u.full_name as tech_name 
+            FROM ma_jobs j 
+            LEFT JOIN teams t ON j.team_id = t.id 
+            LEFT JOIN users u ON j.assigned_user_id = u.id
+            ORDER BY j.created_at DESC LIMIT 300
+        ");
+        $stmtMaJobs->execute();
+        $maJobs = $stmtMaJobs->fetchAll(PDO::FETCH_ASSOC);
     } else {
         // 1. ค้นหาในตาราง jobs
         $stmtJobs = $pdo->prepare("
@@ -63,6 +74,18 @@ try {
         ");
         $stmtStartDay->execute([$searchTerm, $searchTerm]);
         $startDays = $stmtStartDay->fetchAll(PDO::FETCH_ASSOC);
+
+        // 3. ค้นหาในตาราง ma_jobs
+        $stmtMaJobs = $pdo->prepare("
+            SELECT j.*, t.team_name, u.full_name as tech_name 
+            FROM ma_jobs j 
+            LEFT JOIN teams t ON j.team_id = t.id 
+            LEFT JOIN users u ON j.assigned_user_id = u.id
+            WHERE j.access_no LIKE ? OR j.customer LIKE ? OR j.phone LIKE ?
+            ORDER BY j.created_at DESC
+        ");
+        $stmtMaJobs->execute([$searchTerm, $searchTerm, $searchTerm]);
+        $maJobs = $stmtMaJobs->fetchAll(PDO::FETCH_ASSOC);
     }
 
     // Grouping by access_no / non_number
@@ -99,6 +122,35 @@ try {
         $job['closes'] = $closes;
         $job['logs'] = $logs;
         $customers[$id]['jobs'][] = $job;
+    }
+
+    // Process MA Jobs
+    foreach ($maJobs as $job) {
+        $id = $job['access_no'] ?: 'UNKNOWN_'.uniqid();
+        if (!isset($customers[$id])) {
+            $customers[$id] = [
+                'id' => $id,
+                'customer_name' => $job['customer'],
+                'phone' => $job['phone'],
+                'address' => $job['address'],
+                'package' => '',
+                'product' => '',
+                'jobs' => [],
+                'ma_jobs' => [],
+                'start_days' => []
+            ];
+        }
+        if (!isset($customers[$id]['ma_jobs'])) {
+            $customers[$id]['ma_jobs'] = [];
+        }
+        
+        // ดึงรูปภาพ MA
+        $stmtImg = $pdo->prepare("SELECT image_path FROM ma_job_completion_images WHERE ma_job_id = ?");
+        $stmtImg->execute([$job['id']]);
+        $images = $stmtImg->fetchAll(PDO::FETCH_COLUMN);
+        
+        $job['images'] = $images;
+        $customers[$id]['ma_jobs'][] = $job;
     }
 
     // Process Start Days

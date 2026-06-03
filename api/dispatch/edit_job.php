@@ -63,6 +63,8 @@ try {
             trim($input['order_no'] ?? ''),
             $job_id
         ]);
+        
+        recordMaJobHistory($pdo, $job_id, 'edited');
     } else {
         $stmt = $pdo->prepare("
             UPDATE {$table} SET 

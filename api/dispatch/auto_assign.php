@@ -345,6 +345,9 @@ try {
     foreach ($teamMap as $teamInfo) {
         foreach ($teamInfo['route'] as $job) {
             $stmtAssign->execute([$teamInfo['id'], $job['id']]);
+            if ($isMa) {
+                recordMaJobHistory($pdo, $job['id'], 'auto_assigned');
+            }
         }
     }
 
