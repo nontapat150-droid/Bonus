@@ -1332,13 +1332,20 @@ window.loadRescheduleHistory = async function() {
             const ack = r.acknowledged_at
                 ? `<span class="text-emerald-700 font-bold text-[10px]">รับทราบแล้ว<br>${escapeHTML(r.acknowledged_by_name || '')}</span>`
                 : `<button type="button" onclick="acknowledgeReschedule(${r.id})" class="text-[10px] font-black px-2 py-1 rounded bg-amber-500 text-white hover:bg-amber-600">รับทราบ</button>`;
-            return `<tr class="hover:bg-amber-50/50">
+            return `<tr class="hover:bg-amber-50/50 relative group">
                 <td class="px-3 py-2 whitespace-nowrap text-slate-600">${escapeHTML(created)}</td>
                 <td class="px-3 py-2"><div class="font-bold text-slate-800">${escapeHTML(r.tech_name)}</div><div class="text-[10px] text-slate-500">${escapeHTML(r.team_name || '-')}</div></td>
                 <td class="px-3 py-2"><div class="font-bold">${escapeHTML(r.access_no)}</div><div class="text-[10px] text-slate-500">${escapeHTML(r.customer || '')}</div></td>
                 <td class="px-3 py-2 font-bold text-amber-800 whitespace-nowrap">${formatThaiDateShort(r.previous_plan_date)} → ${formatThaiDateShort(r.new_plan_date)}</td>
                 <td class="px-3 py-2 text-slate-600 max-w-[200px] break-words">${escapeHTML(r.remark || '-')}</td>
-                <td class="px-3 py-2 text-center">${ack}</td>
+                <td class="px-3 py-2 text-center">
+                    <div class="flex items-center justify-center gap-2">
+                        ${ack}
+                        <button type="button" onclick="deleteRescheduleHistory(${r.id})" class="text-rose-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors opacity-0 group-hover:opacity-100" title="ลบประวัตินี้">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </td>
             </tr>`;
         }).join('');
 
@@ -1361,6 +1368,33 @@ window.acknowledgeReschedule = async function(id) {
             if (typeof loadNotifications === 'function') loadNotifications();
         } else {
             Swal.fire('ข้อผิดพลาด', data.error || 'ไม่สำเร็จ', 'error');
+        }
+    } catch (e) {
+        Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อไม่สำเร็จ', 'error');
+    }
+};
+
+window.deleteRescheduleHistory = async function(id) {
+    if (!confirm('ต้องการลบประวัติการเลื่อนนัดนี้ใช่หรือไม่?')) return;
+    
+    try {
+        const res = await fetch(getApiUrl('api/dispatch/delete_reschedule_history.php'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            loadRescheduleHistory();
+            Swal.fire({
+                title: 'สำเร็จ',
+                text: 'ลบประวัติเรียบร้อยแล้ว',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        } else {
+            Swal.fire('ข้อผิดพลาด', data.error || 'ไม่สามารถลบได้', 'error');
         }
     } catch (e) {
         Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อไม่สำเร็จ', 'error');
