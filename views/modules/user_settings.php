@@ -31,9 +31,20 @@ if (!hasRole(['admin', 'super_admin'])) {
     <div class="card !p-0 overflow-hidden animate__animated animate__fadeIn">
         <div class="px-6 py-4 border-b border-[var(--c-border)] bg-[var(--c-surface-2)] flex flex-col sm:flex-row justify-between items-center gap-4">
             <h3 class="font-black text-[var(--c-text-1)] tracking-tight">รายชื่อพนักงานทั้งหมด</h3>
-            <div class="relative w-full sm:w-64">
-                <input type="text" id="searchUser" placeholder="ค้นหาชื่อ หรือ Username..." class="w-full pl-10 pr-4 py-2 input text-sm font-bold transition-all">
-                <span class="absolute left-3 top-2.5 text-[var(--c-text-3)]"><i data-lucide="search" class="w-4 h-4"></i></span>
+            <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <select id="roleFilter" class="w-full sm:w-auto px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm appearance-none pr-10 relative" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%221.67%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 10px center;">
+                    <option value="">ทุกตำแหน่ง</option>
+                    <option value="super_admin">ผู้ดูแลระบบ</option>
+                    <option value="admin">แอดมิน</option>
+                    <option value="technician">ช่าง Office</option>
+                    <option value="ma_technician">ช่าง MA</option>
+                    <option value="sales">เซล</option>
+                    <option value="intern">เด็กฝึกงาน</option>
+                </select>
+                <div class="relative w-full sm:w-64">
+                    <input type="text" id="searchUser" placeholder="ค้นหาชื่อ หรือ Username..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm">
+                    <span class="absolute left-3 top-2.5 text-[var(--c-text-3)]"><i data-lucide="search" class="w-4 h-4"></i></span>
+                </div>
             </div>
         </div>
         
