@@ -2,8 +2,13 @@
 // index.php (Ultimate SaaS Dashboard)
 require_once 'config/db.php';
 require_once 'config/auth.php';
+require_once 'config/ma_job.php';
 
 requireLogin();
+ensureMaJobSchema($pdo);
+if (isset($_SESSION['user_id'])) {
+    loadUserRolesIntoSession($pdo, (int)$_SESSION['user_id'], $_SESSION['role'] ?? null);
+}
 $user = getCurrentUser();
 // Fetch profile image if exists
 try {
@@ -813,6 +818,7 @@ if ($page === 'home') {
                     'customer_info' => 'views/modules/customer_info.php',
                     'job_close_history' => 'views/modules/job_close_history.php',
                     'dispatch' => 'views/modules/dispatch_map.php',
+                    'ma_summary' => 'views/modules/ma_summary.php',
                     'guide' => 'views/modules/user_guide.php',
                     'inventory' => 'views/modules/inventory_app.php',
                     'tech_bag' => 'views/modules/tech_bag.php',
@@ -829,6 +835,10 @@ if ($page === 'home') {
                 if (in_array($page, ['oil', 'dispatch', 'start_day'], true) && hasRole('sales')) {
                     $accessDenied = true;
                 }
+                // ช่าง MA เฉพาะงาน MA — เข้าได้แค่ dispatch และ checkin
+                if (isMaTechnicianOnly() && !in_array($page, ['dispatch', 'checkin'], true)) {
+                    $accessDenied = true;
+                }
                 // สิทธิ์อื่นๆห้ามเข้าหน้าประวัติรวม ยกเว้นแอดมิน
                 if ($page === 'system_history' && !hasRole(['admin', 'super_admin'])) {
                     $accessDenied = true;
@@ -836,7 +846,13 @@ if ($page === 'home') {
                 if ($page === 'site_settings' && !hasRole('super_admin')) {
                     $accessDenied = true;
                 }
+                if ($page === 'ma_summary' && !hasRole('super_admin')) {
+                    $accessDenied = true;
+                }
                 if ($page === 'job_close_history' && !hasRole('technician')) {
+                    $accessDenied = true;
+                }
+                if ($page === 'dispatch' && !canAccessDispatch()) {
                     $accessDenied = true;
                 }
                 if ($page === 'issues' && !hasRole(['admin', 'super_admin'])) {

@@ -78,13 +78,16 @@ if (!hasRole(['admin', 'super_admin'])) {
             </div>
 
             <div>
-                <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">ตำแหน่งในระบบ</label>
-                <select id="role" name="role" onchange="toggleLateTimeField()" class="input">
-                    <option value="technician">ช่างเทคนิค (Technician)</option>
-                    <option value="sales">เซล (Sales)</option>
-                    <option value="intern">เด็กฝึกงาน (Intern)</option>
-                    <option value="admin">ผู้ดูแลระบบ (Admin)</option>
-                    <option value="super_admin">ผู้ดูแลระบบสูงสุด (Super Admin)</option>
+                <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">ตำแหน่งในระบบ (เลือกได้หลายตำแหน่ง)</label>
+                <div id="rolesCheckboxes" class="space-y-2 p-3 rounded-xl border border-slate-200 bg-slate-50">
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" name="roles[]" value="technician" class="role-cb rounded"> ช่าง Office</label>
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" name="roles[]" value="ma_technician" class="role-cb rounded"> ช่าง MA</label>
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" name="roles[]" value="admin" class="role-cb rounded"> แอดมิน</label>
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" name="roles[]" value="super_admin" class="role-cb rounded"> ผู้ดูแลระบบ</label>
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" name="roles[]" value="intern" class="role-cb rounded"> เด็กฝึกงาน</label>
+                </div>
+                <select id="role" name="role" class="hidden">
+                    <option value="technician">technician</option>
                 </select>
             </div>
 

@@ -2,6 +2,12 @@
 // views/modules/dispatch_map.php
 if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรงไม่ได้');
 $isAdmin = hasRole(['admin', 'super_admin']);
+$canViewOffice = canViewDispatchOffice();
+$canViewMa = canViewDispatchMA();
+$hasBothRoles = hasBothDispatchRoles();
+$canActOffice = hasRole(['technician']) || $isAdmin;
+$canActMa = hasRole(['ma_technician']) || $isAdmin;
+$tabCount = ($canViewOffice ? 1 : 0) + ($canViewMa ? 1 : 0) + ($canViewOffice ? 1 : 0) + ($isAdmin ? 1 : 0);
 ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -43,7 +49,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
     .dispatch-page { display: flex; flex-direction: column; gap: 1rem; min-height: 100vh; padding-bottom: 2rem; }
     .dispatch-page .card:hover { transform: none; }
-    .dispatch-view-tabs { display: grid; grid-template-columns: repeat(<?php echo $isAdmin ? '4' : '3'; ?>, minmax(0, 1fr)); gap: 8px; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 10px; padding: 6px; box-shadow: var(--shadow-1); }
+    .dispatch-view-tabs { display: grid; grid-template-columns: repeat(<?php echo max($tabCount, 1); ?>, minmax(0, 1fr)); gap: 8px; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 10px; padding: 6px; box-shadow: var(--shadow-1); }
     .dispatch-view-tab { min-height: 44px; border-radius: 8px; font-size: 13px; font-weight: 900; color: var(--c-text-2); display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background .16s ease, color .16s ease, box-shadow .16s ease; }
     .dispatch-view-tab:hover { background: var(--c-surface-2); color: var(--c-text-1); }
     .dispatch-view-tab.is-active { background: var(--c-primary); color: white; box-shadow: var(--shadow-btn); }
@@ -135,19 +141,27 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
     <?php endif; ?>
 
+    <div id="dispatchModeBanner" class="shrink-0 rounded-xl px-4 py-2 text-xs font-black tracking-wide hidden"></div>
+
     <div class="dispatch-view-tabs shrink-0">
+        <?php if ($canViewOffice): ?>
         <button type="button" id="dispatchViewJobsBtn" class="dispatch-view-tab is-active">
-            <i data-lucide="list-checks" class="w-4 h-4"></i>
-            <span>งานติดตั้ง</span>
+            <i data-lucide="hard-hat" class="w-4 h-4"></i>
+            <span>งาน Office</span>
         </button>
-        <button type="button" id="dispatchViewMABtn" class="dispatch-view-tab">
+        <?php endif; ?>
+        <?php if ($canViewMa): ?>
+        <button type="button" id="dispatchViewMABtn" class="dispatch-view-tab <?php echo !$canViewOffice ? 'is-active' : ''; ?>">
             <i data-lucide="wrench" class="w-4 h-4"></i>
             <span>งาน MA</span>
         </button>
+        <?php endif; ?>
+        <?php if ($canViewOffice): ?>
         <button type="button" id="dispatchViewMapBtn" class="dispatch-view-tab">
             <i data-lucide="map" class="w-4 h-4"></i>
-            <span>ดูแผนที่</span>
+            <span>แผนที่ Office</span>
         </button>
+        <?php endif; ?>
         <?php if ($isAdmin): ?>
         <button type="button" id="dispatchViewRescheduleBtn" class="dispatch-view-tab">
             <i data-lucide="clock" class="w-4 h-4"></i>
@@ -392,6 +406,11 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
 <script>
     const IS_ADMIN = <?php echo $isAdmin ? 'true' : 'false'; ?>;
+    const CAN_VIEW_OFFICE = <?php echo $canViewOffice ? 'true' : 'false'; ?>;
+    const CAN_VIEW_MA = <?php echo $canViewMa ? 'true' : 'false'; ?>;
+    const CAN_ACT_OFFICE = <?php echo $canActOffice ? 'true' : 'false'; ?>;
+    const CAN_ACT_MA = <?php echo $canActMa ? 'true' : 'false'; ?>;
+    const HAS_BOTH_ROLES = <?php echo $hasBothRoles ? 'true' : 'false'; ?>;
 </script>
 <script src="assets/js/common.js"></script>
 <script src="assets/js/job_close.js?v=<?= time() ?>"></script>
@@ -411,3 +430,4 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 </style>
 
 <?php include __DIR__ . '/../partials/job_close_modal.php'; ?>
+<?php include __DIR__ . '/../partials/ma_complete_modal.php'; ?>

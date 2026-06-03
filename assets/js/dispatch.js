@@ -149,12 +149,24 @@ function focusMapOnJob(jobId) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    if (CAN_VIEW_OFFICE) {
+        currentJobType = 'jobs';
+    } else if (CAN_VIEW_MA) {
+        currentJobType = 'ma';
+    }
+
     initMap();
-    loadJobs();
+    if (CAN_VIEW_OFFICE) {
+        updateDispatchModeBanner('jobs');
+        loadJobs();
+    } else if (CAN_VIEW_MA) {
+        switchDispatchView('ma');
+    }
+
     if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN) {
         loadRescheduleHistory();
     }
-    if (window.JobClose?.checkAlerts) JobClose.checkAlerts();
+    if (window.JobClose?.checkAlerts && CAN_VIEW_OFFICE) JobClose.checkAlerts();
 
     document.getElementById('dispatchViewJobsBtn')?.addEventListener('click', () => switchDispatchView('jobs'));
     document.getElementById('dispatchViewMABtn')?.addEventListener('click', () => switchDispatchView('ma'));
@@ -187,9 +199,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function switchDispatchView(view) {
+    if (view === 'jobs' && typeof CAN_VIEW_OFFICE !== 'undefined' && !CAN_VIEW_OFFICE) return;
+    if (view === 'ma' && typeof CAN_VIEW_MA !== 'undefined' && !CAN_VIEW_MA) return;
+    if (view === 'map' && typeof CAN_VIEW_OFFICE !== 'undefined' && !CAN_VIEW_OFFICE) return;
+
     if (view === 'jobs' || view === 'ma') {
         currentJobType = view;
         activeDispatchView = 'list';
+        selectedJobIds.clear();
+        updateSelectionUI();
     } else if (view === 'reschedule') {
         activeDispatchView = 'reschedule';
     } else {
@@ -223,6 +241,10 @@ function switchDispatchView(view) {
     }
 
     if (view === 'jobs' || view === 'ma') {
+        updateDispatchModeBanner(view);
+    }
+
+    if (view === 'jobs' || view === 'ma') {
         loadJobs();
     } else if (view === 'reschedule') {
         if (typeof loadRescheduleHistory === 'function') loadRescheduleHistory();
@@ -233,6 +255,30 @@ function switchDispatchView(view) {
     if (activeDispatchView === 'map') {
         setTimeout(() => { if (map) map.invalidateSize(); }, 80);
     }
+}
+
+function updateDispatchModeBanner(view) {
+    const banner = document.getElementById('dispatchModeBanner');
+    if (!banner) return;
+    if (view === 'ma') {
+        banner.className = 'shrink-0 rounded-xl px-4 py-2 text-xs font-black tracking-wide bg-violet-100 text-violet-800 border border-violet-200';
+        banner.textContent = '🔧 โหมดงาน MA — แจกจ่ายและปิดงานแยกจากช่าง Office';
+        banner.classList.remove('hidden');
+    } else if (view === 'jobs') {
+        banner.className = 'shrink-0 rounded-xl px-4 py-2 text-xs font-black tracking-wide bg-indigo-100 text-indigo-800 border border-indigo-200';
+        banner.textContent = '👷 โหมดงาน Office — แจกจ่ายและปิดงานแยกจากงาน MA';
+        banner.classList.remove('hidden');
+    } else {
+        banner.classList.add('hidden');
+    }
+}
+
+function canActOnCurrentJobType(job) {
+    if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN) return false;
+    if (currentJobType === 'ma') {
+        return typeof CAN_ACT_MA !== 'undefined' && CAN_ACT_MA && canActOnMaJob(job);
+    }
+    return typeof CAN_ACT_OFFICE !== 'undefined' && CAN_ACT_OFFICE && !!job.team_id;
 }
 
 // 🌟 ซ่อมลิงก์นำทาง Google Maps
@@ -546,7 +592,7 @@ async function handleBulkDelete() {
         const res = await fetch(getApiUrl('api/dispatch/bulk_delete.php'), { 
             method: 'POST', 
             headers: {'Content-Type': 'application/json'}, 
-            body: JSON.stringify({ ids }) 
+            body: JSON.stringify({ ids, job_type: currentJobType === 'ma' ? 'ma' : 'jobs' })
         });
         const data = await res.json();
         if (data.success) {
@@ -917,11 +963,12 @@ function createJobRow(job, index) {
                 <div class="text-[12px] text-slate-700 font-bold leading-relaxed break-words">${displayValue(job.address)}</div>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                ${detailItem('แพ็กเกจ', job.package)}
-                ${detailItem('สินค้า', job.product)}
-                ${detailItem('Order No.', job.order_no)}
-                ${detailItem('Task Order', job.task_order)}
-                ${detailItem('Task Type', job.task_type)}
+                ${currentJobType === 'ma' ? maJobExtraHtml(job) : ''}
+                ${currentJobType !== 'ma' ? detailItem('แพ็กเกจ', job.package) : ''}
+                ${currentJobType !== 'ma' ? detailItem('สินค้า', job.product) : ''}
+                ${currentJobType !== 'ma' ? detailItem('Order No.', job.order_no) : ''}
+                ${currentJobType !== 'ma' ? detailItem('Task Order', job.task_order) : ''}
+                ${currentJobType !== 'ma' ? detailItem('Task Type', job.task_type) : ''}
                 ${detailItem('สร้างเมื่อ', job.created_at)}
             </div>
             ${hasValue(job.remark) ? `
@@ -939,7 +986,7 @@ function createJobRow(job, index) {
                 <i data-lucide="navigation" class="w-4 h-4"></i>นำทาง
             </button>
         </div>
-        ${job.team_id && jobStatus !== 'completed' && jobStatus !== 'failed' ? `
+        ${canActOnCurrentJobType(job) && jobStatus !== 'completed' && jobStatus !== 'failed' ? `
         <div class="mt-2 grid grid-cols-2 gap-2">
             <button type="button" class="rounded-lg px-3 py-2 text-xs font-black bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-1 transition-colors" onclick="event.stopPropagation(); openCompleteJobModal(${job.id})">
                 <i data-lucide="check-circle" class="w-4 h-4"></i>ปิดงาน
@@ -973,7 +1020,7 @@ function showJobPopup(job, color) {
     const popupStatus = (job.status || '').toLowerCase();
     
     if (typeof IS_ADMIN !== 'undefined' && !IS_ADMIN && popupStatus !== 'completed' && popupStatus !== 'failed') {
-        actionButtons = `
+        if (canActOnCurrentJobType(job)) actionButtons = `
             <div class="grid grid-cols-2 gap-2 mt-3">
                 <button onclick="Swal.close(); openCompleteJobModal(${job.id})" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-lg shadow-sm text-xs">
                     ปิดงาน
@@ -983,7 +1030,7 @@ function showJobPopup(job, color) {
                 </button>
             </div>
         `;
-    } else if (typeof IS_ADMIN !== 'undefined' && !IS_ADMIN && popupStatus === 'failed') {
+    } else if (typeof IS_ADMIN !== 'undefined' && !IS_ADMIN && popupStatus === 'failed' && canActOnCurrentJobType(job)) {
         actionButtons = `
             <div class="grid grid-cols-2 gap-2 mt-3">
                 <div class="rounded-lg bg-rose-50 border border-rose-100 px-3 py-2 flex items-center justify-center">
@@ -1003,8 +1050,8 @@ function showJobPopup(job, color) {
         ).join('');
         
         reassignHTML = `
-            <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-lg mt-3 flex flex-col gap-2">
-                <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-wide">เปลี่ยนทีมรับผิดชอบ</p>
+            <div class="bg-${currentJobType === 'ma' ? 'violet' : 'indigo'}-50 border border-${currentJobType === 'ma' ? 'violet' : 'indigo'}-100 p-3 rounded-lg mt-3 flex flex-col gap-2">
+                <p class="text-[10px] font-bold text-${currentJobType === 'ma' ? 'violet' : 'indigo'}-500 uppercase tracking-wide">เปลี่ยนทีมรับผิดชอบ (${currentJobType === 'ma' ? 'MA' : 'Office'})</p>
                 <div class="flex gap-2">
                     <select id="reassignTeamSelect_${job.id}" class="input !py-1.5 !px-2 text-xs font-bold flex-1">
                         <option value="">-- รอจ่าย / ไม่ระบุทีม --</option>
@@ -1159,7 +1206,7 @@ window.reassignJob = async function(jobId) {
         const res = await fetch(getApiUrl('api/dispatch/reassign_job.php'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ job_id: jobId, team_id: newTeamId || null })
+            body: JSON.stringify({ job_id: jobId, team_id: newTeamId || null, job_type: currentJobType === 'ma' ? 'ma' : 'jobs' })
         });
         const data = await res.json();
         if (data.success) {
@@ -1192,6 +1239,9 @@ window.updateJobStatus = async function(jobId, status) {
 };
 
 async function postJobStatusUpdate(payload) {
+    if (currentJobType === 'ma') {
+        return postMaJobStatusUpdate(payload);
+    }
     Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     try {
         const res = await fetch(getApiUrl('api/dispatch/update_job_status.php'), {
@@ -1590,153 +1640,66 @@ function processMAExcel(file) {
 
             if (rows.length < 2) throw new Error('ไฟล์ว่างเปล่า หรือรูปแบบไม่ถูกต้อง');
 
-            // ใช้ index ของแต่ละคอลัมน์โดยตรงเพื่อให้ตรงกับที่ผู้ใช้ระบุ
-            // สมมติว่าเรียงตามลำดับที่ระบุเป๊ะ (หรือค้นหาจาก header)
-            // เพื่อความปลอดภัย ค้นหาจากชื่อคอลัมน์
             const headerRow = rows[0].map(h => String(h || '').trim());
-            
             const findCol = (keys) => headerRow.findIndex(h => keys.some(k => h.toLowerCase().includes(k.toLowerCase())));
 
+            const timeIdx = findCol(['เวลา', 'time']);
+            const nonIdx = findCol(['NON', 'access_no', 'รหัส']);
+            const customerIdx = findCol(['ชื่อลูกค้า', 'ลูกค้า', 'customer', 'รายชื่อ']);
+            const phoneIdx = findCol(['เบอร์', 'โทร', 'phone']);
+            const symptomsIdx = findCol(['อาการ', 'symptom']);
+            const addressIdx = findCol(['ที่อยู่']);
+            const teamIdx = findCol(['ทีมช่าง', 'ทีม', 'team']);
+            const areaIdx = findCol(['พื้นที่', 'area', 'AIS', '3BB']);
+            const remarkIdx = findCol(['หมายเหตุ', 'remark']);
             const dateIdx = findCol(['วันที่', 'date']);
-            const orderNoIdx = findCol(['Order.No', 'Order No', 'Order']);
-            const nonIdx = findCol(['NON', 'access_no']);
-            const customerIdx = findCol(['รายชื่อ', 'ลูกค้า', 'customer']);
-            const latIdx = findCol(['lat', 'ละติจูด']);
-            const lngIdx = findCol(['long', 'lng', 'ลองจิจูด']);
-            const subdistrictIdx = findCol(['ตำบล']);
-            const districtIdx = findCol(['อำเภอ']);
-            const addressIdx = findCol(['ที่อยู่ติดตั้ง', 'ที่อยู่']);
-            const phoneIdx = findCol(['โทร', 'phone']);
-            const techIdx = findCol(['ช่างซ่อม']);
-            const aisIdx = findCol(['AIS']);
-            const bbIdx = findCol(['3BB']);
-            const priceIdx = findCol(['ราคา']);
-            const electricityIdx = findCol(['กิจกรรมการไฟฟ้า']);
-            const checkinIdx = findCol(['รูปเช็คอิน']);
-            const photoIdx = findCol(['การถ่ายรูป']);
-            const close21Idx = findCol(['การปิดงาน/21.00น']);
-            const spIdx = findCol(['แจ้งซ่อม SP']);
-            const soaIdx = findCol(['ปิดโน๊ตไม่ตรง SOA']);
-            const signalIdx = findCol(['ค่าสัญญาณหลังออนไลน์']);
-            const powerRxIdx = findCol(['ค่า Power RX']);
-            const lineBotPhotoIdx = findCol(['รูปLine BOT']);
-            const close12Idx = findCol(['ปิดโน๊ด/12.00น']);
-            const spliceIdx = findCol(['สายสไปร์ท']);
-            const sleeveIdx = findCol(['Sleeve']);
-            const dropwireIdx = findCol(['dropwire']);
-            const patchCordIdx = findCol(['Patch Cord']);
-            const lanIdx = findCol(['LAN']);
-            const lmrIdx = findCol(['ขอLMR']);
-            const spliceNewIdx = findCol(['Splice / NEW']);
-            const maMatIdx = findCol(['Ma-MAT']);
-            const insectIdx = findCol(['แมลง']);
-            const installDateIdx = findCol(['วันที่ติดตั้ง']);
-            const installDistIdx = findCol(['ระยะสายติดตั้ง']);
-            const installTechIdx = findCol(['ช่างติดตั้ง']);
-            const lineBotIdx = findCol(['Line BOT', 'LineBOT']);
-            const causeIdx = findCol(['สาเหตุ']);
-            const fixIdx = findCol(['แก้ไข']);
-            const oldSnPbIdx = findCol(['S/N เก่า PB']);
-            const newSnPbIdx = findCol(['S/N ใหม่ PB']);
-            const oldSnOnuIdx = findCol(['S/N เก่า ONU']);
-            const newSnOnuIdx = findCol(['S/N ใหม่ ONU']);
-            const oldSnWifiIdx = findCol(['S/N เก่า WiFi']);
-            const newSnWifiIdx = findCol(['S/N ใหม่ WiFi']);
-            const sourceIdx = findCol(['ต้นทาง']);
-            const destIdx = findCol(['ปลายทาง']);
-            const distanceIdx = findCol(['ระยะทาง']);
-            const oilPriceIdx = findCol(['ราคาน้ำมัน/ลิตร']);
-            const oilCostIdx = findCol(['ต้นทุนราคาน้ำมันที่ใช้']);
-            const remarkIdx = findCol(['หมายเหตุ']);
 
-            if (nonIdx === -1) throw new Error('ไฟล์ Excel ขาดหัวคอลัมน์สำคัญ (NON/รหัสงาน)');
+            if (nonIdx === -1) throw new Error('ไฟล์ Excel ขาดหัวคอลัมน์ NON');
 
             const parsedJobs = [];
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
-                if (row[nonIdx]) {
-                    
-                    let planDate = dateIdx !== -1 ? row[dateIdx] : null;
-                    if (planDate && !isNaN(planDate) && String(planDate).indexOf('-') === -1 && String(planDate).indexOf('/') === -1) {
-                        const dateObj = new Date((planDate - 25569) * 86400 * 1000);
-                        planDate = dateObj.toISOString().split('T')[0];
-                    } else if (planDate && typeof planDate === 'string') {
-                        planDate = planDate.trim().split(' ')[0];
-                        if (planDate.includes('/')) {
-                            let parts = planDate.split('/');
-                            if (parts.length === 3 && parts[2].length === 4) {
-                                planDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                            }
+                if (!row[nonIdx]) continue;
+
+                let planDate = dateIdx !== -1 ? row[dateIdx] : null;
+                if (planDate && !isNaN(planDate) && String(planDate).indexOf('-') === -1 && String(planDate).indexOf('/') === -1) {
+                    const dateObj = new Date((planDate - 25569) * 86400 * 1000);
+                    planDate = dateObj.toISOString().split('T')[0];
+                } else if (planDate && typeof planDate === 'string') {
+                    planDate = planDate.trim().split(' ')[0];
+                    if (planDate.includes('/')) {
+                        const parts = planDate.split('/');
+                        if (parts.length === 3 && parts[2].length === 4) {
+                            planDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
                         }
                     }
-
-                    parsedJobs.push({
-                        plan_arrival_date: planDate || null,
-                        order_no: orderNoIdx !== -1 ? String(row[orderNoIdx] || '') : '',
-                        access_no: String(row[nonIdx] || ''),
-                        customer: customerIdx !== -1 ? String(row[customerIdx] || '') : '',
-                        lat: latIdx !== -1 ? String(row[latIdx] || '').replace(/[^0-9.-]/g, '') : null,
-                        lng: lngIdx !== -1 ? String(row[lngIdx] || '').replace(/[^0-9.-]/g, '') : null,
-                        subdistrict: subdistrictIdx !== -1 ? String(row[subdistrictIdx] || '') : '',
-                        district: districtIdx !== -1 ? String(row[districtIdx] || '') : '',
-                        address: addressIdx !== -1 ? String(row[addressIdx] || '') : '',
-                        phone: phoneIdx !== -1 ? String(row[phoneIdx] || '') : '',
-                        install_technician: techIdx !== -1 ? String(row[techIdx] || '') : '',
-                        ais: aisIdx !== -1 ? String(row[aisIdx] || '') : '',
-                        provider_3bb: bbIdx !== -1 ? String(row[bbIdx] || '') : '',
-                        price: priceIdx !== -1 ? String(row[priceIdx] || '') : '',
-                        electricity_activity: electricityIdx !== -1 ? String(row[electricityIdx] || '') : '',
-                        checkin_photo: checkinIdx !== -1 ? String(row[checkinIdx] || '') : '',
-                        photo_taking: photoIdx !== -1 ? String(row[photoIdx] || '') : '',
-                        close_job_2100: close21Idx !== -1 ? String(row[close21Idx] || '') : '',
-                        notify_repair_sp: spIdx !== -1 ? String(row[spIdx] || '') : '',
-                        close_note_not_match_soa: soaIdx !== -1 ? String(row[soaIdx] || '') : '',
-                        signal_after_online: signalIdx !== -1 ? String(row[signalIdx] || '') : '',
-                        power_rx: powerRxIdx !== -1 ? String(row[powerRxIdx] || '') : '',
-                        line_bot_photo: lineBotPhotoIdx !== -1 ? String(row[lineBotPhotoIdx] || '') : '',
-                        close_node_1200: close12Idx !== -1 ? String(row[close12Idx] || '') : '',
-                        splice_cable: spliceIdx !== -1 ? String(row[spliceIdx] || '') : '',
-                        sleeve_shrink_tube: sleeveIdx !== -1 ? String(row[sleeveIdx] || '') : '',
-                        drop_wire_clamp: dropwireIdx !== -1 ? String(row[dropwireIdx] || '') : '',
-                        patch_cord_out: patchCordIdx !== -1 ? String(row[patchCordIdx] || '') : '',
-                        lan: lanIdx !== -1 ? String(row[lanIdx] || '') : '',
-                        request_lmr: lmrIdx !== -1 ? String(row[lmrIdx] || '') : '',
-                        splice_new: spliceNewIdx !== -1 ? String(row[spliceNewIdx] || '') : '',
-                        ma_mat: maMatIdx !== -1 ? String(row[maMatIdx] || '') : '',
-                        insect_bites_cable: insectIdx !== -1 ? String(row[insectIdx] || '') : '',
-                        install_date: installDateIdx !== -1 ? String(row[installDateIdx] || '') : '',
-                        install_cable_length: installDistIdx !== -1 ? String(row[installDistIdx] || '') : '',
-                        line_bot: lineBotIdx !== -1 ? String(row[lineBotIdx] || '') : '',
-                        cause: causeIdx !== -1 ? String(row[causeIdx] || '') : '',
-                        fix_action: fixIdx !== -1 ? String(row[fixIdx] || '') : '',
-                        old_sn_pb: oldSnPbIdx !== -1 ? String(row[oldSnPbIdx] || '') : '',
-                        new_sn_pb: newSnPbIdx !== -1 ? String(row[newSnPbIdx] || '') : '',
-                        old_sn_onu_router: oldSnOnuIdx !== -1 ? String(row[oldSnOnuIdx] || '') : '',
-                        new_sn_onu_router: newSnOnuIdx !== -1 ? String(row[newSnOnuIdx] || '') : '',
-                        old_sn_wifi: oldSnWifiIdx !== -1 ? String(row[oldSnWifiIdx] || '') : '',
-                        new_sn_wifi: newSnWifiIdx !== -1 ? String(row[newSnWifiIdx] || '') : '',
-                        source: sourceIdx !== -1 ? String(row[sourceIdx] || '') : '',
-                        destination: destIdx !== -1 ? String(row[destIdx] || '') : '',
-                        distance: distanceIdx !== -1 ? String(row[distanceIdx] || '') : '',
-                        oil_price_per_liter: oilPriceIdx !== -1 ? String(row[oilPriceIdx] || '') : '',
-                        oil_cost: oilCostIdx !== -1 ? String(row[oilCostIdx] || '') : '',
-                        remark: remarkIdx !== -1 ? String(row[remarkIdx] || '') : '',
-                        status: 'Pending'
-                    });
                 }
+
+                parsedJobs.push({
+                    plan_arrival_date: planDate || null,
+                    access_no: String(row[nonIdx] || '').trim(),
+                    customer: customerIdx !== -1 ? String(row[customerIdx] || '').trim() : '',
+                    phone: phoneIdx !== -1 ? String(row[phoneIdx] || '').trim() : '',
+                    symptoms: symptomsIdx !== -1 ? String(row[symptomsIdx] || '').trim() : '',
+                    address: addressIdx !== -1 ? String(row[addressIdx] || '').trim() : '',
+                    team_name: teamIdx !== -1 ? String(row[teamIdx] || '').trim() : '',
+                    area_provider: areaIdx !== -1 ? String(row[areaIdx] || '').trim() : '',
+                    job_time: timeIdx !== -1 ? String(row[timeIdx] || '').trim() : '',
+                    remark: remarkIdx !== -1 ? String(row[remarkIdx] || '').trim() : ''
+                });
             }
 
             if (parsedJobs.length === 0) throw new Error('ไม่พบข้อมูลงาน MA');
 
             showLoader('บันทึกข้อมูลเข้าระบบ...');
-            const res = await fetch('api/dispatch/upload_ma_jobs.php', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ jobs: parsedJobs }) 
+            const res = await fetch('api/dispatch/upload_ma_jobs.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ jobs: parsedJobs })
             });
             const rData = await res.json();
             if (rData.success) {
-                Swal.fire({ title: 'สำเร็จ', text: `นำเข้า MA ${rData.imported} งานเรียบร้อย!`, icon: 'success' });
+                Swal.fire({ title: 'สำเร็จ', text: rData.message || `นำเข้า MA ${rData.imported} งานเรียบร้อย!`, icon: 'success' });
                 loadJobs();
             } else {
                 throw new Error(rData.error);
@@ -1749,6 +1712,109 @@ function processMAExcel(file) {
         }
     };
     reader.readAsArrayBuffer(file);
+}
+
+// ==========================================
+// MA JOB COMPLETION
+// ==========================================
+window.openMaCompleteModal = function(jobId) {
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    if (!job) return;
+    document.getElementById('maCompleteJobId').value = jobId;
+    document.getElementById('maCompleteJobLabel').textContent = `${job.access_no} — ${job.customer || 'ไม่ระบุชื่อ'}`;
+    document.getElementById('maProofImages').value = '';
+    document.getElementById('maCompleteRemark').value = '';
+    document.getElementById('maCompleteModal')?.classList.remove('hidden');
+};
+
+window.closeMaCompleteModal = function() {
+    document.getElementById('maCompleteModal')?.classList.add('hidden');
+};
+
+window.submitMaCompleteJob = async function() {
+    const jobId = document.getElementById('maCompleteJobId')?.value;
+    const files = document.getElementById('maProofImages')?.files;
+    if (!jobId || !files || files.length === 0) {
+        Swal.fire('แจ้งเตือน', 'กรุณาอัปโหลดรูปภาพหลักฐาน', 'warning');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('job_id', jobId);
+    formData.append('status', 'completed');
+    formData.append('remark', document.getElementById('maCompleteRemark')?.value || '');
+    for (let i = 0; i < files.length; i++) {
+        formData.append('proof_images[]', files[i]);
+    }
+
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    try {
+        const res = await fetch(getApiUrl('api/dispatch/update_ma_job_status.php'), { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+            closeMaCompleteModal();
+            Swal.fire({ title: 'สำเร็จ', text: data.message, icon: 'success', timer: 2000, showConfirmButton: false });
+            loadJobs();
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (e) {
+        Swal.fire('ข้อผิดพลาด', e.message, 'error');
+    }
+};
+
+async function postMaJobStatusUpdate(payload) {
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    try {
+        const formData = new FormData();
+        formData.append('job_id', payload.job_id);
+        formData.append('status', payload.status);
+        formData.append('remark', payload.remark || '');
+        if (payload.reschedule_date) formData.append('reschedule_date', payload.reschedule_date);
+
+        const res = await fetch(getApiUrl('api/dispatch/update_ma_job_status.php'), { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire({ title: 'สำเร็จ', text: data.message, icon: 'success', timer: 2200, showConfirmButton: false });
+            loadJobs();
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (e) {
+        Swal.fire('ข้อผิดพลาด', e.message || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์', 'error');
+    }
+}
+
+(function wrapCompleteJobModal() {
+    const orig = window.openCompleteJobModal;
+    window.openCompleteJobModal = function(jobId) {
+        if (currentJobType === 'ma') {
+            openMaCompleteModal(jobId);
+            return;
+        }
+        if (typeof orig === 'function') orig(jobId);
+    };
+})();
+
+function maJobExtraHtml(job) {
+    if (currentJobType !== 'ma') return '';
+    let html = '';
+    if (hasValue(job.job_time)) html += detailItem('เวลา', job.job_time);
+    if (hasValue(job.symptoms)) {
+        html += `<div class="rounded-lg bg-amber-50 border border-amber-100 p-3 col-span-full">
+            <div class="text-[9px] font-black text-amber-600 uppercase">อาการ</div>
+            <div class="text-[12px] font-bold text-amber-800 mt-1">${displayValue(job.symptoms)}</div></div>`;
+    }
+    if (hasValue(job.area_provider)) html += detailItem('พื้นที่', job.area_provider);
+    if (job.team_match_status === 'unmatched' && typeof IS_ADMIN !== 'undefined' && IS_ADMIN) {
+        html += `<div class="rounded-lg bg-rose-50 border border-rose-200 p-2 col-span-full text-[11px] font-bold text-rose-700">
+            ⚠ ทีม "${displayValue(job.team_name_import)}" ไม่ตรงในระบบ — กรุณาเลือกทีมใหม่</div>`;
+    }
+    return html;
+}
+
+function canActOnMaJob(job) {
+    return job.team_id || job.assigned_user_id;
 }
 
 // ==========================================

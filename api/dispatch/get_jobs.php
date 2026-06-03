@@ -15,6 +15,7 @@ register_shutdown_function(function() {
 
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+require_once '../../config/ma_job.php';
 
 header('Content-Type: application/json');
 
@@ -33,6 +34,7 @@ $filter_date = $_GET['date'] ?? 'all';
 $filter_status = $_GET['status'] ?? 'active'; 
 
 try {
+    ensureMaJobSchema($pdo);
     // 🌟 3. ย้ายคำสั่ง SQL ชุดนี้มาไว้ใน try...catch เพื่อป้องกันระบบแครช
     $team_id = null;
     if ($user_id) {
@@ -42,7 +44,29 @@ try {
     }
 
     $jobType = $_GET['type'] ?? 'jobs';
-    $table = ($jobType === 'ma') ? 'ma_jobs' : 'jobs';
+    $isMa = ($jobType === 'ma');
+
+    if ($isMa) {
+        if (!canViewDispatchMA()) {
+            echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์ดูงาน MA']);
+            exit;
+        }
+        if (!hasRole(['admin', 'super_admin']) && !hasRole('ma_technician')) {
+            echo json_encode(['success' => false, 'error' => 'บัญชีนี้ไม่มีบทบาทช่าง MA']);
+            exit;
+        }
+    } else {
+        if (!canViewDispatchOffice()) {
+            echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์ดูงาน Office']);
+            exit;
+        }
+        if (!hasRole(['admin', 'super_admin']) && !hasRole('technician')) {
+            echo json_encode(['success' => false, 'error' => 'บัญชีนี้ไม่มีบทบาทช่าง Office']);
+            exit;
+        }
+    }
+
+    $table = $isMa ? 'ma_jobs' : 'jobs';
 
     $sql = "SELECT j.*, t.team_name 
             FROM {$table} j 
@@ -50,14 +74,27 @@ try {
             WHERE 1=1";
     $params = [];
 
-    if ($role === 'technician') {
-        if ($team_id) {
-            $sql .= " AND (j.team_id = ? OR t.team_name = ?)";
-            $params[] = $team_id;
-            $params[] = $username;
-        } else {
-            $sql .= " AND t.team_name = ?";
-            $params[] = $username;
+    if (!hasRole(['admin', 'super_admin'])) {
+        if ($isMa && hasRole('ma_technician')) {
+            if ($team_id) {
+                $sql .= " AND (j.team_id = ? OR t.team_name = ? OR j.assigned_user_id = ?)";
+                $params[] = $team_id;
+                $params[] = $username;
+                $params[] = $user_id;
+            } else {
+                $sql .= " AND (t.team_name = ? OR j.assigned_user_id = ?)";
+                $params[] = $username;
+                $params[] = $user_id;
+            }
+        } elseif (!$isMa && hasRole('technician')) {
+            if ($team_id) {
+                $sql .= " AND (j.team_id = ? OR t.team_name = ?)";
+                $params[] = $team_id;
+                $params[] = $username;
+            } else {
+                $sql .= " AND t.team_name = ?";
+                $params[] = $username;
+            }
         }
     }
 
@@ -77,37 +114,65 @@ try {
     $stmt->execute($params);
     $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // ข้อมูลเลื่อนนัดล่าสุด (แสดง badge บนการ์ดงาน)
-    try {
-        $jobIds = array_column($jobs, 'id');
-        if (!empty($jobIds)) {
-            $ph = implode(',', array_fill(0, count($jobIds), '?'));
-            $rsStmt = $pdo->prepare("
-                SELECT jr.job_id, jr.previous_plan_date, jr.new_plan_date, jr.created_at
-                FROM job_reschedules jr
-                INNER JOIN (
-                    SELECT job_id, MAX(id) AS max_id
-                    FROM job_reschedules
-                    WHERE job_id IN ($ph)
-                    GROUP BY job_id
-                ) latest ON latest.max_id = jr.id
-            ");
-            $rsStmt->execute($jobIds);
-            $rsMap = [];
-            foreach ($rsStmt->fetchAll(PDO::FETCH_ASSOC) as $rs) {
-                $rsMap[(int)$rs['job_id']] = $rs;
-            }
-            foreach ($jobs as &$jobRow) {
-                $jid = (int)$jobRow['id'];
-                if (isset($rsMap[$jid])) {
-                    $jobRow['last_reschedule_from'] = $rsMap[$jid]['previous_plan_date'];
-                    $jobRow['last_reschedule_to'] = $rsMap[$jid]['new_plan_date'];
+    // ข้อมูลเลื่อนนัด (เฉพาะงาน Office)
+    if (!$isMa) {
+        try {
+            $jobIds = array_column($jobs, 'id');
+            if (!empty($jobIds)) {
+                $ph = implode(',', array_fill(0, count($jobIds), '?'));
+                $rsStmt = $pdo->prepare("
+                    SELECT jr.job_id, jr.previous_plan_date, jr.new_plan_date, jr.created_at
+                    FROM job_reschedules jr
+                    INNER JOIN (
+                        SELECT job_id, MAX(id) AS max_id
+                        FROM job_reschedules
+                        WHERE job_id IN ($ph)
+                        GROUP BY job_id
+                    ) latest ON latest.max_id = jr.id
+                ");
+                $rsStmt->execute($jobIds);
+                $rsMap = [];
+                foreach ($rsStmt->fetchAll(PDO::FETCH_ASSOC) as $rs) {
+                    $rsMap[(int)$rs['job_id']] = $rs;
                 }
+                foreach ($jobs as &$jobRow) {
+                    $jid = (int)$jobRow['id'];
+                    if (isset($rsMap[$jid])) {
+                        $jobRow['last_reschedule_from'] = $rsMap[$jid]['previous_plan_date'];
+                        $jobRow['last_reschedule_to'] = $rsMap[$jid]['new_plan_date'];
+                    }
+                }
+                unset($jobRow);
             }
-            unset($jobRow);
-        }
-    } catch (Exception $e) {
-        // ตาราง job_reschedules อาจยังไม่มี
+        } catch (Exception $e) {}
+    } else {
+        try {
+            $jobIds = array_column($jobs, 'id');
+            if (!empty($jobIds)) {
+                $ph = implode(',', array_fill(0, count($jobIds), '?'));
+                $rsStmt = $pdo->prepare("
+                    SELECT mr.ma_job_id AS job_id, mr.previous_plan_date, mr.new_plan_date, mr.created_at
+                    FROM ma_job_reschedules mr
+                    INNER JOIN (
+                        SELECT ma_job_id, MAX(id) AS max_id FROM ma_job_reschedules
+                        WHERE ma_job_id IN ($ph) GROUP BY ma_job_id
+                    ) latest ON latest.max_id = mr.id
+                ");
+                $rsStmt->execute($jobIds);
+                $rsMap = [];
+                foreach ($rsStmt->fetchAll(PDO::FETCH_ASSOC) as $rs) {
+                    $rsMap[(int)$rs['job_id']] = $rs;
+                }
+                foreach ($jobs as &$jobRow) {
+                    $jid = (int)$jobRow['id'];
+                    if (isset($rsMap[$jid])) {
+                        $jobRow['last_reschedule_from'] = $rsMap[$jid]['previous_plan_date'];
+                        $jobRow['last_reschedule_to'] = $rsMap[$jid]['new_plan_date'];
+                    }
+                }
+                unset($jobRow);
+            }
+        } catch (Exception $e) {}
     }
 
     $teams = [];

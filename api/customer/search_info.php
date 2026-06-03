@@ -2,9 +2,12 @@
 // api/customer/search_info.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+require_once '../../config/ma_job.php';
 
 header('Content-Type: application/json');
 requireRole(['admin', 'super_admin']);
+
+ensureMaJobSchema($pdo);
 
 $search = $_GET['q'] ?? '';
 $showAll = $_GET['all'] ?? 0;
@@ -121,6 +124,59 @@ try {
         
         $sd['images'] = $images;
         $customers[$id]['start_days'][] = $sd;
+    }
+
+    // Process MA customer history
+    try {
+        if ($showAll) {
+            $stmtMa = $pdo->query("
+                SELECT h.*, c.customer_name, c.phone, c.address, u.full_name AS tech_name, t.team_name
+                FROM ma_customer_history h
+                LEFT JOIN ma_customers c ON c.id = h.customer_id
+                LEFT JOIN users u ON u.id = h.tech_id
+                LEFT JOIN teams t ON t.id = h.team_id
+                ORDER BY h.created_at DESC LIMIT 300
+            ");
+        } else {
+            $stmtMa = $pdo->prepare("
+                SELECT h.*, c.customer_name, c.phone, c.address, u.full_name AS tech_name, t.team_name
+                FROM ma_customer_history h
+                LEFT JOIN ma_customers c ON c.id = h.customer_id
+                LEFT JOIN users u ON u.id = h.tech_id
+                LEFT JOIN teams t ON t.id = h.team_id
+                WHERE h.non_number LIKE ? OR c.customer_name LIKE ? OR c.phone LIKE ?
+                ORDER BY h.created_at DESC
+            ");
+            $stmtMa->execute([$searchTerm, $searchTerm, $searchTerm]);
+        }
+        if ($showAll) {
+            $maHistory = $stmtMa->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            $maHistory = $stmtMa->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        foreach ($maHistory as $mh) {
+            $id = $mh['non_number'] ?: 'UNKNOWN_MA_' . uniqid();
+            if (!isset($customers[$id])) {
+                $customers[$id] = [
+                    'id' => $id,
+                    'customer_name' => $mh['customer_name'],
+                    'phone' => $mh['phone'],
+                    'address' => $mh['address'],
+                    'package' => '',
+                    'product' => '',
+                    'jobs' => [],
+                    'start_days' => [],
+                    'ma_history' => []
+                ];
+            }
+            if (!isset($customers[$id]['ma_history'])) {
+                $customers[$id]['ma_history'] = [];
+            }
+            $customers[$id]['ma_history'][] = $mh;
+        }
+    } catch (Exception $e) {
+        // ตาราง MA อาจยังไม่มี
     }
 
     // Convert to indexed array

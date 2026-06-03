@@ -2,6 +2,7 @@
 // api/users/save_user.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+require_once '../../config/ma_job.php';
 
 header('Content-Type: application/json');
 requireLogin();
@@ -11,25 +12,33 @@ if (!hasRole('super_admin')) {
     exit;
 }
 
+ensureMaJobSchema($pdo);
+
 $input = json_decode(file_get_contents('php://input'), true);
 $id = $input['id'] ?? null;
 $username = trim($input['username'] ?? '');
 $full_name = trim($input['full_name'] ?? '');
 $role = $input['role'] ?? 'technician';
+$roles = $input['roles'] ?? null;
 $password = $input['password'] ?? '';
 $team_id = $input['team_id'] ?? null;
 $allow_late_time = $input['allow_late_time'] ?? '08:30';
 
-// แปลง team_id เป็น null ถ้าค่าว่างหรือ "none"
+if (is_array($roles) && !empty($roles)) {
+    $role = $roles[0];
+} elseif (!is_array($roles)) {
+    $roles = [$role];
+}
+
 if (empty($team_id) || $team_id === 'none' || $team_id === '') {
     $team_id = null;
 } else {
     $team_id = (int)$team_id;
 }
 
-// ตัดสินใจว่าใช้ allow_late_time หรือไม่ (สำหรับ sales, technician และ intern)
-if ($role !== 'sales' && $role !== 'technician' && $role !== 'intern') {
-    $allow_late_time = '08:30'; // ค่าเริ่มต้น
+$needsLateTime = count(array_intersect($roles, ['sales', 'technician', 'ma_technician', 'intern'])) > 0;
+if (!$needsLateTime) {
+    $allow_late_time = '08:30';
 }
 
 if (empty($username) || empty($full_name)) {
@@ -38,34 +47,34 @@ if (empty($username) || empty($full_name)) {
 }
 
 try {
-    // 🛠️ อัปเดต ENUM ทันทีก่อนบันทึก เพื่อแก้ปัญหาฐานข้อมูลไม่ยอมรับค่า 'intern'
     try {
-        $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('super_admin', 'admin', 'technician', 'sales', 'intern') NOT NULL DEFAULT 'technician'");
-    } catch (Exception $e) {
-        // เงียบไว้ถ้าไม่สำเร็จ แต่ปกติควรจะผ่าน
-    }
+        $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('super_admin', 'admin', 'technician', 'ma_technician', 'sales', 'intern') NOT NULL DEFAULT 'technician'");
+    } catch (Exception $e) {}
 
     if ($id) {
-        // Update
+        $primaryRole = saveUserRoles($pdo, (int)$id, $roles);
+
         if (!empty($password)) {
             $hash = password_hash($password, PASSWORD_DEFAULT);
             $stmt = $pdo->prepare("UPDATE users SET username = ?, full_name = ?, role = ?, password_hash = ?, team_id = ?, allow_late_time = ? WHERE id = ?");
-            $stmt->execute([$username, $full_name, $role, $hash, $team_id, $allow_late_time, $id]);
+            $stmt->execute([$username, $full_name, $primaryRole, $hash, $team_id, $allow_late_time, $id]);
         } else {
             $stmt = $pdo->prepare("UPDATE users SET username = ?, full_name = ?, role = ?, team_id = ?, allow_late_time = ? WHERE id = ?");
-            $stmt->execute([$username, $full_name, $role, $team_id, $allow_late_time, $id]);
+            $stmt->execute([$username, $full_name, $primaryRole, $team_id, $allow_late_time, $id]);
         }
         echo json_encode(['success' => true, 'message' => 'ปรับปรุงข้อมูลผู้ใช้สำเร็จ']);
     } else {
-        // Insert
         if (empty($password)) {
             echo json_encode(['success' => false, 'error' => 'กรุณากำหนดรหัสผ่านสำหรับผู้ใช้ใหม่']);
             exit;
         }
-        
+
+        $primaryRole = $roles[0] ?? 'technician';
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("INSERT INTO users (username, full_name, role, password_hash, team_id, allow_late_time) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$username, $full_name, $role, $hash, $team_id, $allow_late_time]);
+        $stmt->execute([$username, $full_name, $primaryRole, $hash, $team_id, $allow_late_time]);
+        $newId = (int)$pdo->lastInsertId();
+        saveUserRoles($pdo, $newId, $roles);
         echo json_encode(['success' => true, 'message' => 'เพิ่มผู้ใช้ใหม่สำเร็จ']);
     }
 } catch (PDOException $e) {

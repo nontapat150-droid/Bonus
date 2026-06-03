@@ -1,13 +1,16 @@
 // assets/js/checkin.js
 let checkinData = [];
+let activeCheckinTab = window.SHOW_REGULAR ? 'regular' : 'ma';
 
 document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('checkinForm');
-    const fileInput = document.getElementById('checkin_image');
-    const imagePreview = document.getElementById('imagePreview');
-    const uploadPrompt = document.getElementById('uploadPrompt');
-    const timeDisplay = document.getElementById('currentTime');
-    const submitBtn = document.getElementById('submitBtn');
+    if (!window.SHOW_REGULAR && window.SHOW_MA) {
+        activeCheckinTab = 'ma';
+        switchCheckinTab('ma');
+    }
+
+    initRegularCheckin();
+    initMaCheckin();
+    loadMaSettings();
 
     // ตั้งค่าเดือนปัจจุบัน
     const now = new Date();
@@ -19,14 +22,31 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     loadCheckinHistory();
 
-    if(timeDisplay) {
+    if(document.getElementById('filterDate')) {
+        document.getElementById('filterDate').addEventListener('change', function() { document.getElementById('filterMonth').value = ''; });
+    }
+    if(document.getElementById('filterMonth')) {
+        document.getElementById('filterMonth').addEventListener('change', function() { document.getElementById('filterDate').value = ''; });
+    }
+});
+
+function initRegularCheckin() {
+    const form = document.getElementById('checkinForm');
+    const fileInput = document.getElementById('checkin_image');
+    const imagePreview = document.getElementById('imagePreview');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const timeDisplay = document.getElementById('currentTime');
+    const submitBtn = document.getElementById('submitBtn');
+
+    if (!form) return;
+
+    if (timeDisplay) {
         setInterval(() => {
             timeDisplay.textContent = new Date().toLocaleTimeString('th-TH');
         }, 1000);
     }
 
-    // ฟังก์ชันโชว์รูปเวลาจะกดเช็คอิน
-    if(fileInput) {
+    if (fileInput) {
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -35,8 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     fileInput.value = ''; return;
                 }
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    imagePreview.src = e.target.result;
+                reader.onload = (ev) => {
+                    imagePreview.src = ev.target.result;
                     imagePreview.classList.remove('hidden');
                     uploadPrompt.classList.add('hidden');
                 };
@@ -45,9 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // กดยืนยันเช็คอินเข้างาน
-    if(form) {
-        form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!fileInput.files[0]) return Toast.error('กรุณาถ่ายรูปเช็คอิน');
 
@@ -90,9 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 submitBtn.innerHTML = '✅ ยืนยันการเช็คอิน';
             }
         });
-    }
 
-    // ดูตัวอย่างรูปในหน้าต่างแก้ไข
     const editImageInput = document.getElementById('edit_checkin_image');
     if (editImageInput) {
         editImageInput.addEventListener('change', (e) => {
@@ -121,15 +137,150 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.readAsDataURL(file);
         });
     }
+}
 
-    // ตัวกรองเวลา
-    if(document.getElementById('filterDate')) {
-        document.getElementById('filterDate').addEventListener('change', function() { document.getElementById('filterMonth').value = ''; });
+function initMaCheckin() {
+    const form = document.getElementById('maCheckinForm');
+    const fileInput = document.getElementById('ma_checkin_image');
+    const imagePreview = document.getElementById('maImagePreview');
+    const uploadPrompt = document.getElementById('maUploadPrompt');
+    const timeDisplay = document.getElementById('maCurrentTime');
+    const submitBtn = document.getElementById('maSubmitBtn');
+
+    if(timeDisplay) {
+        setInterval(() => {
+            timeDisplay.textContent = new Date().toLocaleTimeString('th-TH');
+        }, 1000);
     }
-    if(document.getElementById('filterMonth')) {
-        document.getElementById('filterMonth').addEventListener('change', function() { document.getElementById('filterDate').value = ''; });
+
+    if(fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.type.startsWith('image/')) {
+                    Toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+                    fileInput.value = ''; return;
+                }
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    imagePreview.src = ev.target.result;
+                    imagePreview.classList.remove('hidden');
+                    uploadPrompt.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
     }
-});
+
+    if(form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!fileInput.files[0]) return Toast.error('กรุณาถ่ายรูปเช็คอิน MA');
+
+            Loader.show();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'กำลังบันทึก...';
+
+            try {
+                const response = await fetch('api/checkin/ma_submit.php', { method: 'POST', body: new FormData(form) });
+                const result = await response.json();
+
+                if (result.success) {
+                    Swal.fire({
+                        title: result.is_late ? 'เช็คอินแล้ว (มาสาย)' : 'เช็คอินสำเร็จ!',
+                        text: result.message,
+                        icon: result.is_late ? 'warning' : 'success',
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: result.is_late ? '#f59e0b' : '#7c3aed',
+                        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                    });
+                    form.reset();
+                    imagePreview.src = '';
+                    imagePreview.classList.add('hidden');
+                    uploadPrompt.classList.remove('hidden');
+                    loadCheckinHistory();
+                } else {
+                    Toast.error(result.error);
+                }
+            } catch (error) {
+                Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว');
+            } finally {
+                Loader.hide();
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '✅ ยืนยันเช็คอิน MA';
+            }
+        });
+    }
+}
+
+window.switchCheckinTab = function(tab) {
+    activeCheckinTab = tab;
+    const panelRegular = document.getElementById('panelRegular');
+    const panelMa = document.getElementById('panelMa');
+    const tabRegular = document.getElementById('tabRegular');
+    const tabMa = document.getElementById('tabMa');
+
+    if (panelRegular) panelRegular.classList.toggle('hidden', tab !== 'regular');
+    if (panelMa) panelMa.classList.toggle('hidden', tab !== 'ma');
+
+    if (tabRegular) {
+        tabRegular.classList.toggle('bg-indigo-600', tab === 'regular');
+        tabRegular.classList.toggle('text-white', tab === 'regular');
+        tabRegular.classList.toggle('text-indigo-600', tab !== 'regular');
+    }
+    if (tabMa) {
+        tabMa.classList.toggle('bg-violet-600', tab === 'ma');
+        tabMa.classList.toggle('text-white', tab === 'ma');
+        tabMa.classList.toggle('text-violet-600', tab !== 'ma');
+    }
+
+    const historyTitle = document.getElementById('historyTitle');
+    if (historyTitle) historyTitle.textContent = tab === 'ma' ? 'ประวัติเช็คอิน MA' : 'ประวัติเช็คอิน';
+
+    loadCheckinHistory();
+};
+
+async function loadMaSettings() {
+    try {
+        const res = await fetch('api/checkin/ma_settings.php');
+        const data = await res.json();
+        if (data.success) {
+            const t = data.late_time || '08:30';
+            const input = document.getElementById('maLateTimeInput');
+            if (input) input.value = t;
+            ['maDeadlineDisplay', 'maDeadlineDisplayRo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = t;
+            });
+        }
+    } catch (e) {}
+}
+
+window.saveMaSettings = async function() {
+    if (!window.IS_SUPER_ADMIN) return Toast.error('เฉพาะผู้ดูแลระบบเท่านั้น');
+    const time = document.getElementById('maLateTimeInput')?.value;
+    if (!time) return Toast.error('กรุณาระบุเวลา');
+
+    Loader.show();
+    try {
+        const res = await fetch('api/checkin/ma_settings.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ late_time: time })
+        });
+        const data = await res.json();
+        Loader.hide();
+        if (data.success) {
+            Swal.fire({ title: 'บันทึกสำเร็จ', text: data.message, icon: 'success', timer: 2000, showConfirmButton: false, customClass: { popup: 'rounded-3xl' } });
+            loadMaSettings();
+        } else {
+            Swal.fire('ข้อผิดพลาด', data.error, 'error');
+        }
+    } catch (e) {
+        Loader.hide();
+        Toast.error('เชื่อมต่อล้มเหลว');
+    }
+};
 
 // โหลดข้อมูลตาราง
 async function loadCheckinHistory() {
@@ -137,16 +288,21 @@ async function loadCheckinHistory() {
     const fMonth = document.getElementById('filterMonth').value;
     
     const dashLabel = document.getElementById('dashLabel');
-    if(fDate) dashLabel.textContent = `วันที่ ${new Date(fDate).toLocaleDateString('th-TH')}`;
+    const prefix = activeCheckinTab === 'ma' ? 'MA · ' : '';
+    if(fDate) dashLabel.textContent = `${prefix}วันที่ ${new Date(fDate).toLocaleDateString('th-TH')}`;
     else if(fMonth) {
         const d = new Date(fMonth + '-01');
-        dashLabel.textContent = `เดือน ${d.toLocaleString('th-TH', {month:'long', year:'numeric'})}`;
-    } else dashLabel.textContent = 'ทั้งหมด';
+        dashLabel.textContent = `${prefix}เดือน ${d.toLocaleString('th-TH', {month:'long', year:'numeric'})}`;
+    } else dashLabel.textContent = activeCheckinTab === 'ma' ? 'MA · ทั้งหมด' : 'ทั้งหมด';
 
     document.getElementById('historyTableBody').innerHTML = '<tr class="block md:table-row"><td colspan="5" class="text-center py-8 block md:table-cell">กำลังโหลดข้อมูล...</td></tr>';
     
+    const apiUrl = activeCheckinTab === 'ma'
+        ? `api/checkin/ma_get_history.php?date=${fDate}&month=${fMonth}`
+        : `api/checkin/get_history.php?date=${fDate}&month=${fMonth}`;
+
     try {
-        const res = await fetch(`api/checkin/get_history.php?date=${fDate}&month=${fMonth}`);
+        const res = await fetch(apiUrl);
         const data = await res.json();
         
         if(data.success) {
@@ -185,11 +341,11 @@ function renderTable(records) {
             : `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">ตรงเวลา</span>`;
 
         const imageCell = item.image_path
-            ? `<a href="assets/uploads/checkins/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/checkins/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence"></a>`
+            ? `<a href="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence"></a>`
             : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`;
 
-        const canEdit = ['super_admin', 'admin', 'technician', 'sales'].includes(window.USER_ROLE);
-        const canDelete = window.USER_ROLE === 'super_admin';
+        const canEdit = activeCheckinTab !== 'ma' && ['super_admin', 'admin', 'technician', 'sales'].includes(window.USER_ROLE);
+        const canDelete = activeCheckinTab !== 'ma' && window.USER_ROLE === 'super_admin';
 
         let actionHtml = `<div class="flex justify-end md:justify-center gap-2">`;
         if (canEdit) {
