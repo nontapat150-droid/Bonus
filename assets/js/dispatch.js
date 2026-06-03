@@ -159,6 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('dispatchViewJobsBtn')?.addEventListener('click', () => switchDispatchView('jobs'));
     document.getElementById('dispatchViewMABtn')?.addEventListener('click', () => switchDispatchView('ma'));
     document.getElementById('dispatchViewMapBtn')?.addEventListener('click', () => switchDispatchView('map'));
+    document.getElementById('dispatchViewRescheduleBtn')?.addEventListener('click', () => switchDispatchView('reschedule'));
     document.getElementById('navigateSelectedBtn')?.addEventListener('click', handleNavigateSelected);
     document.getElementById('selectAllJobs')?.addEventListener('change', handleSelectAll);
 
@@ -188,30 +189,38 @@ function switchDispatchView(view) {
     if (view === 'jobs' || view === 'ma') {
         currentJobType = view;
         activeDispatchView = 'list';
+    } else if (view === 'reschedule') {
+        activeDispatchView = 'reschedule';
     } else {
         activeDispatchView = 'map';
     }
     
     const jobsPanel = document.getElementById('jobViewPanel');
     const mapPanel = document.getElementById('mapViewPanel');
+    const reschedulePanel = document.getElementById('rescheduleHistoryPanel');
     const jobsBtn = document.getElementById('dispatchViewJobsBtn');
     const maBtn = document.getElementById('dispatchViewMABtn');
     const mapBtn = document.getElementById('dispatchViewMapBtn');
+    const rescheduleBtn = document.getElementById('dispatchViewRescheduleBtn');
 
-    jobsPanel?.classList.toggle('hidden', activeDispatchView === 'map');
+    jobsPanel?.classList.toggle('hidden', activeDispatchView !== 'list');
     mapPanel?.classList.toggle('hidden', activeDispatchView !== 'map');
+    reschedulePanel?.classList.toggle('hidden', activeDispatchView !== 'reschedule');
     
     jobsBtn?.classList.toggle('is-active', view === 'jobs');
     if (maBtn) maBtn.classList.toggle('is-active', view === 'ma');
     mapBtn?.classList.toggle('is-active', view === 'map');
+    if (rescheduleBtn) rescheduleBtn.classList.toggle('is-active', view === 'reschedule');
 
     const importBtn = document.querySelector('button[onclick="document.getElementById(\'jobExcelFile\').click()"]');
     if (importBtn) {
-        importBtn.style.display = (currentJobType === 'ma') ? 'none' : '';
+        importBtn.style.display = (view === 'ma' || view === 'reschedule') ? 'none' : '';
     }
 
     if (view === 'jobs' || view === 'ma') {
         loadJobs();
+    } else if (view === 'reschedule') {
+        if (typeof loadRescheduleHistory === 'function') loadRescheduleHistory();
     } else {
         renderUI();
     }
