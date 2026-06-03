@@ -49,11 +49,11 @@ try {
 
         // ค่าเริ่มต้นหากไม่ได้ตั้งไว้ (เผื่อไว้)
         if (!$allow_late_time) {
-            if (in_array($user_role, ['admin', 'super_admin', 'technician'])) {
-                $allow_late_time = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'late_time_admin_tech'")->fetchColumn() ?: '08:00:00';
-            } elseif ($user_role === 'sales') {
-                $allow_late_time = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'late_time_sales'")->fetchColumn() ?: '08:30:00';
-            } else {
+            if ($user_role) {
+                $setting_key = "late_time_" . $user_role;
+                $allow_late_time = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = '$setting_key'")->fetchColumn();
+            }
+            if (!$allow_late_time) {
                 $allow_late_time = '08:30:00';
             }
         }
