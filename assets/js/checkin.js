@@ -460,70 +460,90 @@ window.deleteCheckin = async function(id) {
 let currentRoleSettings = {};
 
 async function loadSettings() {
-    const roleSelect = document.getElementById('roleSelect');
-    const input = document.getElementById('lateTimeInput');
-    if(!roleSelect || !input) return;
-    
     try {
         const res = await fetch('api/checkin/settings.php');
         const data = await res.json();
-        if(data.success) {
-            currentRoleSettings = data.settings || {};
-            input.value = currentRoleSettings[roleSelect.value] || '08:30';
+        if(data.success && data.settings) {
+            currentRoleSettings = data.settings;
             
-            // เพิ่ม Event Listener เพื่อเปลี่ยนเวลาเมื่อสลับบทบาท
-            roleSelect.removeEventListener('change', handleRoleChange);
-            roleSelect.addEventListener('change', handleRoleChange);
+            // จัดกลุ่มบทบาทตามเวลา
+            const timeGroups = {};
+            for (const [role, time] of Object.entries(data.settings)) {
+                if (!timeGroups[time]) timeGroups[time] = [];
+                timeGroups[time].push(role);
+            }
+            
+            const uniqueTimes = Object.keys(timeGroups).sort();
+            
+            // รีเซ็ต Checkbox ทั้งหมดก่อน
+            document.querySelectorAll('.role-cb-1, .role-cb-2').forEach(cb => cb.checked = false);
+            
+            if (uniqueTimes.length > 0) {
+                const time1 = uniqueTimes[0];
+                const input1 = document.getElementById('lateTimeInput1');
+                if(input1) input1.value = time1;
+                timeGroups[time1].forEach(r => {
+                    const cb = document.querySelector(`.role-cb-1[value="${r}"]`);
+                    if(cb) cb.checked = true;
+                });
+            }
+            if (uniqueTimes.length > 1) {
+                const time2 = uniqueTimes[1];
+                const input2 = document.getElementById('lateTimeInput2');
+                if(input2) input2.value = time2;
+                timeGroups[time2].forEach(r => {
+                    const cb = document.querySelector(`.role-cb-2[value="${r}"]`);
+                    if(cb) cb.checked = true;
+                });
+            }
         }
     } catch(e) {}
 }
 
-function handleRoleChange(e) {
-    const input = document.getElementById('lateTimeInput');
-    if (input) {
-        input.value = currentRoleSettings[e.target.value] || '08:30';
-    }
-}
-
-window.saveSettings = async function() {
-    const roleSelect = document.getElementById('roleSelect');
-    const input = document.getElementById('lateTimeInput');
-    if(!roleSelect || !input) return;
+window.saveSettingsMulti = async function(rowNum) {
+    const timeInput = document.getElementById(`lateTimeInput${rowNum}`);
+    const time = timeInput ? timeInput.value : '';
     
-    const role = roleSelect.value;
-    const time = input.value;
+    const checkedBoxes = document.querySelectorAll(`.role-cb-${rowNum}:checked`);
+    const roles = Array.from(checkedBoxes).map(cb => cb.value);
     
+    if(roles.length === 0) return Toast.error('กรุณาเลือกอย่างน้อย 1 บทบาท');
     if(!time) return Toast.error('กรุณาระบุเวลา');
+    
     Loader.show();
     try {
         const res = await fetch('api/checkin/settings.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({late_time: time, role: role})
+            body: JSON.stringify({late_time: time, roles: roles})
         });
         const data = await res.json();
+        
+        Loader.hide(); // ต้องซ่อน Loader ก่อนเรียก Swal เพื่อไม่ให้มันไปปิด Swal
+        
         if(data.success) {
-            // ป๊อปอัปแจ้งเตือนสวยๆ
+            // ป๊อปอัปแจ้งเตือนสวยๆ มีดีเลย์ก่อนหาย
             Swal.fire({
                 title: 'บันทึกสำเร็จ!',
-                text: `อัปเดตเวลาเข้างานของตำแหน่ง ${roleSelect.options[roleSelect.selectedIndex].text} เรียบร้อยแล้ว`,
+                text: `อัปเดตเวลาเข้างานเรียบร้อยแล้ว`,
                 icon: 'success',
-                confirmButtonText: 'ตกลง',
-                confirmButtonColor: '#4f46e5',
+                timer: 2000,
+                timerProgressBar: true,
+                showConfirmButton: false,
                 customClass: {
-                    popup: 'rounded-3xl',
-                    confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md'
+                    popup: 'rounded-3xl'
                 }
+            }).then(() => {
+                loadCheckinHistory(); 
+                loadSettings(); // โหลดใหม่เพื่อจัดกลุ่มให้ตรง
             });
-            // อัปเดต state local
-            currentRoleSettings[role] = time;
-            loadCheckinHistory(); 
         } else {
             Swal.fire('ข้อผิดพลาด', data.error || 'เกิดข้อผิดพลาด', 'error');
         }
     } catch(e) { 
+        Loader.hide();
         Swal.fire('ล้มเหลว', 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
-    } finally { Loader.hide(); }
+    }
 };
 
 window.exportCheckin = function() {

@@ -20,21 +20,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $data = json_decode(file_get_contents('php://input'), true);
     $time = $data['late_time'] ?? '08:30';
-    $role = $data['role'] ?? '';
+    $roles_input = $data['roles'] ?? [];
     
-    if (!$role) {
+    if (empty($roles_input) || !is_array($roles_input)) {
         echo json_encode(['success' => false, 'error' => 'กรุณาระบุบทบาท']); exit;
     }
 
     $time_formatted = date('H:i:s', strtotime($time)); // format to H:i:s
-    $setting_key = "late_time_" . $role;
     
-    $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")->execute([$setting_key, $time_formatted, $time_formatted]);
-    
-    // อัปเดตในตาราง users ให้ผู้ใช้ที่มีบทบาทนี้ด้วย
-    $pdo->prepare("UPDATE users SET allow_late_time = ? WHERE role = ?")->execute([$time_formatted, $role]);
-
-    echo json_encode(['success' => true]);
+    $pdo->beginTransaction();
+    try {
+        foreach ($roles_input as $role) {
+            $setting_key = "late_time_" . $role;
+            $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")->execute([$setting_key, $time_formatted, $time_formatted]);
+            
+            // อัปเดตในตาราง users ให้ผู้ใช้ที่มีบทบาทนี้ด้วย
+            $pdo->prepare("UPDATE users SET allow_late_time = ? WHERE role = ?")->execute([$time_formatted, $role]);
+        }
+        $pdo->commit();
+        echo json_encode(['success' => true]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        echo json_encode(['success' => false, 'error' => 'เกิดข้อผิดพลาดในการบันทึก']);
+    }
     exit;
 } else {
     $settings = [];
