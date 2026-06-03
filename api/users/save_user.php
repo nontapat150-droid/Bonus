@@ -27,8 +27,8 @@ if (empty($team_id) || $team_id === 'none' || $team_id === '') {
     $team_id = (int)$team_id;
 }
 
-// ตัดสินใจว่าใช้ allow_late_time หรือไม่ (สำหรับ sales และ technician เท่านั้น)
-if ($role !== 'sales' && $role !== 'technician') {
+// ตัดสินใจว่าใช้ allow_late_time หรือไม่ (สำหรับ sales, technician และ intern)
+if ($role !== 'sales' && $role !== 'technician' && $role !== 'intern') {
     $allow_late_time = '08:30'; // ค่าเริ่มต้น
 }
 
