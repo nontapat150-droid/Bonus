@@ -89,6 +89,9 @@ function buildMapLink(array $route) {
 }
 
 try {
+    $jobType = $_GET['type'] ?? 'jobs';
+    $table = ($jobType === 'ma') ? 'ma_jobs' : 'jobs';
+
     $pdo->beginTransaction();
 
     $activeSql = "(status IS NULL OR status NOT IN ('completed', 'failed', 'Finish'))";

@@ -30,9 +30,11 @@ if (!$job_id) {
 $lat = (trim($lat) !== '') ? (float)$lat : null;
 $lng = (trim($lng) !== '') ? (float)$lng : null;
 
+$jobType = $_GET['type'] ?? 'jobs';
+$table = ($jobType === 'ma') ? 'ma_jobs' : 'jobs';
+
 try {
-    // ถ้าไม่ใช่แอดมิน ตรวจสอบสิทธิ์ว่างานนี้เป็นของทีมช่างคนนี้หรือไม่ (อุปกรณ์เสริม หากต้องการให้ช่างแก้ได้ด้วย)
-    // แต่เพื่อความปลอดภัย อาจจะจำกัดให้เฉพาะแอดมินหรือช่างในทีม
+    // ถ้าไม่ใช่แอดมิน ตรวจสอบสิทธิ์ว่างานนี้เป็นของทีมช่างคนนี้หรือไม่
     if (!$isAdmin) {
         $stmtUser = $pdo->prepare("SELECT team_id FROM users WHERE id = ?");
         $stmtUser->execute([$user_id]);

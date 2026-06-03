@@ -206,6 +206,9 @@ function clusterJobsWithLimits(array $jobs, array $teamLimits, array $teamAnchor
 }
 
 try {
+    $jobType = $_GET['type'] ?? 'jobs';
+    $table = ($jobType === 'ma') ? 'ma_jobs' : 'jobs';
+
     $pdo->beginTransaction();
 
     $teamMap = [];
