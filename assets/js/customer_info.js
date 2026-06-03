@@ -28,12 +28,35 @@
         });
     }
 
-    searchForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const query = searchInput.value.trim();
-        if (!query) return;
-        fetchCustomers(`?q=${encodeURIComponent(query)}`);
-    });
+    const searchBtn = document.getElementById('searchBtn');
+    if (searchBtn) {
+        searchBtn.addEventListener('click', () => {
+            const query = searchInput ? searchInput.value.trim() : '';
+            if (!query) return;
+            fetchCustomers(`?q=${encodeURIComponent(query)}`);
+        });
+    }
+
+    // รองรับ Enter ในช่อง input ด้วย
+    if (searchInput) {
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const query = searchInput.value.trim();
+                if (!query) return;
+                fetchCustomers(`?q=${encodeURIComponent(query)}`);
+            }
+        });
+    }
+
+    // ป้องกัน form submit แบบ native (safety net)
+    if (searchForm) {
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        });
+    }
 
     async function fetchCustomers(queryString) {
         window.Loader.show();
