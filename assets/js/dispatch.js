@@ -1259,26 +1259,7 @@ window.handleJobNotSuccess = async function(jobId) {
         const todayD = String(todayObj.getDate()).padStart(2, '0');
         const todayM = String(todayObj.getMonth() + 1).padStart(2, '0');
         const todayY = todayObj.getFullYear();
-
-        // สร้าง option วัน 1-31
-        let dayOptions = '';
-        for (let i = 1; i <= 31; i++) {
-            const v = String(i).padStart(2, '0');
-            dayOptions += `<option value="${v}" ${v === todayD ? 'selected' : ''}>${i}</option>`;
-        }
-        // สร้าง option เดือน
-        const monthNames = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
-                            'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-        let monthOptions = '';
-        monthNames.forEach((name, idx) => {
-            const v = String(idx + 1).padStart(2, '0');
-            monthOptions += `<option value="${v}" ${v === todayM ? 'selected' : ''}>${name}</option>`;
-        });
-        // สร้าง option ปี (ปีนี้ถึง +2)
-        let yearOptions = '';
-        for (let y = todayY; y <= todayY + 2; y++) {
-            yearOptions += `<option value="${y}" ${y === todayY ? 'selected' : ''}>${y + 543} (${y})</option>`;
-        }
+        const defaultDate = `${todayY}-${todayM}-${todayD}`;
 
         const { value: form } = await Swal.fire({
             title: '<span style="font-size:1rem;font-weight:900;">เลื่อนวันนัดติดตั้ง</span>',
@@ -1293,26 +1274,7 @@ window.handleJobNotSuccess = async function(jobId) {
                     <label style="display:block;text-align:left;font-size:0.7rem;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">
                         วันที่นัดใหม่ <span style="color:#ef4444;">*</span>
                     </label>
-                    <div style="display:grid;grid-template-columns:1fr 2fr 1.4fr;gap:6px;align-items:center;">
-                        <div>
-                            <div style="font-size:0.6rem;font-weight:800;color:#92400e;text-align:center;margin-bottom:3px;">วัน</div>
-                            <select id="swalResDay" style="width:100%;padding:7px 4px;border:1.5px solid #fcd34d;border-radius:8px;font-size:0.85rem;font-weight:800;text-align:center;background:#fff;color:#1e293b;">
-                                ${dayOptions}
-                            </select>
-                        </div>
-                        <div>
-                            <div style="font-size:0.6rem;font-weight:800;color:#92400e;text-align:center;margin-bottom:3px;">เดือน</div>
-                            <select id="swalResMonth" style="width:100%;padding:7px 4px;border:1.5px solid #fcd34d;border-radius:8px;font-size:0.8rem;font-weight:800;background:#fff;color:#1e293b;">
-                                ${monthOptions}
-                            </select>
-                        </div>
-                        <div>
-                            <div style="font-size:0.6rem;font-weight:800;color:#92400e;text-align:center;margin-bottom:3px;">ปี (ค.ศ.)</div>
-                            <select id="swalResYear" style="width:100%;padding:7px 4px;border:1.5px solid #fcd34d;border-radius:8px;font-size:0.8rem;font-weight:800;text-align:center;background:#fff;color:#1e293b;">
-                                ${yearOptions}
-                            </select>
-                        </div>
-                    </div>
+                    <input type="date" id="swalResDate" value="${defaultDate}" style="width:100%;padding:10px;border:1.5px solid #fcd34d;border-radius:8px;font-size:0.9rem;font-weight:800;background:#fff;color:#1e293b;box-sizing:border-box;">
                 </div>
                 <div style="text-align:left;">
                     <label style="display:block;font-size:0.7rem;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">หมายเหตุ (ถ้ามี)</label>
@@ -1333,15 +1295,12 @@ window.handleJobNotSuccess = async function(jobId) {
                 cancelButton: 'rounded-lg px-5 py-2.5 text-sm font-bold',
             },
             preConfirm: () => {
-                const day   = document.getElementById('swalResDay')?.value || '';
-                const month = document.getElementById('swalResMonth')?.value || '';
-                const year  = document.getElementById('swalResYear')?.value || '';
+                const newDate = document.getElementById('swalResDate')?.value || '';
                 const remarkEl = document.getElementById('swalRescheduleRemark');
-                if (!day || !month || !year) {
-                    Swal.showValidationMessage('กรุณาเลือกวันที่นัดใหม่ให้ครบ');
+                if (!newDate) {
+                    Swal.showValidationMessage('กรุณาเลือกวันที่นัดใหม่');
                     return false;
                 }
-                const newDate = `${year}-${month}-${day}`;
                 const testDate = new Date(newDate);
                 if (isNaN(testDate.getTime())) {
                     Swal.showValidationMessage('วันที่ที่เลือกไม่ถูกต้อง');
