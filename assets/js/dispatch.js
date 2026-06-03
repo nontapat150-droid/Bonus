@@ -235,15 +235,19 @@ function switchDispatchView(view) {
     mapBtn?.classList.toggle('is-active', view === 'map');
     if (rescheduleBtn) rescheduleBtn.classList.toggle('is-active', view === 'reschedule');
 
-    const importBtn = document.querySelector('button[onclick="document.getElementById(\'jobExcelFile\').click()"]');
+    const importBtn = document.getElementById('importOfficeBtn') || document.querySelector('button[onclick="document.getElementById(\'jobExcelFile\').click()"]');
     const importMABtn = document.getElementById('importMABtn');
     const manualBtn = document.getElementById('addManualJobBtn');
     const manualMaBtn = document.getElementById('addManualMaJobBtn');
+    const dlTemplateBtn = document.getElementById('downloadTemplateBtn');
+    const dlMATemplateBtn = document.getElementById('downloadMATemplateBtn');
     
     if (importBtn) importBtn.style.display = (view === 'jobs') ? '' : 'none';
     if (importMABtn) importMABtn.style.display = (view === 'ma') ? '' : 'none';
     if (manualBtn) manualBtn.style.display = (view === 'jobs') ? '' : 'none';
     if (manualMaBtn) manualMaBtn.style.display = (view === 'ma') ? '' : 'none';
+    if (dlTemplateBtn) dlTemplateBtn.style.display = (view === 'jobs') ? '' : 'none';
+    if (dlMATemplateBtn) dlMATemplateBtn.style.display = (view === 'ma') ? '' : 'none';
 
     if (view === 'jobs' || view === 'ma') {
         updateDispatchModeBanner(view);
@@ -2247,3 +2251,37 @@ async function submitEditJob(payload) {
         hideLoader();
     }
 }
+// DOWNLOAD TEMPLATES
+window.downloadTemplate = function(type) {
+    let ws_data = [];
+    let fileName = '';
+
+    if (type === 'office') {
+        fileName = 'template_office.xlsx';
+        ws_data = [
+            ["????", "??????????", "????????", "???????", "???????", "????????", "??????", "???????", "????????"],
+            ["AC-12345", "????? ????", "0812345678", "123 ?.1 ?.????? ?.????? ?.????????", "13.123456", "100.123456", "2023-12-31", "Fiber 1000/500", "?????????"]
+        ];
+    } else if (type === 'ma') {
+        fileName = 'template_ma.xlsx';
+        ws_data = [
+            ["????", "NON", "??????????", "????????", "???????", "????", "?????", "???????", "?????", "???", "????????", "??????"],
+            ["09:00", "NON-9999", "?????? ??????", "0898765432", "AIS", "??????", "??????", "456 ?.2", "????????????", "??? A", "??????????", "2023-12-31"]
+        ];
+    }
+
+    if (typeof XLSX === 'undefined') {
+        Swal.fire('??????????', '??????????????????????????? Excel', 'error');
+        return;
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    
+    // Auto-size columns slightly
+    const colWidths = ws_data[0].map(col => ({ wch: Math.max(col.length + 5, 12) }));
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, fileName);
+};
