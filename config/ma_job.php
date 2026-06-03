@@ -76,6 +76,10 @@ function ensureMaJobSchema(PDO $pdo) {
         'sub_district' => 'VARCHAR(150) DEFAULT NULL',
         'district' => 'VARCHAR(150) DEFAULT NULL',
         'price' => 'DECIMAL(10,2) DEFAULT NULL',
+        'signal_after' => 'VARCHAR(100) DEFAULT NULL',
+        'power_rx' => 'VARCHAR(100) DEFAULT NULL',
+        'problem_cause' => 'TEXT DEFAULT NULL',
+        'solution' => 'TEXT DEFAULT NULL',
         'updated_at' => 'TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP'
     ];
     try {

@@ -28,12 +28,12 @@ $table = ($job_type === 'ma') ? 'ma_jobs' : 'jobs';
 try {
     ensureMaJobSchema($pdo);
 
-    if (empty($team_id)) {
-        $team_id = null;
-    }
+    $team_id = $input['team_id'] ?? null;
+    $assigned_user_id = $input['assigned_user_id'] ?? null;
+    if (empty($team_id)) $team_id = null;
+    if (empty($assigned_user_id)) $assigned_user_id = null;
 
     if ($job_type === 'ma') {
-        $assignedUserId = null;
         $matchStatus = $team_id ? 'matched' : null;
         $teamNameImport = null;
 
@@ -42,13 +42,15 @@ try {
             $tStmt->execute([$team_id]);
             $teamNameImport = $tStmt->fetchColumn() ?: null;
 
-            $uStmt = $pdo->prepare("SELECT id FROM users WHERE team_id = ? AND status = 'approved' ORDER BY id ASC LIMIT 1");
-            $uStmt->execute([$team_id]);
-            $assignedUserId = $uStmt->fetchColumn() ?: null;
+            if (!$assigned_user_id) {
+                $uStmt = $pdo->prepare("SELECT id FROM users WHERE team_id = ? AND status = 'approved' ORDER BY id ASC LIMIT 1");
+                $uStmt->execute([$team_id]);
+                $assigned_user_id = $uStmt->fetchColumn() ?: null;
+            }
         }
 
         $stmt = $pdo->prepare("UPDATE ma_jobs SET team_id = ?, team_name_import = COALESCE(?, team_name_import), team_match_status = ?, assigned_user_id = ?, updated_at = NOW() WHERE id = ?");
-        $stmt->execute([$team_id, $teamNameImport, $matchStatus, $assignedUserId, $job_id]);
+        $stmt->execute([$team_id, $teamNameImport, $matchStatus, $assigned_user_id, $job_id]);
 
         if ($team_id) {
             $jStmt = $pdo->prepare("SELECT access_no, customer, symptoms FROM ma_jobs WHERE id = ?");
@@ -65,6 +67,11 @@ try {
             }
         }
     } else {
+        if (!$team_id && $assigned_user_id) {
+            $stmtUser = $pdo->prepare("SELECT team_id FROM users WHERE id = ?");
+            $stmtUser->execute([(int)$assigned_user_id]);
+            $team_id = $stmtUser->fetchColumn() ?: null;
+        }
         $stmt = $pdo->prepare("UPDATE jobs SET team_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
         $stmt->execute([$team_id, $job_id]);
     }

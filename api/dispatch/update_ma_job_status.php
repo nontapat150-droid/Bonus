@@ -22,6 +22,11 @@ $status = trim((string)($_POST['status'] ?? ''));
 $remark = trim((string)($_POST['remark'] ?? ''));
 $rescheduleDate = trim((string)($_POST['reschedule_date'] ?? ''));
 
+$signalAfter = trim((string)($_POST['signal_after'] ?? ''));
+$powerRx = trim((string)($_POST['power_rx'] ?? ''));
+$problemCause = trim((string)($_POST['problem_cause'] ?? ''));
+$solution = trim((string)($_POST['solution'] ?? ''));
+
 if (!$jobId || !$status) {
     echo json_encode(['success' => false, 'error' => 'ข้อมูลไม่ครบถ้วน']);
     exit;
@@ -52,6 +57,11 @@ if ($status === 'rescheduled') {
 }
 
 if ($status === 'completed') {
+    if ($signalAfter === '' || $powerRx === '' || $problemCause === '' || $solution === '') {
+        echo json_encode(['success' => false, 'error' => 'ข้อมูลการจบงานไม่ครบถ้วน']);
+        exit;
+    }
+
     if (!isset($_FILES['proof_images'])) {
         echo json_encode(['success' => false, 'error' => 'กรุณาอัปโหลดรูปภาพหลักฐานการจบงาน']);
         exit;
@@ -132,7 +142,8 @@ try {
             throw new Exception('ไม่สามารถบันทึกรูปภาพได้ กรุณาลองใหม่');
         }
 
-        $pdo->prepare("UPDATE ma_jobs SET status = 'completed', updated_at = NOW() WHERE id = ?")->execute([$jobId]);
+        $pdo->prepare("UPDATE ma_jobs SET status = 'completed', signal_after = ?, power_rx = ?, problem_cause = ?, solution = ?, remark = ?, updated_at = NOW() WHERE id = ?")
+            ->execute([$signalAfter, $powerRx, $problemCause, $solution, $remark ?: null, $jobId]);
 
         addMaCustomerHistory($pdo, [
             'non_number' => $job['access_no'],
