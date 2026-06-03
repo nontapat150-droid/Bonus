@@ -819,7 +819,8 @@ if ($page === 'home') {
                     'site_settings' => 'views/modules/site_settings.php',
                     'users' => 'views/modules/user_settings.php',
                     'checkin' => 'views/modules/checkin.php',
-                    'issues' => 'views/modules/issues.php'
+                    'issues' => 'views/modules/issues.php',
+                    'work_records' => 'views/modules/work_records.php'
                 ];
 
                 $accessDenied = false;
@@ -839,6 +840,9 @@ if ($page === 'home') {
                     $accessDenied = true;
                 }
                 if ($page === 'issues' && !hasRole(['admin', 'super_admin'])) {
+                    $accessDenied = true;
+                }
+                if ($page === 'work_records' && !hasRole('intern')) {
                     $accessDenied = true;
                 }
 
