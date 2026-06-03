@@ -59,20 +59,62 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         </div>
 
         <?php if($isAdmin): ?>
-        <div class="bg-white rounded-[2rem] shadow-xl p-6 border border-gray-50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 flex-wrap mb-4">
-            <div>
+        <div class="bg-white rounded-[2rem] shadow-xl p-6 border border-gray-50 mb-4">
+            <div class="mb-4 border-b border-gray-100 pb-4">
                 <h3 class="font-bold text-gray-800 flex items-center"><span class="mr-2">⚙️</span> ตั้งค่าระบบเวลาเข้างาน</h3>
-                <p class="text-xs text-gray-500 mt-1">กำหนดเวลาที่ถือว่า "มาสาย" แยกตามบทบาทพนักงาน</p>
+                <p class="text-xs text-gray-500 mt-1">กำหนดเวลาที่ถือว่า "มาสาย" โดยสามารถเลือกหลายบทบาทพร้อมกันได้</p>
             </div>
-            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
-                <select id="roleSelect" class="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-bold text-gray-700 bg-white">
-                    <option value="admin">แอดมิน (Admin)</option>
-                    <option value="super_admin">ซุปเปอร์แอดมิน (Super Admin)</option>
-                    <option value="technician">ช่าง (Technician)</option>
-                    <option value="sales">เซลส์ (Sales)</option>
-                </select>
-                <input type="time" id="lateTimeInput" class="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-bold text-gray-700">
-                <button onclick="saveSettings()" class="w-full sm:w-auto bg-slate-800 text-white px-6 py-2 rounded-xl font-bold hover:bg-slate-900 transition-colors shadow-md">บันทึก</button>
+            
+            <!-- กลุ่มที่ 1 -->
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+                <div class="flex flex-wrap gap-2 flex-1" id="roleGroup1">
+                    <label class="cursor-pointer">
+                        <input type="checkbox" value="admin" class="peer hidden role-cb-1">
+                        <span class="px-3 py-1.5 rounded-xl border border-gray-200 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 text-sm font-bold text-gray-600 transition-all select-none">แอดมิน</span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="checkbox" value="super_admin" class="peer hidden role-cb-1">
+                        <span class="px-3 py-1.5 rounded-xl border border-gray-200 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 text-sm font-bold text-gray-600 transition-all select-none">ซุปเปอร์แอดมิน</span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="checkbox" value="technician" class="peer hidden role-cb-1">
+                        <span class="px-3 py-1.5 rounded-xl border border-gray-200 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 text-sm font-bold text-gray-600 transition-all select-none">ช่าง</span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="checkbox" value="sales" class="peer hidden role-cb-1">
+                        <span class="px-3 py-1.5 rounded-xl border border-gray-200 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 text-sm font-bold text-gray-600 transition-all select-none">เซลส์</span>
+                    </label>
+                </div>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <input type="time" id="lateTimeInput1" class="flex-1 md:w-auto px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 font-bold text-gray-700">
+                    <button onclick="saveSettingsMulti(1)" class="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold hover:bg-slate-900 transition-colors shadow-md min-w-[100px]">บันทึก</button>
+                </div>
+            </div>
+
+            <!-- กลุ่มที่ 2 -->
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex flex-wrap gap-2 flex-1" id="roleGroup2">
+                    <label class="cursor-pointer">
+                        <input type="checkbox" value="admin" class="peer hidden role-cb-2">
+                        <span class="px-3 py-1.5 rounded-xl border border-gray-200 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 text-sm font-bold text-gray-600 transition-all select-none">แอดมิน</span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="checkbox" value="super_admin" class="peer hidden role-cb-2">
+                        <span class="px-3 py-1.5 rounded-xl border border-gray-200 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 text-sm font-bold text-gray-600 transition-all select-none">ซุปเปอร์แอดมิน</span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="checkbox" value="technician" class="peer hidden role-cb-2">
+                        <span class="px-3 py-1.5 rounded-xl border border-gray-200 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 text-sm font-bold text-gray-600 transition-all select-none">ช่าง</span>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="checkbox" value="sales" class="peer hidden role-cb-2">
+                        <span class="px-3 py-1.5 rounded-xl border border-gray-200 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-600 text-sm font-bold text-gray-600 transition-all select-none">เซลส์</span>
+                    </label>
+                </div>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <input type="time" id="lateTimeInput2" class="flex-1 md:w-auto px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 font-bold text-gray-700">
+                    <button onclick="saveSettingsMulti(2)" class="bg-emerald-700 text-white px-6 py-2 rounded-xl font-bold hover:bg-emerald-800 transition-colors shadow-md min-w-[100px]">บันทึก</button>
+                </div>
             </div>
         </div>
         <?php endif; ?>
