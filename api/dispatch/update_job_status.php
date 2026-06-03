@@ -94,6 +94,11 @@ try {
         exit;
     }
 
+    if ($status === 'rescheduled') {
+        ensureJobReschedulesTable($pdo);
+        ensureNotificationExtraColumns($pdo);
+    }
+
     $pdo->beginTransaction();
 
     $previousPlanDate = $job['plan_arrival_date'] ?? null;
@@ -147,8 +152,6 @@ try {
             nullableStr($close3bb['remark'] ?? null),
         ]);
     } elseif ($status === 'rescheduled') {
-        ensureJobReschedulesTable($pdo);
-
         $logRemark = $remark !== '' ? $remark : 'ลูกค้าขอเลื่อนวันนัดติดตั้ง';
         $jobRemark = $logRemark . ' (เลื่อนจาก ' . formatThaiDateShort($previousPlanDate) . ' → ' . formatThaiDateShort($reschedule_date) . ')';
 

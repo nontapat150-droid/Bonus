@@ -3,6 +3,10 @@
 
 function ensureJobReschedulesTable(PDO $pdo): void
 {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+    
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS `job_reschedules` (
           `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -31,6 +35,9 @@ function ensureJobReschedulesTable(PDO $pdo): void
 
 function ensureNotificationExtraColumns(PDO $pdo): void
 {
+    static $checked = false;
+    if ($checked) return;
+    
     try {
         $cols = $pdo->query("SHOW COLUMNS FROM notifications")->fetchAll(PDO::FETCH_COLUMN);
         if (!in_array('type', $cols, true)) {
@@ -42,6 +49,7 @@ function ensureNotificationExtraColumns(PDO $pdo): void
         if (!in_array('reference_id', $cols, true)) {
             $pdo->exec("ALTER TABLE notifications ADD COLUMN `reference_id` int(11) DEFAULT NULL AFTER `is_global`");
         }
+        $checked = true;
     } catch (Exception $e) {
         // ignore
     }
