@@ -1274,10 +1274,7 @@ window.handleJobNotSuccess = async function(jobId) {
                     <label style="display:block;text-align:left;font-size:0.7rem;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">
                         วันที่นัดใหม่ <span style="color:#ef4444;">*</span>
                     </label>
-                    <div class="datepicker-wrapper">
-                        <input type="text" readonly="" placeholder="เลือกวันที่" class="text-xs font-bold input !py-2 !px-3 min-h-10 flex-1 sm:flex-none datepicker-display w-full" autocomplete="off" value="${formatThaiDateShort(defaultDate)}" style="width:100%;padding:10px;border:1.5px solid #fcd34d;border-radius:8px;font-size:0.9rem;font-weight:800;background:#fff;color:#1e293b;box-sizing:border-box;">
-                        <input type="date" id="swalResDate" value="${defaultDate}" class="text-xs font-bold input !py-2 !px-3 min-h-10 flex-1 sm:flex-none" data-datepicker-enhanced="1" style="position: absolute; opacity: 0; pointer-events: none; width: 0px; height: 0px;">
-                    </div>
+                    <input type="date" id="swalResDate" value="${defaultDate}" class="w-full">
                 </div>
                 <div style="text-align:left;">
                     <label style="display:block;font-size:0.7rem;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">หมายเหตุ (ถ้ามี)</label>
@@ -1296,6 +1293,16 @@ window.handleJobNotSuccess = async function(jobId) {
                 htmlContainer: 'px-4 pb-2',
                 confirmButton: 'rounded-lg px-5 py-2.5 text-sm font-black',
                 cancelButton: 'rounded-lg px-5 py-2.5 text-sm font-bold',
+            },
+            didOpen: () => {
+                const dateInput = document.getElementById('swalResDate');
+                if (dateInput && window.initDatepickers) {
+                    window.initDatepickers();
+                    const textInput = dateInput.previousElementSibling;
+                    if (textInput && textInput.classList.contains('datepicker-display')) {
+                        textInput.style.cssText = "width:100%;padding:10px;border:1.5px solid #fcd34d;border-radius:8px;font-size:0.9rem;font-weight:800;background:#fff;color:#1e293b;box-sizing:border-box;";
+                    }
+                }
             },
             preConfirm: () => {
                 const newDate = document.getElementById('swalResDate')?.value || '';
