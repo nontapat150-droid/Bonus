@@ -797,34 +797,31 @@ document.getElementById('confirmExcelBtn')?.addEventListener('click', async (e) 
 // ฟังก์ชันดาวน์โหลด Template ไฟล์ Excel
 // ====================================================
 function downloadTemplate() {
-    // สร้าง CSV data ตามรูปแบบที่ถูกต้อง
     const headers = ['ชื่อสินค้า', 'รุ่น (Model)', 'ซีเรียล (SN)', 'หมายเหตุ'];
     const rows = [
         ['iPhone 15 Pro', 'A3001', 'SN12345678', 'จากซัพพลายเออร์ A'],
         ['Samsung Galaxy S24', 'SM-S921B', 'SN87654321', 'จากซัพพลายเออร์ B'],
-        ['MacBook Pro', 'MBP16-2024', 'SN11111111', 'ครื่องใหม่'],
+        ['MacBook Pro', 'MBP16-2024', 'SN11111111', 'เครื่องใหม่'],
         ['iPad Air', 'iPad-Air-6', 'SN22222222', '']
     ];
 
-    let csvContent = headers.join('\t') + '\n';
-    rows.forEach(row => {
-        csvContent += row.join('\t') + '\n';
-    });
+    if (typeof XLSX === 'undefined') {
+        Toast.error('ไม่พบไลบรารีสำหรับสร้างไฟล์ Excel');
+        return;
+    }
 
-    // สร้าง Blob และดาวน์โหลด
-    const BOM = '\uFEFF'; // UTF-8 BOM สำหรับ Excel
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
+    const ws_data = [headers, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
     
-    const fileName = `template_import_${new Date().toISOString().split('T')[0]}.csv`;
-    link.setAttribute('href', url);
-    link.setAttribute('download', fileName);
-    link.style.visibility = 'hidden';
+    // Auto-size columns to be wider for Thai text
+    const colWidths = ws_data[0].map(() => ({ wch: 25 }));
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
     
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const fileName = `template_import_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
     
     Toast.success('ดาวน์โหลด Template สำเร็จ! ใช้ Excel เปิดและกรอกข้อมูล');
 }
