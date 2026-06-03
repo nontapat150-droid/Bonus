@@ -20,10 +20,16 @@ try {
     ")->fetchAll(PDO::FETCH_ASSOC);
     $oilSyncPairs = array_merge($fromCases, $fromOil);
 
+    $jobType = $_GET['type'] ?? 'jobs';
+    
     $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
-    $pdo->exec('TRUNCATE TABLE job_close_3bb');
-    $pdo->exec('TRUNCATE TABLE job_logs');
-    $pdo->exec('TRUNCATE TABLE jobs');
+    if ($jobType === 'ma') {
+        $pdo->exec('TRUNCATE TABLE ma_jobs');
+    } else {
+        $pdo->exec('TRUNCATE TABLE job_close_3bb');
+        $pdo->exec('TRUNCATE TABLE job_logs');
+        $pdo->exec('TRUNCATE TABLE jobs');
+    }
     $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
 
     syncCollectedTeamOilMonths($pdo, $oilSyncPairs);
