@@ -82,6 +82,7 @@ if (!hasRole(['admin', 'super_admin'])) {
                 <select id="role" name="role" onchange="toggleLateTimeField()" class="input">
                     <option value="technician">ช่างเทคนิค (Technician)</option>
                     <option value="sales">เซล (Sales)</option>
+                    <option value="intern">เด็กฝึกงาน (Intern)</option>
                     <option value="admin">ผู้ดูแลระบบ (Admin)</option>
                     <option value="super_admin">ผู้ดูแลระบบสูงสุด (Super Admin)</option>
                 </select>

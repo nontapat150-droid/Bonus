@@ -78,7 +78,8 @@ function renderUserTable(users) {
         'super_admin': '<span class="px-3 py-1 bg-rose-50 text-rose-600 rounded-full font-bold text-[10px] border border-rose-100">SUPER ADMIN</span>',
         'admin': '<span class="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full font-bold text-[10px] border border-indigo-100">ADMIN</span>',
         'technician': '<span class="px-3 py-1 bg-slate-50 text-slate-500 rounded-full font-bold text-[10px] border border-slate-100">TECHNICIAN</span>',
-        'sales': '<span class="px-3 py-1 bg-green-50 text-green-600 rounded-full font-bold text-[10px] border border-green-100">SALES</span>'
+        'sales': '<span class="px-3 py-1 bg-green-50 text-green-600 rounded-full font-bold text-[10px] border border-green-100">SALES</span>',
+        'intern': '<span class="px-3 py-1 bg-cyan-50 text-cyan-600 rounded-full font-bold text-[10px] border border-cyan-100">INTERN</span>'
     };
 
     users.forEach((u, index) => {
@@ -280,7 +281,7 @@ function toggleLateTimeField() {
     const role = document.getElementById('role').value;
     const lateTimeField = document.getElementById('lateTimeField');
     
-    if (role === 'sales' || role === 'technician') {
+    if (role === 'sales' || role === 'technician' || role === 'intern') {
         lateTimeField.classList.remove('hidden');
     } else {
         lateTimeField.classList.add('hidden');
