@@ -1,6 +1,6 @@
 // assets/js/customer_info.js
 
-(() => {
+function initCustomerInfo() {
     const searchForm = document.getElementById('searchCustomerForm');
     const searchInput = document.getElementById('searchInput');
     const resultsArea = document.getElementById('resultsArea');
@@ -9,20 +9,26 @@
     const resultCount = document.getElementById('resultCount');
     const modal = document.getElementById('customerDetailModal');
     const modalContent = document.getElementById('modalContent');
-    
+
+    // ถ้าหา element หลักไม่เจอ แสดงว่าหน้านี้ยังไม่โหลด
+    if (!searchForm || !searchInput) return;
+
     let currentData = [];
 
     // Close Modal Events
     document.querySelectorAll('.closeModalBtn').forEach(btn => {
         btn.addEventListener('click', () => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
         });
     });
 
     const showAllBtn = document.getElementById('showAllBtn');
     if (showAllBtn) {
-        showAllBtn.addEventListener('click', () => {
+        showAllBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             searchInput.value = '';
             fetchCustomers('?all=1');
         });
@@ -30,38 +36,39 @@
 
     const searchBtn = document.getElementById('searchBtn');
     if (searchBtn) {
-        searchBtn.addEventListener('click', () => {
-            const query = searchInput ? searchInput.value.trim() : '';
+        searchBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const query = searchInput.value.trim();
             if (!query) return;
             fetchCustomers(`?q=${encodeURIComponent(query)}`);
         });
     }
 
     // รองรับ Enter ในช่อง input ด้วย
-    if (searchInput) {
-        searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const query = searchInput.value.trim();
-                if (!query) return;
-                fetchCustomers(`?q=${encodeURIComponent(query)}`);
-            }
-        });
-    }
-
-    // ป้องกัน form submit แบบ native (safety net)
-    if (searchForm) {
-        searchForm.addEventListener('submit', (e) => {
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
             e.preventDefault();
             e.stopPropagation();
-            return false;
-        });
-    }
+            const query = searchInput.value.trim();
+            if (!query) return;
+            fetchCustomers(`?q=${encodeURIComponent(query)}`);
+        }
+    });
+
+    // ป้องกัน form submit แบบ native ทุกกรณี
+    searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const query = searchInput.value.trim();
+        if (query) fetchCustomers(`?q=${encodeURIComponent(query)}`);
+        return false;
+    });
 
     async function fetchCustomers(queryString) {
-        window.Loader.show();
+        if (window.Loader) window.Loader.show();
         try {
-            const res = await fetch(`api/customer/search_info.php${queryString}`);
+            const base = window.location.pathname.replace(/\/[^/]*$/, '/');
+            const res = await fetch(`${base}api/customer/search_info.php${queryString}`);
             const data = await res.json();
             
             if (data.success) {
@@ -73,7 +80,7 @@
         } catch (error) {
             Swal.fire('ข้อผิดพลาด', 'เกิดปัญหาในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
         } finally {
-            window.Loader.hide();
+            if (window.Loader) window.Loader.hide();
         }
     }
 
@@ -515,4 +522,8 @@
         if (status === 'dispatched') return '<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">จ่ายงานแล้ว</span>';
         return '<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-[10px] font-bold">รอดำเนินการ</span>';
     }
-})();
+}
+
+// Script โหลดหลัง DOM เสร็จแล้ว (อยู่ใน PHP include ท้าย body)
+// จึงเรียกได้โดยตรง
+initCustomerInfo();
