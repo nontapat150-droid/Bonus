@@ -36,8 +36,11 @@ requireRole(['admin', 'super_admin']);
         </div>
     </div>
 
-    <!-- Debug Panel (จะซ่อนอัตโนมัติหลังใช้งาน) -->
-    <div id="ciDebugPanel" class="hidden bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm font-mono text-rose-800"></div>
+    <!-- Status Banner -->
+    <div id="ciStatusBanner" class="hidden items-center gap-3 px-5 py-3.5 rounded-2xl border text-sm font-bold shadow-sm transition-all">
+        <i id="ciStatusIcon" data-lucide="info" class="w-5 h-5 shrink-0"></i>
+        <span id="ciStatusText"></span>
+    </div>
 
     <!-- Results Area -->
     <div id="ciResultsArea" class="hidden space-y-6">
@@ -93,13 +96,29 @@ requireRole(['admin', 'super_admin']);
 
     var ciCurrentData = [];
 
-    function ciDebug(msg) {
-        var panel = document.getElementById('ciDebugPanel');
-        if (panel) {
-            panel.classList.remove('hidden');
-            panel.innerHTML += '<div>[' + new Date().toLocaleTimeString() + '] ' + msg + '</div>';
+    // ---- Status Banner ----
+    function ciSetStatus(type, msg) {
+        var banner = document.getElementById('ciStatusBanner');
+        var icon   = document.getElementById('ciStatusIcon');
+        var text   = document.getElementById('ciStatusText');
+        if (!banner || !icon || !text) return;
+
+        // Reset classes
+        banner.className = 'flex items-center gap-3 px-5 py-3.5 rounded-2xl border text-sm font-bold shadow-sm transition-all';
+
+        if (type === 'success') {
+            banner.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+            icon.setAttribute('data-lucide', 'check-circle-2');
+        } else if (type === 'warning') {
+            banner.classList.add('bg-amber-50', 'border-amber-200', 'text-amber-800');
+            icon.setAttribute('data-lucide', 'search-x');
+        } else {
+            banner.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-800');
+            icon.setAttribute('data-lucide', 'alert-circle');
         }
-        console.log('[CI Debug]', msg);
+
+        text.textContent = msg;
+        if (window.lucide) lucide.createIcons();
     }
 
     // ---- รองรับ Enter key บน input ----
@@ -111,15 +130,12 @@ requireRole(['admin', 'super_admin']);
                 ciDoSearch();
             }
         });
-        ciDebug('ciSearchInput ready ✓');
-    } else {
-        ciDebug('ERROR: ciSearchInput not found!');
     }
 
     // ---- Search ----
     window.ciDoSearch = function() {
         var input = document.getElementById('ciSearchInput');
-        if (!input) { ciDebug('ERROR: ciSearchInput not found on search'); return; }
+        if (!input) return;
         var q = input.value.trim();
         if (!q) {
             alert('กรุณากรอกหมายเลขที่ต้องการค้นหา');
@@ -137,7 +153,6 @@ requireRole(['admin', 'super_admin']);
 
     // ---- Fetch ----
     function ciFetch(url) {
-        ciDebug('Fetching: ' + url);
         var loader = document.createElement('div');
         loader.id = 'ciLoader';
         loader.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:9999;display:flex;align-items:center;justify-content:center;';
@@ -149,7 +164,6 @@ requireRole(['admin', 'super_admin']);
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(function(res) {
-            ciDebug('HTTP status: ' + res.status + ' url: ' + res.url);
             if (!res.ok) {
                 return res.text().then(function(t) {
                     throw new Error('HTTP ' + res.status + ' — ' + t.substring(0, 200));
@@ -158,17 +172,15 @@ requireRole(['admin', 'super_admin']);
             return res.json();
         })
         .then(function(data) {
-            ciDebug('Response success: ' + data.success + ' items: ' + (data.data ? data.data.length : 'N/A'));
             if (data.success) {
                 ciCurrentData = data.data;
                 ciRender(ciCurrentData);
             } else {
-                alert('ข้อผิดพลาด: ' + (data.error || 'ไม่สามารถค้นหาข้อมูลได้'));
+                ciSetStatus('error', data.error || 'ไม่สามารถค้นหาข้อมูลได้');
             }
         })
         .catch(function(err) {
-            ciDebug('FETCH ERROR: ' + err.message);
-            alert('เกิดข้อผิดพลาด: ' + err.message);
+            ciSetStatus('error', 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: ' + err.message);
         })
         .finally(function() {
             var l = document.getElementById('ciLoader');
@@ -182,13 +194,23 @@ requireRole(['admin', 'super_admin']);
         var emptyState  = document.getElementById('ciEmptyState');
         var cards       = document.getElementById('ciCustomerCards');
         var count       = document.getElementById('ciResultCount');
+        var inp         = document.getElementById('ciSearchInput');
+        var q           = inp ? inp.value.trim() : '';
 
         if (customers.length === 0) {
-            alert('ไม่พบข้อมูลลูกค้าจากหมายเลขที่ค้นหา');
+            var notFoundMsg = q
+                ? 'ไม่พบข้อมูลลูกค้าสำหรับ “' + q + '” กรุณาตรวจสอบหมายเลขอีกครั้ง'
+                : 'ไม่พบข้อมูลในระบบ';
+            ciSetStatus('warning', notFoundMsg);
             if (emptyState) emptyState.classList.remove('hidden');
             if (resultsArea) resultsArea.classList.add('hidden');
             return;
         }
+
+        var successMsg = q
+            ? 'ค้นหา “' + q + '” เจอทั้งหมด ' + customers.length + ' รายการ'
+            : 'แสดงข้อมูลลูกค้าทั้งหมด ' + customers.length + ' รายการ';
+        ciSetStatus('success', successMsg);
 
         if (emptyState) emptyState.classList.add('hidden');
         if (resultsArea) resultsArea.classList.remove('hidden');
@@ -396,8 +418,6 @@ requireRole(['admin', 'super_admin']);
             return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
         });
     }
-
-    ciDebug('Customer Info module initialized ✓');
 
 })();
 </script>
