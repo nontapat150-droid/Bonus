@@ -122,7 +122,11 @@ function renderUserTable(users) {
             <td class="px-8 py-5">
                 <span class="bg-slate-100 text-slate-500 px-2 py-1 rounded text-xs tracking-widest font-mono cursor-help" title="รหัสผ่านถูกเข้ารหัสทางเดียวเพื่อความปลอดภัย หากลืมสามารถกดแก้ไขเพื่อตั้งใหม่ได้">********</span>
             </td>
-            <td class="px-8 py-5">${(u.roles || [u.role]).map(r => roleBadges[r] || r).join(' ')}</td>
+            <td class="px-8 py-5">
+                <div class="flex flex-wrap gap-1">
+                    ${(u.roles || [u.role]).map(r => roleBadges[r] || `<span class="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-full font-bold text-[10px] border border-slate-100">${r}</span>`).join('')}
+                </div>
+            </td>
             <td class="px-8 py-5 text-slate-400 text-xs">${date}</td>
             <td class="px-8 py-5 text-center">
                 <div class="flex justify-center space-x-2">

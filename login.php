@@ -58,15 +58,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reg_username = trim($_POST['reg_username'] ?? '');
         $reg_password = $_POST['reg_password'] ?? '';
         $reg_fullname = trim($_POST['reg_fullname'] ?? '');
-        $reg_role = $_POST['reg_role'] ?? 'technician';
+        $reg_roles = $_POST['reg_roles'] ?? [];
         $reg_license = trim($_POST['reg_license'] ?? '');
 
-        $validRoles = ['technician', 'sales', 'admin'];
-        if (!in_array($reg_role, $validRoles, true)) {
-            $reg_role = 'technician';
+        if (!is_array($reg_roles)) {
+            $reg_roles = [$reg_roles];
         }
 
-        if ($reg_username && $reg_password && $reg_fullname && ($reg_role !== 'technician' || $reg_license)) {
+        $validRoles = ['technician', 'ma_technician', 'sales', 'admin'];
+        $reg_roles = array_intersect($reg_roles, $validRoles);
+        if (empty($reg_roles)) {
+            $reg_roles = ['technician'];
+        }
+
+        $primary_role = $reg_roles[0];
+        $requiresLicense = in_array('technician', $reg_roles, true) || in_array('ma_technician', $reg_roles, true);
+
+        if ($reg_username && $reg_password && $reg_fullname && (!$requiresLicense || $reg_license)) {
             // เช็คว่ามี username นี้หรือยัง
             $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");
             $stmt->execute([$reg_username]);
@@ -77,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->beginTransaction();
 
                     $team_id = null;
-                    if ($reg_role === 'technician') {
+                    if ($requiresLicense) {
                         // 1. จัดการทีม (ใช้ป้ายทะเบียนเป็นชื่อทีมเพื่อรวมกลุ่ม)
                         $stmt = $pdo->prepare("SELECT id FROM teams WHERE team_name = ?");
                         $stmt->execute([$reg_license]);
@@ -100,7 +108,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // 3. สร้าง User โดยตั้งสถานะเป็น pending
                     $hash = password_hash($reg_password, PASSWORD_DEFAULT);
                     $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role, full_name, status, team_id) VALUES (?, ?, ?, ?, 'pending', ?)");
-                    $stmt->execute([$reg_username, $hash, $reg_role, $reg_fullname, $team_id]);
+                    $stmt->execute([$reg_username, $hash, $primary_role, $reg_fullname, $team_id]);
+                    $newUserId = $pdo->lastInsertId();
+
+                    // 4. บันทึกบทบาทลงตาราง user_roles
+                    $insRole = $pdo->prepare("INSERT INTO user_roles (user_id, role) VALUES (?, ?)");
+                    foreach ($reg_roles as $r) {
+                        $insRole->execute([$newUserId, $r]);
+                    }
 
                     $pdo->commit();
                     $success = 'ลงทะเบียนสำเร็จ! กรุณารอผู้ดูแลระบบอนุมัติการเข้าใช้งาน';
@@ -205,12 +220,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input class="input" type="password" name="reg_password" placeholder="กรอกรหัสผ่านสำหรับเข้าใช้งาน" required>
             </div>
             <div>
-                <label class="block text-xs font-bold mb-2 text-[var(--c-text-2)] uppercase tracking-wider">ตำแหน่งที่สมัคร</label>
-                <select id="reg_role" name="reg_role" class="input" onchange="toggleRegLicenseField()" required>
-                    <option value="technician">ช่าง</option>
-                    <option value="sales">เซล</option>
-                    <option value="admin">แอดมิน</option>
-                </select>
+                <label class="block text-xs font-bold mb-2 text-[var(--c-text-2)] uppercase tracking-wider">ตำแหน่งที่สมัคร (เลือกได้หลายตำแหน่ง)</label>
+                <div class="grid grid-cols-2 gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="reg_roles[]" value="technician" class="reg-role-cb w-4 h-4 text-indigo-600 rounded" onchange="toggleRegLicenseField()">
+                        <span class="text-sm font-medium text-slate-700">ช่าง Office</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="reg_roles[]" value="ma_technician" class="reg-role-cb w-4 h-4 text-indigo-600 rounded" onchange="toggleRegLicenseField()">
+                        <span class="text-sm font-medium text-slate-700">ช่าง MA</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="reg_roles[]" value="sales" class="reg-role-cb w-4 h-4 text-indigo-600 rounded" onchange="toggleRegLicenseField()">
+                        <span class="text-sm font-medium text-slate-700">เซล</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="reg_roles[]" value="admin" class="reg-role-cb w-4 h-4 text-indigo-600 rounded" onchange="toggleRegLicenseField()">
+                        <span class="text-sm font-medium text-slate-700">แอดมิน</span>
+                    </label>
+                </div>
             </div>
             <div id="regLicenseArea">
                 <label class="block text-xs font-bold mb-2 text-[#D97706] uppercase tracking-wider">* ทะเบียนรถที่ใช้งาน (ผูกทีมงาน)</label>
@@ -245,10 +273,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         function toggleRegLicenseField() {
-            const role = document.getElementById('reg_role').value;
+            const checkboxes = document.querySelectorAll('.reg-role-cb:checked');
+            const roles = Array.from(checkboxes).map(cb => cb.value);
             const licenseArea = document.getElementById('regLicenseArea');
             const licenseInput = document.getElementById('reg_license');
-            if (role === 'technician') {
+            if (roles.includes('technician') || roles.includes('ma_technician')) {
                 licenseArea.classList.remove('hidden');
                 licenseInput.required = true;
             } else {

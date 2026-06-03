@@ -208,6 +208,7 @@ if (!hasRole(['admin', 'super_admin'])) {
                     <tr>
                         <th class="px-4 py-3">ชื่อ-นามสกุล</th>
                         <th class="px-4 py-3">Username</th>
+                        <th class="px-4 py-3">ตำแหน่งที่ขอ</th>
                         <th class="px-4 py-3">ทะเบียนรถ/ทีม</th>
                         <th class="px-4 py-3 text-center">จัดการ</th>
                     </tr>
@@ -255,17 +256,29 @@ async function loadPendingUsers() {
                 return;
             }
             
-            tbody.innerHTML = data.data.map(user => `
+            const roleBadges = {
+                'super_admin': '<span class="px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full font-bold text-[10px] border border-rose-100">ผู้ดูแลระบบ</span>',
+                'admin': '<span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full font-bold text-[10px] border border-indigo-100">แอดมิน</span>',
+                'technician': '<span class="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-full font-bold text-[10px] border border-slate-100">ช่าง Office</span>',
+                'ma_technician': '<span class="px-2 py-0.5 bg-violet-50 text-violet-600 rounded-full font-bold text-[10px] border border-violet-100">ช่าง MA</span>',
+                'sales': '<span class="px-2 py-0.5 bg-green-50 text-green-600 rounded-full font-bold text-[10px] border border-green-100">เซล</span>',
+                'intern': '<span class="px-2 py-0.5 bg-cyan-50 text-cyan-600 rounded-full font-bold text-[10px] border border-cyan-100">เด็กฝึกงาน</span>'
+            };
+
+            tbody.innerHTML = data.data.map(user => {
+                const userRoles = (user.roles || [user.role]).map(r => roleBadges[r] || `<span class="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-full font-bold text-[10px] border border-slate-100">${r}</span>`).join('<span class="inline-block w-1"></span>');
+                return `
                 <tr class="hover:bg-slate-50">
                     <td class="px-4 py-3 font-bold text-slate-700">${user.full_name}</td>
                     <td class="px-4 py-3">${user.username}</td>
+                    <td class="px-4 py-3"><div class="flex flex-wrap gap-1">${userRoles}</div></td>
                     <td class="px-4 py-3"><span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-[10px] font-black">${user.team_name || '-'}</span></td>
                     <td class="px-4 py-3 text-center">
                         <button onclick="approveUser(${user.id}, 'approved')" class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-600 shadow-sm">อนุมัติ</button>
                         <button onclick="approveUser(${user.id}, 'rejected')" class="bg-rose-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-rose-600 ml-1 shadow-sm">ปฏิเสธ</button>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
     } catch (e) {
         tbody.innerHTML = '<tr><td colspan="4" class="text-center py-10 text-rose-500">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
