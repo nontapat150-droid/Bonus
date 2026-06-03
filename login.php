@@ -37,9 +37,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['username'] = $user['username'];
                     $_SESSION['role'] = $user['role'];
                     $_SESSION['full_name'] = $user['full_name'];
+                    loadUserRolesIntoSession($pdo, (int)$user['id'], $user['role']);
                     // เด็กฝึกงานให้ไปตรงหน้าเช็คอินเลย
-                    if ($user['role'] === 'intern') {
+                    if (hasRole('intern') && !hasRole(['admin', 'super_admin', 'technician', 'ma_technician', 'sales'])) {
                         header("Location: index.php?page=checkin");
+                    } elseif (isMaTechnicianOnly()) {
+                        header("Location: index.php?page=dispatch");
                     } else {
                         header("Location: index.php");
                     }

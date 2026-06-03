@@ -17,7 +17,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('userForm')?.addEventListener('submit', handleSaveUser);
+    document.querySelectorAll('.role-cb').forEach(cb => cb.addEventListener('change', toggleLateTimeField));
 });
+
+function setUserRolesChecked(roles) {
+    const set = new Set(roles || []);
+    document.querySelectorAll('.role-cb').forEach(cb => {
+        cb.checked = set.has(cb.value);
+    });
+    toggleLateTimeField();
+}
+
+function getSelectedRoles() {
+    return Array.from(document.querySelectorAll('.role-cb:checked')).map(cb => cb.value);
+}
 
 async function loadUsers() {
     try {
@@ -75,11 +88,12 @@ function renderUserTable(users) {
     }
 
     const roleBadges = {
-        'super_admin': '<span class="px-3 py-1 bg-rose-50 text-rose-600 rounded-full font-bold text-[10px] border border-rose-100">SUPER ADMIN</span>',
-        'admin': '<span class="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full font-bold text-[10px] border border-indigo-100">ADMIN</span>',
-        'technician': '<span class="px-3 py-1 bg-slate-50 text-slate-500 rounded-full font-bold text-[10px] border border-slate-100">TECHNICIAN</span>',
-        'sales': '<span class="px-3 py-1 bg-green-50 text-green-600 rounded-full font-bold text-[10px] border border-green-100">SALES</span>',
-        'intern': '<span class="px-3 py-1 bg-cyan-50 text-cyan-600 rounded-full font-bold text-[10px] border border-cyan-100">INTERN</span>'
+        'super_admin': '<span class="px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full font-bold text-[10px] border border-rose-100">ผู้ดูแลระบบ</span>',
+        'admin': '<span class="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full font-bold text-[10px] border border-indigo-100">แอดมิน</span>',
+        'technician': '<span class="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-full font-bold text-[10px] border border-slate-100">ช่าง Office</span>',
+        'ma_technician': '<span class="px-2 py-0.5 bg-violet-50 text-violet-600 rounded-full font-bold text-[10px] border border-violet-100">ช่าง MA</span>',
+        'sales': '<span class="px-2 py-0.5 bg-green-50 text-green-600 rounded-full font-bold text-[10px] border border-green-100">เซล</span>',
+        'intern': '<span class="px-2 py-0.5 bg-cyan-50 text-cyan-600 rounded-full font-bold text-[10px] border border-cyan-100">เด็กฝึกงาน</span>'
     };
 
     users.forEach((u, index) => {
@@ -108,7 +122,7 @@ function renderUserTable(users) {
             <td class="px-8 py-5">
                 <span class="bg-slate-100 text-slate-500 px-2 py-1 rounded text-xs tracking-widest font-mono cursor-help" title="รหัสผ่านถูกเข้ารหัสทางเดียวเพื่อความปลอดภัย หากลืมสามารถกดแก้ไขเพื่อตั้งใหม่ได้">********</span>
             </td>
-            <td class="px-8 py-5">${roleBadges[u.role] || u.role}</td>
+            <td class="px-8 py-5">${(u.roles || [u.role]).map(r => roleBadges[r] || r).join(' ')}</td>
             <td class="px-8 py-5 text-slate-400 text-xs">${date}</td>
             <td class="px-8 py-5 text-center">
                 <div class="flex justify-center space-x-2">
@@ -133,6 +147,7 @@ function openUserModal(isEdit = false) {
 
     form.reset();
     document.getElementById('userId').value = '';
+    setUserRolesChecked(['technician']);
     
     if (isEdit) {
         title.innerText = 'แก้ไขข้อมูลพนักงาน';
@@ -164,7 +179,7 @@ function editUser(index) {
     document.getElementById('userId').value = u.id;
     document.getElementById('full_name').value = u.full_name;
     document.getElementById('username_field').value = u.username;
-    document.getElementById('role').value = u.role;
+    setUserRolesChecked(u.roles || [u.role]);
     
     if (u.allow_late_time) {
         document.getElementById('allow_late_time').value = u.allow_late_time.substring(0, 5);
@@ -174,10 +189,24 @@ function editUser(index) {
     populateTeamDropdown(u.team_id || '');
 }
 
+function toggleLateTimeField() {
+    const roles = getSelectedRoles();
+    const field = document.getElementById('lateTimeField');
+    if (!field) return;
+    const show = roles.some(r => ['sales', 'technician', 'ma_technician', 'intern'].includes(r));
+    field.classList.toggle('hidden', !show);
+}
+
 async function handleSaveUser(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData.entries());
+    payload.roles = getSelectedRoles();
+    if (payload.roles.length === 0) {
+        Toast.error('กรุณาเลือกอย่างน้อย 1 ตำแหน่ง');
+        return;
+    }
+    payload.role = payload.roles[0];
 
     // 1. เรียกป๊อปอัปโหลดแบบ SweetAlert
     Swal.fire({
@@ -274,16 +303,5 @@ async function deleteUser(id) {
         }
     } catch (err) {
         Swal.fire('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
-    }
-}
-
-function toggleLateTimeField() {
-    const role = document.getElementById('role').value;
-    const lateTimeField = document.getElementById('lateTimeField');
-    
-    if (role === 'sales' || role === 'technician' || role === 'intern') {
-        lateTimeField.classList.remove('hidden');
-    } else {
-        lateTimeField.classList.add('hidden');
     }
 }

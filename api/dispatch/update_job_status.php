@@ -11,8 +11,8 @@ requireLogin();
 $user = getCurrentUser();
 $role = $user['role'];
 
-if ($role !== 'technician') {
-    echo json_encode(['success' => false, 'error' => 'เฉพาะช่างเท่านั้นที่สามารถอัปเดตสถานะงานได้']);
+if (!hasRole('technician')) {
+    echo json_encode(['success' => false, 'error' => 'เฉพาะช่าง Office เท่านั้นที่สามารถอัปเดตสถานะงานติดตั้งได้']);
     exit;
 }
 

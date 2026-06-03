@@ -34,6 +34,7 @@
         <?php endif; ?>
 
         <?php if (!hasRole('sales') && !hasRole('intern')): ?>
+        <?php if (!isMaTechnicianOnly()): ?>
         <a href="index.php?page=start_day" class="nav-item <?= $page === 'start_day' ? 'active' : '' ?>" data-label="ค่าแรกเข้า">
             <div class="icon"><i data-lucide="gauge"></i></div>
             <span class="nav-label">ค่าแรกเข้า</span>
@@ -42,11 +43,18 @@
             <div class="icon"><i data-lucide="fuel"></i></div>
             <span class="nav-label">น้ำมันและยานพาหนะ</span>
         </a>
-        <a href="index.php?page=dispatch" class="nav-item <?= $page === 'dispatch' ? 'active' : '' ?>" data-label="ระบบจัดส่งอัจฉริยะ">
-            <div class="icon"><i data-lucide="map"></i></div>
-            <span class="nav-label">ระบบจัดส่งอัจฉริยะ</span>
+        <?php endif; ?>
+        <?php if (canAccessDispatch()): ?>
+        <?php
+            $dispatchLabel = isMaTechnicianOnly() ? 'งาน MA' : (hasBothDispatchRoles() ? 'จัดส่งงาน Office/MA' : 'ระบบจัดส่งอัจฉริยะ');
+            $dispatchIcon = isMaTechnicianOnly() ? 'wrench' : 'map';
+        ?>
+        <a href="index.php?page=dispatch" class="nav-item <?= $page === 'dispatch' ? 'active' : '' ?>" data-label="<?= htmlspecialchars($dispatchLabel) ?>">
+            <div class="icon"><i data-lucide="<?= $dispatchIcon ?>"></i></div>
+            <span class="nav-label"><?= htmlspecialchars($dispatchLabel) ?></span>
         </a>
-        <?php if (hasRole('technician')): ?>
+        <?php endif; ?>
+        <?php if (hasRole('technician') && !isMaTechnicianOnly()): ?>
         <a href="index.php?page=job_close_history" class="nav-item <?= $page === 'job_close_history' ? 'active' : '' ?>" data-label="ประวัติปิดงาน">
             <div class="icon"><i data-lucide="clipboard-list"></i></div>
             <span class="nav-label">ประวัติปิดงาน</span>
@@ -54,7 +62,7 @@
         <?php endif; ?>
         <?php endif; ?>
 
-        <?php if (hasRole(['super_admin', 'admin', 'technician'])): ?>
+        <?php if (hasRole(['super_admin', 'admin', 'technician']) && !isMaTechnicianOnly()): ?>
         <a href="index.php?page=tech_bag" class="nav-item <?= $page === 'tech_bag' ? 'active' : '' ?>" data-label="กระเป๋าช่าง">
             <div class="icon"><i data-lucide="briefcase"></i></div>
             <span class="nav-label">กระเป๋าช่าง</span>
@@ -85,6 +93,13 @@
         <a href="index.php?page=issues" class="nav-item <?= $page === 'issues' ? 'active' : '' ?>" data-label="รายงานปัญหา">
             <div class="icon"><i data-lucide="alert-circle"></i></div>
             <span class="nav-label">รายงานปัญหา</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (hasRole('super_admin')): ?>
+        <a href="index.php?page=ma_summary" class="nav-item <?= $page === 'ma_summary' ? 'active' : '' ?>" data-label="สรุปงาน MA">
+            <div class="icon"><i data-lucide="bar-chart-3"></i></div>
+            <span class="nav-label">สรุปงาน MA</span>
         </a>
         <?php endif; ?>
     </nav>
