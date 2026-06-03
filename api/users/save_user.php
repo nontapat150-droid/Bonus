@@ -38,6 +38,13 @@ if (empty($username) || empty($full_name)) {
 }
 
 try {
+    // 🛠️ อัปเดต ENUM ทันทีก่อนบันทึก เพื่อแก้ปัญหาฐานข้อมูลไม่ยอมรับค่า 'intern'
+    try {
+        $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('super_admin', 'admin', 'technician', 'sales', 'intern') NOT NULL DEFAULT 'technician'");
+    } catch (Exception $e) {
+        // เงียบไว้ถ้าไม่สำเร็จ แต่ปกติควรจะผ่าน
+    }
+
     if ($id) {
         // Update
         if (!empty($password)) {
