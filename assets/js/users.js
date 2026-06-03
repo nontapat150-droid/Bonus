@@ -7,14 +7,21 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUsers();
     loadTeams();
 
-    document.getElementById('searchUser')?.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
-        const filtered = allUsers.filter(u => 
-            u.full_name.toLowerCase().includes(term) || 
-            u.username.toLowerCase().includes(term)
-        );
+    function filterUsers() {
+        const term = document.getElementById('searchUser')?.value.toLowerCase() || '';
+        const selectedRole = document.getElementById('roleFilter')?.value || '';
+        
+        const filtered = allUsers.filter(u => {
+            const matchName = u.full_name.toLowerCase().includes(term) || u.username.toLowerCase().includes(term);
+            const userRoles = u.roles && u.roles.length > 0 ? u.roles : [u.role];
+            const matchRole = selectedRole === '' || userRoles.includes(selectedRole);
+            return matchName && matchRole;
+        });
         renderUserTable(filtered);
-    });
+    }
+
+    document.getElementById('searchUser')?.addEventListener('input', filterUsers);
+    document.getElementById('roleFilter')?.addEventListener('change', filterUsers);
 
     document.getElementById('userForm')?.addEventListener('submit', handleSaveUser);
     document.querySelectorAll('.role-cb').forEach(cb => cb.addEventListener('change', toggleLateTimeField));
