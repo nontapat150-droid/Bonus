@@ -73,6 +73,9 @@ function ensureMaJobSchema(PDO $pdo) {
         'team_name_import' => 'VARCHAR(100) DEFAULT NULL',
         'team_match_status' => "ENUM('matched','unmatched') DEFAULT NULL",
         'assigned_user_id' => 'INT DEFAULT NULL',
+        'sub_district' => 'VARCHAR(150) DEFAULT NULL',
+        'district' => 'VARCHAR(150) DEFAULT NULL',
+        'price' => 'DECIMAL(10,2) DEFAULT NULL',
         'updated_at' => 'TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP'
     ];
     try {

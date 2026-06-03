@@ -181,7 +181,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('maExcelFile')?.addEventListener('change', handleMAExcelUpload);
         document.getElementById('exportExcelBtn')?.addEventListener('click', handleExportExcel);
         document.getElementById('addManualJobBtn')?.addEventListener('click', openManualJobModal);
+        document.getElementById('addManualMaJobBtn')?.addEventListener('click', openManualMaJobModal);
         document.getElementById('manualJobForm')?.addEventListener('submit', handleManualJobSubmit);
+        document.getElementById('manualMaJobForm')?.addEventListener('submit', handleManualMaJobSubmit);
         document.getElementById('addTeamBtn')?.addEventListener('click', handleAddTeam);
         document.getElementById('dispatchModalBtn')?.addEventListener('click', openDispatchModal);
         document.getElementById('confirmDispatchBtn')?.addEventListener('click', runAutoDispatch);
@@ -233,12 +235,13 @@ function switchDispatchView(view) {
 
     const importBtn = document.querySelector('button[onclick="document.getElementById(\'jobExcelFile\').click()"]');
     const importMABtn = document.getElementById('importMABtn');
-    if (importBtn) {
-        importBtn.style.display = (view === 'jobs') ? '' : 'none';
-    }
-    if (importMABtn) {
-        importMABtn.style.display = (view === 'ma') ? '' : 'none';
-    }
+    const manualBtn = document.getElementById('addManualJobBtn');
+    const manualMaBtn = document.getElementById('addManualMaJobBtn');
+    
+    if (importBtn) importBtn.style.display = (view === 'jobs') ? '' : 'none';
+    if (importMABtn) importMABtn.style.display = (view === 'ma') ? '' : 'none';
+    if (manualBtn) manualBtn.style.display = (view === 'jobs') ? '' : 'none';
+    if (manualMaBtn) manualMaBtn.style.display = (view === 'ma') ? '' : 'none';
 
     if (view === 'jobs' || view === 'ma') {
         updateDispatchModeBanner(view);
@@ -435,10 +438,25 @@ function closeDispatchModal() {
     document.getElementById('dispatchModal').classList.add('hidden'); 
 }
 
-function openManualJobModal() {
+window.openManualJobModal = async function() {
     document.getElementById('manualJobForm')?.reset();
     document.getElementById('addManualJobModal').classList.remove('hidden');
-}
+
+    try {
+        const res = await fetch('api/users/get_technicians.php?type=office');
+        const data = await res.json();
+        const select = document.getElementById('officeTechSelect');
+        if (select && data.success) {
+            select.innerHTML = '<option value="">-- เลือกช่างซ่อม --</option>';
+            data.users.forEach(u => {
+                const teamName = u.team_name ? ` (ทีม: ${escapeHTML(u.team_name)})` : '';
+                select.innerHTML += `<option value="${u.id}">${escapeHTML(u.full_name)}${teamName}</option>`;
+            });
+        }
+    } catch (e) {
+        console.error('Failed to fetch technicians', e);
+    }
+};
 
 window.closeManualJobModal = function() {
     document.getElementById('addManualJobModal').classList.add('hidden');
@@ -467,6 +485,64 @@ async function handleManualJobSubmit(e) {
                 showConfirmButton: false
             });
             closeManualJobModal();
+            loadJobs();
+        } else {
+            Swal.fire('ข้อผิดพลาด', result.error, 'error');
+        }
+    } catch (e) {
+        Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
+    } finally {
+        hideLoader();
+    }
+}
+
+async function openManualMaJobModal() {
+    document.getElementById('manualMaJobForm')?.reset();
+    document.getElementById('addManualMaJobModal').classList.remove('hidden');
+    
+    // Fetch technicians and populate the select box
+    try {
+        const res = await fetch('api/users/get_technicians.php?type=ma');
+        const data = await res.json();
+        const select = document.getElementById('maTechSelect');
+        if (select && data.success) {
+            select.innerHTML = '<option value="">-- เลือกช่างซ่อม --</option>';
+            data.users.forEach(u => {
+                select.innerHTML += `<option value="${u.id}">${escapeHTML(u.full_name)}</option>`;
+            });
+        }
+    } catch (e) {
+        console.error('Failed to fetch technicians', e);
+    }
+}
+
+window.closeManualMaJobModal = function() {
+    document.getElementById('addManualMaJobModal').classList.add('hidden');
+};
+
+async function handleManualMaJobSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    showLoader('บันทึกข้อมูลงาน MA...');
+    try {
+        const res = await fetch('api/dispatch/add_manual_ma_job.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.success) {
+            Swal.fire({
+                title: 'สำเร็จ',
+                text: 'เพิ่มงาน MA เรียบร้อยแล้ว',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            closeManualMaJobModal();
             loadJobs();
         } else {
             Swal.fire('ข้อผิดพลาด', result.error, 'error');
@@ -960,7 +1036,11 @@ function createJobRow(job, index) {
             </div>
             <div class="rounded-lg bg-slate-50 border border-slate-100 p-3">
                 <div class="text-[9px] font-black text-slate-400 uppercase tracking-wide mb-1">สถานที่ติดตั้ง</div>
-                <div class="text-[12px] text-slate-700 font-bold leading-relaxed break-words">${displayValue(job.address)}</div>
+                <div class="text-[12px] text-slate-700 font-bold leading-relaxed break-words">
+                    ${displayValue(job.address)}
+                    ${job.sub_district ? ' ต.' + escapeHTML(job.sub_district) : ''}
+                    ${job.district ? ' อ.' + escapeHTML(job.district) : ''}
+                </div>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
                 ${currentJobType === 'ma' ? maJobExtraHtml(job) : ''}
@@ -1800,12 +1880,16 @@ function maJobExtraHtml(job) {
     if (currentJobType !== 'ma') return '';
     let html = '';
     if (hasValue(job.job_time)) html += detailItem('เวลา', job.job_time);
+    if (hasValue(job.assigned_user_name)) html += detailItem('ช่างซ่อม', job.assigned_user_name);
+    if (hasValue(job.price)) html += detailItem('ราคา', job.price);
+    if (hasValue(job.area_provider)) html += detailItem('พื้นที่', job.area_provider);
+    
     if (hasValue(job.symptoms)) {
         html += `<div class="rounded-lg bg-amber-50 border border-amber-100 p-3 col-span-full">
             <div class="text-[9px] font-black text-amber-600 uppercase">อาการ</div>
             <div class="text-[12px] font-bold text-amber-800 mt-1">${displayValue(job.symptoms)}</div></div>`;
     }
-    if (hasValue(job.area_provider)) html += detailItem('พื้นที่', job.area_provider);
+    
     if (job.team_match_status === 'unmatched' && typeof IS_ADMIN !== 'undefined' && IS_ADMIN) {
         html += `<div class="rounded-lg bg-rose-50 border border-rose-200 p-2 col-span-full text-[11px] font-bold text-rose-700">
             ⚠ ทีม "${displayValue(job.team_name_import)}" ไม่ตรงในระบบ — กรุณาเลือกทีมใหม่</div>`;
