@@ -25,6 +25,8 @@ if ($page === 'home') {
         $page = 'checkin';
     } elseif (function_exists('isInternOnly') && isInternOnly()) {
         $page = 'work_records';
+    } elseif (function_exists('isMaTechnicianOnly') && isMaTechnicianOnly()) {
+        $page = 'checkin';
     }
 }
 

@@ -2,6 +2,33 @@
 let checkinData = [];
 let activeCheckinTab = window.SHOW_REGULAR ? 'regular' : 'ma';
 
+window.switchCheckinTab = function(tab) {
+    activeCheckinTab = tab;
+    const panelRegular = document.getElementById('panelRegular');
+    const panelMa = document.getElementById('panelMa');
+    const tabRegular = document.getElementById('tabRegular');
+    const tabMa = document.getElementById('tabMa');
+
+    if (panelRegular) panelRegular.classList.toggle('hidden', tab !== 'regular');
+    if (panelMa) panelMa.classList.toggle('hidden', tab !== 'ma');
+
+    if (tabRegular) {
+        tabRegular.classList.toggle('bg-indigo-600', tab === 'regular');
+        tabRegular.classList.toggle('text-white', tab === 'regular');
+        tabRegular.classList.toggle('text-indigo-600', tab !== 'regular');
+    }
+    if (tabMa) {
+        tabMa.classList.toggle('bg-violet-600', tab === 'ma');
+        tabMa.classList.toggle('text-white', tab === 'ma');
+        tabMa.classList.toggle('text-violet-600', tab !== 'ma');
+    }
+
+    const historyTitle = document.getElementById('historyTitle');
+    if (historyTitle) historyTitle.textContent = tab === 'ma' ? 'ประวัติเช็คอิน MA' : 'ประวัติเช็คอิน';
+
+    loadCheckinHistory();
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     if (!window.SHOW_REGULAR && window.SHOW_MA) {
         activeCheckinTab = 'ma';
@@ -213,32 +240,6 @@ function initMaCheckin() {
     }
 }
 
-window.switchCheckinTab = function(tab) {
-    activeCheckinTab = tab;
-    const panelRegular = document.getElementById('panelRegular');
-    const panelMa = document.getElementById('panelMa');
-    const tabRegular = document.getElementById('tabRegular');
-    const tabMa = document.getElementById('tabMa');
-
-    if (panelRegular) panelRegular.classList.toggle('hidden', tab !== 'regular');
-    if (panelMa) panelMa.classList.toggle('hidden', tab !== 'ma');
-
-    if (tabRegular) {
-        tabRegular.classList.toggle('bg-indigo-600', tab === 'regular');
-        tabRegular.classList.toggle('text-white', tab === 'regular');
-        tabRegular.classList.toggle('text-indigo-600', tab !== 'regular');
-    }
-    if (tabMa) {
-        tabMa.classList.toggle('bg-violet-600', tab === 'ma');
-        tabMa.classList.toggle('text-white', tab === 'ma');
-        tabMa.classList.toggle('text-violet-600', tab !== 'ma');
-    }
-
-    const historyTitle = document.getElementById('historyTitle');
-    if (historyTitle) historyTitle.textContent = tab === 'ma' ? 'ประวัติเช็คอิน MA' : 'ประวัติเช็คอิน';
-
-    loadCheckinHistory();
-};
 
 async function loadMaSettings() {
     try {
