@@ -104,26 +104,36 @@
         <?php endif; ?>
     </nav>
 
-    <div class="sidebar-user flex items-center gap-3 group relative cursor-pointer interactive hover:bg-[var(--c-surface-2)] rounded-lg mx-2 mb-2 transition-colors" onclick="if(window.openUserProfile) window.openUserProfile()">
-        <div class="w-10 h-10 rounded-full bg-[var(--c-primary-faint)] flex items-center justify-center text-[var(--c-primary)] font-bold shrink-0 overflow-hidden">
-            <?php if (!empty($user['profile_image'])): ?>
-                <img src="<?= htmlspecialchars($user['profile_image']) ?>?t=<?= time() ?>" class="w-full h-full object-cover" alt="Profile">
-            <?php else: ?>
-                <?= strtoupper(substr($user['full_name'] ?? 'U', 0, 2)) ?>
-            <?php endif; ?>
+    <div class="mt-auto px-2 pb-4 flex flex-col gap-1">
+        <!-- Profile Button -->
+        <div class="sidebar-user flex items-center gap-3 group relative cursor-pointer interactive hover:bg-[var(--c-surface-2)] rounded-xl p-2 transition-colors" onclick="if(window.openUserProfile) window.openUserProfile()">
+            <div class="w-10 h-10 rounded-full bg-[var(--c-primary-faint)] border border-[var(--c-primary-faint)] flex items-center justify-center text-[var(--c-primary)] font-bold shrink-0 overflow-hidden shadow-sm">
+                <?php if (!empty($user['profile_image'])): ?>
+                    <img src="<?= htmlspecialchars($user['profile_image']) ?>?t=<?= time() ?>" class="w-full h-full object-cover" alt="Profile">
+                <?php else: ?>
+                    <?= strtoupper(substr($user['full_name'] ?? 'U', 0, 2)) ?>
+                <?php endif; ?>
+            </div>
+            <div class="nav-label flex-1 overflow-hidden">
+                <p class="text-sm font-bold text-[var(--c-text-1)] truncate"><?= htmlspecialchars($user['full_name']) ?></p>
+                <p class="text-[10px] text-[var(--c-text-3)] font-medium uppercase tracking-tight">ตั้งค่าโปรไฟล์</p>
+            </div>
+            <div class="hidden-tooltip absolute left-16 bg-[var(--c-text-1)] text-white text-xs px-3 py-1.5 rounded-lg opacity-0 pointer-events-none transition-opacity whitespace-nowrap z-[60] shadow-lg">
+                ตั้งค่าโปรไฟล์
+            </div>
         </div>
-        <div class="nav-label flex-1 overflow-hidden">
-            <p class="text-sm font-bold text-[var(--c-text-1)] truncate"><?= htmlspecialchars($user['full_name']) ?></p>
-            <p class="text-[10px] text-[var(--c-text-3)] font-medium uppercase tracking-tight"><?= htmlspecialchars($user['role']) ?></p>
-        </div>
-        <a href="logout.php" class="nav-label text-[var(--c-text-3)] hover:text-[var(--c-danger)] transition-colors shrink-0" title="ออกจากระบบ">
-            <i data-lucide="log-out" class="w-5 h-5"></i>
+
+        <!-- Logout Button -->
+        <a href="logout.php" class="sidebar-logout flex items-center gap-3 group relative hover:bg-rose-50 rounded-xl p-2 transition-colors text-rose-500">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+            </div>
+            <span class="nav-label text-sm font-bold flex-1">ออกจากระบบ</span>
+            
+            <div class="hidden-tooltip absolute left-16 bg-rose-500 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 pointer-events-none transition-opacity whitespace-nowrap z-[60] shadow-lg">
+                ออกจากระบบ
+            </div>
         </a>
-        
-        <div class="hidden-tooltip absolute left-16 bg-[var(--c-text-1)] text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none transition-opacity whitespace-nowrap z-[60]">
-            <?= htmlspecialchars($user['full_name']) ?> <br>
-            <span class="text-[var(--c-danger)] text-[10px]"><a href="logout.php">ออกจากระบบ</a></span>
-        </div>
     </div>
 
     <button id="sidebarToggle" class="sidebar-toggle">
@@ -295,19 +305,24 @@
             });
         }
 
-        const userSect = document.querySelector('.sidebar-user');
-        const userTooltip = document.querySelector('.hidden-tooltip');
-        if (userSect && userTooltip && sidebar) {
-            userSect.addEventListener('mouseenter', () => {
-                if (sidebar.classList.contains('collapsed')) {
-                    userTooltip.style.opacity = '1';
-                    userTooltip.style.pointerEvents = 'auto';
-                }
-            });
-            userSect.addEventListener('mouseleave', () => {
-                userTooltip.style.opacity = '0';
-                userTooltip.style.pointerEvents = 'none';
-            });
-        }
+        const tooltipsElements = [
+            { el: document.querySelector('.sidebar-user'), tooltip: document.querySelector('.sidebar-user .hidden-tooltip') },
+            { el: document.querySelector('.sidebar-logout'), tooltip: document.querySelector('.sidebar-logout .hidden-tooltip') }
+        ];
+
+        tooltipsElements.forEach(item => {
+            if (item.el && item.tooltip && sidebar) {
+                item.el.addEventListener('mouseenter', () => {
+                    if (sidebar.classList.contains('collapsed')) {
+                        item.tooltip.style.opacity = '1';
+                        item.tooltip.style.pointerEvents = 'auto';
+                    }
+                });
+                item.el.addEventListener('mouseleave', () => {
+                    item.tooltip.style.opacity = '0';
+                    item.tooltip.style.pointerEvents = 'none';
+                });
+            }
+        });
     });
 </script>
