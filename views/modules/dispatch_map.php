@@ -109,6 +109,10 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             <button onclick="document.getElementById('jobExcelFile').click()" title="นำเข้าไฟล์ Excel" class="bg-[var(--c-surface-2)] hover:bg-[var(--c-border)] text-[var(--c-text-2)] px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all border border-[var(--c-border)]">
                 <i data-lucide="download" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>นำเข้า</span>
             </button>
+            <input type="file" id="maExcelFile" accept=".xlsx, .xls" class="hidden">
+            <button id="importMABtn" onclick="document.getElementById('maExcelFile').click()" title="นำเข้าไฟล์ Excel (MA)" class="bg-[var(--c-surface-2)] hover:bg-[var(--c-border)] text-[var(--c-text-2)] px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all border border-[var(--c-border)]" style="display: none;">
+                <i data-lucide="download" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>นำเข้า MA</span>
+            </button>
             <button id="addManualJobBtn" title="สร้างงานใหม่" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all">
                 <i data-lucide="plus" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>สร้างงาน</span>
             </button>
