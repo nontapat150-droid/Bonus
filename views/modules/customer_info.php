@@ -20,14 +20,14 @@ requireRole(['admin', 'super_admin']);
 
     <!-- Search Box -->
     <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <form id="searchCustomerForm" class="flex gap-2">
+        <form id="searchCustomerForm" onsubmit="return false;" class="flex gap-2">
             <div class="relative flex-1">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
                 </div>
-                <input type="text" id="searchInput" class="input !pl-11 !py-4 w-full text-lg font-bold" placeholder="กรอกหมายเลข NON, Circuit ID, หรือ Access No..." required>
+                <input type="text" id="searchInput" class="input !pl-11 !py-4 w-full text-lg font-bold" placeholder="กรอกหมายเลข NON, Circuit ID, หรือ Access No...">
             </div>
-            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 rounded-xl shadow-btn transition-all shrink-0 flex items-center gap-2">
+            <button type="button" id="searchBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 rounded-xl shadow-btn transition-all shrink-0 flex items-center gap-2">
                 <i data-lucide="search" class="w-5 h-5"></i> ค้นหา
             </button>
             <button type="button" id="showAllBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-6 rounded-xl transition-all shrink-0 flex items-center gap-2" title="แสดงข้อมูลลูกค้าทั้งหมดล่าสุด">
