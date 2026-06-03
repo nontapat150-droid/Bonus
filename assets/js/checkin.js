@@ -458,24 +458,34 @@ window.deleteCheckin = async function(id) {
 
 // ---------------- Settings & Export (Admin) ----------------
 async function loadSettings() {
-    const input = document.getElementById('lateTimeInput');
-    if(!input) return;
+    const inputAdminTech = document.getElementById('lateTimeAdminTechInput');
+    const inputSales = document.getElementById('lateTimeSalesInput');
+    if(!inputAdminTech && !inputSales) return;
     try {
         const res = await fetch('api/checkin/settings.php');
         const data = await res.json();
-        if(data.success) input.value = data.late_time;
+        if(data.success) {
+            if(inputAdminTech) inputAdminTech.value = data.late_time_admin_tech || '08:00';
+            if(inputSales) inputSales.value = data.late_time_sales || '08:30';
+        }
     } catch(e) {}
 }
 
-window.saveSettings = async function() {
-    const time = document.getElementById('lateTimeInput').value;
+window.saveSettings = async function(target) {
+    let time = '';
+    if (target === 'admin_tech') {
+        time = document.getElementById('lateTimeAdminTechInput').value;
+    } else if (target === 'sales') {
+        time = document.getElementById('lateTimeSalesInput').value;
+    }
+    
     if(!time) return Toast.error('กรุณาระบุเวลา');
     Loader.show();
     try {
         const res = await fetch('api/checkin/settings.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({late_time: time})
+            body: JSON.stringify({late_time: time, target: target})
         });
         const data = await res.json();
         if(data.success) {

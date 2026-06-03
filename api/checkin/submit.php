@@ -41,13 +41,21 @@ try {
     if (move_uploaded_file($file['tmp_name'], $target_file)) {
         
         // 1. ดึงข้อมูลเวลาเข้างานของ user คนนี้ (allow_late_time)
-        $stmtUser = $pdo->prepare("SELECT allow_late_time FROM users WHERE id = ?");
+        $stmtUser = $pdo->prepare("SELECT allow_late_time, role FROM users WHERE id = ?");
         $stmtUser->execute([$user_id]);
-        $allow_late_time = $stmtUser->fetchColumn();
+        $user_row = $stmtUser->fetch(PDO::FETCH_ASSOC);
+        $allow_late_time = $user_row['allow_late_time'] ?? null;
+        $user_role = $user_row['role'] ?? '';
 
         // ค่าเริ่มต้นหากไม่ได้ตั้งไว้ (เผื่อไว้)
         if (!$allow_late_time) {
-            $allow_late_time = '08:30:00'; 
+            if (in_array($user_role, ['admin', 'super_admin', 'technician'])) {
+                $allow_late_time = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'late_time_admin_tech'")->fetchColumn() ?: '08:00:00';
+            } elseif ($user_role === 'sales') {
+                $allow_late_time = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'late_time_sales'")->fetchColumn() ?: '08:30:00';
+            } else {
+                $allow_late_time = '08:30:00';
+            }
         }
 
         // 2. คำนวณสถานะสาย
