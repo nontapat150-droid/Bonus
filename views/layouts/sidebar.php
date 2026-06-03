@@ -12,10 +12,12 @@
 
     <nav class="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 custom-scrollbar">
         
+        <?php if (!hasRole('intern')): ?>
         <a href="index.php?page=home" class="nav-item <?= $page === 'home' ? 'active' : '' ?>" data-label="หน้าแรก">
             <div class="icon"><i data-lucide="layout-dashboard"></i></div>
             <span class="nav-label">หน้าแรก</span>
         </a>
+        <?php endif; ?>
 
         <div class="nav-label px-3 py-2 text-[10px] font-bold text-[var(--c-text-3)] uppercase tracking-widest mt-2 whitespace-nowrap">เมนูหลัก</div>
         
@@ -24,7 +26,14 @@
             <span class="nav-label">ระบบเช็คอิน</span>
         </a>
 
-        <?php if (!hasRole('sales')): ?>
+        <?php if (hasRole('intern')): ?>
+        <a href="index.php?page=work_records" class="nav-item <?= $page === 'work_records' ? 'active' : '' ?>" data-label="รายงานการทำงาน">
+            <div class="icon"><i data-lucide="file-text"></i></div>
+            <span class="nav-label">รายงานการทำงาน</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (!hasRole('sales') && !hasRole('intern')): ?>
         <a href="index.php?page=start_day" class="nav-item <?= $page === 'start_day' ? 'active' : '' ?>" data-label="ค่าแรกเข้า">
             <div class="icon"><i data-lucide="gauge"></i></div>
             <span class="nav-label">ค่าแรกเข้า</span>
@@ -121,15 +130,23 @@
     </div>
 
     <nav class="flex-1 overflow-y-auto py-4 px-2">
+        <?php if (!hasRole('intern')): ?>
         <a href="index.php?page=home" class="nav-item <?= $page === 'home' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="layout-dashboard"></i></div>
             <span class="nav-label">หน้าแรก</span>
         </a>
+        <?php endif; ?>
         <a href="index.php?page=checkin" class="nav-item <?= $page === 'checkin' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="camera"></i></div>
             <span class="nav-label">ระบบเช็คอิน</span>
         </a>
-        <?php if (!hasRole('sales')): ?>
+        <?php if (hasRole('intern')): ?>
+        <a href="index.php?page=work_records" class="nav-item <?= $page === 'work_records' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="file-text"></i></div>
+            <span class="nav-label">รายงานการทำงาน</span>
+        </a>
+        <?php endif; ?>
+        <?php if (!hasRole('sales') && !hasRole('intern')): ?>
         <a href="index.php?page=start_day" class="nav-item <?= $page === 'start_day' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="gauge"></i></div>
             <span class="nav-label">ค่าแรกเข้า</span>
@@ -207,15 +224,23 @@
 </aside>
 
 <nav id="bottom-nav" class="bottom-tabs md:hidden">
+    <?php if (!hasRole('intern')): ?>
     <a href="index.php?page=home" class="tab-item <?= $page === 'home' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="layout-dashboard" class="w-6 h-6"></i></div>
         <span class="tab-label">Home</span>
     </a>
+    <?php endif; ?>
     <a href="index.php?page=checkin" class="tab-item <?= $page === 'checkin' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="camera" class="w-6 h-6"></i></div>
         <span class="tab-label">Scan</span>
     </a>
-    <?php if (!hasRole('sales')): ?>
+    <?php if (hasRole('intern')): ?>
+    <a href="index.php?page=work_records" class="tab-item <?= $page === 'work_records' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="file-text" class="w-6 h-6"></i></div>
+        <span class="tab-label">รายงาน</span>
+    </a>
+    <?php endif; ?>
+    <?php if (!hasRole('sales') && !hasRole('intern')): ?>
     <a href="index.php?page=start_day" class="tab-item <?= $page === 'start_day' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="gauge" class="w-6 h-6"></i></div>
         <span class="tab-label">แรกเข้า</span>
