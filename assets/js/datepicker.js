@@ -258,6 +258,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', initDatepickers);
+    window.initDatepickers = initDatepickers;
     document.addEventListener('click', function (event) {
         if (!popup.contains(event.target) && state.display && event.target !== state.display) {
             closePicker();
