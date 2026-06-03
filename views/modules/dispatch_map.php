@@ -122,6 +122,9 @@ $tabCount = ($canViewOffice ? 1 : 0) + ($canViewMa ? 1 : 0) + ($canViewOffice ? 
             <button id="addManualJobBtn" title="สร้างงานใหม่" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all">
                 <i data-lucide="plus" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>สร้างงาน</span>
             </button>
+            <button id="addManualMaJobBtn" title="สร้างงาน MA" class="bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-200 px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all" style="display: none;">
+                <i data-lucide="plus" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>สร้างงาน MA</span>
+            </button>
             <button id="exportExcelBtn" title="ส่งออกไฟล์ Excel" class="bg-[var(--c-info-bg)] text-[var(--c-info)] hover:opacity-80 px-2 md:px-3 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all border border-[var(--c-info-bg)]">
                 <i data-lucide="bar-chart-2" class="w-3 h-3 md:w-4 md:h-4 inline-block mr-1"></i><span>ส่งออก</span>
             </button>
@@ -390,6 +393,12 @@ $tabCount = ($canViewOffice ? 1 : 0) + ($canViewMa ? 1 : 0) + ($canViewOffice ? 
                     <label class="block text-xs font-bold text-slate-700 mb-1">Task Type</label>
                     <input type="text" name="task_type" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="ประเภทงาน">
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ช่างซ่อม (ช่าง Office)</label>
+                    <select name="assigned_user_id" id="officeTechSelect" class="input !py-2 !px-3 text-sm font-bold w-full">
+                        <option value="">-- เลือกช่างซ่อม --</option>
+                    </select>
+                </div>
             </div>
             
             <div>
@@ -400,6 +409,95 @@ $tabCount = ($canViewOffice ? 1 : 0) + ($canViewMa ? 1 : 0) + ($canViewOffice ? 
         <div class="p-3 bg-slate-50 flex justify-end gap-2 border-t border-slate-100">
             <button type="button" onclick="closeManualJobModal()" class="px-4 py-2 bg-white text-slate-600 rounded-lg font-bold text-xs border border-slate-200 hover:bg-slate-100 transition-colors">ยกเลิก</button>
             <button type="submit" form="manualJobForm" id="submitManualJobBtn" class="btn-primary px-4 py-2 text-xs">บันทึกข้อมูล <i data-lucide="save" class="w-4 h-4 inline-block ml-1"></i></button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Manual MA Job Modal -->
+<div id="addManualMaJobModal" class="fixed inset-0 z-[80] hidden bg-slate-900/50 backdrop-blur-sm flex justify-center items-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate__animated animate__zoomIn z-[90] my-8">
+        <div class="p-4 bg-violet-600 text-white flex justify-between items-center">
+            <div>
+                <h3 class="text-sm font-black uppercase"><i data-lucide="plus-circle" class="w-4 h-4 inline-block mr-1"></i>สร้างงาน MA ใหม่</h3>
+                <p class="text-[10px] mt-1 text-violet-100">เพิ่มข้อมูลงาน MA เข้าระบบด้วยตนเอง</p>
+            </div>
+            <button type="button" onclick="closeManualMaJobModal()" class="text-white hover:text-violet-200 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form id="manualMaJobForm" class="p-4 space-y-4 max-h-[70vh] overflow-y-auto complete-modal-scrollbar">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">วันที่ (Plan Date) <span class="text-rose-500">*</span></label>
+                    <input type="date" name="plan_arrival_date" required class="input !py-2 !px-3 text-sm font-bold w-full">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Order.No</label>
+                    <input type="text" name="order_no" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="เลขที่ออเดอร์">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">NON <span class="text-rose-500">*</span></label>
+                    <input type="text" name="access_no" required class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="รหัส NON">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">รายชื่อ (ลูกค้า)</label>
+                    <input type="text" name="customer" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="ชื่อลูกค้า">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรลูกค้า</label>
+                    <input type="text" name="phone" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="เบอร์โทร">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">พื้นที่ (Network)</label>
+                    <select name="area_provider" class="input !py-2 !px-3 text-sm font-bold w-full">
+                        <option value="">-- เลือกพื้นที่ --</option>
+                        <option value="AIS">AIS</option>
+                        <option value="3BB">3BB</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ตำบล</label>
+                    <input type="text" name="sub_district" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="ตำบล">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">อำเภอ</label>
+                    <input type="text" name="district" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="อำเภอ">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ที่อยู่ติดตั้ง</label>
+                    <textarea name="address" rows="2" class="input !py-2 !px-3 text-sm font-bold w-full resize-none" placeholder="รายละเอียดที่อยู่ติดตั้ง..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ละติจูด (lat)</label>
+                    <input type="number" step="any" name="lat" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="ละติจูด">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ลองจิจูด (long)</label>
+                    <input type="number" step="any" name="lng" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="ลองจิจูด">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ราคา</label>
+                    <input type="number" step="any" name="price" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="ราคา">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ช่างซ่อม</label>
+                    <select name="assigned_user_id" id="maTechSelect" class="input !py-2 !px-3 text-sm font-bold w-full">
+                        <option value="">-- เลือกช่างซ่อม --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">อาการ</label>
+                    <textarea name="symptoms" rows="2" class="input !py-2 !px-3 text-sm font-bold w-full resize-none" placeholder="อาการที่พบ"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">หมายเหตุ</label>
+                    <textarea name="remark" rows="2" class="input !py-2 !px-3 text-sm font-bold w-full resize-none" placeholder="รายละเอียดเพิ่มเติม"></textarea>
+                </div>
+            </div>
+        </form>
+        <div class="p-3 bg-slate-50 flex justify-end gap-2 border-t border-slate-100">
+            <button type="button" onclick="closeManualMaJobModal()" class="px-4 py-2 bg-white text-slate-600 rounded-lg font-bold text-xs border border-slate-200 hover:bg-slate-100 transition-colors">ยกเลิก</button>
+            <button type="submit" form="manualMaJobForm" id="submitManualMaJobBtn" class="bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-bold px-4 py-2 text-xs">บันทึกข้อมูล <i data-lucide="save" class="w-4 h-4 inline-block ml-1"></i></button>
         </div>
     </div>
 </div>

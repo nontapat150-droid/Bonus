@@ -68,10 +68,18 @@ try {
 
     $table = $isMa ? 'ma_jobs' : 'jobs';
 
-    $sql = "SELECT j.*, t.team_name 
-            FROM {$table} j 
-            LEFT JOIN teams t ON j.team_id = t.id 
-            WHERE 1=1";
+    if ($isMa) {
+        $sql = "SELECT j.*, t.team_name, u.full_name AS assigned_user_name 
+                FROM {$table} j 
+                LEFT JOIN teams t ON j.team_id = t.id 
+                LEFT JOIN users u ON j.assigned_user_id = u.id
+                WHERE 1=1";
+    } else {
+        $sql = "SELECT j.*, t.team_name 
+                FROM {$table} j 
+                LEFT JOIN teams t ON j.team_id = t.id 
+                WHERE 1=1";
+    }
     $params = [];
 
     if (!hasRole(['admin', 'super_admin'])) {

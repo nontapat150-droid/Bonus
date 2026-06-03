@@ -3,6 +3,7 @@
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
 require_once '../../config/ma_job.php';
+require_once '../../config/oil_job_sync.php';
 
 header('Content-Type: application/json');
 requireLogin();
@@ -198,6 +199,11 @@ try {
     }
 
     $pdo->commit();
+
+    if ($status === 'completed' && !empty($job['team_id'])) {
+        syncTeamOilMonth($pdo, (int)$job['team_id'], date('Y-m'));
+    }
+
     echo json_encode(['success' => true, 'message' => $message]);
 
 } catch (Exception $e) {

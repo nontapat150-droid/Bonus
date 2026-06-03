@@ -26,7 +26,22 @@ function countTeamCompletedCases(PDO $pdo, int $teamId, string $yearMonth): int
           AND {$ym} = ?
     ");
     $stmt->execute([$teamId, $yearMonth]);
-    return (int)$stmt->fetchColumn();
+    $standardCount = (int)$stmt->fetchColumn();
+
+    $ymMa = sqlYearMonth('mh.created_at');
+    $stmtMa = $pdo->prepare("
+        SELECT COUNT(DISTINCT mh.ma_job_id)
+        FROM ma_customer_history mh
+        INNER JOIN ma_jobs mj ON mj.id = mh.ma_job_id
+        WHERE mj.team_id = ?
+          AND mj.status = 'completed'
+          AND mh.action = 'completed'
+          AND {$ymMa} = ?
+    ");
+    $stmtMa->execute([$teamId, $yearMonth]);
+    $maCount = (int)$stmtMa->fetchColumn();
+
+    return $standardCount + $maCount;
 }
 
 /**
@@ -185,6 +200,33 @@ function collectTeamOilMonthsForJobIds(PDO $pdo, array $jobIds): array
 }
 
 /**
+ * Collect team+month pairs with completed closes for these MA jobs (call BEFORE deleting jobs).
+ *
+ * @return array<int, array{team_id: int, ym_key: string}>
+ */
+function collectTeamOilMonthsForMaJobIds(PDO $pdo, array $jobIds): array
+{
+    $jobIds = array_values(array_filter(array_map('intval', $jobIds)));
+    if (empty($jobIds)) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($jobIds), '?'));
+    $ym = sqlYearMonth('mh.created_at');
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT mj.team_id, {$ym} AS ym_key
+        FROM ma_customer_history mh
+        INNER JOIN ma_jobs mj ON mj.id = mh.ma_job_id
+        WHERE mh.ma_job_id IN ($placeholders)
+          AND mj.status = 'completed'
+          AND mh.action = 'completed'
+          AND mj.team_id IS NOT NULL
+    ");
+    $stmt->execute($jobIds);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
  * Recount and update oil case totals for pre-collected team-month pairs.
  */
 function syncCollectedTeamOilMonths(PDO $pdo, array $pairs): void
@@ -263,9 +305,27 @@ function backfillAllTeamOilCases(PDO $pdo): array
         WHERE j.team_id IS NOT NULL
           AND j.status = 'completed'
           AND jl.status = 'completed'
-        ORDER BY j.team_id, ym_key
     ");
     $pairs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $ymMa = sqlYearMonth('mh.created_at');
+    $stmtMa = $pdo->query("
+        SELECT DISTINCT mj.team_id, {$ymMa} AS ym_key
+        FROM ma_customer_history mh
+        INNER JOIN ma_jobs mj ON mj.id = mh.ma_job_id
+        WHERE mj.team_id IS NOT NULL
+          AND mj.status = 'completed'
+          AND mh.action = 'completed'
+    ");
+    $pairs = array_merge($pairs, $stmtMa->fetchAll(PDO::FETCH_ASSOC));
+
+    $uniquePairs = [];
+    foreach ($pairs as $p) {
+        $key = $p['team_id'] . '-' . $p['ym_key'];
+        $uniquePairs[$key] = $p;
+    }
+    $pairs = array_values($uniquePairs);
+
     $synced = 0;
 
     foreach ($pairs as $row) {

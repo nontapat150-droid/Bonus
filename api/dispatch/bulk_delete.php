@@ -28,12 +28,14 @@ try {
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
 
     if ($isMa) {
+        $oilSyncPairs = collectTeamOilMonthsForMaJobIds($pdo, $ids);
         $pdo->prepare("DELETE FROM ma_job_completion_images WHERE ma_job_id IN ($placeholders)")->execute($ids);
         try {
             $pdo->prepare("DELETE FROM ma_job_reschedules WHERE ma_job_id IN ($placeholders)")->execute($ids);
         } catch (Exception $e) {}
         $stmt = $pdo->prepare("DELETE FROM ma_jobs WHERE id IN ($placeholders)");
         $stmt->execute($ids);
+        syncCollectedTeamOilMonths($pdo, $oilSyncPairs);
     } else {
         $oilSyncPairs = collectTeamOilMonthsForJobIds($pdo, $ids);
         $pdo->prepare("DELETE FROM job_logs WHERE job_id IN ($placeholders)")->execute($ids);
