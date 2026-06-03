@@ -37,7 +37,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['username'] = $user['username'];
                     $_SESSION['role'] = $user['role'];
                     $_SESSION['full_name'] = $user['full_name'];
-                    header("Location: index.php");
+                    // เด็กฝึกงานให้ไปตรงหน้าเช็คอินเลย
+                    if ($user['role'] === 'intern') {
+                        header("Location: index.php?page=checkin");
+                    } else {
+                        header("Location: index.php");
+                    }
                     exit;
                 }
             } else {
