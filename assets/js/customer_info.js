@@ -1,6 +1,6 @@
 // assets/js/customer_info.js
 
-document.addEventListener('DOMContentLoaded', () => {
+(() => {
     const searchForm = document.getElementById('searchCustomerForm');
     const searchInput = document.getElementById('searchInput');
     const resultsArea = document.getElementById('resultsArea');
@@ -492,4 +492,4 @@ document.addEventListener('DOMContentLoaded', () => {
         if (status === 'dispatched') return '<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-[10px] font-bold">จ่ายงานแล้ว</span>';
         return '<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-[10px] font-bold">รอดำเนินการ</span>';
     }
-});
+})();
