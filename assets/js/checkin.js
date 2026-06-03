@@ -457,27 +457,41 @@ window.deleteCheckin = async function(id) {
 };
 
 // ---------------- Settings & Export (Admin) ----------------
+let currentRoleSettings = {};
+
 async function loadSettings() {
-    const inputAdminTech = document.getElementById('lateTimeAdminTechInput');
-    const inputSales = document.getElementById('lateTimeSalesInput');
-    if(!inputAdminTech && !inputSales) return;
+    const roleSelect = document.getElementById('roleSelect');
+    const input = document.getElementById('lateTimeInput');
+    if(!roleSelect || !input) return;
+    
     try {
         const res = await fetch('api/checkin/settings.php');
         const data = await res.json();
         if(data.success) {
-            if(inputAdminTech) inputAdminTech.value = data.late_time_admin_tech || '08:00';
-            if(inputSales) inputSales.value = data.late_time_sales || '08:30';
+            currentRoleSettings = data.settings || {};
+            input.value = currentRoleSettings[roleSelect.value] || '08:30';
+            
+            // เพิ่ม Event Listener เพื่อเปลี่ยนเวลาเมื่อสลับบทบาท
+            roleSelect.removeEventListener('change', handleRoleChange);
+            roleSelect.addEventListener('change', handleRoleChange);
         }
     } catch(e) {}
 }
 
-window.saveSettings = async function(target) {
-    let time = '';
-    if (target === 'admin_tech') {
-        time = document.getElementById('lateTimeAdminTechInput').value;
-    } else if (target === 'sales') {
-        time = document.getElementById('lateTimeSalesInput').value;
+function handleRoleChange(e) {
+    const input = document.getElementById('lateTimeInput');
+    if (input) {
+        input.value = currentRoleSettings[e.target.value] || '08:30';
     }
+}
+
+window.saveSettings = async function() {
+    const roleSelect = document.getElementById('roleSelect');
+    const input = document.getElementById('lateTimeInput');
+    if(!roleSelect || !input) return;
+    
+    const role = roleSelect.value;
+    const time = input.value;
     
     if(!time) return Toast.error('กรุณาระบุเวลา');
     Loader.show();
@@ -485,14 +499,14 @@ window.saveSettings = async function(target) {
         const res = await fetch('api/checkin/settings.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({late_time: time, target: target})
+            body: JSON.stringify({late_time: time, role: role})
         });
         const data = await res.json();
         if(data.success) {
-            // ป๊อปอัปแจ้งเตือนเมื่ออัปเดตการตั้งค่าเวลาเข้างานสำเร็จ
+            // ป๊อปอัปแจ้งเตือนสวยๆ
             Swal.fire({
-                title: 'สำเร็จ!',
-                text: 'อัปเดตเวลาเข้างานสำเร็จ',
+                title: 'บันทึกสำเร็จ!',
+                text: `อัปเดตเวลาเข้างานของตำแหน่ง ${roleSelect.options[roleSelect.selectedIndex].text} เรียบร้อยแล้ว`,
                 icon: 'success',
                 confirmButtonText: 'ตกลง',
                 confirmButtonColor: '#4f46e5',
@@ -501,9 +515,15 @@ window.saveSettings = async function(target) {
                     confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md'
                 }
             });
+            // อัปเดต state local
+            currentRoleSettings[role] = time;
             loadCheckinHistory(); 
-        } else Toast.error(data.error);
-    } catch(e) { Toast.error('ล้มเหลว'); } finally { Loader.hide(); }
+        } else {
+            Swal.fire('ข้อผิดพลาด', data.error || 'เกิดข้อผิดพลาด', 'error');
+        }
+    } catch(e) { 
+        Swal.fire('ล้มเหลว', 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
+    } finally { Loader.hide(); }
 };
 
 window.exportCheckin = function() {

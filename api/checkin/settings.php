@@ -9,8 +9,10 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS system_settings (
     setting_key VARCHAR(50) PRIMARY KEY,
     setting_value VARCHAR(255) NOT NULL
 )");
-$pdo->exec("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES ('late_time_admin_tech', '08:00:00')");
-$pdo->exec("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES ('late_time_sales', '08:30:00')");
+$roles = ['admin', 'super_admin', 'technician', 'sales'];
+foreach($roles as $r) {
+    $pdo->exec("INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES ('late_time_$r', '08:30:00')");
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!hasRole(['admin', 'super_admin'])) {
@@ -18,30 +20,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $data = json_decode(file_get_contents('php://input'), true);
     $time = $data['late_time'] ?? '08:30';
-    $target = $data['target'] ?? 'all';
-    $time_formatted = date('H:i:s', strtotime($time)); // format to H:i:s
+    $role = $data['role'] ?? '';
     
-    if ($target === 'admin_tech') {
-        $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('late_time_admin_tech', ?) ON DUPLICATE KEY UPDATE setting_value = ?")->execute([$time_formatted, $time_formatted]);
-        $pdo->prepare("UPDATE users SET allow_late_time = ? WHERE role IN ('admin', 'super_admin', 'technician')")->execute([$time_formatted]);
-    } elseif ($target === 'sales') {
-        $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('late_time_sales', ?) ON DUPLICATE KEY UPDATE setting_value = ?")->execute([$time_formatted, $time_formatted]);
-        $pdo->prepare("UPDATE users SET allow_late_time = ? WHERE role = 'sales'")->execute([$time_formatted]);
-    } else {
-        $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('late_time_admin_tech', ?) ON DUPLICATE KEY UPDATE setting_value = ?")->execute([$time_formatted, $time_formatted]);
-        $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES ('late_time_sales', ?) ON DUPLICATE KEY UPDATE setting_value = ?")->execute([$time_formatted, $time_formatted]);
-        $pdo->prepare("UPDATE users SET allow_late_time = ?")->execute([$time_formatted]);
+    if (!$role) {
+        echo json_encode(['success' => false, 'error' => 'กรุณาระบุบทบาท']); exit;
     }
+
+    $time_formatted = date('H:i:s', strtotime($time)); // format to H:i:s
+    $setting_key = "late_time_" . $role;
+    
+    $pdo->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?")->execute([$setting_key, $time_formatted, $time_formatted]);
+    
+    // อัปเดตในตาราง users ให้ผู้ใช้ที่มีบทบาทนี้ด้วย
+    $pdo->prepare("UPDATE users SET allow_late_time = ? WHERE role = ?")->execute([$time_formatted, $role]);
 
     echo json_encode(['success' => true]);
     exit;
 } else {
-    $late_admin_tech = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'late_time_admin_tech'")->fetchColumn() ?: '08:00:00';
-    $late_sales = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'late_time_sales'")->fetchColumn() ?: '08:30:00';
+    $settings = [];
+    foreach($roles as $r) {
+        $val = $pdo->query("SELECT setting_value FROM system_settings WHERE setting_key = 'late_time_$r'")->fetchColumn() ?: '08:30:00';
+        $settings[$r] = date('H:i', strtotime($val));
+    }
+    
     echo json_encode([
         'success' => true, 
-        'late_time_admin_tech' => date('H:i', strtotime($late_admin_tech)),
-        'late_time_sales' => date('H:i', strtotime($late_sales))
+        'settings' => $settings
     ]);
     exit;
 }
