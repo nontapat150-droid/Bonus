@@ -43,7 +43,7 @@ $isAdmin = hasRole(['admin', 'super_admin']);
 
     .dispatch-page { display: flex; flex-direction: column; gap: 1rem; min-height: 100vh; padding-bottom: 2rem; }
     .dispatch-page .card:hover { transform: none; }
-    .dispatch-view-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 10px; padding: 6px; box-shadow: var(--shadow-1); }
+    .dispatch-view-tabs { display: grid; grid-template-columns: repeat(<?php echo $isAdmin ? '4' : '3'; ?>, minmax(0, 1fr)); gap: 8px; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 10px; padding: 6px; box-shadow: var(--shadow-1); }
     .dispatch-view-tab { min-height: 44px; border-radius: 8px; font-size: 13px; font-weight: 900; color: var(--c-text-2); display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background .16s ease, color .16s ease, box-shadow .16s ease; }
     .dispatch-view-tab:hover { background: var(--c-surface-2); color: var(--c-text-1); }
     .dispatch-view-tab.is-active { background: var(--c-primary); color: white; box-shadow: var(--shadow-btn); }
@@ -144,6 +144,12 @@ $isAdmin = hasRole(['admin', 'super_admin']);
             <i data-lucide="map" class="w-4 h-4"></i>
             <span>ดูแผนที่</span>
         </button>
+        <?php if ($isAdmin): ?>
+        <button type="button" id="dispatchViewRescheduleBtn" class="dispatch-view-tab">
+            <i data-lucide="clock" class="w-4 h-4"></i>
+            <span>ประวัติเลื่อนนัด</span>
+        </button>
+        <?php endif; ?>
     </div>
 
     <div class="dispatch-workspace">
@@ -252,6 +258,37 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         </div>
         <div id="map" class="w-full h-full"></div>
     </aside>
+
+    <?php if ($isAdmin): ?>
+    <section id="rescheduleHistoryPanel" class="card !p-0 border border-amber-200 bg-amber-50/40 overflow-hidden hidden dispatch-list-panel flex flex-col relative">
+        <div class="px-4 py-3 border-b border-amber-200 flex flex-wrap items-center justify-between gap-2 bg-amber-50 shrink-0">
+            <div class="flex items-center gap-2">
+                <i data-lucide="calendar-clock" class="w-5 h-5 text-amber-700"></i>
+                <h3 class="font-black text-amber-900 text-sm">ประวัติเลื่อนนัดติดตั้ง (แจ้งจากช่าง)</h3>
+                <span id="reschedulePendingBadge" class="hidden text-[10px] font-black bg-rose-500 text-white px-2 py-0.5 rounded-full">0</span>
+            </div>
+            <button type="button" onclick="loadRescheduleHistory()" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-800 hover:bg-amber-100">รีเฟรช</button>
+        </div>
+        <div class="dispatch-list-scroll">
+            <table class="w-full text-left text-xs job-table !mt-0">
+                <thead class="bg-amber-100/80 text-amber-900 font-black uppercase tracking-wide sticky top-0">
+                    <tr>
+                        <th class="px-3 py-2">วันที่แจ้ง</th>
+                        <th class="px-3 py-2">ช่าง / ทีม</th>
+                        <th class="px-3 py-2">งาน / ลูกค้า</th>
+                        <th class="px-3 py-2">เลื่อนนัด</th>
+                        <th class="px-3 py-2">หมายเหตุ</th>
+                        <th class="px-3 py-2 text-center">สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody id="rescheduleHistoryBody" class="divide-y divide-amber-100 bg-white">
+                    <tr><td colspan="6" class="px-4 py-6 text-center text-slate-400 font-bold">กำลังโหลด...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <?php endif; ?>
+
     </div>
 </div>
 
@@ -348,36 +385,6 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         </div>
     </div>
 </div>
-
-<?php if ($isAdmin): ?>
-<div id="rescheduleHistoryPanel" class="mt-6 card border border-amber-200 bg-amber-50/40 overflow-hidden">
-    <div class="px-4 py-3 border-b border-amber-200 flex flex-wrap items-center justify-between gap-2 bg-amber-50">
-        <div class="flex items-center gap-2">
-            <i data-lucide="calendar-clock" class="w-5 h-5 text-amber-700"></i>
-            <h3 class="font-black text-amber-900 text-sm">ประวัติเลื่อนนัดติดตั้ง (แจ้งจากช่าง)</h3>
-            <span id="reschedulePendingBadge" class="hidden text-[10px] font-black bg-rose-500 text-white px-2 py-0.5 rounded-full">0</span>
-        </div>
-        <button type="button" onclick="loadRescheduleHistory()" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-800 hover:bg-amber-100">รีเฟรช</button>
-    </div>
-    <div class="overflow-x-auto max-h-72">
-        <table class="w-full text-left text-xs">
-            <thead class="bg-amber-100/80 text-amber-900 font-black uppercase tracking-wide sticky top-0">
-                <tr>
-                    <th class="px-3 py-2">วันที่แจ้ง</th>
-                    <th class="px-3 py-2">ช่าง / ทีม</th>
-                    <th class="px-3 py-2">งาน / ลูกค้า</th>
-                    <th class="px-3 py-2">เลื่อนนัด</th>
-                    <th class="px-3 py-2">หมายเหตุ</th>
-                    <th class="px-3 py-2 text-center">สถานะ</th>
-                </tr>
-            </thead>
-            <tbody id="rescheduleHistoryBody" class="divide-y divide-amber-100 bg-white">
-                <tr><td colspan="6" class="px-4 py-6 text-center text-slate-400 font-bold">กำลังโหลด...</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-<?php endif; ?>
 
 <script>
     const IS_ADMIN = <?php echo $isAdmin ? 'true' : 'false'; ?>;
