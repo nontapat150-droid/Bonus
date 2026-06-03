@@ -12,7 +12,7 @@
 
     <nav class="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 custom-scrollbar">
         
-        <?php if (!hasRole('intern')): ?>
+        <?php if (!isInternOnly() && !isSalesOnly()): ?>
         <a href="index.php?page=home" class="nav-item <?= $page === 'home' ? 'active' : '' ?>" data-label="หน้าแรก">
             <div class="icon"><i data-lucide="layout-dashboard"></i></div>
             <span class="nav-label">หน้าแรก</span>
@@ -145,7 +145,7 @@
     </div>
 
     <nav class="flex-1 overflow-y-auto py-4 px-2">
-        <?php if (!hasRole('intern')): ?>
+        <?php if (!isInternOnly() && !isSalesOnly()): ?>
         <a href="index.php?page=home" class="nav-item <?= $page === 'home' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="layout-dashboard"></i></div>
             <span class="nav-label">หน้าแรก</span>
@@ -239,7 +239,7 @@
 </aside>
 
 <nav id="bottom-nav" class="bottom-tabs md:hidden">
-    <?php if (!hasRole('intern')): ?>
+    <?php if (!isInternOnly() && !isSalesOnly()): ?>
     <a href="index.php?page=home" class="tab-item <?= $page === 'home' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="layout-dashboard" class="w-6 h-6"></i></div>
         <span class="tab-label">Home</span>

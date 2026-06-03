@@ -93,6 +93,18 @@ function isMaTechnicianOnly() {
     return count($workRoles) === 1 && in_array('ma_technician', $workRoles, true);
 }
 
+function isSalesOnly() {
+    $roles = getUserRoles();
+    $workRoles = array_values(array_intersect($roles, ['technician', 'ma_technician', 'admin', 'super_admin', 'intern', 'sales']));
+    return count($workRoles) === 1 && in_array('sales', $workRoles, true);
+}
+
+function isInternOnly() {
+    $roles = getUserRoles();
+    $workRoles = array_values(array_intersect($roles, ['technician', 'ma_technician', 'admin', 'super_admin', 'intern', 'sales']));
+    return count($workRoles) === 1 && in_array('intern', $workRoles, true);
+}
+
 /** ดู/จัดการงาน Office (ติดตั้ง) — แยกจาก MA */
 function canViewDispatchOffice() {
     if (isMaTechnicianOnly()) return false;

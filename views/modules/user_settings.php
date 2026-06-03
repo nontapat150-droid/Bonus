@@ -85,6 +85,7 @@ if (!hasRole(['admin', 'super_admin'])) {
                     <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" name="roles[]" value="admin" class="role-cb rounded"> แอดมิน</label>
                     <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" name="roles[]" value="super_admin" class="role-cb rounded"> ผู้ดูแลระบบ</label>
                     <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" name="roles[]" value="intern" class="role-cb rounded"> เด็กฝึกงาน</label>
+                    <label class="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer"><input type="checkbox" name="roles[]" value="sales" class="role-cb rounded"> เซล</label>
                 </div>
                 <select id="role" name="role" class="hidden">
                     <option value="technician">technician</option>
