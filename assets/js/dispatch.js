@@ -408,32 +408,74 @@ function renderTeamList() {
 }
 
 function openDispatchModal() {
-    const unassignedJobs = allJobs.filter(j => !j.team_id).length;
+    const isMa = currentJobType === 'ma';
+    const unassignedJobs = isMa 
+        ? allJobs.filter(j => !j.assigned_user_id).length 
+        : allJobs.filter(j => !j.team_id).length;
+
     if (unassignedJobs === 0) return Swal.fire('แจ้งเตือน', 'ไม่มีงานรอจ่าย', 'info');
 
     document.getElementById('unassignedCount').textContent = unassignedJobs;
+    
+    // เปลี่ยนสี Header ตามประเภทงาน
+    const headerEl = document.querySelector('#dispatchModal .bg-indigo-600, #dispatchModal .bg-violet-600');
+    if (headerEl) {
+        if (isMa) {
+            headerEl.classList.remove('bg-indigo-600');
+            headerEl.classList.add('bg-violet-600');
+            headerEl.querySelector('h3').textContent = 'จ่ายงานช่าง MA (Auto-Dispatch)';
+        } else {
+            headerEl.classList.remove('bg-violet-600');
+            headerEl.classList.add('bg-indigo-600');
+            headerEl.querySelector('h3').textContent = 'Auto-Dispatch';
+        }
+    }
+
     const container = document.getElementById('dispatchTeamList');
     container.innerHTML = '';
 
-    if (currentTeams.length === 0) {
-        container.innerHTML = '<p class="text-center text-slate-500 py-4 text-[10px] font-bold">ไม่มีทีมในระบบ กรุณาสร้างทีมก่อน</p>';
-        document.getElementById('confirmDispatchBtn').disabled = true;
+    if (isMa) {
+        if (currentMaTechs.length === 0) {
+            container.innerHTML = '<p class="text-center text-slate-500 py-4 text-[10px] font-bold">ไม่มีช่าง MA ในระบบ</p>';
+            document.getElementById('confirmDispatchBtn').disabled = true;
+        } else {
+            document.getElementById('confirmDispatchBtn').disabled = false;
+            currentMaTechs.forEach((u, i) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-2 bg-white rounded border border-slate-100';
+                div.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 rounded flex items-center justify-center text-white font-bold text-[10px]" style="background-color: ${getColor(i)}">${u.full_name.charAt(0)}</div>
+                        <span class="font-bold text-slate-700 text-[11px]">${u.full_name}</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <input type="number" id="dist-quota-user-${u.id}" value="0" min="0" max="${unassignedJobs}" class="w-14 px-1 py-1 rounded border border-slate-200 text-center font-bold text-indigo-600 text-[11px] h-6 focus:ring-1 focus:ring-indigo-500">     
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
     } else {
-        document.getElementById('confirmDispatchBtn').disabled = false;
-        currentTeams.forEach((t, i) => {
-            const div = document.createElement('div');
-            div.className = 'flex items-center justify-between p-2 bg-white rounded border border-slate-100';
-            div.innerHTML = `
-                <div class="flex items-center space-x-2">
-                    <div class="w-6 h-6 rounded flex items-center justify-center text-white font-bold text-[10px]" style="background-color: ${getColor(i)}">${t.team_name.charAt(0)}</div>
-                    <span class="font-bold text-slate-700 text-[11px]">${t.team_name}</span>
-                </div>
-                <div class="flex items-center space-x-1">
-                    <input type="number" id="dist-quota-${t.id}" value="0" min="0" max="${unassignedJobs}" class="w-14 px-1 py-1 rounded border border-slate-200 text-center font-bold text-indigo-600 text-[11px] h-6 focus:ring-1 focus:ring-indigo-500">     
-                </div>
-            `;
-            container.appendChild(div);
-        });
+        if (currentTeams.length === 0) {
+            container.innerHTML = '<p class="text-center text-slate-500 py-4 text-[10px] font-bold">ไม่มีทีมในระบบ กรุณาสร้างทีมก่อน</p>';
+            document.getElementById('confirmDispatchBtn').disabled = true;
+        } else {
+            document.getElementById('confirmDispatchBtn').disabled = false;
+            currentTeams.forEach((t, i) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-2 bg-white rounded border border-slate-100';
+                div.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 rounded flex items-center justify-center text-white font-bold text-[10px]" style="background-color: ${getColor(i)}">${t.team_name.charAt(0)}</div>
+                        <span class="font-bold text-slate-700 text-[11px]">${t.team_name}</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <input type="number" id="dist-quota-team-${t.id}" value="0" min="0" max="${unassignedJobs}" class="w-14 px-1 py-1 rounded border border-slate-200 text-center font-bold text-indigo-600 text-[11px] h-6 focus:ring-1 focus:ring-indigo-500">     
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
     }
     document.getElementById('dispatchModal').classList.remove('hidden');
 }
@@ -610,10 +652,19 @@ async function handleDeleteTeam(id) {
 
 async function runAutoDispatch() {
     const quotas = [];
-    currentTeams.forEach(t => {
-        const el = document.getElementById(`dist-quota-${t.id}`);
-        if (el && parseInt(el.value) > 0) quotas.push({ team_name: t.team_name, limit: parseInt(el.value) });
-    });
+    const isMa = currentJobType === 'ma';
+    
+    if (isMa) {
+        currentMaTechs.forEach(u => {
+            const el = document.getElementById(`dist-quota-user-${u.id}`);
+            if (el && parseInt(el.value) > 0) quotas.push({ user_id: u.id, limit: parseInt(el.value) });
+        });
+    } else {
+        currentTeams.forEach(t => {
+            const el = document.getElementById(`dist-quota-team-${t.id}`);
+            if (el && parseInt(el.value) > 0) quotas.push({ team_id: t.id, limit: parseInt(el.value) });
+        });
+    }
 
     if (quotas.length === 0) return alert('กรุณาระบุจำนวนงานที่ต้องการจ่าย');
 

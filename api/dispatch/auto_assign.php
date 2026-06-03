@@ -212,39 +212,62 @@ try {
     $pdo->beginTransaction();
 
     $teamMap = [];
+    $isMa = ($jobType === 'ma');
+
     foreach ($quotas as $q) {
-        $teamName = trim($q['team_name'] ?? '');
-        $limit = max(0, (int)($q['limit'] ?? 0));
-        if ($teamName === '' || $limit <= 0) continue;
+        if ($isMa) {
+            $userId = (int)($q['user_id'] ?? 0);
+            $limit = max(0, (int)($q['limit'] ?? 0));
+            if ($userId <= 0 || $limit <= 0) continue;
+            
+            $stmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $userName = $stmt->fetchColumn();
 
-        $stmt = $pdo->prepare("SELECT id FROM teams WHERE team_name = ?");
-        $stmt->execute([$teamName]);
-        $teamId = $stmt->fetchColumn();
+            $teamMap[$userId] = [
+                'id' => $userId, // use id as user_id
+                'name' => $userName,
+                'limit' => $limit,
+                'assigned' => 0,
+                'route' => [],
+                'anchor' => null,
+                'current' => null
+            ];
+        } else {
+            $teamId = (int)($q['team_id'] ?? 0);
+            $limit = max(0, (int)($q['limit'] ?? 0));
+            if ($teamId <= 0 || $limit <= 0) continue;
 
-        if (!$teamId) {
-            $stmtInsert = $pdo->prepare("INSERT INTO teams (team_name) VALUES (?)");
-            $stmtInsert->execute([$teamName]);
-            $teamId = $pdo->lastInsertId();
+            $stmt = $pdo->prepare("SELECT team_name FROM teams WHERE id = ?");
+            $stmt->execute([$teamId]);
+            $teamName = $stmt->fetchColumn();
+
+            $teamMap[$teamId] = [
+                'id' => $teamId,
+                'name' => $teamName,
+                'limit' => $limit,
+                'assigned' => 0,
+                'route' => [],
+                'anchor' => null,
+                'current' => null
+            ];
         }
-
-        $teamMap[$teamName] = [
-            'id' => (int)$teamId,
-            'limit' => $limit,
-            'assigned' => 0,
-            'route' => [],
-            'anchor' => null,
-            'current' => null
-        ];
     }
 
     if (empty($teamMap)) {
         $pdo->rollBack();
-        echo json_encode(['success' => false, 'error' => 'กรุณาระบุจำนวนงานให้ทีมอย่างน้อย 1 ทีม']);
+        echo json_encode(['success' => false, 'error' => 'กรุณาระบุจำนวนงานให้ช่าง/ทีมอย่างน้อย 1 รายการ']);
         exit;
     }
 
     $activeSql = "(status IS NULL OR status NOT IN ('completed', 'failed', 'Finish'))";
-    $stmtJobs = $pdo->query("SELECT id, lat, lng FROM {$table} WHERE team_id IS NULL AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql ORDER BY plan_arrival_date ASC, id ASC");
+    
+    if ($isMa) {
+        $stmtJobs = $pdo->query("SELECT id, lat, lng FROM {$table} WHERE assigned_user_id IS NULL AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql ORDER BY plan_arrival_date ASC, id ASC");
+    } else {
+        $stmtJobs = $pdo->query("SELECT id, lat, lng FROM {$table} WHERE team_id IS NULL AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql ORDER BY plan_arrival_date ASC, id ASC");
+    }
+    
     $remainingJobs = array_values(array_filter($stmtJobs->fetchAll(), function($job) {
         return isValidCoordinate($job['lat'], $job['lng']);
     }));
@@ -255,9 +278,14 @@ try {
         exit;
     }
 
-    $stmtExisting = $pdo->prepare("SELECT id, lat, lng FROM {$table} WHERE team_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql");
+    if ($isMa) {
+        $stmtExisting = $pdo->prepare("SELECT id, lat, lng FROM {$table} WHERE assigned_user_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql");
+    } else {
+        $stmtExisting = $pdo->prepare("SELECT id, lat, lng FROM {$table} WHERE team_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql");
+    }
+    
     $anchors = [];
-    foreach ($teamMap as $teamName => &$teamInfo) {
+    foreach ($teamMap as $mapKey => &$teamInfo) {
         $stmtExisting->execute([$teamInfo['id']]);
         $existingJobs = array_values(array_filter($stmtExisting->fetchAll(), function($job) {
             return isValidCoordinate($job['lat'], $job['lng']);
@@ -273,7 +301,7 @@ try {
     // วัตถุประสงค์: แต่ละบริเวณจะมีแค่ทีมเดียว ไม่มีทีมอื่นปนแน่นอน และตามจำนวนโควตาเป๊ะๆ
     $teamLimits = [];
     $teamAnchors = [];
-    foreach ($teamMap as $teamName => $teamInfo) {
+    foreach ($teamMap as $mapKey => $teamInfo) {
         $teamLimits[] = $teamInfo['limit'];
         $teamAnchors[] = $teamInfo['anchor'];
     }
@@ -282,7 +310,7 @@ try {
     
     // Assign clusters ให้กับทีม
     $clusterIdx = 0;
-    foreach ($teamMap as $teamName => &$teamInfo) {
+    foreach ($teamMap as $mapKey => &$teamInfo) {
         if ($clusterIdx < count($jobClusters)) {
             $toAssign = $jobClusters[$clusterIdx];
             
@@ -308,18 +336,27 @@ try {
         exit;
     }
 
-    $stmtAssign = $pdo->prepare("UPDATE {$table} SET team_id = ? WHERE id = ?");
+    if ($isMa) {
+        $stmtAssign = $pdo->prepare("UPDATE {$table} SET assigned_user_id = ? WHERE id = ?");
+    } else {
+        $stmtAssign = $pdo->prepare("UPDATE {$table} SET team_id = ? WHERE id = ?");
+    }
+    
     foreach ($teamMap as $teamInfo) {
         foreach ($teamInfo['route'] as $job) {
             $stmtAssign->execute([$teamInfo['id'], $job['id']]);
         }
     }
 
-    $stmtTeamJobs = $pdo->prepare("SELECT id, lat, lng FROM {$table} WHERE team_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql");
+    if ($isMa) {
+        $stmtTeamJobs = $pdo->prepare("SELECT id, lat, lng FROM {$table} WHERE assigned_user_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql");
+    } else {
+        $stmtTeamJobs = $pdo->prepare("SELECT id, lat, lng FROM {$table} WHERE team_id = ? AND lat IS NOT NULL AND lng IS NOT NULL AND $activeSql");
+    }
     $stmtUpdateRoute = $pdo->prepare("UPDATE {$table} SET seq = ?, map_link = ? WHERE id = ?");
     $assignedByTeam = [];
 
-    foreach ($teamMap as $teamName => $teamInfo) {
+    foreach ($teamMap as $mapKey => $teamInfo) {
         if ($teamInfo['assigned'] === 0) continue;
 
         $stmtTeamJobs->execute([$teamInfo['id']]);
@@ -334,7 +371,7 @@ try {
         }
 
         $assignedByTeam[] = [
-            'team_name' => $teamName,
+            'name' => $teamInfo['name'],
             'assigned' => $teamInfo['assigned']
         ];
     }
