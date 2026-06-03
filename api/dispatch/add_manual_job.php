@@ -16,6 +16,9 @@ if (!$input) {
 $access_no = trim($input['access_no'] ?? '');
 $plan_date = trim($input['plan_arrival_date'] ?? '');
 
+$jobType = $_GET['type'] ?? 'jobs';
+$table = ($jobType === 'ma') ? 'ma_jobs' : 'jobs';
+
 if (empty($access_no) || empty($plan_date)) {
     echo json_encode(['success' => false, 'error' => 'กรุณาระบุ Circuit ID และ วันที่เข้าทำ']);
     exit;
