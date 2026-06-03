@@ -1006,11 +1006,26 @@ function syncSelectAllState() {
     selectAll.indeterminate = checked > 0 && checked < boxes.length;
 }
 
-function statusBadge(status) {
+function statusBadge(status, job) {
     const value = rawValue(status, 'Pending').toLowerCase();
-    if (value === 'completed') return '<span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-100">เสร็จแล้ว</span>';
-    if (value === 'failed') return '<span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-100">ไม่สำเร็จ</span>';
-    return '<span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-100">รอดำเนินการ</span>';
+    
+    // Status: Completed
+    if (value === 'completed') {
+        return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i>เสร็จแล้ว</span>';
+    }
+    
+    // Status: Failed
+    if (value === 'failed') {
+        return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200"><i data-lucide="x-circle" class="w-3.5 h-3.5 mr-1 text-rose-600"></i>ไม่สำเร็จ</span>';
+    }
+    
+    // Status: Pending but Assigned
+    if (job && (job.team_id || job.assigned_user_id)) {
+        return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black bg-sky-50 text-sky-700 border border-sky-200 shadow-sm"><i data-lucide="user-check" class="w-3.5 h-3.5 mr-1 text-sky-600"></i>มอบหมายแล้ว</span>';
+    }
+
+    // Status: Pending / Unassigned
+    return '<span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200 shadow-sm"><i data-lucide="clock" class="w-3.5 h-3.5 mr-1 text-amber-600 animate-pulse"></i>รอจ่ายงาน</span>';
 }
 
 function formatThaiDateShort(dateStr) {
@@ -1065,7 +1080,7 @@ function createJobRow(job, index) {
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="font-black text-slate-900 text-sm leading-tight break-words">${displayValue(job.access_no, 'N/A')}</h3>
-                        ${statusBadge(job.status)}
+                        ${statusBadge(job.status, job)}
                         ${rescheduleInfoBadge(job)}
                     </div>
                     <div class="text-[11px] font-bold text-slate-500 mt-1">นัดติดตั้ง: ${displayValue(job.plan_arrival_date)}</div>
@@ -1251,7 +1266,7 @@ function showJobPopup(job, color) {
                             <p class="text-[9px] font-bold text-slate-400 uppercase">ลูกค้า</p>
                             <p class="text-sm font-black text-slate-800">${displayValue(job.customer, 'ไม่ระบุชื่อลูกค้า')}</p>
                         </div>
-                        ${statusBadge(job.status)}
+                        ${statusBadge(job.status, job)}
                     </div>
                     <div class="rounded-lg bg-slate-50 p-3 border border-slate-100">
                         <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">สถานที่ติดตั้ง</p>

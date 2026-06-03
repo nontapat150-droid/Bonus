@@ -66,6 +66,8 @@ try {
                 );
             }
         }
+        
+        recordMaJobHistory($pdo, $job_id, 'reassigned');
     } else {
         if (!$team_id && $assigned_user_id) {
             $stmtUser = $pdo->prepare("SELECT team_id FROM users WHERE id = ?");

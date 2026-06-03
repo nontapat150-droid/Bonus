@@ -32,6 +32,7 @@ try {
             $stmt = $pdo->prepare("UPDATE ma_jobs SET team_id = NULL, team_match_status = NULL, assigned_user_id = NULL, seq = NULL, map_link = NULL WHERE id = ?");
             foreach ($jobIds as $id) {
                 $stmt->execute([$id]);
+                recordMaJobHistory($pdo, $id, 'unassigned');
             }
         } else {
             $assignedUserId = null;
@@ -46,6 +47,7 @@ try {
             $stmt = $pdo->prepare("UPDATE ma_jobs SET team_id = ?, team_name_import = COALESCE(?, team_name_import), team_match_status = 'matched', assigned_user_id = ?, updated_at = NOW() WHERE id = ?");
             foreach ($jobIds as $id) {
                 $stmt->execute([(int)$teamId, $teamNameImport, $assignedUserId, $id]);
+                recordMaJobHistory($pdo, $id, 'assigned');
             }
         }
     } else {

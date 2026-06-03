@@ -61,6 +61,11 @@ try {
         $price
     ]);
 
+    $job_id = $pdo->lastInsertId();
+    if ($job_id) {
+        recordMaJobHistory($pdo, $job_id, 'manual_add');
+    }
+
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
     if ($e->getCode() == 23000) { 

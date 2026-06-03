@@ -152,6 +152,35 @@ function addMaCustomerHistory(PDO $pdo, array $data) {
     return $customerId;
 }
 
+function recordMaJobHistory(PDO $pdo, $jobId, $action) {
+    if (!$jobId) return;
+    
+    // ดึงข้อมูลงาน
+    $stmt = $pdo->prepare("SELECT * FROM ma_jobs WHERE id = ?");
+    $stmt->execute([$jobId]);
+    $job = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$job) return;
+    
+    $non = trim((string)($job['access_no'] ?? ''));
+    if ($non === '') return;
+    
+    // บันทึกประวัติ (ฟังก์ชัน addMaCustomerHistory จะสร้างข้อมูลลูกค้าใหม่ให้อัตโนมัติถ้ายังไม่มี)
+    addMaCustomerHistory($pdo, [
+        'non_number' => $non,
+        'customer_name' => $job['customer'] ?? '',
+        'phone' => $job['phone'] ?? '',
+        'address' => $job['address'] ?? '',
+        'ma_job_id' => $jobId,
+        'action' => $action,
+        'symptoms' => $job['symptoms'] ?? '',
+        'area_provider' => $job['area_provider'] ?? '',
+        'remark' => $job['remark'] ?? '',
+        'tech_id' => $job['assigned_user_id'] ?? null,
+        'team_id' => $job['team_id'] ?? null,
+        'action_date' => date('Y-m-d')
+    ]);
+}
+
 function notifyMaJobAssignment(PDO $pdo, $teamId, $title, $message, $createdBy) {
     if (!$teamId) return;
 
