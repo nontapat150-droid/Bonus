@@ -161,17 +161,23 @@
             <span class="nav-label">หน้าแรก</span>
         </a>
         <?php endif; ?>
+
+        <div class="nav-label px-3 py-2 text-[10px] font-bold text-[var(--c-text-3)] uppercase tracking-widest mt-2">เมนูหลัก</div>
+        
         <a href="index.php?page=checkin" class="nav-item <?= $page === 'checkin' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="camera"></i></div>
             <span class="nav-label">ระบบเช็คอิน</span>
         </a>
+
         <?php if (hasRole('intern')): ?>
         <a href="index.php?page=work_records" class="nav-item <?= $page === 'work_records' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="file-text"></i></div>
             <span class="nav-label">รายงานการทำงาน</span>
         </a>
         <?php endif; ?>
+
         <?php if (!hasRole('sales') && !hasRole('intern')): ?>
+        <?php if (!isMaTechnicianOnly()): ?>
         <a href="index.php?page=start_day" class="nav-item <?= $page === 'start_day' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="gauge"></i></div>
             <span class="nav-label">ค่าแรกเข้า</span>
@@ -180,19 +186,26 @@
             <div class="icon"><i data-lucide="fuel"></i></div>
             <span class="nav-label">น้ำมันและยานพาหนะ</span>
         </a>
+        <?php endif; ?>
+        <?php if (canAccessDispatch()): ?>
+        <?php
+            $dispatchLabel = isMaTechnicianOnly() ? 'งาน MA' : (hasBothDispatchRoles() ? 'จัดส่งงาน Office/MA' : 'ระบบจัดส่งอัจฉริยะ');
+            $dispatchIcon = isMaTechnicianOnly() ? 'wrench' : 'map';
+        ?>
         <a href="index.php?page=dispatch" class="nav-item <?= $page === 'dispatch' ? 'active' : '' ?>">
-            <div class="icon"><i data-lucide="map"></i></div>
-            <span class="nav-label">ระบบจัดส่งอัจฉริยะ</span>
+            <div class="icon"><i data-lucide="<?= $dispatchIcon ?>"></i></div>
+            <span class="nav-label"><?= htmlspecialchars($dispatchLabel) ?></span>
         </a>
-        <?php if (hasRole('technician')): ?>
+        <?php endif; ?>
+        <?php if (hasRole('technician') && !isMaTechnicianOnly()): ?>
         <a href="index.php?page=job_close_history" class="nav-item <?= $page === 'job_close_history' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="clipboard-list"></i></div>
             <span class="nav-label">ประวัติปิดงาน</span>
         </a>
         <?php endif; ?>
         <?php endif; ?>
-        
-        <?php if (hasRole(['super_admin', 'admin', 'technician'])): ?>
+
+        <?php if (hasRole(['super_admin', 'admin', 'technician']) && !isMaTechnicianOnly()): ?>
         <a href="index.php?page=tech_bag" class="nav-item <?= $page === 'tech_bag' ? 'active' : '' ?>">
             <div class="icon"><i data-lucide="briefcase"></i></div>
             <span class="nav-label">กระเป๋าช่าง</span>
@@ -225,6 +238,13 @@
             <span class="nav-label">รายงานปัญหา</span>
         </a>
         <?php endif; ?>
+
+        <?php if (hasRole('super_admin')): ?>
+        <a href="index.php?page=ma_summary" class="nav-item <?= $page === 'ma_summary' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="bar-chart-3"></i></div>
+            <span class="nav-label">สรุปงาน MA</span>
+        </a>
+        <?php endif; ?>
     </nav>
     
     <div class="p-4 border-t border-[var(--c-border)] flex flex-col gap-2">
@@ -248,44 +268,100 @@
     </div>
 </aside>
 
-<nav id="bottom-nav" class="bottom-tabs md:hidden">
+<nav id="bottom-nav" class="bottom-tabs md:hidden overflow-x-auto scroll-smooth hide-scrollbar flex justify-start items-center">
     <?php if (!isInternOnly() && !isSalesOnly()): ?>
-    <a href="index.php?page=home" class="tab-item <?= $page === 'home' ? 'active' : '' ?>">
+    <a href="index.php?page=home" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'home' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="layout-dashboard" class="w-6 h-6"></i></div>
         <span class="tab-label">Home</span>
     </a>
     <?php endif; ?>
-    <a href="index.php?page=checkin" class="tab-item <?= $page === 'checkin' ? 'active' : '' ?>">
+    <a href="index.php?page=checkin" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'checkin' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="camera" class="w-6 h-6"></i></div>
         <span class="tab-label">Scan</span>
     </a>
     <?php if (hasRole('intern')): ?>
-    <a href="index.php?page=work_records" class="tab-item <?= $page === 'work_records' ? 'active' : '' ?>">
+    <a href="index.php?page=work_records" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'work_records' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="file-text" class="w-6 h-6"></i></div>
         <span class="tab-label">รายงาน</span>
     </a>
     <?php endif; ?>
     <?php if (!hasRole('sales') && !hasRole('intern')): ?>
-    <a href="index.php?page=start_day" class="tab-item <?= $page === 'start_day' ? 'active' : '' ?>">
+    <?php if (!isMaTechnicianOnly()): ?>
+    <a href="index.php?page=start_day" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'start_day' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="gauge" class="w-6 h-6"></i></div>
         <span class="tab-label">แรกเข้า</span>
     </a>
-    <a href="index.php?page=oil" class="tab-item <?= $page === 'oil' ? 'active' : '' ?>">
+    <a href="index.php?page=oil" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'oil' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="fuel" class="w-6 h-6"></i></div>
         <span class="tab-label">Oil</span>
     </a>
-    <a href="index.php?page=dispatch" class="tab-item <?= $page === 'dispatch' ? 'active' : '' ?>">
-        <div class="tab-icon"><i data-lucide="map" class="w-6 h-6"></i></div>
-        <span class="tab-label">Map</span>
+    <?php endif; ?>
+    <?php if (canAccessDispatch()): ?>
+    <a href="index.php?page=dispatch" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'dispatch' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="<?= isMaTechnicianOnly() ? 'wrench' : 'map' ?>" class="w-6 h-6"></i></div>
+        <span class="tab-label"><?= isMaTechnicianOnly() ? 'งาน MA' : 'Map' ?></span>
+    </a>
+    <?php endif; ?>
+    <?php if (hasRole('technician') && !isMaTechnicianOnly()): ?>
+    <a href="index.php?page=job_close_history" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'job_close_history' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="clipboard-list" class="w-6 h-6"></i></div>
+        <span class="tab-label">ประวัติงาน</span>
+    </a>
+    <?php endif; ?>
+    <?php endif; ?>
+    <?php if (hasRole(['super_admin', 'admin', 'technician']) && !isMaTechnicianOnly()): ?>
+    <a href="index.php?page=tech_bag" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'tech_bag' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="briefcase" class="w-6 h-6"></i></div>
+        <span class="tab-label">กระเป๋าช่าง</span>
     </a>
     <?php endif; ?>
     <?php if (hasRole(['admin', 'super_admin'])): ?>
-    <a href="index.php?page=inventory" class="tab-item <?= $page === 'inventory' ? 'active' : '' ?>">
+    <a href="index.php?page=inventory" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'inventory' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="package" class="w-6 h-6"></i></div>
         <span class="tab-label">คลัง</span>
     </a>
+    <a href="index.php?page=customer_info" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'customer_info' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="users-2" class="w-6 h-6"></i></div>
+        <span class="tab-label">ลูกค้า</span>
+    </a>
+    <a href="index.php?page=system_history" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'system_history' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="database" class="w-6 h-6"></i></div>
+        <span class="tab-label">ประวัติรวม</span>
+    </a>
+    <a href="index.php?page=users" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'users' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="users" class="w-6 h-6"></i></div>
+        <span class="tab-label">ผู้ใช้</span>
+    </a>
+    <a href="index.php?page=issues" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'issues' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="alert-circle" class="w-6 h-6"></i></div>
+        <span class="tab-label">แจ้งปัญหา</span>
+    </a>
+    <?php endif; ?>
+    <?php if (hasRole('super_admin')): ?>
+    <a href="index.php?page=ma_summary" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'ma_summary' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="bar-chart-3" class="w-6 h-6"></i></div>
+        <span class="tab-label">สรุป MA</span>
+    </a>
     <?php endif; ?>
 </nav>
+
+<style>
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .bottom-tabs {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+    }
+    .bottom-tabs::after {
+        content: '';
+        flex: 0 0 16px;
+    }
+</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
