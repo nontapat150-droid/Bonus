@@ -20,6 +20,14 @@ try {
 }
 $page = $_GET['page'] ?? 'home';
 
+if ($page === 'home') {
+    if (function_exists('isSalesOnly') && isSalesOnly()) {
+        $page = 'checkin';
+    } elseif (function_exists('isInternOnly') && isInternOnly()) {
+        $page = 'work_records';
+    }
+}
+
 // Fetch Real-time Stats for Dashboard
 $stats = [
     'jobs_today' => 0,
