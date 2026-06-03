@@ -184,15 +184,39 @@ try {
     }
 
     $teams = [];
+    $office_techs = [];
+    $ma_techs = [];
     if (hasRole(['admin', 'super_admin'])) {
         $stmtTeams = $pdo->query("SELECT * FROM teams");
         $teams = $stmtTeams->fetchAll(PDO::FETCH_ASSOC);
+
+        $stmtOffice = $pdo->query("
+            SELECT DISTINCT u.id, u.full_name, u.team_id, t.team_name 
+            FROM users u
+            LEFT JOIN teams t ON u.team_id = t.id
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            WHERE u.status = 'approved' AND (u.role = 'technician' OR ur.role = 'technician')
+            ORDER BY u.full_name ASC
+        ");
+        $office_techs = $stmtOffice->fetchAll(PDO::FETCH_ASSOC);
+
+        $stmtMa = $pdo->query("
+            SELECT DISTINCT u.id, u.full_name, u.team_id, t.team_name 
+            FROM users u
+            LEFT JOIN teams t ON u.team_id = t.id
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            WHERE u.status = 'approved' AND (u.role = 'ma_technician' OR ur.role = 'ma_technician')
+            ORDER BY u.full_name ASC
+        ");
+        $ma_techs = $stmtMa->fetchAll(PDO::FETCH_ASSOC);
     }
 
     echo json_encode([
         'success' => true, 
         'data' => $jobs, 
-        'teams' => $teams
+        'teams' => $teams,
+        'office_techs' => $office_techs,
+        'ma_techs' => $ma_techs
     ]);
 
 } catch (PDOException $e) {

@@ -2,6 +2,8 @@
 
 let allJobs = [];
 let currentTeams = []; 
+let currentOfficeTechs = [];
+let currentMaTechs = [];
 let selectedJobIds = new Set();
 let activeDispatchView = 'jobs';
 let currentJobType = 'jobs';
@@ -359,6 +361,8 @@ async function loadJobs() {
             try {
                 allJobs = data.data || [];
                 currentTeams = data.teams || [];
+                currentOfficeTechs = data.office_techs || [];
+                currentMaTechs = data.ma_techs || [];
 
                 if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN) {
                     const filter = document.getElementById('teamFilter');
@@ -1099,6 +1103,15 @@ function showJobPopup(job, color) {
     let actionButtons = '';
     const popupStatus = (job.status || '').toLowerCase();
     
+    let editButtonHTML = '';
+    if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN) {
+        editButtonHTML = `
+            <button onclick="Swal.close(); openEditJobModal(${job.id})" class="absolute top-4 right-10 text-slate-400 hover:text-indigo-600 transition-colors z-[9999]" title="แก้ไขข้อมูลงาน">
+                <i data-lucide="edit" class="w-5 h-5"></i>
+            </button>
+        `;
+    }
+
     if (typeof IS_ADMIN !== 'undefined' && !IS_ADMIN && popupStatus !== 'completed' && popupStatus !== 'failed') {
         if (canActOnCurrentJobType(job)) actionButtons = `
             <div class="grid grid-cols-2 gap-2 mt-3">
@@ -1125,28 +1138,60 @@ function showJobPopup(job, color) {
 
     let reassignHTML = '';
     if (typeof IS_ADMIN !== 'undefined' && IS_ADMIN && popupStatus !== 'completed' && popupStatus !== 'failed') {
-        const teamOptions = currentTeams.map(t => 
-            `<option value="${t.id}" ${t.id == job.team_id ? 'selected' : ''}>${escapeHTML(t.team_name)}</option>`
-        ).join('');
-        
-        reassignHTML = `
-            <div class="bg-${currentJobType === 'ma' ? 'violet' : 'indigo'}-50 border border-${currentJobType === 'ma' ? 'violet' : 'indigo'}-100 p-3 rounded-lg mt-3 flex flex-col gap-2">
-                <p class="text-[10px] font-bold text-${currentJobType === 'ma' ? 'violet' : 'indigo'}-500 uppercase tracking-wide">เปลี่ยนทีมรับผิดชอบ (${currentJobType === 'ma' ? 'MA' : 'Office'})</p>
-                <div class="flex gap-2">
-                    <select id="reassignTeamSelect_${job.id}" class="input !py-1.5 !px-2 text-xs font-bold flex-1">
-                        <option value="">-- รอจ่าย / ไม่ระบุทีม --</option>
-                        ${teamOptions}
-                    </select>
-                    <button onclick="reassignJob(${job.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 py-1.5 rounded shadow-sm">
-                        เปลี่ยนทีม
-                    </button>
+        if (currentJobType === 'jobs') {
+            const teamOptions = currentTeams.map(t => 
+                `<option value="${t.id}" ${t.id == job.team_id ? 'selected' : ''}>${escapeHTML(t.team_name)}</option>`
+            ).join('');
+            
+            const techOptions = currentOfficeTechs.map(tech => 
+                `<option value="${tech.id}" data-team-id="${tech.team_id || ''}" ${tech.id == job.assigned_user_id ? 'selected' : ''}>${escapeHTML(tech.full_name)}</option>`
+            ).join('');
+
+            reassignHTML = `
+                <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-lg mt-3 flex flex-col gap-2">
+                    <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-wide">เปลี่ยนทีมรับผิดชอบ (Office)</p>
+                    <div class="flex flex-col gap-2">
+                        <select id="reassignTechSelect_${job.id}" class="input !py-1.5 !px-2 text-xs font-bold w-full" onchange="handleReassignTechChange(${job.id}, 'office')">
+                            <option value="">-- เลือกช่าง --</option>
+                            ${techOptions}
+                        </select>
+                        <div class="flex gap-2">
+                            <select id="reassignTeamSelect_${job.id}" class="input !py-1.5 !px-2 text-xs font-bold flex-1" onchange="handleReassignTeamChange(${job.id}, 'office')">
+                                <option value="">-- รอจ่าย / ไม่ระบุทีม --</option>
+                                ${teamOptions}
+                            </select>
+                            <button onclick="reassignJob(${job.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-3 py-1.5 rounded shadow-sm shrink-0">
+                                บันทึก
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            const techOptions = currentMaTechs.map(tech => 
+                `<option value="${tech.id}" data-team-id="${tech.team_id || ''}" ${tech.id == job.assigned_user_id ? 'selected' : ''}>${escapeHTML(tech.full_name)}</option>`
+            ).join('');
+
+            reassignHTML = `
+                <div class="bg-violet-50 border border-violet-100 p-3 rounded-lg mt-3 flex flex-col gap-2">
+                    <p class="text-[10px] font-bold text-violet-500 uppercase tracking-wide">เปลี่ยนช่างรับผิดชอบ (MA)</p>
+                    <div class="flex gap-2">
+                        <select id="reassignTechSelect_${job.id}" class="input !py-1.5 !px-2 text-xs font-bold flex-1" onchange="handleReassignTechChange(${job.id}, 'ma')">
+                            <option value="">-- รอจ่าย / ไม่ระบุช่าง --</option>
+                            ${techOptions}
+                        </select>
+                        <input type="hidden" id="reassignTeamSelect_${job.id}" value="${job.team_id || ''}">
+                        <button onclick="reassignJob(${job.id})" class="bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-bold px-3 py-1.5 rounded shadow-sm shrink-0">
+                            บันทึก
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     Swal.fire({
-        title: `<div class="text-left"><div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">รายละเอียดงาน</div><div class="font-black text-lg" style="color:${color};">${displayValue(job.access_no, 'N/A')}</div></div>`,
+        title: `<div class="text-left relative"><div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">รายละเอียดงาน</div><div class="font-black text-lg" style="color:${color};">${displayValue(job.access_no, 'N/A')}</div>${editButtonHTML}</div>`,
         html: `
             <div class="text-left mt-1 font-sans space-y-3">
                 <div class="bg-white border border-slate-100 p-4 rounded-lg shadow-sm space-y-3">
@@ -1275,24 +1320,61 @@ window.editJobCoords = async function(jobId, currentLat, currentLng) {
     }
 }
 
+window.handleReassignTechChange = function(jobId, type) {
+    const techSelect = document.getElementById(`reassignTechSelect_${jobId}`);
+    const teamSelect = document.getElementById(`reassignTeamSelect_${jobId}`);
+    if (!techSelect || !teamSelect) return;
+    
+    const selectedOption = techSelect.options[techSelect.selectedIndex];
+    const teamId = selectedOption.getAttribute('data-team-id');
+    
+    if (teamId && type === 'office') {
+        teamSelect.value = teamId;
+    } else if (teamId && type === 'ma') {
+        teamSelect.value = teamId;
+    }
+};
+
+window.handleReassignTeamChange = function(jobId, type) {
+    if (type !== 'office') return;
+    const techSelect = document.getElementById(`reassignTechSelect_${jobId}`);
+    const teamSelect = document.getElementById(`reassignTeamSelect_${jobId}`);
+    if (!techSelect || !teamSelect) return;
+    
+    const teamId = teamSelect.value;
+    if (teamId) {
+        const techOption = Array.from(techSelect.options).find(opt => opt.getAttribute('data-team-id') === String(teamId));
+        if (techOption) {
+            techSelect.value = techOption.value;
+        }
+    }
+};
+
 window.reassignJob = async function(jobId) {
-    const select = document.getElementById(`reassignTeamSelect_${jobId}`);
-    if (!select) return;
-    const newTeamId = select.value;
+    const teamSelect = document.getElementById(`reassignTeamSelect_${jobId}`);
+    const techSelect = document.getElementById(`reassignTechSelect_${jobId}`);
+    
+    const newTeamId = teamSelect ? teamSelect.value : null;
+    const newTechId = techSelect ? techSelect.value : null;
 
     Swal.close();
-    showLoader('กำลังเปลี่ยนทีม...');
+    showLoader('กำลังบันทึก...');
     try {
         const res = await fetch(getApiUrl('api/dispatch/reassign_job.php'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ job_id: jobId, team_id: newTeamId || null, job_type: currentJobType === 'ma' ? 'ma' : 'jobs' })
+            body: JSON.stringify({ 
+                job_id: jobId, 
+                team_id: newTeamId || null, 
+                assigned_user_id: newTechId || null,
+                job_type: currentJobType === 'ma' ? 'ma' : 'jobs' 
+            })
         });
         const data = await res.json();
         if (data.success) {
             Swal.fire({
                 title: 'สำเร็จ',
-                text: 'เปลี่ยนทีมรับผิดชอบเรียบร้อย',
+                text: 'บันทึกข้อมูลเรียบร้อย',
                 icon: 'success',
                 timer: 1500,
                 showConfirmButton: false
@@ -1813,18 +1895,55 @@ window.closeMaCompleteModal = function() {
 
 window.submitMaCompleteJob = async function() {
     const jobId = document.getElementById('maCompleteJobId')?.value;
-    const files = document.getElementById('maProofImages')?.files;
-    if (!jobId || !files || files.length === 0) {
-        Swal.fire('แจ้งเตือน', 'กรุณาอัปโหลดรูปภาพหลักฐาน', 'warning');
-        return;
-    }
-
+    const status = document.querySelector('input[name="ma_status"]:checked')?.value || 'completed';
+    const remark = document.getElementById('maCompleteRemark')?.value.trim() || '';
+    
     const formData = new FormData();
     formData.append('job_id', jobId);
-    formData.append('status', 'completed');
-    formData.append('remark', document.getElementById('maCompleteRemark')?.value || '');
-    for (let i = 0; i < files.length; i++) {
-        formData.append('proof_images[]', files[i]);
+    formData.append('status', status);
+    formData.append('remark', remark);
+
+    if (status === 'completed') {
+        const files = document.getElementById('maProofImages')?.files;
+        const signalAfter = document.getElementById('maSignalAfter')?.value.trim();
+        const powerRx = document.getElementById('maPowerRx')?.value.trim();
+        const problemCause = document.getElementById('maProblemCause')?.value.trim();
+        const solution = document.getElementById('maSolution')?.value.trim();
+
+        if (!files || files.length === 0) {
+            Swal.fire('แจ้งเตือน', 'กรุณาอัปโหลดรูปภาพหลักฐาน', 'warning');
+            return;
+        }
+        if (!signalAfter) {
+            Swal.fire('แจ้งเตือน', 'กรุณากรอกค่าสัญญาณหลังออนไลน์', 'warning');
+            return;
+        }
+        if (!powerRx) {
+            Swal.fire('แจ้งเตือน', 'กรุณากรอกค่า Power RX', 'warning');
+            return;
+        }
+        if (!problemCause) {
+            Swal.fire('แจ้งเตือน', 'กรุณาระบุสาเหตุของปัญหา', 'warning');
+            return;
+        }
+        if (!solution) {
+            Swal.fire('แจ้งเตือน', 'กรุณาระบุวิธีการแก้ไข', 'warning');
+            return;
+        }
+
+        formData.append('signal_after', signalAfter);
+        formData.append('power_rx', powerRx);
+        formData.append('problem_cause', problemCause);
+        formData.append('solution', solution);
+
+        for (let i = 0; i < files.length; i++) {
+            formData.append('proof_images[]', files[i]);
+        }
+    } else {
+        if (!remark) {
+            Swal.fire('แจ้งเตือน', 'กรุณาระบุหมายเหตุหรือสาเหตุที่ไม่จบงาน', 'warning');
+            return;
+        }
     }
 
     Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -1929,4 +2048,136 @@ function exportDataToExcel(filterType) {
         XLSX.writeFile(wb, `Dispatch_Jobs.xlsx`);
         hideLoader();
     }, 500);
+}
+
+window.openEditJobModal = function(jobId) {
+    const job = allJobs.find(j => String(j.id) === String(jobId));
+    if (!job) return;
+
+    let html = '';
+    
+    if (currentJobType === 'jobs') {
+        html = `
+            <form id="editJobForm" class="text-left space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">Circuit ID / Access No <span class="text-rose-500">*</span></label><input type="text" id="edit_access_no" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.access_no)}" required></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">วันที่เข้าทำ <span class="text-rose-500">*</span></label><input type="date" id="edit_plan_date" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.plan_arrival_date)}" required></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">ชื่อลูกค้า</label><input type="text" id="edit_customer" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.customer || '')}"></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์</label><input type="text" id="edit_phone" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.phone || '')}"></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">สถานที่ติดตั้ง / ที่อยู่</label><textarea id="edit_address" rows="2" class="input !py-2 !px-3 text-sm font-bold w-full resize-none">${escapeHTML(job.address || '')}</textarea></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">Lat</label><input type="number" step="any" id="edit_lat" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.lat || '')}"></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">Lng</label><input type="number" step="any" id="edit_lng" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.lng || '')}"></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">แพ็กเกจ</label><input type="text" id="edit_package" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.package || '')}"></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">สินค้า</label><input type="text" id="edit_product" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.product || '')}"></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">Order No</label><input type="text" id="edit_order_no" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.order_no || '')}"></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">Task Order</label><input type="text" id="edit_task_order" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.task_order || '')}"></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">Task Type</label><input type="text" id="edit_task_type" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.task_type || '')}"></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">หมายเหตุ</label><textarea id="edit_remark" rows="2" class="input !py-2 !px-3 text-sm font-bold w-full resize-none">${escapeHTML(job.remark || '')}</textarea></div>
+                </div>
+            </form>
+        `;
+    } else {
+        html = `
+            <form id="editJobForm" class="text-left space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">NON <span class="text-rose-500">*</span></label><input type="text" id="edit_access_no" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.access_no)}" required></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">วันที่ (Plan Date) <span class="text-rose-500">*</span></label><input type="date" id="edit_plan_date" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.plan_arrival_date)}" required></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">ชื่อลูกค้า</label><input type="text" id="edit_customer" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.customer || '')}"></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์</label><input type="text" id="edit_phone" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.phone || '')}"></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">พื้นที่ (Network)</label>
+                        <select id="edit_area_provider" class="input !py-2 !px-3 text-sm font-bold w-full">
+                            <option value="">-- เลือกพื้นที่ --</option>
+                            <option value="AIS" ${job.area_provider === 'AIS' ? 'selected' : ''}>AIS</option>
+                            <option value="3BB" ${job.area_provider === '3BB' ? 'selected' : ''}>3BB</option>
+                        </select>
+                    </div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">ตำบล</label><input type="text" id="edit_sub_district" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.sub_district || '')}"></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">อำเภอ</label><input type="text" id="edit_district" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.district || '')}"></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">ราคา</label><input type="number" step="any" id="edit_price" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.price || '')}"></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">ที่อยู่ติดตั้ง</label><textarea id="edit_address" rows="2" class="input !py-2 !px-3 text-sm font-bold w-full resize-none">${escapeHTML(job.address || '')}</textarea></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">Lat</label><input type="number" step="any" id="edit_lat" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.lat || '')}"></div>
+                    <div><label class="block text-xs font-bold text-slate-700 mb-1">Lng</label><input type="number" step="any" id="edit_lng" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.lng || '')}"></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">Order No</label><input type="text" id="edit_order_no" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.order_no || '')}"></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">อาการ</label><textarea id="edit_symptoms" rows="2" class="input !py-2 !px-3 text-sm font-bold w-full resize-none">${escapeHTML(job.symptoms || '')}</textarea></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">หมายเหตุ</label><textarea id="edit_remark" rows="2" class="input !py-2 !px-3 text-sm font-bold w-full resize-none">${escapeHTML(job.remark || '')}</textarea></div>
+                </div>
+            </form>
+        `;
+    }
+
+    Swal.fire({
+        title: '<div class="text-left text-sm font-bold">แก้ไขข้อมูลงาน</div>',
+        html: html,
+        showCancelButton: true,
+        confirmButtonText: 'บันทึกข้อมูล',
+        cancelButtonText: 'ยกเลิก',
+        customClass: {
+            popup: 'rounded-2xl p-4 shadow-xl z-[9999] w-full max-w-2xl',
+            confirmButton: 'bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4 py-2 text-xs font-bold w-full mt-2',
+            cancelButton: 'px-4 py-2 bg-white text-slate-600 rounded-lg font-bold text-xs border border-slate-200 hover:bg-slate-100 transition-colors w-full mt-2',
+            actions: 'flex-col sm:flex-row w-full px-2 gap-2'
+        },
+        preConfirm: () => {
+            const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value : '';
+            if (!getVal('edit_access_no') || !getVal('edit_plan_date')) {
+                Swal.showValidationMessage('กรุณาระบุรหัสงานและวันที่');
+                return false;
+            }
+            
+            return {
+                job_id: job.id,
+                job_type: currentJobType,
+                access_no: getVal('edit_access_no'),
+                plan_arrival_date: getVal('edit_plan_date'),
+                customer: getVal('edit_customer'),
+                phone: getVal('edit_phone'),
+                address: getVal('edit_address'),
+                lat: getVal('edit_lat'),
+                lng: getVal('edit_lng'),
+                package: getVal('edit_package'),
+                product: getVal('edit_product'),
+                order_no: getVal('edit_order_no'),
+                task_order: getVal('edit_task_order'),
+                task_type: getVal('edit_task_type'),
+                remark: getVal('edit_remark'),
+                area_provider: getVal('edit_area_provider'),
+                sub_district: getVal('edit_sub_district'),
+                district: getVal('edit_district'),
+                price: getVal('edit_price'),
+                symptoms: getVal('edit_symptoms')
+            };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            submitEditJob(result.value);
+        }
+    });
+};
+
+async function submitEditJob(payload) {
+    showLoader('กำลังบันทึก...');
+    try {
+        const res = await fetch(getApiUrl('api/dispatch/edit_job.php'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            Swal.fire({
+                title: 'สำเร็จ',
+                text: 'อัปเดตข้อมูลเรียบร้อย',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            loadJobs();
+        } else {
+            Swal.fire('ข้อผิดพลาด', data.error, 'error');
+        }
+    } catch (e) {
+        Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อล้มเหลว', 'error');
+    } finally {
+        hideLoader();
+    }
 }
