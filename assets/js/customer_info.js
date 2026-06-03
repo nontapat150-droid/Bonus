@@ -67,8 +67,12 @@ function initCustomerInfo() {
     async function fetchCustomers(queryString) {
         if (window.Loader) window.Loader.show();
         try {
-            const base = window.location.pathname.replace(/\/[^/]*$/, '/');
-            const res = await fetch(`${base}api/customer/search_info.php${queryString}`);
+            const res = await fetch('api/customer/search_info.php' + queryString, {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (!res.ok) {
+                throw new Error('HTTP ' + res.status);
+            }
             const data = await res.json();
             
             if (data.success) {
@@ -78,7 +82,8 @@ function initCustomerInfo() {
                 Swal.fire('ข้อผิดพลาด', data.error || 'ไม่สามารถค้นหาข้อมูลได้', 'error');
             }
         } catch (error) {
-            Swal.fire('ข้อผิดพลาด', 'เกิดปัญหาในการเชื่อมต่อเซิร์ฟเวอร์', 'error');
+            console.error('fetchCustomers error:', error);
+            Swal.fire('ข้อผิดพลาด', 'เกิดปัญหาในการเชื่อมต่อเซิร์ฟเวอร์: ' + error.message, 'error');
         } finally {
             if (window.Loader) window.Loader.hide();
         }
