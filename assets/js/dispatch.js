@@ -1872,52 +1872,71 @@ function processMAExcel(file) {
 
             if (rows.length < 2) throw new Error('ไฟล์ว่างเปล่า หรือรูปแบบไม่ถูกต้อง');
 
-            const headerRow = rows[0].map(h => String(h || '').trim());
-            const findCol = (keys) => headerRow.findIndex(h => keys.some(k => h.toLowerCase().includes(k.toLowerCase())));
-
-            const timeIdx = findCol(['เวลา', 'time']);
-            const nonIdx = findCol(['NON', 'access_no', 'รหัส']);
-            const customerIdx = findCol(['ชื่อลูกค้า', 'ลูกค้า', 'customer', 'รายชื่อ']);
-            const phoneIdx = findCol(['เบอร์', 'โทร', 'phone']);
-            const symptomsIdx = findCol(['อาการ', 'symptom']);
-            const addressIdx = findCol(['ที่อยู่']);
-            const teamIdx = findCol(['ทีมช่าง', 'ทีม', 'team']);
-            const areaIdx = findCol(['พื้นที่', 'area', 'AIS', '3BB']);
-            const remarkIdx = findCol(['หมายเหตุ', 'remark']);
-            const dateIdx = findCol(['วันที่', 'date']);
-
-            if (nonIdx === -1) throw new Error('ไฟล์ Excel ขาดหัวคอลัมน์ NON');
+            // ผู้ใช้กำหนดคอลัมน์ตายตัวตามโครงสร้างไฟล์:
+            // B=1: เวลา (วันที่+เวลา)
+            // C=2: NON (รหัสงาน)
+            // D=3: ชื่อลูกค้า
+            // E=4: เบอร์โทร
+            // F=5: อาการ
+            // G=6: ที่อยู่
+            // H=7: ช่าง (ทีม)
+            // I=8: พื้นที่ (AIS/3BB)
+            // J=9: หมายเหตุ
 
             const parsedJobs = [];
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
-                if (!row[nonIdx]) continue;
+                if (!row || !row[2]) continue; // คอลัมน์ C (NON) ต้องมีข้อมูล
 
-                let planDate = dateIdx !== -1 ? row[dateIdx] : null;
-                if (planDate && !isNaN(planDate) && String(planDate).indexOf('-') === -1 && String(planDate).indexOf('/') === -1) {
-                    const dateObj = new Date((planDate - 25569) * 86400 * 1000);
-                    planDate = dateObj.toISOString().split('T')[0];
-                } else if (planDate && typeof planDate === 'string') {
-                    planDate = planDate.trim().split(' ')[0];
-                    if (planDate.includes('/')) {
-                        const parts = planDate.split('/');
-                        if (parts.length === 3 && parts[2].length === 4) {
-                            planDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                let dtValue = row[1]; // คอลัมน์ B (เวลา)
+                let planDate = null;
+                let jobTime = '';
+
+                if (dtValue) {
+                    if (typeof dtValue === 'number') {
+                        // Excel serial number (days since Dec 30, 1899)
+                        // ใช้เวลา UTC เพื่อหลีกเลี่ยง Timezone Offset
+                        const dateObj = new Date(Math.round((dtValue - 25569) * 86400 * 1000));
+                        let yy = dateObj.getUTCFullYear();
+                        let mm = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+                        let dd = String(dateObj.getUTCDate()).padStart(2, '0');
+                        planDate = `${yy}-${mm}-${dd}`;
+                        
+                        let h = String(dateObj.getUTCHours()).padStart(2, '0');
+                        let m = String(dateObj.getUTCMinutes()).padStart(2, '0');
+                        jobTime = `${h}:${m}`;
+                    } else if (typeof dtValue === 'string') {
+                        const parts = dtValue.trim().split(/\s+/);
+                        let datePart = parts[0];
+                        
+                        if (datePart.includes('/')) {
+                            let dp = datePart.split('/');
+                            if (dp.length === 3) {
+                                // รองรับ d/m/yy หรือ d/m/yyyy
+                                let yy = dp[2].length === 2 ? '20' + dp[2] : dp[2];
+                                planDate = `${yy}-${dp[1].padStart(2, '0')}-${dp[0].padStart(2, '0')}`;
+                            }
+                        } else if (datePart.includes('-')) {
+                            planDate = datePart;
+                        }
+
+                        if (parts.length > 1) {
+                            jobTime = parts[1].substring(0, 5); // เอาแค่ HH:mm
                         }
                     }
                 }
 
                 parsedJobs.push({
                     plan_arrival_date: planDate || null,
-                    access_no: String(row[nonIdx] || '').trim(),
-                    customer: customerIdx !== -1 ? String(row[customerIdx] || '').trim() : '',
-                    phone: phoneIdx !== -1 ? String(row[phoneIdx] || '').trim() : '',
-                    symptoms: symptomsIdx !== -1 ? String(row[symptomsIdx] || '').trim() : '',
-                    address: addressIdx !== -1 ? String(row[addressIdx] || '').trim() : '',
-                    team_name: teamIdx !== -1 ? String(row[teamIdx] || '').trim() : '',
-                    area_provider: areaIdx !== -1 ? String(row[areaIdx] || '').trim() : '',
-                    job_time: timeIdx !== -1 ? String(row[timeIdx] || '').trim() : '',
-                    remark: remarkIdx !== -1 ? String(row[remarkIdx] || '').trim() : ''
+                    job_time: jobTime,
+                    access_no: String(row[2] || '').trim(),        // คอลัมน์ C (NON)
+                    customer: String(row[3] || '').trim(),         // คอลัมน์ D (ชื่อลูกค้า)
+                    phone: String(row[4] || '').trim(),            // คอลัมน์ E (เบอร์โทร)
+                    symptoms: String(row[5] || '').trim(),         // คอลัมน์ F (อาการ)
+                    address: String(row[6] || '').trim(),          // คอลัมน์ G (ที่อยู่)
+                    team_name: String(row[7] || '').trim(),        // คอลัมน์ H (ช่าง)
+                    area_provider: String(row[8] || '').trim(),    // คอลัมน์ I (พื้นที่)
+                    remark: String(row[9] || '').trim()            // คอลัมน์ J (หมายเหตุ)
                 });
             }
 

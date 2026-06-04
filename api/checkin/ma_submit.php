@@ -43,7 +43,34 @@ try {
         throw new Exception('เกิดข้อผิดพลาดในการบันทึกไฟล์รูปภาพ');
     }
 
-    $allow_late_time = getMaCheckinLateTime($pdo);
+    $stmtTeam = $pdo->prepare("SELECT team_id FROM users WHERE id = ?");
+    $stmtTeam->execute([$user_id]);
+    $team_id = $stmtTeam->fetchColumn();
+
+    $today = date('Y-m-d');
+    $stmtJob = $pdo->prepare("
+        SELECT MIN(job_time) 
+        FROM ma_jobs 
+        WHERE plan_arrival_date = ? 
+          AND (assigned_user_id = ? OR (team_id IS NOT NULL AND team_id = ?))
+          AND job_time IS NOT NULL 
+          AND job_time != ''
+    ");
+    $stmtJob->execute([$today, $user_id, $team_id]);
+    $earliest_job_time = $stmtJob->fetchColumn();
+
+    if ($earliest_job_time) {
+        $timeParts = explode('-', $earliest_job_time);
+        $parsedTime = strtotime(trim($timeParts[0]));
+        if ($parsedTime) {
+            $allow_late_time = date('H:i:s', $parsedTime);
+        } else {
+            $allow_late_time = getMaCheckinLateTime($pdo);
+        }
+    } else {
+        $allow_late_time = getMaCheckinLateTime($pdo);
+    }
+
     $current_time = date('H:i:s');
     $is_late = ($current_time > $allow_late_time) ? 1 : 0;
 
