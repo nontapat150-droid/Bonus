@@ -64,6 +64,18 @@ try {
             
             $pdo->prepare("INSERT INTO notifications (title, message, type, is_global, created_by) VALUES (?, ?, 'admin_only', 0, ?)")
                 ->execute([$title, $message, $admin_id]);
+                
+            // Send push notification to Admins via OneSignal
+            if (file_exists('../../config/onesignal.php')) {
+                require_once '../../config/onesignal.php';
+                if (function_exists('sendOneSignalPush')) {
+                    $stmtAdmin = $pdo->query("SELECT id FROM users WHERE role IN ('admin', 'super_admin')");
+                    $admins = $stmtAdmin->fetchAll(PDO::FETCH_COLUMN);
+                    foreach ($admins as $adminId) {
+                        sendOneSignalPush($pdo, $title, $message, 'user', null, $adminId);
+                    }
+                }
+            }
         } catch (Exception $e) {} // ignore notification errors
     }
 
