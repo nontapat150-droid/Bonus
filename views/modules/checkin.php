@@ -122,25 +122,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
             </div>
         </div>
 
-        <?php if ($isSuperAdmin): ?>
-        <div class="bg-white rounded-[2rem] shadow-xl p-6 border border-violet-100 mb-4">
-            <div class="mb-4 border-b border-violet-100 pb-4">
-                <h3 class="font-bold text-violet-800 flex items-center"><span class="mr-2">🔧</span> ตั้งค่าเวลาเช็คอิน MA</h3>
-                <p class="text-xs text-violet-500 mt-1">เฉพาะผู้ดูแลระบบ — ช่าง MA ที่เช็คอินหลังเวลานี้จะถูกบันทึกว่า <strong>มาสาย</strong> ทันที</p>
-            </div>
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <div class="flex-1">
-                    <label class="block text-[10px] font-black text-violet-400 uppercase mb-1">เวลาเข้างาน MA (ไม่เกิน)</label>
-                    <input type="time" id="maLateTimeInput" class="w-full px-4 py-2 border border-violet-200 rounded-xl focus:ring-2 focus:ring-violet-500 font-bold text-violet-800">
-                </div>
-                <button onclick="saveMaSettings()" class="bg-violet-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-violet-700 transition-colors shadow-md sm:mt-5 min-w-[120px]">บันทึก</button>
-            </div>
-        </div>
-        <?php elseif ($showMaCheckin): ?>
-        <div class="bg-violet-50 rounded-2xl p-4 border border-violet-100 mb-4 text-center">
-            <p class="text-xs text-violet-600 font-bold">เวลาเข้างาน MA: ไม่เกิน <span id="maDeadlineDisplayRo" class="font-black text-violet-800">--:--</span> น. (ตั้งโดยผู้ดูแลระบบ)</p>
-        </div>
-        <?php endif; ?>
+
 
         <?php if($isAdmin): ?>
         <div class="bg-white rounded-[2rem] shadow-xl p-6 border border-gray-50 mb-4">
