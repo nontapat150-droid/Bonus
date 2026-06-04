@@ -98,8 +98,8 @@ if ($page === 'home') {
             $stats['super_total_non'] = $stmt->fetchColumn();
             
             $feedSql = "
-                SELECT 'oil' as type, u.full_name, CONCAT('เติมน้ำมันไป ', o.total_price, ' บาท') as detail, o.date_recorded as action_time
-                FROM oil_records o JOIN users u ON o.tech_id = u.id WHERE DATE(o.date_recorded) = CURDATE()
+                SELECT 'oil' as type, u.full_name, CONCAT('เติมน้ำมันไป ', o.total_price, ' บาท') as detail, o.created_at as action_time
+                FROM oil_records o JOIN users u ON o.tech_id = u.id WHERE DATE(o.created_at) = CURDATE()
                 UNION ALL
                 SELECT 'checkin' as type, u.full_name, 'เช็คอินเข้างาน' as detail, c.checkin_time as action_time
                 FROM checkins c JOIN users u ON c.user_id = u.id WHERE DATE(c.checkin_time) = CURDATE()
@@ -139,6 +139,14 @@ if ($page === 'home') {
             $chk2->execute();
             if (!$chk2->fetch()) {
                 $pdo->exec("ALTER TABLE announcements ADD COLUMN `title` VARCHAR(255) DEFAULT NULL AFTER `type`");
+            }
+            
+            // เพิ่มคอลัมน์ created_at ใน oil_records ถ้ายังไม่มี
+            $chkOil = $pdo->prepare("SHOW COLUMNS FROM oil_records LIKE 'created_at'");
+            $chkOil->execute();
+            if (!$chkOil->fetch()) {
+                $pdo->exec("ALTER TABLE oil_records ADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+                $pdo->exec("UPDATE oil_records SET created_at = date_recorded WHERE created_at IS NULL OR created_at = '0000-00-00 00:00:00'");
             }
             
             // สร้างตาราง issue_reports
@@ -990,10 +998,10 @@ if ($page === 'home') {
                                     elseif ($diff < 86400) $timeAgo = "เมื่อ " . floor($diff / 3600) . " ชั่วโมงที่แล้ว";
                                     else $timeAgo = "เมื่อ " . floor($diff / 86400) . " วันที่แล้ว";
                                 ?>
-                                    <span class="mx-6 text-sm text-slate-300">
+                                    <span class="mx-6 text-sm text-white">
                                         <span class="font-bold text-white"><?= htmlspecialchars($feed['full_name']) ?></span> 
                                         <?= htmlspecialchars($feed['detail']) ?> 
-                                        <span class="text-slate-500 text-xs ml-2 flex-shrink-0"><i data-lucide="clock" class="w-3 h-3 inline-block mr-1 mb-[2px]"></i><?= $timeAgo ?></span>
+                                        <span class="text-white text-xs ml-2 flex-shrink-0"><i data-lucide="clock" class="w-3 h-3 inline-block mr-1 mb-[2px]"></i><?= $timeAgo ?></span>
                                     </span>
                                     <span class="text-slate-700">•</span>
                                 <?php endforeach; ?>
