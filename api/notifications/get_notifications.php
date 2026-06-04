@@ -12,12 +12,21 @@ $team_id = $_SESSION['team_id'] ?? null;
 $is_admin = hasRole(['admin', 'super_admin']);
 
 try {
-    // เช็คคอลัมน์อย่างปลอดภัย
     try {
         $stmtCol = $pdo->query("SHOW COLUMNS FROM notifications LIKE 'target_user_id'");
         if ($stmtCol->rowCount() == 0) {
             $pdo->exec("ALTER TABLE notifications ADD COLUMN target_user_id INT DEFAULT NULL AFTER team_id");
             $pdo->exec("ALTER TABLE notifications ADD CONSTRAINT fk_notif_target_user FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE");
+        }
+        
+        $stmtCol2 = $pdo->query("SHOW COLUMNS FROM users LIKE 'last_checkin_push_date'");
+        if ($stmtCol2->rowCount() == 0) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN last_checkin_push_date DATE DEFAULT NULL");
+        }
+        
+        $stmtCol3 = $pdo->query("SHOW COLUMNS FROM teams LIKE 'last_job_push_date'");
+        if ($stmtCol3->rowCount() == 0) {
+            $pdo->exec("ALTER TABLE teams ADD COLUMN last_job_push_date DATE DEFAULT NULL");
         }
     } catch (Exception $e) {}
 
@@ -64,44 +73,80 @@ try {
     $smart_notifications = [];
     $unreadCount = 0;
 
-    $stmtUser = $pdo->prepare("SELECT allow_late_time FROM users WHERE id = ?");
+    $stmtUser = $pdo->prepare("SELECT allow_late_time, last_checkin_push_date FROM users WHERE id = ?");
     $stmtUser->execute([$user_id]);
-    $userLateTime = $stmtUser->fetchColumn() ?: '08:30:00';
+    $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+    $userLateTime = $userRow['allow_late_time'] ?: '08:30:00';
+    $lastCheckinPush = $userRow['last_checkin_push_date'];
 
     $stmtCheckin = $pdo->prepare("SELECT COUNT(*) FROM checkins WHERE user_id = ? AND DATE(checkin_time) = CURDATE()");
     $stmtCheckin->execute([$user_id]);
     $hasCheckedIn = $stmtCheckin->fetchColumn() > 0;
 
     $currentTime = date('H:i:s');
+    $currentDate = date('Y-m-d');
+    
     if (!$hasCheckedIn && $currentTime >= '06:00:00' && $currentTime <= $userLateTime) {
+        $alertTitle = '⏰ ใกล้ถึงเวลาเช็คอินแล้วนะ!';
+        $alertMsg = "คุณยังไม่ได้ทำการเช็คอินเข้างานในวันนี้ (เวลาเข้างานของคุณคือ $userLateTime) อย่าลืมอัปโหลดรูปเช็คอินนะครับ";
+        
         $smart_notifications[] = [
             'id' => 'alert_checkin',
-            'title' => '⏰ ใกล้ถึงเวลาเช็คอินแล้วนะ!',
-            'message' => "คุณยังไม่ได้ทำการเช็คอินเข้างานในวันนี้ (เวลาเข้างานของคุณคือ $userLateTime) อย่าลืมอัปโหลดรูปเช็คอินนะครับ",
+            'title' => $alertTitle,
+            'message' => $alertMsg,
             'target_name' => 'เฉพาะคุณ',
             'creator_name' => 'ระบบอัตโนมัติ (AI)',
             'created_at' => date('Y-m-d H:i:s'),
             'is_read' => 0
         ];
         $unreadCount++;
+        
+        // Push Notification once per day
+        if ($lastCheckinPush !== $currentDate) {
+            $pdo->prepare("UPDATE users SET last_checkin_push_date = ? WHERE id = ?")->execute([$currentDate, $user_id]);
+            if (file_exists('../../config/onesignal.php')) {
+                require_once '../../config/onesignal.php';
+                if (function_exists('sendOneSignalPush')) {
+                    sendOneSignalPush($pdo, $alertTitle, $alertMsg, 'user', null, $user_id);
+                }
+            }
+        }
     }
 
     if ($team_id) {
+        $stmtTeamPush = $pdo->prepare("SELECT last_job_push_date FROM teams WHERE id = ?");
+        $stmtTeamPush->execute([$team_id]);
+        $lastJobPush = $stmtTeamPush->fetchColumn();
+        
         $stmtJob = $pdo->prepare("SELECT COUNT(*) FROM jobs WHERE team_id = ? AND (DATE(created_at) = CURDATE() OR plan_arrival_date = CURDATE())");
         $stmtJob->execute([$team_id]);
         $jobCount = $stmtJob->fetchColumn();
 
         if ($jobCount > 0) {
+            $alertTitle = '📦 มีงานมอบหมายใหม่';
+            $alertMsg = "วันนี้ทีมของคุณมีงานที่ต้องรับผิดชอบจำนวน $jobCount งาน กรุณาตรวจสอบแผนที่และรายละเอียดในระบบจัดส่งอัจฉริยะ";
+            
             $smart_notifications[] = [
                 'id' => 'alert_job',
-                'title' => '📦 มีงานมอบหมายใหม่',
-                'message' => "วันนี้ทีมของคุณมีงานที่ต้องรับผิดชอบจำนวน $jobCount งาน กรุณาตรวจสอบแผนที่และรายละเอียดในระบบจัดส่งอัจฉริยะ",
+                'title' => $alertTitle,
+                'message' => $alertMsg,
                 'target_name' => 'ทีมของคุณ',
                 'creator_name' => 'ระบบจัดส่ง',
                 'created_at' => date('Y-m-d H:i:s'),
                 'is_read' => 0 
             ];
             $unreadCount++;
+            
+            // Push Notification once per day per team
+            if ($lastJobPush !== $currentDate) {
+                $pdo->prepare("UPDATE teams SET last_job_push_date = ? WHERE id = ?")->execute([$currentDate, $team_id]);
+                if (file_exists('../../config/onesignal.php')) {
+                    require_once '../../config/onesignal.php';
+                    if (function_exists('sendOneSignalPush')) {
+                        sendOneSignalPush($pdo, $alertTitle, $alertMsg, 'team', $team_id);
+                    }
+                }
+            }
         }
     }
 
