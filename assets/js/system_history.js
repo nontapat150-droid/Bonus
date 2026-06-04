@@ -548,3 +548,43 @@ window.showCheckinSummary = function() {
 window.closeCheckinSummary = function() {
     document.getElementById('checkinSummaryModal').classList.add('hidden');
 };
+
+window.saveCheckinSummaryAsImage = async function() {
+    const captureEl = document.getElementById('checkinSummaryCaptureArea');
+    if (!captureEl) {
+        return Swal.fire('ข้อผิดพลาด', 'ไม่พบส่วนแสดงสรุปการเช็คอินสำหรับบันทึกเป็นรูปภาพ', 'error');
+    }
+
+    if (typeof html2canvas === 'undefined') {
+        return Swal.fire('ข้อผิดพลาด', 'ไม่พบไลบรารีสำหรับบันทึกรูปภาพ', 'error');
+    }
+
+    Swal.fire({
+        title: 'กำลังสร้างรูปภาพ...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+        const canvas = await html2canvas(captureEl, {
+            backgroundColor: '#ffffff',
+            scale: Math.min(3, window.devicePixelRatio || 1)
+        });
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        if (!blob) throw new Error('ไม่สามารถสร้างไฟล์ภาพได้');
+
+        const fileName = `checkin-summary-${new Date().toISOString().slice(0,10)}.png`;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(link.href);
+
+        Swal.close();
+        Swal.fire('สำเร็จ', 'บันทึกสรุปเช็คอินเป็นรูปภาพเรียบร้อยแล้ว', 'success');
+    } catch (error) {
+        Swal.fire('ข้อผิดพลาด', error.message || 'ไม่สามารถบันทึกเป็นรูปภาพได้', 'error');
+    }
+};

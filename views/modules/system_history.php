@@ -70,17 +70,23 @@ if (!hasRole(['admin', 'super_admin'])) exit('ไม่มีสิทธิ์�
 
     <div id="checkinSummaryModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[10100] flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50">
-            <h3 class="text-xl font-black text-indigo-900 flex items-center gap-2">
-                <i data-lucide="clipboard-list" class="text-indigo-600 w-6 h-6"></i> สรุปข้อมูลการเช็คอิน
-            </h3>
-            <button onclick="closeCheckinSummary()" class="text-slate-400 hover:text-rose-500 transition-colors p-2 rounded-xl hover:bg-rose-50">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
+        <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-indigo-50">
+            <div class="flex items-center gap-2">
+                <i data-lucide="clipboard-list" class="text-indigo-600 w-6 h-6"></i>
+                <h3 class="text-xl font-black text-indigo-900">สรุปข้อมูลการเช็คอิน</h3>
+            </div>
+            <div class="flex items-center gap-3 justify-end">
+                <button onclick="saveCheckinSummaryAsImage()" id="btnSaveCheckinSummaryImage" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold border border-emerald-200 py-2 px-4 rounded-xl text-sm shadow-sm transition-all flex items-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i> บันทึกเป็นรูปภาพ
+                </button>
+                <button onclick="closeCheckinSummary()" class="text-slate-400 hover:text-rose-500 transition-colors p-2 rounded-xl hover:bg-rose-50">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
         </div>
 
             <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
-                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                <div id="checkinSummaryCaptureArea" class="overflow-x-auto rounded-xl border border-slate-200 bg-white p-3">
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs text-slate-500 uppercase bg-slate-100 border-b border-slate-200">
                             <tr>
@@ -94,7 +100,8 @@ if (!hasRole(['admin', 'super_admin'])) exit('ไม่มีสิทธิ์�
                     </table>
                 </div>
             </div>
-            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+                <button onclick="saveCheckinSummaryAsImage()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-2 px-6 rounded-xl transition-all">บันทึกเป็นรูปภาพ</button>
                 <button onclick="closeCheckinSummary()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-6 rounded-xl transition-all">ปิดหน้าต่าง</button>
             </div>
         </div>
@@ -117,6 +124,7 @@ if (!hasRole(['admin', 'super_admin'])) exit('ไม่มีสิทธิ์�
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="assets/js/common.js"></script>
 <script src="assets/js/job_close.js?v=<?= time() ?>"></script>
 <script src="assets/js/system_history.js?v=<?= time() ?>"></script>
