@@ -726,3 +726,70 @@ window.exportCheckin = function() {
     XLSX.writeFile(workbook, `เช็คอิน_${new Date().getTime()}.xlsx`);
     Toast.success('ดาวน์โหลดสำเร็จ');
 };
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // จัดการปุ่มเลิกงาน (ระบบทั่วไป)
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', function() {
+            const fileInput = document.getElementById('checkin_image');
+            processCheckout(fileInput.files[0], 'regular');
+        });
+    }
+
+    // จัดการปุ่มเลิกงาน (ระบบ MA)
+    const maCheckoutBtn = document.getElementById('maCheckoutBtn');
+    if (maCheckoutBtn) {
+        maCheckoutBtn.addEventListener('click', function() {
+            const fileInput = document.getElementById('ma_checkin_image');
+            processCheckout(fileInput.files[0], 'ma');
+        });
+    }
+
+    // ฟังก์ชันหลักสำหรับส่งข้อมูลเลิกงาน
+    function processCheckout(imageFile, type) {
+        if (!imageFile) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'กรุณาถ่ายรูป',
+                text: 'คุณต้องถ่ายรูปเพื่อยืนยันการเลิกงาน'
+            });
+            return;
+        }
+
+        // สามารถเพิ่มการดึง GPS แบบเดียวกับตอนเช็คอินได้ที่นี่
+        Swal.fire({
+            title: 'กำลังบันทึกการเลิกงาน...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        const formData = new FormData();
+        formData.append('checkout_image', imageFile);
+        formData.append('type', type); // 'regular' หรือ 'ma'
+
+        // เรียกใช้งาน API สำหรับ Checkout (ต้องมั่นใจว่ามีไฟล์ API รองรับ)
+        fetch('api/checkin/checkout.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'บันทึกการเลิกงานสำเร็จ',
+                    text: 'เวลาเลิกงานของคุณถูกบันทึกเรียบร้อยแล้ว'
+                }).then(() => {
+                    location.reload(); // รีเฟรชหน้าเพื่ออัปเดตสถานะและประวัติ
+                });
+            } else {
+                Swal.fire('ข้อผิดพลาด', data.error || 'ไม่สามารถบันทึกการเลิกงานได้', 'error');
+            }
+        })
+        .catch(error => {
+            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้', 'error');
+        });
+    }
+});

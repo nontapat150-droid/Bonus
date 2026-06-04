@@ -41,14 +41,21 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
                 <label for="checkin_image" class="block w-full h-40 border-2 border-indigo-200 border-dashed rounded-[1.5rem] cursor-pointer bg-indigo-50/50 hover:bg-indigo-50 transition-colors relative overflow-hidden group">
                     <div id="uploadPrompt" class="absolute inset-0 flex flex-col items-center justify-center">
                         <svg class="w-10 h-10 text-indigo-400 mb-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        <p class="text-sm font-bold text-indigo-600">แตะเพื่อถ่ายรูปเช็คอิน</p>
+                        <p class="text-sm font-bold text-indigo-600">แตะเพื่อถ่ายรูป</p>
                     </div>
                     <img id="imagePreview" class="absolute inset-0 w-full h-full object-cover hidden" src="" alt="Preview">
                     <input id="checkin_image" name="checkin_image" type="file" class="hidden" accept="image/*" capture="environment" required />
                 </label>
-                <button type="submit" id="submitBtn" class="mt-4 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black shadow-lg shadow-indigo-200 transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                    ✅ ยืนยันการเช็คอิน
-                </button>
+                
+                <!-- เพิ่ม Grid แบ่ง 2 ปุ่ม: เข้างาน และ เลิกงาน -->
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                    <button type="submit" id="submitBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black shadow-lg shadow-indigo-200 transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                        ✅ เข้างาน
+                    </button>
+                    <button type="button" id="checkoutBtn" class="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-black shadow-lg shadow-rose-200 transform transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                        🏁 เลิกงาน
+                    </button>
+                </div>
             </form>
         </div>
     </div>
@@ -68,19 +75,26 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
                 <p class="text-[11px] font-bold text-violet-500 mt-2">เวลาเข้างาน MA: ไม่เกิน <span id="maDeadlineDisplay" class="font-black">--:--</span> น.</p>
             </div>
             <?php if ($canMaCheckin): ?>
-            <form id="maCheckinForm" enctype="multipart/form-data">
+                <form id="maCheckinForm" enctype="multipart/form-data">
                 <label for="ma_checkin_image" class="block w-full h-40 border-2 border-violet-200 border-dashed rounded-[1.5rem] cursor-pointer bg-violet-50/50 hover:bg-violet-50 transition-colors relative overflow-hidden group">
                     <div id="maUploadPrompt" class="absolute inset-0 flex flex-col items-center justify-center">
                         <svg class="w-10 h-10 text-violet-400 mb-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        <p class="text-sm font-bold text-violet-600">แตะเพื่อถ่ายรูปเช็คอิน MA</p>
+                        <p class="text-sm font-bold text-violet-600">แตะเพื่อถ่ายรูป MA</p>
                     </div>
                     <img id="maImagePreview" class="absolute inset-0 w-full h-full object-cover hidden" src="" alt="Preview">
                     <input id="ma_checkin_image" name="checkin_image" type="file" class="hidden" accept="image/*" capture="environment" required />
                 </label>
-                <button type="submit" id="maSubmitBtn" class="mt-4 w-full py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black shadow-lg shadow-violet-200 transform transition-all active:scale-95 disabled:opacity-50">
-                    ✅ ยืนยันเช็คอิน MA
-                </button>
-            </form>
+                
+                <!-- เพิ่ม Grid แบ่ง 2 ปุ่ม: เข้างาน MA และ เลิกงาน MA -->
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                    <button type="submit" id="maSubmitBtn" class="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black shadow-lg shadow-violet-200 transform transition-all active:scale-95 disabled:opacity-50">
+                        ✅ เข้างาน MA
+                    </button>
+                    <button type="button" id="maCheckoutBtn" class="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-black shadow-lg shadow-rose-200 transform transition-all active:scale-95 disabled:opacity-50">
+                        🏁 เลิกงาน MA
+                    </button>
+                </div>
+              </form>
             <?php else: ?>
             <div class="py-8 text-slate-400 text-sm font-bold">บัญชีนี้ไม่มีบทบาทช่าง MA</div>
             <?php endif; ?>
