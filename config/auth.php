@@ -20,6 +20,10 @@ function requireLogin() {
                 session_destroy();
                 redirectOrJsonError('เซสชันไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่');
             }
+            
+            // อัปเดตเวลาใช้งานล่าสุด
+            $updateStmt = $pdo->prepare("UPDATE users SET last_active = NOW() WHERE id = ?");
+            $updateStmt->execute([$_SESSION['user_id']]);
         } catch (Exception $e) {
             // Ignore DB errors here, handle elsewhere
         }
