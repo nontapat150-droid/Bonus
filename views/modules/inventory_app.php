@@ -143,6 +143,30 @@ $isAdmin = true;
                     </div>
                 </div>
             </div>
+
+            <!-- Real-time Scanned Session Table -->
+            <div id="realtimeScanSection" class="mt-6 hidden">
+                <h3 class="font-bold text-gray-700 text-md mb-3 flex items-center">
+                    <span class="text-emerald-500 mr-2"><i data-lucide="list-checks" class="w-5 h-5 inline-block"></i></span> รายการที่เพิ่งสแกนนำเข้า
+                </h3>
+                <div class="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                                <th class="px-4 py-3 font-bold">ลำดับ</th>
+                                <th class="px-4 py-3 font-bold">เวลา</th>
+                                <th class="px-4 py-3 font-bold">ชื่อสินค้า</th>
+                                <th class="px-4 py-3 font-bold">รุ่น</th>
+                                <th class="px-4 py-3 font-bold">ซีเรียล (SN) / จำนวน</th>
+                                <th class="px-4 py-3 font-bold text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="realtimeScanBody" class="divide-y divide-slate-100 text-sm">
+                            <!-- JS will populate -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div class="card flex flex-col items-center">
