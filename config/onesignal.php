@@ -55,7 +55,13 @@ function sendOneSignalPush($pdo, $title, $message, $type = 'all', $team_id = nul
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
 
     $response = curl_exec($ch);
+    $error = curl_error($ch);
     curl_close($ch);
+    
+    // Log for debugging
+    $logMsg = date('Y-m-d H:i:s') . " - TYPE: $type - TARGET: " . json_encode($fields) . " - RESPONSE: $response - ERROR: $error\n";
+    file_put_contents(__DIR__ . '/onesignal.log', $logMsg, FILE_APPEND);
+    
     return $response;
 }
 ?>

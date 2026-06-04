@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // index.php (Ultimate SaaS Dashboard)
 require_once 'config/db.php';
 require_once 'config/auth.php';
@@ -244,7 +244,9 @@ if ($page === 'home') {
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
           appId: "a125af04-6897-44e7-9925-7d5b67631d12",
-        });
+          });
+
+          OneSignal.Slidedown.promptPush();
         
         // ผูก OneSignal ID กับ User ID ในฐานข้อมูล เพื่อให้ส่งรายบุคคลได้
         <?php if(isset($user['id'])): ?>
