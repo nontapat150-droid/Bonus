@@ -282,6 +282,7 @@ document.getElementById('searchSnInModal')?.addEventListener('input', function(e
 let masterOptions = { sn_products: {}, consumables: [] };
 let currentInboundMode = 'SN';
 let typingTimerIn;
+let scannedInboundSession = []; // เก็บรายการที่เพิ่งสแกน/รับเข้าใน session นี้
 
 async function loadMasterOptions(selectedProd = '', selectedModel = '') {
     try {
@@ -544,6 +545,17 @@ async function validateAndSaveSN(sn) {
         
         if (data.success) {
             Toast.success(`เพิ่ม SN: ${sn} สำเร็จ!`);
+            
+            // เพิ่มลงในตาราง Real-time
+            scannedInboundSession.unshift({
+                type: 'SN',
+                productName: pName,
+                modelName: mName,
+                sn: sn,
+                time: new Date().toLocaleTimeString('th-TH')
+            });
+            renderRealtimeScanTable();
+
             loadMasterOptions(pName, mName);
             loadStockOverview();
         } else if (data.status === 'duplicate') {
@@ -573,6 +585,18 @@ window.saveInboundQty = async function() {
         
         if (data.success) {
             Toast.success(`เพิ่ม ${pName} จำนวน ${qty} ${unit} สำเร็จ!`);
+            
+            // เพิ่มลงในตาราง Real-time
+            scannedInboundSession.unshift({
+                type: 'QTY',
+                productName: pName,
+                modelName: 'วัสดุสิ้นเปลือง',
+                qty: qty,
+                unit: unit,
+                time: new Date().toLocaleTimeString('th-TH')
+            });
+            renderRealtimeScanTable();
+
             document.getElementById('inboundQty').value = '';
             loadMasterOptions(pName);
             loadStockOverview();
@@ -582,6 +606,111 @@ window.saveInboundQty = async function() {
 
 // --- นำเข้า Excel ---
 let excelDataPayload = [];
+
+// ====================================================
+// ฟังก์ชัน Render และ Delete (Undo) รายการที่เพิ่งสแกน
+// ====================================================
+window.renderRealtimeScanTable = function() {
+    const section = document.getElementById('realtimeScanSection');
+    const tbody = document.getElementById('realtimeScanBody');
+    if (!section || !tbody) return;
+
+    if (scannedInboundSession.length === 0) {
+        section.classList.add('hidden');
+        return;
+    }
+
+    section.classList.remove('hidden');
+    tbody.innerHTML = '';
+
+    scannedInboundSession.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-slate-50 transition-colors';
+        
+        let detailHtml = '';
+        if (item.type === 'SN') {
+            detailHtml = `<span class="font-mono text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded">${item.sn}</span>`;
+        } else {
+            detailHtml = `<span class="font-bold text-yellow-600">${item.qty} ${item.unit}</span>`;
+        }
+
+        // ปุ่มลบ จะส่ง index ไปยัง function
+        row.innerHTML = `
+            <td class="px-4 py-3 text-slate-500">${scannedInboundSession.length - index}</td>
+            <td class="px-4 py-3 text-slate-500 text-xs">${item.time}</td>
+            <td class="px-4 py-3 font-bold text-slate-700">${item.productName}</td>
+            <td class="px-4 py-3 text-slate-600">${item.modelName}</td>
+            <td class="px-4 py-3">${detailHtml}</td>
+            <td class="px-4 py-3 text-center">
+                <button onclick="undoScannedItem(${index})" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition-colors" title="ยกเลิก/ลบรายการนี้">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons({ root: tbody });
+    }
+};
+
+window.undoScannedItem = async function(index) {
+    const item = scannedInboundSession[index];
+    if (!item) return;
+
+    const confirmMsg = item.type === 'SN' 
+        ? `คุณต้องการยกเลิกการรับเข้า SN: ${item.sn} ใช่หรือไม่?`
+        : `ฟังก์ชันนี้ยังไม่รองรับการยกเลิกจำนวนรับเข้าผ่านหน้าจอ (กรุณาไปที่ตารางคลังสินค้าหลัก)`;
+
+    if (item.type !== 'SN') {
+        Toast.info(confirmMsg);
+        return;
+    }
+
+    Swal.fire({
+        title: 'ยืนยันการยกเลิก?',
+        text: confirmMsg,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#94a3b8',
+        confirmButtonText: 'ใช่, ยกเลิกรับเข้า',
+        cancelButtonText: 'ปิด'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Loader.show();
+            try {
+                // สำหรับ SN เราสามารถใช้ delete_sn.php
+                const res = await fetch('api/inventory/delete_sn.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        product_name: item.productName,
+                        model_name: item.modelName,
+                        sn: item.sn
+                    })
+                });
+                const data = await res.json();
+                Loader.hide();
+
+                if (data.success) {
+                    Toast.success(`ยกเลิกรับเข้า SN: ${item.sn} สำเร็จ`);
+                    // เอาออกจาก array
+                    scannedInboundSession.splice(index, 1);
+                    renderRealtimeScanTable();
+                    loadStockOverview();
+                    loadMasterOptions(item.productName, item.modelName);
+                } else {
+                    Toast.error('ไม่สามารถยกเลิกได้: ' + data.error);
+                }
+            } catch (e) {
+                Loader.hide();
+                Toast.error('การเชื่อมต่อล้มเหลว');
+            }
+        }
+    });
+};
 
 document.getElementById('excelImport')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
