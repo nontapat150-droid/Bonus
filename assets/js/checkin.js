@@ -246,13 +246,26 @@ async function loadMaSettings() {
         const res = await fetch('api/checkin/ma_settings.php');
         const data = await res.json();
         if (data.success) {
-            const t = data.late_time || '08:30';
+            const globalTime = data.late_time || '08:30';
+            const personalTime = data.personal_late_time || globalTime;
+            
             const input = document.getElementById('maLateTimeInput');
-            if (input) input.value = t;
-            ['maDeadlineDisplay', 'maDeadlineDisplayRo'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.textContent = t;
-            });
+            if (input) input.value = globalTime;
+            
+            const displayRo = document.getElementById('maDeadlineDisplayRo');
+            if (displayRo) displayRo.textContent = globalTime;
+            
+            const displayEl = document.getElementById('maDeadlineDisplay');
+            if (displayEl) {
+                displayEl.textContent = personalTime;
+                if (data.has_job) {
+                    displayEl.classList.add('text-rose-600');
+                    displayEl.title = 'คำนวณจากเวลาของงานแรกสุดของวันนี้';
+                    // อัปเดตข้อความอธิบายให้ชัดเจนขึ้น
+                    const parentP = displayEl.closest('p');
+                    if(parentP) parentP.innerHTML = `เวลาเข้างาน MA (ตามงานแรก): ไม่เกิน <span id="maDeadlineDisplay" class="font-black text-rose-600">${personalTime}</span> น.`;
+                }
+            }
         }
     } catch (e) {}
 }

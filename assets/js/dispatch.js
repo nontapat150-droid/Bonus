@@ -2153,6 +2153,7 @@ window.openEditJobModal = function(jobId) {
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="block text-xs font-bold text-slate-700 mb-1">Circuit ID / Access No <span class="text-rose-500">*</span></label><input type="text" id="edit_access_no" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.access_no)}" required></div>
                     <div><label class="block text-xs font-bold text-slate-700 mb-1">วันที่เข้าทำ <span class="text-rose-500">*</span></label><input type="date" id="edit_plan_date" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.plan_arrival_date)}" required></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">เวลา</label><input type="time" id="edit_job_time" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.job_time || '')}"></div>
                     <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">ชื่อลูกค้า</label><input type="text" id="edit_customer" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.customer || '')}"></div>
                     <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์</label><input type="text" id="edit_phone" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.phone || '')}"></div>
                     <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">สถานที่ติดตั้ง / ที่อยู่</label><textarea id="edit_address" rows="2" class="input !py-2 !px-3 text-sm font-bold w-full resize-none">${escapeHTML(job.address || '')}</textarea></div>
@@ -2173,6 +2174,7 @@ window.openEditJobModal = function(jobId) {
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="block text-xs font-bold text-slate-700 mb-1">NON <span class="text-rose-500">*</span></label><input type="text" id="edit_access_no" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.access_no)}" required></div>
                     <div><label class="block text-xs font-bold text-slate-700 mb-1">วันที่ (Plan Date) <span class="text-rose-500">*</span></label><input type="date" id="edit_plan_date" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.plan_arrival_date)}" required></div>
+                    <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">เวลา (Time)</label><input type="time" id="edit_job_time" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.job_time || '')}"></div>
                     <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">ชื่อลูกค้า</label><input type="text" id="edit_customer" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.customer || '')}"></div>
                     <div class="col-span-2"><label class="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์</label><input type="text" id="edit_phone" class="input !py-2 !px-3 text-sm font-bold w-full" value="${escapeHTML(job.phone || '')}"></div>
                     <div><label class="block text-xs font-bold text-slate-700 mb-1">พื้นที่ (Network)</label>
@@ -2220,6 +2222,7 @@ window.openEditJobModal = function(jobId) {
                 job_type: currentJobType,
                 access_no: getVal('edit_access_no'),
                 plan_arrival_date: getVal('edit_plan_date'),
+                job_time: getVal('edit_job_time'),
                 customer: getVal('edit_customer'),
                 phone: getVal('edit_phone'),
                 address: getVal('edit_address'),
