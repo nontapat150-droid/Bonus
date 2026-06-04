@@ -47,6 +47,10 @@ if (!hasRole(['admin', 'super_admin'])) exit('ไม่มีสิทธิ์�
             <button onclick="clearHistory()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold border border-rose-200 py-2 px-6 rounded-xl w-full sm:w-auto text-sm shadow-sm transition-all flex items-center justify-center gap-2">
                 <i data-lucide="trash-2" class="w-4 h-4"></i> ล้างประวัติทั้งหมด
             </button>
+            <!-- 🟢 เพิ่มปุ่ม "สรุปการเช็คอิน" ใหม่ตรงนี้ -->
+            <button type="button" class="btn btn-info ms-2" id="btnCheckinSummary" style="margin-left: 8px;">
+                <i class="fas fa-clipboard-list"></i> สรุปการเช็คอิน
+            </button>
         </div>
     </div>
 

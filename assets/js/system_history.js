@@ -476,3 +476,16 @@ document.getElementById('editStartDayForm')?.addEventListener('submit', async fu
         Swal.fire('ข้อผิดพลาด', 'เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว', 'error');
     }
 });
+
+
+$(document).ready(function() {
+    // กำหนดการทำงานเมื่อคลิกปุ่ม "สรุปการเช็คอิน"
+    $('#btnCheckinSummary').on('click', function() {
+        // เขียน Logic การดึงข้อมูลสรุปที่นี่
+        // เช่น การเรียก API ดึงยอดเช็คอินของเดือน หรือเปิด Modal สรุป
+        console.log("กำลังดึงข้อมูลสรุปการเช็คอิน...");
+        
+        // ตัวอย่างการเปิด Modal สรุปงาน (ถ้ามีการสร้าง UI Modal ไว้แล้ว)
+        // $('#checkinSummaryModal').modal('show');
+    });
+});
