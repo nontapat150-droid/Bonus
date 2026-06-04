@@ -92,6 +92,19 @@ function ensureMaJobSchema(PDO $pdo) {
             }
         }
     } catch (Exception $e) {}
+
+    // Add lat and lng to ma_customers if not exists
+    try {
+        $existingCust = $pdo->query("SHOW COLUMNS FROM ma_customers")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('lat', $existingCust, true)) $pdo->exec("ALTER TABLE ma_customers ADD COLUMN `lat` VARCHAR(50) DEFAULT NULL");
+        if (!in_array('lng', $existingCust, true)) $pdo->exec("ALTER TABLE ma_customers ADD COLUMN `lng` VARCHAR(50) DEFAULT NULL");
+    } catch (Exception $e) {}
+
+    // Add job_id to ma_customer_history if not exists
+    try {
+        $existingHist = $pdo->query("SHOW COLUMNS FROM ma_customer_history")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('job_id', $existingHist, true)) $pdo->exec("ALTER TABLE ma_customer_history ADD COLUMN `job_id` INT DEFAULT NULL AFTER ma_job_id");
+    } catch (Exception $e) {}
 }
 
 function normalizeMaAreaProvider($value) {
@@ -109,7 +122,15 @@ function findTeamByName(PDO $pdo, $teamName) {
     return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
 }
 
-function upsertMaCustomer(PDO $pdo, $non, $customer, $phone, $address) {
+function getMaCustomerByNon(PDO $pdo, $non) {
+    $non = trim((string)$non);
+    if ($non === '') return null;
+    $stmt = $pdo->prepare("SELECT * FROM ma_customers WHERE non_number = ? LIMIT 1");
+    $stmt->execute([$non]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+}
+
+function upsertMaCustomer(PDO $pdo, $non, $customer, $phone, $address, $lat = null, $lng = null) {
     $non = trim((string)$non);
     if ($non === '') return null;
 
@@ -118,13 +139,27 @@ function upsertMaCustomer(PDO $pdo, $non, $customer, $phone, $address) {
     $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($existing) {
-        $pdo->prepare("UPDATE ma_customers SET customer_name = COALESCE(NULLIF(?, ''), customer_name), phone = COALESCE(NULLIF(?, ''), phone), address = COALESCE(NULLIF(?, ''), address) WHERE id = ?")
-            ->execute([$customer, $phone, $address, $existing['id']]);
+        $sql = "UPDATE ma_customers SET 
+                customer_name = COALESCE(NULLIF(?, ''), customer_name), 
+                phone = COALESCE(NULLIF(?, ''), phone), 
+                address = COALESCE(NULLIF(?, ''), address)";
+        $params = [$customer, $phone, $address];
+
+        if ($lat !== null && $lng !== null && trim($lat) !== '' && trim($lng) !== '') {
+            $sql .= ", lat = ?, lng = ?";
+            $params[] = $lat;
+            $params[] = $lng;
+        }
+
+        $sql .= " WHERE id = ?";
+        $params[] = $existing['id'];
+
+        $pdo->prepare($sql)->execute($params);
         return (int)$existing['id'];
     }
 
-    $pdo->prepare("INSERT INTO ma_customers (non_number, customer_name, phone, address) VALUES (?, ?, ?, ?)")
-        ->execute([$non, $customer ?: null, $phone ?: null, $address ?: null]);
+    $pdo->prepare("INSERT INTO ma_customers (non_number, customer_name, phone, address, lat, lng) VALUES (?, ?, ?, ?, ?, ?)")
+        ->execute([$non, $customer ?: null, $phone ?: null, $address ?: null, $lat ?: null, $lng ?: null]);
     return (int)$pdo->lastInsertId();
 }
 
@@ -134,14 +169,17 @@ function addMaCustomerHistory(PDO $pdo, array $data) {
         $data['non_number'] ?? '',
         $data['customer_name'] ?? '',
         $data['phone'] ?? '',
-        $data['address'] ?? ''
+        $data['address'] ?? '',
+        $data['lat'] ?? null,
+        $data['lng'] ?? null
     );
     if (!$customerId) return null;
 
-    $pdo->prepare("INSERT INTO ma_customer_history (customer_id, ma_job_id, non_number, action, symptoms, area_provider, remark, tech_id, team_id, action_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    $pdo->prepare("INSERT INTO ma_customer_history (customer_id, ma_job_id, job_id, non_number, action, symptoms, area_provider, remark, tech_id, team_id, action_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         ->execute([
             $customerId,
             $data['ma_job_id'] ?? null,
+            $data['job_id'] ?? null,
             $data['non_number'] ?? '',
             $data['action'] ?? 'imported',
             $data['symptoms'] ?? null,
@@ -177,6 +215,8 @@ function recordMaJobHistory(PDO $pdo, $jobId, $action) {
         'symptoms' => $job['symptoms'] ?? '',
         'area_provider' => $job['area_provider'] ?? '',
         'remark' => $job['remark'] ?? '',
+        'lat' => $job['lat'] ?? null,
+        'lng' => $job['lng'] ?? null,
         'tech_id' => $job['assigned_user_id'] ?? null,
         'team_id' => $job['team_id'] ?? null,
         'action_date' => date('Y-m-d')

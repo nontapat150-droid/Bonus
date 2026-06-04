@@ -72,7 +72,7 @@ if ($page === 'home') {
 
         // --- 3. Stats สำหรับ Admin ---
         if (hasRole(['admin', 'super_admin'])) {
-            $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE last_active >= NOW() - INTERVAL 5 MINUTE");
+            $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE last_active >= NOW() - INTERVAL 1 MINUTE");
             $stats['admin_online_users'] = $stmt->fetchColumn();
 
             $stmt = $pdo->query("SELECT COUNT(DISTINCT user_id) FROM checkins WHERE DATE(checkin_time) = CURDATE()");
@@ -88,7 +88,7 @@ if ($page === 'home') {
 
         // --- 4. Stats สำหรับ Super Admin ---
         if (hasRole('super_admin')) {
-            $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE last_active >= NOW() - INTERVAL 5 MINUTE");
+            $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE last_active >= NOW() - INTERVAL 1 MINUTE");
             $stats['super_online_users'] = $stmt->fetchColumn();
 
             $stmt = $pdo->query("SELECT COUNT(*) FROM users");
@@ -809,7 +809,7 @@ if ($page === 'home') {
                                     <span class="text-[10px] text-[var(--c-text-3)] font-medium bg-[var(--c-surface-2)] px-2 py-1 rounded text-red-500 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Live</span>
                                 </div>
                                 <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">ผู้ใช้ระบบตอนนี้</p>
-                                <h3 class="text-kpi"><?= number_format($stats['super_online_users'] ?? 0) ?></h3>
+                                <h3 class="text-kpi" id="kpi-super-online-users"><?= number_format($stats['super_online_users'] ?? 0) ?></h3>
                             </div>
                             <div class="card relative group">
                                 <div class="flex justify-between items-start mb-4">
@@ -834,7 +834,7 @@ if ($page === 'home') {
                                     <span class="text-[10px] text-[var(--c-text-3)] font-medium bg-[var(--c-surface-2)] px-2 py-1 rounded text-red-500 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Live</span>
                                 </div>
                                 <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">คนที่ใช้อยู่แบบเรียลไทม์</p>
-                                <h3 class="text-kpi"><?= number_format($stats['admin_online_users'] ?? 0) ?></h3>
+                                <h3 class="text-kpi" id="kpi-admin-online-users"><?= number_format($stats['admin_online_users'] ?? 0) ?></h3>
                             </div>
                             <div class="card relative group">
                                 <div class="flex justify-between items-start mb-4">
@@ -982,12 +982,12 @@ if ($page === 'home') {
                             <div class="marquee-badge !bg-slate-800">
                                 <i data-lucide="activity" class="w-4 h-4 mr-2 text-red-400"></i> LIVE FEED
                             </div>
-                            <div class="marquee-content !duration-[40s]">
+                            <div class="marquee-content" style="animation-duration: 120s;">
                                 <?php foreach ($realtimeFeed as $feed): ?>
                                     <span class="mx-6 text-sm text-slate-300">
                                         <span class="font-bold text-white"><?= htmlspecialchars($feed['full_name']) ?></span> 
                                         <?= htmlspecialchars($feed['detail']) ?> 
-                                        <span class="text-slate-500 text-xs ml-2"><?= date('H:i', strtotime($feed['action_time'])) ?></span>
+                                        <span class="text-slate-500 text-xs ml-2 flex-shrink-0"><i data-lucide="clock" class="w-3 h-3 inline-block mr-1 mb-[2px]"></i><?= date('d/m/Y H:i:s', strtotime($feed['action_time'])) ?></span>
                                     </span>
                                     <span class="text-slate-700">•</span>
                                 <?php endforeach; ?>
@@ -1907,6 +1907,31 @@ if ($page === 'home') {
                 lucide.createIcons();
             }
         });
+    });
+    </script>
+    <!-- Real-time Heartbeat & Online Users Polling -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const updateOnlineUsers = async () => {
+            try {
+                const res = await fetch('api/stats/heartbeat.php');
+                const data = await res.json();
+                
+                if (data.success && data.online_users !== undefined) {
+                    const adminKpi = document.getElementById('kpi-admin-online-users');
+                    const superKpi = document.getElementById('kpi-super-online-users');
+                    
+                    if (adminKpi) adminKpi.textContent = data.online_users;
+                    if (superKpi) superKpi.textContent = data.online_users;
+                }
+            } catch (error) {
+                console.error('Heartbeat failed:', error);
+            }
+        };
+
+        // Call immediately and then every 15 seconds
+        updateOnlineUsers();
+        setInterval(updateOnlineUsers, 15000);
     });
     </script>
 </body>

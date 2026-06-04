@@ -60,34 +60,20 @@ try {
             }
         }
 
-        // ดึงข้อมูลลูกค้าและพิกัดจากระบบหากมี
+        // ดึงข้อมูลลูกค้าและพิกัดจากระบบกลาง (ma_customers)
         $dbCustomer = null;
         $dbPhone = null;
         $dbAddress = null;
         $dbLat = null;
         $dbLng = null;
 
-        // เช็คจากตารางงานติดตั้งก่อน (ข้อมูลจะแม่นยำและมีพิกัด)
-        $stmtEx = $pdo->prepare("SELECT customer, phone, address, lat, lng FROM jobs WHERE access_no = ? ORDER BY id DESC LIMIT 1");
-        $stmtEx->execute([$non]);
-        $existingJob = $stmtEx->fetch(PDO::FETCH_ASSOC);
-
-        if ($existingJob) {
-            $dbCustomer = $existingJob['customer'];
-            $dbPhone = $existingJob['phone'];
-            $dbAddress = $existingJob['address'];
-            $dbLat = $existingJob['lat'];
-            $dbLng = $existingJob['lng'];
-        } else {
-            // ถ้าระบบติดตั้งไม่มี เช็คจากประวัติลูกค้า MA เดิม
-            $stmtMa = $pdo->prepare("SELECT customer_name, phone, address FROM ma_customers WHERE non_number = ? LIMIT 1");
-            $stmtMa->execute([$non]);
-            $existingMa = $stmtMa->fetch(PDO::FETCH_ASSOC);
-            if ($existingMa) {
-                $dbCustomer = $existingMa['customer_name'];
-                $dbPhone = $existingMa['phone'];
-                $dbAddress = $existingMa['address'];
-            }
+        $existingCust = getMaCustomerByNon($pdo, $non);
+        if ($existingCust) {
+            $dbCustomer = $existingCust['customer_name'];
+            $dbPhone = $existingCust['phone'];
+            $dbAddress = $existingCust['address'];
+            $dbLat = $existingCust['lat'];
+            $dbLng = $existingCust['lng'];
         }
 
         // ผสานข้อมูล (ถ้าใน Excel มีให้ใช้ Excel, ถ้าไม่มีให้ใช้จากระบบ)
@@ -128,6 +114,8 @@ try {
             'symptoms' => $job['symptoms'] ?? null,
             'area_provider' => $area,
             'remark' => $job['remark'] ?? null,
+            'lat' => $dbLat,
+            'lng' => $dbLng,
             'team_id' => $teamId,
             'action_date' => $planDate
         ]);
