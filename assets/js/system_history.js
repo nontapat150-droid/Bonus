@@ -70,6 +70,19 @@ async function loadHistory(type) {
             }
             // ---------------------
 
+           if (data.success) {
+            // --- โค้ดที่เพิ่มใหม่: ตรวจสอบว่าเป็นเช็คอินไหม ถ้าใช่ให้จำข้อมูลและโชว์ปุ่ม ---
+            if (type === 'checkin') {
+                window.currentCheckinData = data.data; 
+                const btnSum = document.getElementById('btnCheckinSummary');
+                if(btnSum) btnSum.style.display = 'flex'; 
+            } else {
+                window.currentCheckinData = [];
+                const btnSum = document.getElementById('btnCheckinSummary');
+                if(btnSum) btnSum.style.display = 'none'; 
+            }
+            // -------------------------------------------------------------
+
             renderTable(type, data.data, tHead, tBody);
             if(badge) badge.textContent = `${data.data.length} รายการ`;
         } else {
@@ -566,6 +579,79 @@ window.showCheckinSummary = function() {
 };
 
 // ฟังก์ชันปิด Modal
+window.closeCheckinSummary = function() {
+    document.getElementById('checkinSummaryModal').classList.add('hidden');
+};
+
+
+// ==========================================
+// 🌟 ระบบสรุปการเช็คอิน (โชว์ Modal และนับจำนวน)
+// ==========================================
+window.showCheckinSummary = function() {
+    // 1. เช็คว่ามีข้อมูลเช็คอินให้สรุปหรือไม่
+    if (!window.currentCheckinData || window.currentCheckinData.length === 0) {
+        Swal.fire('ไม่มีข้อมูล', 'ไม่พบข้อมูลการเช็คอินในช่วงเวลานี้', 'info');
+        return;
+    }
+
+    // 2. เริ่มการนับจำนวนของแต่ละคน (จัดกลุ่มตามชื่อ)
+    const summary = {};
+    window.currentCheckinData.forEach(item => {
+        const name = item.full_name; // ชื่อพนักงาน
+        
+        // ถ้าเพิ่งเจอชื่อนี้ครั้งแรก ให้ตั้งค่าเริ่มต้นเป็น 0
+        if (!summary[name]) {
+            summary[name] = { onTime: 0, late: 0 };
+        }
+        
+        // เช็คสถานะการเข้างาน ถ้ารหัสคือ 'late' คือมาสาย
+        if (item.status_code === 'late') {
+            summary[name].late++;
+        } else {
+            summary[name].onTime++;
+        }
+    });
+
+    // 3. นำข้อมูลที่นับเสร็จแล้วมาเรียงตัวอักษร ก-ฮ
+    const sortedSummary = Object.keys(summary).map(name => {
+        return {
+            name: name,
+            onTime: summary[name].onTime,
+            late: summary[name].late
+        };
+    }).sort((a, b) => a.name.localeCompare(b.name, 'th'));
+
+    // 4. วาดข้อมูลลงตารางใน Modal
+    const tbody = document.getElementById('checkinSummaryBody');
+    tbody.innerHTML = '';
+    
+    sortedSummary.forEach(stat => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-colors bg-white";
+        
+        // ตกแต่งป้ายตัวเลข (ถ้าเป็น 0 ให้แสดงขีด - สีเทา)
+        let onTimeBadge = stat.onTime > 0
+            ? `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-sm font-bold border border-emerald-200">${stat.onTime}</span>`
+            : `<span class="text-slate-300">-</span>`;
+
+        let lateBadge = stat.late > 0 
+            ? `<span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-lg text-sm font-bold border border-rose-200">${stat.late}</span>`
+            : `<span class="text-slate-300">-</span>`;
+
+        tr.innerHTML = `
+            <td class="px-4 py-3 font-bold text-slate-700">${stat.name}</td>
+            <td class="px-4 py-3 text-center">${onTimeBadge}</td>
+            <td class="px-4 py-3 text-center">${lateBadge}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // 5. เปิดหน้าต่าง Modal ขึ้นมาให้ผู้ใช้ดู
+    document.getElementById('checkinSummaryModal').classList.remove('hidden');
+    if(window.lucide) lucide.createIcons();
+};
+
+// ฟังก์ชันสำหรับปิด Modal
 window.closeCheckinSummary = function() {
     document.getElementById('checkinSummaryModal').classList.add('hidden');
 };
