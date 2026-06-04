@@ -30,8 +30,8 @@ try {
         INSERT INTO ma_jobs (
             access_no, customer, phone, address, plan_arrival_date, job_time,
             symptoms, area_provider, team_id, team_name_import, team_match_status,
-            assigned_user_id, remark, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+            assigned_user_id, remark, lat, lng, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     ");
 
     $imported = 0;
@@ -60,14 +60,49 @@ try {
             }
         }
 
+        // ดึงข้อมูลลูกค้าและพิกัดจากระบบหากมี
+        $dbCustomer = null;
+        $dbPhone = null;
+        $dbAddress = null;
+        $dbLat = null;
+        $dbLng = null;
+
+        // เช็คจากตารางงานติดตั้งก่อน (ข้อมูลจะแม่นยำและมีพิกัด)
+        $stmtEx = $pdo->prepare("SELECT customer, phone, address, lat, lng FROM jobs WHERE access_no = ? ORDER BY id DESC LIMIT 1");
+        $stmtEx->execute([$non]);
+        $existingJob = $stmtEx->fetch(PDO::FETCH_ASSOC);
+
+        if ($existingJob) {
+            $dbCustomer = $existingJob['customer'];
+            $dbPhone = $existingJob['phone'];
+            $dbAddress = $existingJob['address'];
+            $dbLat = $existingJob['lat'];
+            $dbLng = $existingJob['lng'];
+        } else {
+            // ถ้าระบบติดตั้งไม่มี เช็คจากประวัติลูกค้า MA เดิม
+            $stmtMa = $pdo->prepare("SELECT customer_name, phone, address FROM ma_customers WHERE non_number = ? LIMIT 1");
+            $stmtMa->execute([$non]);
+            $existingMa = $stmtMa->fetch(PDO::FETCH_ASSOC);
+            if ($existingMa) {
+                $dbCustomer = $existingMa['customer_name'];
+                $dbPhone = $existingMa['phone'];
+                $dbAddress = $existingMa['address'];
+            }
+        }
+
+        // ผสานข้อมูล (ถ้าใน Excel มีให้ใช้ Excel, ถ้าไม่มีให้ใช้จากระบบ)
+        $finalCustomer = !empty($job['customer']) ? $job['customer'] : $dbCustomer;
+        $finalPhone = !empty($job['phone']) ? $job['phone'] : $dbPhone;
+        $finalAddress = !empty($job['address']) ? $job['address'] : $dbAddress;
+
         $area = normalizeMaAreaProvider($job['area_provider'] ?? '');
         $planDate = !empty($job['plan_arrival_date']) ? $job['plan_arrival_date'] : date('Y-m-d');
 
         $stmt->execute([
             $non,
-            $job['customer'] ?? null,
-            $job['phone'] ?? null,
-            $job['address'] ?? null,
+            $finalCustomer,
+            $finalPhone,
+            $finalAddress,
             $planDate,
             $job['job_time'] ?? null,
             $job['symptoms'] ?? null,
@@ -76,16 +111,18 @@ try {
             $teamName ?: null,
             $matchStatus,
             $assignedUserId,
-            $job['remark'] ?? null
+            $job['remark'] ?? null,
+            $dbLat,
+            $dbLng
         ]);
 
         $maJobId = (int)$pdo->lastInsertId();
 
         addMaCustomerHistory($pdo, [
             'non_number' => $non,
-            'customer_name' => $job['customer'] ?? '',
-            'phone' => $job['phone'] ?? '',
-            'address' => $job['address'] ?? '',
+            'customer_name' => $finalCustomer ?? '',
+            'phone' => $finalPhone ?? '',
+            'address' => $finalAddress ?? '',
             'ma_job_id' => $maJobId,
             'action' => 'imported',
             'symptoms' => $job['symptoms'] ?? null,

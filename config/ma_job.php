@@ -80,6 +80,8 @@ function ensureMaJobSchema(PDO $pdo) {
         'power_rx' => 'VARCHAR(100) DEFAULT NULL',
         'problem_cause' => 'TEXT DEFAULT NULL',
         'solution' => 'TEXT DEFAULT NULL',
+        'lat' => 'VARCHAR(50) DEFAULT NULL',
+        'lng' => 'VARCHAR(50) DEFAULT NULL',
         'updated_at' => 'TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP'
     ];
     try {
