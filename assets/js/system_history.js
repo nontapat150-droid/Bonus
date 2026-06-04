@@ -18,6 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // โหลดครั้งแรก
     loadHistory('checkin');
+
+    const btnSummary = document.getElementById('btnCheckinSummary');
+    if (btnSummary) {
+        btnSummary.addEventListener('click', showCheckinSummary);
+    }
 });
 
 // กดปุ่มค้นหาจะโหลดข้อมูลหมวดหมู่เดิมซ้ำ โดยดึงค่า Filter ใหม่
@@ -58,13 +63,12 @@ async function loadHistory(type) {
         const data = await res.json();
 
         if (data.success) {
+            const btnSum = document.getElementById('btnCheckinSummary');
             if (type === 'checkin') {
                 window.currentCheckinData = data.data || [];
-                const btnSum = document.getElementById('btnCheckinSummary');
-                if (btnSum) btnSum.style.display = 'flex';
+                if (btnSum) btnSum.style.display = 'inline-flex';
             } else {
                 window.currentCheckinData = [];
-                const btnSum = document.getElementById('btnCheckinSummary');
                 if (btnSum) btnSum.style.display = 'none';
             }
 
@@ -487,10 +491,6 @@ document.getElementById('editStartDayForm')?.addEventListener('submit', async fu
     }
 });
 
-
-$(document).ready(function() {
-    $('#btnCheckinSummary').on('click', showCheckinSummary);
-});
 
 window.showCheckinSummary = function() {
     if (currentType !== 'checkin' || !window.currentCheckinData || window.currentCheckinData.length === 0) {
