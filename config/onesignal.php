@@ -5,7 +5,7 @@
 // นำ App ID และ REST API Key มาใส่ที่นี่
 
 define('ONESIGNAL_APP_ID', 'a125af04-6897-44e7-9925-7d5b67631d12');
-define('ONESIGNAL_REST_API_KEY', 'os_v2_app_ues26bdis5copgjfpvnwoyy5cjdxzu76qn6uvq5zm73f76fevma2jq4rprcow56blbbt7wgvedobvaihb4rjsmx2avjhbttvvfbgg3a');
+define('ONESIGNAL_REST_API_KEY', 'os_v2_app_ues26bdis5copgjfpvnwoyy5cjqya2uoxw5ethuanhqosxtb3ptdkjf22qhdvsksl3aiqg7myswwgqwihqqrojklwbknvhll32wmh7a');
 
 function sendOneSignalPush($pdo, $title, $message, $type = 'all', $team_id = null, $target_user_id = null) {
     if (!defined('ONESIGNAL_APP_ID') || ONESIGNAL_APP_ID === 'ใส่_APP_ID_ที่นี่' || !defined('ONESIGNAL_REST_API_KEY') || ONESIGNAL_REST_API_KEY === 'ใส่_REST_API_KEY_ที่นี่') {
