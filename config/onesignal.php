@@ -43,10 +43,10 @@ function sendOneSignalPush($pdo, $title, $message, $type = 'all', $team_id = nul
 
     $fields = json_encode($fields);
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "https://onesignal.com/api/v1/notifications");
+    curl_setopt($ch, CURLOPT_URL, "https://api.onesignal.com/notifications");
     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
         'Content-Type: application/json; charset=utf-8',
-        'Authorization: Key ' . ONESIGNAL_REST_API_KEY
+        'Authorization: Basic ' . ONESIGNAL_REST_API_KEY
     ));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($ch, CURLOPT_HEADER, FALSE);

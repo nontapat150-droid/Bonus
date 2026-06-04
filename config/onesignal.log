@@ -2,3 +2,7 @@
  - ERROR: 
 2026-06-04 09:45:53 - TYPE: all - TARGET: "{\"app_id\":\"a125af04-6897-44e7-9925-7d5b67631d12\",\"contents\":{\"en\":\"Test Message\",\"th\":\"Test Message\"},\"headings\":{\"en\":\"Test Title\",\"th\":\"Test Title\"},\"url\":\"https:\\\/\\\/bonus2026.infinityfreeapp.com\\\/\",\"included_segments\":[\"Total Subscriptions\"]}" - RESPONSE: {"errors": ["Access denied.  Please include an 'Authorization: ...' header with a valid API key (https://documentation.onesignal.com/docs/en/keys-and-ids#api-keys)."]}
  - ERROR: 
+2026-06-04 09:54:07 - TYPE: all - TARGET: "{\"app_id\":\"a125af04-6897-44e7-9925-7d5b67631d12\",\"contents\":{\"en\":\"This should work\",\"th\":\"This should work\"},\"headings\":{\"en\":\"Final Test\",\"th\":\"Final Test\"},\"url\":\"https:\\\/\\\/bonus2026.infinityfreeapp.com\\\/\",\"included_segments\":[\"Total Subscriptions\"]}" - RESPONSE: {"errors": ["Access denied.  Please include an 'Authorization: ...' header with a valid API key (https://documentation.onesignal.com/docs/en/keys-and-ids#api-keys)."]}
+ - ERROR: 
+2026-06-04 09:55:54 - TYPE: all - TARGET: "{\"app_id\":\"a125af04-6897-44e7-9925-7d5b67631d12\",\"contents\":{\"en\":\"Should work\",\"th\":\"Should work\"},\"headings\":{\"en\":\"Final Test\",\"th\":\"Final Test\"},\"url\":\"https:\\\/\\\/bonus2026.infinityfreeapp.com\\\/\",\"included_segments\":[\"Total Subscriptions\"]}" - RESPONSE: {"errors": ["Access denied.  Please include an 'Authorization: ...' header with a valid API key (https://documentation.onesignal.com/docs/en/keys-and-ids#api-keys)."]}
+ - ERROR: 
