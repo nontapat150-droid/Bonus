@@ -373,14 +373,6 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
-    .bottom-tabs {
-        flex-wrap: nowrap;
-        justify-content: flex-start;
-    }
-    .bottom-tabs::after {
-        content: '';
-        flex: 0 0 16px;
-    }
 </style>
 
 <script>
