@@ -42,9 +42,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+$user_id = $_SESSION['user_id'] ?? null;
+$personalLateTime = getMaCheckinLateTime($pdo);
+$hasJob = false;
+
+if ($user_id) {
+    $stmtTeam = $pdo->prepare("SELECT team_id FROM users WHERE id = ?");
+    $stmtTeam->execute([$user_id]);
+    $team_id = $stmtTeam->fetchColumn();
+
+    $today = date('Y-m-d');
+    $stmtJob = $pdo->prepare("
+        SELECT MIN(job_time) 
+        FROM ma_jobs 
+        WHERE plan_arrival_date = ? 
+          AND (assigned_user_id = ? OR (team_id IS NOT NULL AND team_id = ?))
+          AND job_time IS NOT NULL 
+          AND job_time != ''
+    ");
+    $stmtJob->execute([$today, $user_id, $team_id]);
+    $earliest_job_time = $stmtJob->fetchColumn();
+
+    if ($earliest_job_time) {
+        $timeParts = explode('-', $earliest_job_time);
+        $parsedTime = strtotime(trim($timeParts[0]));
+        if ($parsedTime) {
+            $personalLateTime = date('H:i:s', $parsedTime);
+            $hasJob = true;
+        }
+    }
+}
+
 $lateTime = getMaCheckinLateTime($pdo);
 echo json_encode([
     'success' => true,
     'late_time' => date('H:i', strtotime($lateTime)),
+    'personal_late_time' => date('H:i', strtotime($personalLateTime)),
+    'has_job' => $hasJob,
     'can_edit' => hasRole('super_admin')
 ]);

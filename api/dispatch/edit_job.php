@@ -37,7 +37,7 @@ try {
         $stmt = $pdo->prepare("
             UPDATE {$table} SET 
                 access_no = ?, customer = ?, phone = ?, area_provider = ?, 
-                sub_district = ?, district = ?, address = ?, plan_arrival_date = ?, 
+                sub_district = ?, district = ?, address = ?, plan_arrival_date = ?, job_time = ?,
                 lat = ?, lng = ?, price = ?, symptoms = ?, remark = ?, order_no = ?, updated_at = NOW()
             WHERE id = ?
         ");
@@ -55,6 +55,7 @@ try {
             trim($input['district'] ?? ''),
             trim($input['address'] ?? ''),
             $plan_date,
+            trim($input['job_time'] ?? null) ?: null,
             $lat,
             $lng,
             $price,
