@@ -30,30 +30,90 @@ if ($page === 'home') {
     }
 }
 
-// Fetch Real-time Stats for Dashboard
-$stats = [
-    'jobs_today' => 0,
-    'oil_cost_today' => 0,
-    'total_stock' => 0,
-    'total_staff' => 0
-];
+// Fetch Real-time Stats for Dashboard based on Role
+$stats = [];
 
 $popupAnnouncement = null;
 $marqueeAnnouncement = null;
+$realtimeFeed = [];
 
 if ($page === 'home') {
     try {
-        $stmt = $pdo->query("SELECT COUNT(*) FROM jobs WHERE DATE(created_at) = CURDATE() OR plan_arrival_date = CURDATE()");
-        $stats['jobs_today'] = $stmt->fetchColumn();
+        $userRole = $_SESSION['role'] ?? 'technician';
+        $userId = $_SESSION['user_id'] ?? 0;
+        
+        // --- 1. Stats สำหรับช่าง Office (technician) ---
+        if (hasRole('technician') && !isMaTechnicianOnly() && !isSalesOnly() && !isInternOnly()) {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM jobs WHERE team_id = (SELECT team_id FROM users WHERE id = ?) AND DATE(created_at) = CURDATE()");
+            $stmt->execute([$userId]);
+            $stats['tech_jobs_today'] = $stmt->fetchColumn();
 
-        $stmt = $pdo->query("SELECT SUM(total_price) FROM oil_records WHERE DATE(date_recorded) = CURDATE()");
-        $stats['oil_cost_today'] = $stmt->fetchColumn() ?: 0;
+            $stmt = $pdo->prepare("SELECT SUM(qty) FROM user_consumables WHERE user_id = ?");
+            $stmt->execute([$userId]);
+            $stats['tech_bag_qty'] = $stmt->fetchColumn() ?: 0;
 
-        $stmt = $pdo->query("SELECT COUNT(*) FROM inventory_items WHERE status = 'in_stock'");
-        $stats['total_stock'] = $stmt->fetchColumn();
+            $stmt = $pdo->prepare("SELECT SUM(total_price) FROM oil_records WHERE tech_id = ? AND DATE(date_recorded) = CURDATE()");
+            $stmt->execute([$userId]);
+            $stats['tech_oil_today'] = $stmt->fetchColumn() ?: 0;
+        }
 
-        $stmt = $pdo->query("SELECT COUNT(*) FROM users");
-        $stats['total_staff'] = $stmt->fetchColumn();
+        // --- 2. Stats สำหรับช่าง MA (ma_technician) ---
+        if (hasRole('ma_technician') || isMaTechnicianOnly()) {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM ma_jobs WHERE team_id = (SELECT team_id FROM users WHERE id = ?) AND DATE(created_at) = CURDATE()");
+            $stmt->execute([$userId]);
+            $stats['ma_jobs_today'] = $stmt->fetchColumn();
+
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM ma_jobs WHERE team_id = (SELECT team_id FROM users WHERE id = ?) AND status = 'completed' AND DATE(updated_at) = CURDATE()");
+            $stmt->execute([$userId]);
+            $stats['ma_jobs_completed'] = $stmt->fetchColumn();
+
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM ma_jobs WHERE team_id = (SELECT team_id FROM users WHERE id = ?) AND status != 'completed'");
+            $stmt->execute([$userId]);
+            $stats['ma_jobs_pending'] = $stmt->fetchColumn();
+        }
+
+        // --- 3. Stats สำหรับ Admin ---
+        if (hasRole(['admin', 'super_admin'])) {
+            $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE last_active >= NOW() - INTERVAL 5 MINUTE");
+            $stats['admin_online_users'] = $stmt->fetchColumn();
+
+            $stmt = $pdo->query("SELECT COUNT(DISTINCT user_id) FROM checkins WHERE DATE(checkin_time) = CURDATE()");
+            $stats['admin_checked_in'] = $stmt->fetchColumn();
+
+            $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE role IN ('technician', 'ma_technician', 'intern')");
+            $totalFieldStaff = $stmt->fetchColumn();
+            $stats['admin_not_checked_in'] = max(0, $totalFieldStaff - $stats['admin_checked_in']);
+
+            $stmt = $pdo->query("SELECT (SELECT COUNT(*) FROM inventory_items WHERE status = 'in_stock') + (SELECT COALESCE(SUM(qty), 0) FROM inventory_consumable)");
+            $stats['admin_total_stock'] = $stmt->fetchColumn();
+        }
+
+        // --- 4. Stats สำหรับ Super Admin ---
+        if (hasRole('super_admin')) {
+            $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE last_active >= NOW() - INTERVAL 5 MINUTE");
+            $stats['super_online_users'] = $stmt->fetchColumn();
+
+            $stmt = $pdo->query("SELECT COUNT(*) FROM users");
+            $stats['super_total_users'] = $stmt->fetchColumn();
+
+            $stmt = $pdo->query("SELECT COUNT(*) FROM ma_customers");
+            $stats['super_total_non'] = $stmt->fetchColumn();
+            
+            $feedSql = "
+                SELECT 'oil' as type, u.full_name, CONCAT('เพิ่มข้อมูลน้ำมัน ', o.total_price, ' บาท') as detail, o.date_recorded as action_time
+                FROM oil_records o JOIN users u ON o.tech_id = u.id
+                UNION ALL
+                SELECT 'checkin' as type, u.full_name, 'เช็คอินเข้างาน' as detail, c.checkin_time as action_time
+                FROM checkins c JOIN users u ON c.user_id = u.id
+                UNION ALL
+                SELECT 'inventory' as type, u.full_name, CONCAT('เบิกอุปกรณ์ ', i.qty, ' ชิ้น') as detail, i.timestamp as action_time
+                FROM inventory_consumable_logs i JOIN users u ON i.target_user_id = u.id WHERE i.action = 'out'
+                ORDER BY action_time DESC LIMIT 15
+            ";
+            try {
+                $realtimeFeed = $pdo->query($feedSql)->fetchAll();
+            } catch (Exception $e) { }
+        }
         
         // --- 🚀 จัดการและดึงข้อมูลประกาศ ---
         // 0. Migration: สร้างตารางและเพิ่มคอลัมน์ที่ขาดหายสำหรับฐานข้อมูลเก่า
@@ -116,6 +176,13 @@ if ($page === 'home') {
             $chk5->execute();
             if (!$chk5->fetch()) {
                 $pdo->exec("ALTER TABLE users ADD COLUMN `profile_image` VARCHAR(255) DEFAULT NULL AFTER `full_name`");
+            }
+            
+            // เพิ่มคอลัมน์ last_active
+            $chk6 = $pdo->prepare("SHOW COLUMNS FROM users LIKE 'last_active'");
+            $chk6->execute();
+            if (!$chk6->fetch()) {
+                $pdo->exec("ALTER TABLE users ADD COLUMN `last_active` TIMESTAMP NULL DEFAULT NULL");
             }
         } catch (Exception $e) { /* ignore migration errors silently */ }
 
@@ -734,41 +801,121 @@ if ($page === 'home') {
                     </div>
 
                     <div class="kpi-grid">
-                        <div class="card relative group">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring)"><i data-lucide="zap" class="w-5 h-5"></i></div>
-                                <span class="badge-success flex items-center gap-1"><i data-lucide="trending-up" class="w-3 h-3"></i> 12%</span>
+                        <?php if (hasRole('super_admin')): ?>
+                            <!-- Super Admin KPIs -->
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-info-bg)] !text-[var(--c-info)]"><i data-lucide="radio" class="w-5 h-5"></i></div>
+                                    <span class="text-[10px] text-[var(--c-text-3)] font-medium bg-[var(--c-surface-2)] px-2 py-1 rounded text-red-500 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Live</span>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">ผู้ใช้ระบบตอนนี้</p>
+                                <h3 class="text-kpi"><?= number_format($stats['super_online_users'] ?? 0) ?></h3>
                             </div>
-                            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">Jobs Today</p>
-                            <h3 class="text-kpi"><?= number_format($stats['jobs_today']) ?></h3>
-                        </div>
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring)"><i data-lucide="users" class="w-5 h-5"></i></div>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">ผู้ใช้ทั้งหมดในระบบ</p>
+                                <h3 class="text-kpi"><?= number_format($stats['super_total_users'] ?? 0) ?></h3>
+                            </div>
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-success group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-warning-bg)] !text-[var(--c-warning)]"><i data-lucide="hash" class="w-5 h-5"></i></div>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">หมายเลข NON ทั้งหมด</p>
+                                <h3 class="text-kpi"><?= number_format($stats['super_total_non'] ?? 0) ?></h3>
+                            </div>
+                            
+                        <?php elseif (hasRole('admin')): ?>
+                            <!-- Admin KPIs -->
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring)"><i data-lucide="radio" class="w-5 h-5"></i></div>
+                                    <span class="text-[10px] text-[var(--c-text-3)] font-medium bg-[var(--c-surface-2)] px-2 py-1 rounded text-red-500 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Live</span>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">คนที่ใช้อยู่แบบเรียลไทม์</p>
+                                <h3 class="text-kpi"><?= number_format($stats['admin_online_users'] ?? 0) ?></h3>
+                            </div>
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-success group-hover:scale-110 transition-transform var(--dur-spring)"><i data-lucide="check-circle" class="w-5 h-5"></i></div>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">เช็คอินแล้ววันนี้</p>
+                                <h3 class="text-kpi"><?= number_format($stats['admin_checked_in'] ?? 0) ?></h3>
+                            </div>
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[#FDF2F8] !text-[#EC4899]"><i data-lucide="x-circle" class="w-5 h-5"></i></div>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">ยังไม่เช็คอิน</p>
+                                <h3 class="text-kpi"><?= number_format($stats['admin_not_checked_in'] ?? 0) ?></h3>
+                            </div>
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-info-bg)] !text-[var(--c-info)]"><i data-lucide="package" class="w-5 h-5"></i></div>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">สินค้าทั้งหมดในคลัง</p>
+                                <h3 class="text-kpi"><?= number_format($stats['admin_total_stock'] ?? 0) ?></h3>
+                            </div>
 
-                        <div class="card relative group">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="icon-box-success group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-warning-bg)] !text-[var(--c-warning)]"><i data-lucide="fuel" class="w-5 h-5"></i></div>
-                                <span class="badge-danger flex items-center gap-1"><i data-lucide="trending-down" class="w-3 h-3"></i> 5%</span>
+                        <?php elseif (hasRole('ma_technician') || isMaTechnicianOnly()): ?>
+                            <!-- MA Technician KPIs -->
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring)"><i data-lucide="tool" class="w-5 h-5"></i></div>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">งาน MA วันนี้</p>
+                                <h3 class="text-kpi"><?= number_format($stats['ma_jobs_today'] ?? 0) ?></h3>
                             </div>
-                            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">ค่าน้ำมันวันนี้</p>
-                            <h3 class="text-kpi"><span class="text-2xl text-[var(--c-text-3)]">฿</span><?= number_format($stats['oil_cost_today']) ?></h3>
-                        </div>
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-success group-hover:scale-110 transition-transform var(--dur-spring)"><i data-lucide="check-square" class="w-5 h-5"></i></div>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">งาน MA ที่จบแล้ว</p>
+                                <h3 class="text-kpi"><?= number_format($stats['ma_jobs_completed'] ?? 0) ?></h3>
+                            </div>
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[#FDF2F8] !text-[#EC4899]"><i data-lucide="alert-circle" class="w-5 h-5"></i></div>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">งาน MA ที่ไม่จบ</p>
+                                <h3 class="text-kpi"><?= number_format($stats['ma_jobs_pending'] ?? 0) ?></h3>
+                            </div>
 
-                        <div class="card relative group">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-info-bg)] !text-[var(--c-info)]"><i data-lucide="package" class="w-5 h-5"></i></div>
-                                <span class="text-[10px] text-[var(--c-text-3)] font-medium bg-[var(--c-surface-2)] px-2 py-1 rounded">Live</span>
+                        <?php elseif (hasRole('technician') && !isSalesOnly() && !isInternOnly()): ?>
+                            <!-- Office Technician KPIs -->
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring)"><i data-lucide="zap" class="w-5 h-5"></i></div>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">งานที่ได้รับวันนี้</p>
+                                <h3 class="text-kpi"><?= number_format($stats['tech_jobs_today'] ?? 0) ?></h3>
                             </div>
-                            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">สินค้าทั้งหมด</p>
-                            <h3 class="text-kpi"><?= number_format($stats['total_stock']) ?></h3>
-                        </div>
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-info-bg)] !text-[var(--c-info)]"><i data-lucide="briefcase" class="w-5 h-5"></i></div>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">ของคงเหลือในกระเป๋า</p>
+                                <h3 class="text-kpi"><?= number_format($stats['tech_bag_qty'] ?? 0) ?> <span class="text-lg font-normal text-[var(--c-text-3)]">ชิ้น</span></h3>
+                            </div>
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-success group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-warning-bg)] !text-[var(--c-warning)]"><i data-lucide="fuel" class="w-5 h-5"></i></div>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">ค่าน้ำมันวันนี้</p>
+                                <h3 class="text-kpi"><span class="text-2xl text-[var(--c-text-3)]">฿</span><?= number_format($stats['tech_oil_today'] ?? 0) ?></h3>
+                            </div>
 
-                        <div class="card relative group">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[#FDF2F8] !text-[#EC4899]"><i data-lucide="users" class="w-5 h-5"></i></div>
-                                <span class="text-[10px] text-[var(--c-text-3)] font-medium bg-[var(--c-surface-2)] px-2 py-1 rounded">Active</span>
+                        <?php else: ?>
+                            <!-- Default Fallback -->
+                            <div class="card relative group">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring)"><i data-lucide="calendar" class="w-5 h-5"></i></div>
+                                </div>
+                                <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">วัน/เวลาเข้างาน</p>
+                                <h3 class="text-lg font-bold text-slate-800"><?= date('H:i') ?></h3>
                             </div>
-                            <p class="text-xs font-semibold text-[var(--c-text-3)] uppercase tracking-wider mb-1">พนักงานที่แอคทีฟ</p>
-                            <h3 class="text-kpi"><?= number_format($stats['total_staff']) ?></h3>
-                        </div>
+                        <?php endif; ?>
                     </div>
 
                     <h2 class="text-lg font-bold mt-8 mb-4">เมนูด่วน</h2>
@@ -821,6 +968,33 @@ if ($page === 'home') {
                         </a>
                         <?php endif; ?>
                     </div>
+
+                    <?php if (hasRole('super_admin') && !empty($realtimeFeed)): ?>
+                    <div class="mt-8">
+                        <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <span class="relative flex h-3 w-3">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                            </span>
+                            กิจกรรมล่าสุดแบบเรียลไทม์
+                        </h2>
+                        <div class="marquee-wrapper !bg-slate-900 !shadow-none animate__animated animate__fadeInUp">
+                            <div class="marquee-badge !bg-slate-800">
+                                <i data-lucide="activity" class="w-4 h-4 mr-2 text-red-400"></i> LIVE FEED
+                            </div>
+                            <div class="marquee-content !duration-[40s]">
+                                <?php foreach ($realtimeFeed as $feed): ?>
+                                    <span class="mx-6 text-sm text-slate-300">
+                                        <span class="font-bold text-white"><?= htmlspecialchars($feed['full_name']) ?></span> 
+                                        <?= htmlspecialchars($feed['detail']) ?> 
+                                        <span class="text-slate-500 text-xs ml-2"><?= date('H:i', strtotime($feed['action_time'])) ?></span>
+                                    </span>
+                                    <span class="text-slate-700">•</span>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                 </div>
 
