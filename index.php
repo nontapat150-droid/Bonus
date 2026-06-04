@@ -98,14 +98,14 @@ if ($page === 'home') {
             $stats['super_total_non'] = $stmt->fetchColumn();
             
             $feedSql = "
-                SELECT 'oil' as type, u.full_name, CONCAT('เพิ่มข้อมูลน้ำมัน ', o.total_price, ' บาท') as detail, o.date_recorded as action_time
-                FROM oil_records o JOIN users u ON o.tech_id = u.id
+                SELECT 'oil' as type, u.full_name, CONCAT('เติมน้ำมันไป ', o.total_price, ' บาท') as detail, o.date_recorded as action_time
+                FROM oil_records o JOIN users u ON o.tech_id = u.id WHERE DATE(o.date_recorded) = CURDATE()
                 UNION ALL
                 SELECT 'checkin' as type, u.full_name, 'เช็คอินเข้างาน' as detail, c.checkin_time as action_time
-                FROM checkins c JOIN users u ON c.user_id = u.id
+                FROM checkins c JOIN users u ON c.user_id = u.id WHERE DATE(c.checkin_time) = CURDATE()
                 UNION ALL
                 SELECT 'inventory' as type, u.full_name, CONCAT('เบิกอุปกรณ์ ', i.qty, ' ชิ้น') as detail, i.timestamp as action_time
-                FROM inventory_consumable_logs i JOIN users u ON i.target_user_id = u.id WHERE i.action = 'out'
+                FROM inventory_consumable_logs i JOIN users u ON i.target_user_id = u.id WHERE i.action = 'out' AND DATE(i.timestamp) = CURDATE()
                 ORDER BY action_time DESC LIMIT 15
             ";
             try {
@@ -983,11 +983,17 @@ if ($page === 'home') {
                                 <i data-lucide="activity" class="w-4 h-4 mr-2 text-red-400"></i> LIVE FEED
                             </div>
                             <div class="marquee-content" style="animation-duration: 120s;">
-                                <?php foreach ($realtimeFeed as $feed): ?>
+                                <?php foreach ($realtimeFeed as $feed): 
+                                    $diff = time() - strtotime($feed['action_time']);
+                                    if ($diff < 60) $timeAgo = "เมื่อสักครู่";
+                                    elseif ($diff < 3600) $timeAgo = "เมื่อ " . floor($diff / 60) . " นาทีที่แล้ว";
+                                    elseif ($diff < 86400) $timeAgo = "เมื่อ " . floor($diff / 3600) . " ชั่วโมงที่แล้ว";
+                                    else $timeAgo = "เมื่อ " . floor($diff / 86400) . " วันที่แล้ว";
+                                ?>
                                     <span class="mx-6 text-sm text-slate-300">
                                         <span class="font-bold text-white"><?= htmlspecialchars($feed['full_name']) ?></span> 
                                         <?= htmlspecialchars($feed['detail']) ?> 
-                                        <span class="text-slate-500 text-xs ml-2 flex-shrink-0"><i data-lucide="clock" class="w-3 h-3 inline-block mr-1 mb-[2px]"></i><?= date('d/m/Y H:i:s', strtotime($feed['action_time'])) ?></span>
+                                        <span class="text-slate-500 text-xs ml-2 flex-shrink-0"><i data-lucide="clock" class="w-3 h-3 inline-block mr-1 mb-[2px]"></i><?= $timeAgo ?></span>
                                     </span>
                                     <span class="text-slate-700">•</span>
                                 <?php endforeach; ?>
