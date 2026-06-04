@@ -231,7 +231,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (result.success) {
-                Toast.success('บันทึกข้อมูลและอัปโหลดรูปภาพเรียบร้อยแล้ว!');
+                await Swal.fire({
+                    title: 'บันทึกสำเร็จ!',
+                    text: 'ข้อมูลบิลน้ำมันและรูปภาพถูกบันทึกเรียบร้อยแล้ว',
+                    icon: 'success',
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#10b981'
+                });
                 form.reset();
                 selectedFiles = [];
                 previewContainer.innerHTML = '';
