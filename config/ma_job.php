@@ -244,6 +244,14 @@ function notifyMaJobAssignment(PDO $pdo, $teamId, $title, $message, $createdBy) 
     if (empty($userIds)) {
         $ins->execute([$title, $message, $teamId, null, $createdBy]);
     }
+    
+    // Send push notification via OneSignal
+    if (file_exists(__DIR__ . '/onesignal.php')) {
+        require_once __DIR__ . '/onesignal.php';
+        if (function_exists('sendOneSignalPush')) {
+            sendOneSignalPush($pdo, $title, $message, 'team', $teamId);
+        }
+    }
 }
 
 function getRoleLabel($role) {
