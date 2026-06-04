@@ -122,11 +122,13 @@ function renderTechBag() {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-yellow-50/30 border-b border-slate-50';
             tr.innerHTML = `
-                <td class="px-6 py-3 font-medium text-slate-700">${item.product_name}</td>
-                <td class="px-6 py-3 text-right font-mono font-bold text-yellow-600">${item.qty} <span class="text-xs text-slate-500 font-normal">${item.unit}</span></td>
-                <td class="px-6 py-3 text-center space-x-2">
-                    <button onclick="openUseConsumable(${item.consumable_id}, '${item.product_name}', ${item.qty}, '${item.unit}')" class="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-lg font-bold transition">✅ ใช้งาน</button>
-                    <button onclick="openTransferConsumable(${item.consumable_id}, '${item.product_name}', ${item.qty}, '${item.unit}')" class="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded-lg font-bold transition">🔄 โอนย้าย</button>
+                <td class="px-4 py-3 font-medium text-slate-700">${item.product_name}</td>
+                <td class="px-4 py-3 text-right font-mono font-bold text-yellow-600 whitespace-nowrap">${item.qty} <span class="text-xs text-slate-500 font-normal">${item.unit}</span></td>
+                <td class="px-3 py-3">
+                    <div class="flex flex-col gap-1.5 min-w-[80px]">
+                        <button onclick="openUseConsumable(${item.consumable_id}, '${item.product_name}', ${item.qty}, '${item.unit}')" class="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-lg font-bold transition text-center whitespace-nowrap">✅ ใช้งาน</button>
+                        <button onclick="openTransferConsumable(${item.consumable_id}, '${item.product_name}', ${item.qty}, '${item.unit}')" class="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded-lg font-bold transition text-center whitespace-nowrap">🔄 โอนย้าย</button>
+                    </div>
                 </td>
             `;
             conBody.appendChild(tr);
