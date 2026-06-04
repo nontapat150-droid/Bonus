@@ -236,14 +236,17 @@ requireRole(['admin', 'super_admin']);
             }
 
             var card = document.createElement('div');
-            card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer group';
+            card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer group relative';
             card.onclick = function() { ciOpenDetail(idx); };
-            card.innerHTML = '<div class="flex justify-between items-start mb-4">'
+            
+            var delBtnHTML = '<button type="button" onclick="event.stopPropagation(); ciDeleteCustomer(\'' + ciEscape(c.id) + '\')" class="absolute top-3 right-3 p-2 bg-white hover:bg-rose-100 text-slate-300 hover:text-rose-500 rounded-lg transition-colors opacity-0 group-hover:opacity-100 shadow-sm z-10" title="ลบข้อมูลลูกค้านี้ทั้งหมด"><i data-lucide="trash-2" class="w-4 h-4"></i></button>';
+            
+            card.innerHTML = delBtnHTML + '<div class="flex justify-between items-start mb-4">'
                 + '<div class="flex items-center gap-3">'
                 + '<div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">'
                 + '<i data-lucide="user" class="w-5 h-5"></i></div>'
                 + '<div><p class="text-[10px] font-bold text-slate-400 uppercase">NON / Circuit ID</p>'
-                + '<p class="font-black text-indigo-600 text-lg">' + ciEscape(c.id) + '</p></div>'
+                + '<p class="font-black text-indigo-600 text-lg pr-6">' + ciEscape(c.id) + '</p></div>'
                 + '</div>' + latestStatus + '</div>'
                 + '<div class="space-y-1 mb-4">'
                 + '<p class="text-[10px] font-bold text-slate-400 uppercase">ชื่อลูกค้า</p>'

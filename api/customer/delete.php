@@ -66,6 +66,34 @@ try {
         // Delete start_day_records
         $pdo->prepare("DELETE FROM start_day_records WHERE id IN ($inQuery2)")->execute($sdIds);
     }
+    
+    // 3. Delete MA jobs
+    $stmt3 = $pdo->prepare("SELECT id FROM ma_customers WHERE non_number = ? OR customer_name = ? OR phone = ?");
+    $stmt3->execute([$id, $id, $id]);
+    $maCustomerIds = $stmt3->fetchAll(PDO::FETCH_COLUMN);
+    
+    if (!empty($maCustomerIds)) {
+        $inQuery3 = implode(',', array_fill(0, count($maCustomerIds), '?'));
+        
+        // Fetch images to delete physical files
+        try {
+            $stmtMaImg = $pdo->prepare("SELECT image_path FROM ma_images WHERE ma_job_id IN (SELECT id FROM ma_customer_history WHERE customer_id IN ($inQuery3))");
+            $stmtMaImg->execute($maCustomerIds);
+            $maImages = $stmtMaImg->fetchAll(PDO::FETCH_COLUMN);
+            
+            foreach ($maImages as $img) {
+                $path = '../../assets/uploads/ma_jobs/' . $img;
+                if (file_exists($path) && is_file($path)) @unlink($path);
+                $path2 = '../../' . $img; // Fallback
+                if (file_exists($path2) && is_file($path2)) @unlink($path2);
+            }
+            
+            $pdo->prepare("DELETE FROM ma_images WHERE ma_job_id IN (SELECT id FROM ma_customer_history WHERE customer_id IN ($inQuery3))")->execute($maCustomerIds);
+        } catch (Exception $e) {}
+        
+        $pdo->prepare("DELETE FROM ma_customer_history WHERE customer_id IN ($inQuery3)")->execute($maCustomerIds);
+        $pdo->prepare("DELETE FROM ma_customers WHERE id IN ($inQuery3)")->execute($maCustomerIds);
+    }
 
     $pdo->commit();
 
