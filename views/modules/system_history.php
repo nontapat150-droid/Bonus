@@ -44,12 +44,14 @@ if (!hasRole(['admin', 'super_admin'])) exit('ไม่มีสิทธิ์�
             <button onclick="applyFilter()" class="btn-primary py-2 px-6 w-full sm:w-auto text-sm shadow-md">
                 <i data-lucide="search" class="w-4 h-4"></i> ค้นหา
             </button>
+            <!-- 2. ปุ่มล้างประวัติ (ปุ่มเดิม เอากลับมาแล้วครับ!) -->
+            <button onclick="clearHistory()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold border border-rose-200 py-2 px-6 rounded-xl w-full sm:w-auto text-sm shadow-sm transition-all flex items-center justify-center gap-2">
+                <i data-lucide="trash-2" class="w-4 h-4"></i> ล้างประวัติทั้งหมด
+            </button>
+
+            <!-- 3. 🟢 ปุ่มสรุปการเช็คอิน (ปุ่มใหม่ ให้มาต่อท้ายอยู่ข้างหลังสุด) -->
             <button onclick="showCheckinSummary()" id="btnCheckinSummary" style="display: none;" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold border border-indigo-200 py-2 px-6 rounded-xl w-full sm:w-auto text-sm shadow-sm transition-all flex items-center justify-center gap-2">
                 <i data-lucide="clipboard-list" class="w-4 h-4"></i> สรุปการเช็คอิน
-            </button>
-            <!-- 🟢 เพิ่มปุ่ม "สรุปการเช็คอิน" ใหม่ตรงนี้ -->
-            <button type="button" class="btn btn-info ms-2" id="btnCheckinSummary" style="margin-left: 8px;">
-                <i class="fas fa-clipboard-list"></i> สรุปการเช็คอิน
             </button>
         </div>
     </div>
@@ -76,7 +78,7 @@ if (!hasRole(['admin', 'super_admin'])) exit('ไม่มีสิทธิ์�
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
         </div>
-        
+
             <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
                 <div class="overflow-x-auto rounded-xl border border-slate-200">
                     <table class="w-full text-sm text-left">
