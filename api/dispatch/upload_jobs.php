@@ -2,6 +2,7 @@
 // api/dispatch/upload_jobs.php
 require_once '../../config/db.php';
 require_once '../../config/auth.php';
+require_once '../../config/ma_job.php';
 
 header('Content-Type: application/json');
 requireLogin();
@@ -11,6 +12,8 @@ if (!hasRole(['admin', 'super_admin'])) {
     echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
 }
+
+ensureMaJobSchema($pdo); // Ensure schema is ready (adds lat/lng/job_id if needed)
 
 $input = json_decode(file_get_contents('php://input'), true);
 $jobs = $input['jobs'] ?? [];
@@ -30,25 +33,61 @@ try {
     $imported = 0;
     foreach ($jobs as $job) {
         // ข้ามบรรทัดที่ไม่มีรหัสงาน (Access No)
-        if (empty($job['access_no'])) continue;
+        $access_no = trim($job['access_no'] ?? '');
+        if (empty($access_no)) continue;
 
         $date = !empty($job['plan_arrival_date']) ? $job['plan_arrival_date'] : null;
+        
+        $lat = isset($job['lat']) && trim($job['lat']) !== '' ? $job['lat'] : null;
+        $lng = isset($job['lng']) && trim($job['lng']) !== '' ? $job['lng'] : null;
+        $customerName = trim($job['customer'] ?? '');
+        $phone = trim($job['phone'] ?? '');
+        $address = trim($job['address'] ?? '');
+
+        // หากไม่มีพิกัด ลองดึงจากประวัติลูกค้า NON เดิม
+        if ($lat === null || $lng === null) {
+            $existingCust = getMaCustomerByNon($pdo, $access_no);
+            if ($existingCust) {
+                if ($lat === null && !empty($existingCust['lat'])) $lat = $existingCust['lat'];
+                if ($lng === null && !empty($existingCust['lng'])) $lng = $existingCust['lng'];
+                if (empty($customerName) && !empty($existingCust['customer_name'])) $customerName = $existingCust['customer_name'];
+                if (empty($phone) && !empty($existingCust['phone'])) $phone = $existingCust['phone'];
+                if (empty($address) && !empty($existingCust['address'])) $address = $existingCust['address'];
+            }
+        }
 
         $stmt->execute([
-            $job['access_no'],
-            $job['customer'] ?? null,
-            $job['phone'] ?? null,
-            $job['address'] ?? null,
+            $access_no,
+            $customerName ?: null,
+            $phone ?: null,
+            $address ?: null,
             $date,
             $job['package'] ?? null,
             $job['remark'] ?? null,
-            $job['lat'] ?? null,
-            $job['lng'] ?? null,
+            $lat,
+            $lng,
             $job['product'] ?? null,
             $job['order_no'] ?? null,
             $job['task_order'] ?? null,
             $job['task_type'] ?? null
         ]);
+        
+        $jobId = $pdo->lastInsertId();
+        
+        // บันทึกประวัติลูกค้า
+        addMaCustomerHistory($pdo, [
+            'non_number' => $access_no,
+            'customer_name' => $customerName,
+            'phone' => $phone,
+            'address' => $address,
+            'job_id' => $jobId,
+            'action' => 'imported_install',
+            'remark' => $job['remark'] ?? null,
+            'lat' => $lat,
+            'lng' => $lng,
+            'action_date' => $date ?: date('Y-m-d')
+        ]);
+
         $imported++;
     }
 

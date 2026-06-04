@@ -44,15 +44,33 @@ try {
         )
     ");
 
-    // แปลงค่าว่างให้เป็น null สำหรับตัวเลข
+    // ดึงข้อมูลเดิมจากระบบลูกค้ากลางถ้าไม่มีให้มา
     $lat = isset($input['lat']) && trim($input['lat']) !== '' ? (float)$input['lat'] : null;
     $lng = isset($input['lng']) && trim($input['lng']) !== '' ? (float)$input['lng'] : null;
+    $customerName = trim($input['customer'] ?? '');
+    $phone = trim($input['phone'] ?? '');
+    $address = trim($input['address'] ?? '');
+
+    // Include ma_job for customer logic
+    require_once '../../config/ma_job.php';
+    ensureMaJobSchema($pdo);
+
+    if ($lat === null || $lng === null) {
+        $existingCust = getMaCustomerByNon($pdo, $access_no);
+        if ($existingCust) {
+            if ($lat === null && !empty($existingCust['lat'])) $lat = $existingCust['lat'];
+            if ($lng === null && !empty($existingCust['lng'])) $lng = $existingCust['lng'];
+            if (empty($customerName) && !empty($existingCust['customer_name'])) $customerName = $existingCust['customer_name'];
+            if (empty($phone) && !empty($existingCust['phone'])) $phone = $existingCust['phone'];
+            if (empty($address) && !empty($existingCust['address'])) $address = $existingCust['address'];
+        }
+    }
 
     $stmt->execute([
         $access_no,
-        trim($input['customer'] ?? ''),
-        trim($input['phone'] ?? ''),
-        trim($input['address'] ?? ''),
+        $customerName ?: null,
+        $phone ?: null,
+        $address ?: null,
         $plan_date,
         trim($input['package'] ?? ''),
         trim($input['remark'] ?? ''),
@@ -63,6 +81,22 @@ try {
         trim($input['task_order'] ?? ''),
         trim($input['task_type'] ?? ''),
         $team_id
+    ]);
+
+    $jobId = $pdo->lastInsertId();
+
+    // บันทึกประวัติลูกค้า
+    addMaCustomerHistory($pdo, [
+        'non_number' => $access_no,
+        'customer_name' => $customerName,
+        'phone' => $phone,
+        'address' => $address,
+        'job_id' => $jobId,
+        'action' => 'manual_add_install',
+        'remark' => trim($input['remark'] ?? ''),
+        'lat' => $lat,
+        'lng' => $lng,
+        'action_date' => $plan_date ?: date('Y-m-d')
     ]);
 
     echo json_encode(['success' => true]);

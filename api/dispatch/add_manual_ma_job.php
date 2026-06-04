@@ -39,15 +39,31 @@ try {
 
     $lat = isset($input['lat']) && trim($input['lat']) !== '' ? (float)$input['lat'] : null;
     $lng = isset($input['lng']) && trim($input['lng']) !== '' ? (float)$input['lng'] : null;
+    $customerName = trim($input['customer'] ?? '');
+    $phone = trim($input['phone'] ?? '');
+    $address = trim($input['address'] ?? '');
+
+    // ดึงข้อมูลพิกัดเดิมจากระบบลูกค้ากลางถ้าไม่ได้กรอกมา
+    if ($lat === null || $lng === null) {
+        $existingCust = getMaCustomerByNon($pdo, $access_no);
+        if ($existingCust) {
+            if ($lat === null && !empty($existingCust['lat'])) $lat = $existingCust['lat'];
+            if ($lng === null && !empty($existingCust['lng'])) $lng = $existingCust['lng'];
+            if (empty($customerName) && !empty($existingCust['customer_name'])) $customerName = $existingCust['customer_name'];
+            if (empty($phone) && !empty($existingCust['phone'])) $phone = $existingCust['phone'];
+            if (empty($address) && !empty($existingCust['address'])) $address = $existingCust['address'];
+        }
+    }
+
     $price = isset($input['price']) && trim($input['price']) !== '' ? (float)$input['price'] : null;
     $assigned_user_id = isset($input['assigned_user_id']) && trim($input['assigned_user_id']) !== '' ? (int)$input['assigned_user_id'] : null;
     $area_provider = in_array($input['area_provider'] ?? '', ['AIS', '3BB']) ? $input['area_provider'] : null;
 
     $stmt->execute([
         $access_no,
-        trim($input['customer'] ?? ''),
-        trim($input['phone'] ?? ''),
-        trim($input['address'] ?? ''),
+        $customerName ?: null,
+        $phone ?: null,
+        $address ?: null,
         trim($input['sub_district'] ?? ''),
         trim($input['district'] ?? ''),
         $plan_date,
@@ -64,7 +80,7 @@ try {
 
     $job_id = $pdo->lastInsertId();
     if ($job_id) {
-        recordMaJobHistory($pdo, $job_id, 'manual_add');
+        recordMaJobHistory($pdo, $job_id, 'manual_add'); // recordMaJobHistory uses addMaCustomerHistory inside
     }
 
     echo json_encode(['success' => true]);
