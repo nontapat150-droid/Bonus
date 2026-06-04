@@ -108,15 +108,11 @@ function notifyAdminJobRescheduled(
     
     $notifId = (int)$pdo->lastInsertId() ?: null;
     
-    // Send push notification to Admins via OneSignal
+    // Send push notification to all admins via OneSignal
     if (file_exists(__DIR__ . '/onesignal.php')) {
         require_once __DIR__ . '/onesignal.php';
         if (function_exists('sendOneSignalPush')) {
-            $stmtAdmin = $pdo->query("SELECT id FROM users WHERE role IN ('admin', 'super_admin')");
-            $admins = $stmtAdmin->fetchAll(PDO::FETCH_COLUMN);
-            foreach ($admins as $adminId) {
-                sendOneSignalPush($pdo, $title, $message, 'user', null, $adminId);
-            }
+            sendOneSignalPush($pdo, $title, $message, 'admin_only');
         }
     }
 
