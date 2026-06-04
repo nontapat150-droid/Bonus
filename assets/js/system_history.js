@@ -58,33 +58,18 @@ async function loadHistory(type) {
         const data = await res.json();
 
         if (data.success) {
-            // --- เพิ่มโค้ดส่วนนี้ ---
             if (type === 'checkin') {
-                window.currentCheckinData = data.data; // จำข้อมูลไว้ใช้คำนวณสรุป
+                window.currentCheckinData = data.data || [];
                 const btnSum = document.getElementById('btnCheckinSummary');
-                if(btnSum) btnSum.style.display = 'flex'; // โชว์ปุ่มสรุป
+                if (btnSum) btnSum.style.display = 'flex';
             } else {
                 window.currentCheckinData = [];
                 const btnSum = document.getElementById('btnCheckinSummary');
-                if(btnSum) btnSum.style.display = 'none'; // ซ่อนปุ่มสรุปถ้าอยู่แท็บอื่น
+                if (btnSum) btnSum.style.display = 'none';
             }
-            // ---------------------
 
-           if (data.success) {
-            // --- โค้ดที่เพิ่มใหม่: ตรวจสอบว่าเป็นเช็คอินไหม ถ้าใช่ให้จำข้อมูลและโชว์ปุ่ม ---
-            if (type === 'checkin') {
-                window.currentCheckinData = data.data; 
-                const btnSum = document.getElementById('btnCheckinSummary');
-                if(btnSum) btnSum.style.display = 'flex'; 
-            } else {
-                window.currentCheckinData = [];
-                const btnSum = document.getElementById('btnCheckinSummary');
-                if(btnSum) btnSum.style.display = 'none'; 
-            }
-            // -------------------------------------------------------------
-
-            renderTable(type, data.data, tHead, tBody);
-            if(badge) badge.textContent = `${data.data.length} รายการ`;
+            renderTable(type, data.data || [], tHead, tBody);
+            if (badge) badge.textContent = `${(data.data || []).length} รายการ`;
         } else {
             Swal.fire({
                 title: 'ข้อผิดพลาด',
@@ -504,154 +489,62 @@ document.getElementById('editStartDayForm')?.addEventListener('submit', async fu
 
 
 $(document).ready(function() {
-    // กำหนดการทำงานเมื่อคลิกปุ่ม "สรุปการเช็คอิน"
-    $('#btnCheckinSummary').on('click', function() {
-        // เขียน Logic การดึงข้อมูลสรุปที่นี่
-        // เช่น การเรียก API ดึงยอดเช็คอินของเดือน หรือเปิด Modal สรุป
-        console.log("กำลังดึงข้อมูลสรุปการเช็คอิน...");
-        
-        // ตัวอย่างการเปิด Modal สรุปงาน (ถ้ามีการสร้าง UI Modal ไว้แล้ว)
-        // $('#checkinSummaryModal').modal('show');
-    });
+    $('#btnCheckinSummary').on('click', showCheckinSummary);
 });
 
-
-// ==========================================
-// 🌟 ระบบสรุปการเช็คอิน (โชว์ Modal)
-// ==========================================
 window.showCheckinSummary = function() {
-    // เช็คว่ามีข้อมูลให้สรุปไหม
     if (currentType !== 'checkin' || !window.currentCheckinData || window.currentCheckinData.length === 0) {
         Swal.fire('ไม่มีข้อมูล', 'ไม่พบข้อมูลการเช็คอินในช่วงเวลานี้', 'info');
         return;
     }
 
-    // 1. คำนวณนับจำนวนครั้งของแต่ละคน
     const summary = {};
     window.currentCheckinData.forEach(item => {
-        const name = item.full_name;
-        if (!summary[name]) {
-            summary[name] = { onTime: 0, late: 0 };
+        const key = item.user_id ? `${item.user_id}||${item.full_name}` : item.full_name;
+        if (!summary[key]) {
+            summary[key] = {
+                user_id: item.user_id || null,
+                name: item.full_name || 'ไม่ระบุ',
+                onTime: 0,
+                late: 0
+            };
         }
-        
+
         if (item.status_code === 'late') {
-            summary[name].late++;
+            summary[key].late++;
         } else {
-            summary[name].onTime++;
+            summary[key].onTime++;
         }
     });
 
-    // 2. แปลงข้อมูลและเรียงลำดับตัวอักษรชื่อ
-    const sortedSummary = Object.keys(summary).map(name => ({
-        name: name,
-        onTime: summary[name].onTime,
-        late: summary[name].late
-    })).sort((a, b) => a.name.localeCompare(b.name, 'th'));
-
-    // 3. วาดข้อมูลลงในตาราง
+    const sortedSummary = Object.values(summary).sort((a, b) => a.name.localeCompare(b.name, 'th'));
     const tbody = document.getElementById('checkinSummaryBody');
-    tbody.innerHTML = '';
-    
-    sortedSummary.forEach(stat => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition-colors bg-white";
-        
-        // ตกแต่งป้ายแจ้งเตือนจำนวนครั้ง
-        let lateBadge = stat.late > 0 
-            ? `<span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-lg text-sm font-bold border border-rose-200">${stat.late}</span>`
-            : `<span class="text-slate-300">-</span>`;
+    if (!tbody) return;
 
-        let onTimeBadge = stat.onTime > 0
-            ? `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-sm font-bold border border-emerald-200">${stat.onTime}</span>`
-            : `<span class="text-slate-300">-</span>`;
+    if (sortedSummary.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="px-4 py-6 text-center text-slate-500">ไม่พบข้อมูลสำหรับสรุป</td></tr>`;
+    } else {
+        tbody.innerHTML = sortedSummary.map(stat => {
+            const onTimeBadge = stat.onTime > 0
+                ? `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-sm font-bold border border-emerald-200">${stat.onTime}</span>`
+                : `<span class="text-slate-300">-</span>`;
+            const lateBadge = stat.late > 0
+                ? `<span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-lg text-sm font-bold border border-rose-200">${stat.late}</span>`
+                : `<span class="text-slate-300">-</span>`;
 
-        tr.innerHTML = `
-            <td class="px-4 py-3 font-bold text-slate-700">${stat.name}</td>
-            <td class="px-4 py-3 text-center">${onTimeBadge}</td>
-            <td class="px-4 py-3 text-center">${lateBadge}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-
-    // 4. เปิด Modal และโหลดไอคอน
-    document.getElementById('checkinSummaryModal').classList.remove('hidden');
-    if(window.lucide) lucide.createIcons();
-};
-
-// ฟังก์ชันปิด Modal
-window.closeCheckinSummary = function() {
-    document.getElementById('checkinSummaryModal').classList.add('hidden');
-};
-
-
-// ==========================================
-// 🌟 ระบบสรุปการเช็คอิน (โชว์ Modal และนับจำนวน)
-// ==========================================
-window.showCheckinSummary = function() {
-    // 1. เช็คว่ามีข้อมูลเช็คอินให้สรุปหรือไม่
-    if (!window.currentCheckinData || window.currentCheckinData.length === 0) {
-        Swal.fire('ไม่มีข้อมูล', 'ไม่พบข้อมูลการเช็คอินในช่วงเวลานี้', 'info');
-        return;
+            return `
+                <tr class="hover:bg-slate-50 transition-colors bg-white">
+                    <td class="px-4 py-3 font-bold text-slate-700">${stat.name}</td>
+                    <td class="px-4 py-3 text-center">${onTimeBadge}</td>
+                    <td class="px-4 py-3 text-center">${lateBadge}</td>
+                </tr>`;
+        }).join('');
     }
 
-    // 2. เริ่มการนับจำนวนของแต่ละคน (จัดกลุ่มตามชื่อ)
-    const summary = {};
-    window.currentCheckinData.forEach(item => {
-        const name = item.full_name; // ชื่อพนักงาน
-        
-        // ถ้าเพิ่งเจอชื่อนี้ครั้งแรก ให้ตั้งค่าเริ่มต้นเป็น 0
-        if (!summary[name]) {
-            summary[name] = { onTime: 0, late: 0 };
-        }
-        
-        // เช็คสถานะการเข้างาน ถ้ารหัสคือ 'late' คือมาสาย
-        if (item.status_code === 'late') {
-            summary[name].late++;
-        } else {
-            summary[name].onTime++;
-        }
-    });
-
-    // 3. นำข้อมูลที่นับเสร็จแล้วมาเรียงตัวอักษร ก-ฮ
-    const sortedSummary = Object.keys(summary).map(name => {
-        return {
-            name: name,
-            onTime: summary[name].onTime,
-            late: summary[name].late
-        };
-    }).sort((a, b) => a.name.localeCompare(b.name, 'th'));
-
-    // 4. วาดข้อมูลลงตารางใน Modal
-    const tbody = document.getElementById('checkinSummaryBody');
-    tbody.innerHTML = '';
-    
-    sortedSummary.forEach(stat => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition-colors bg-white";
-        
-        // ตกแต่งป้ายตัวเลข (ถ้าเป็น 0 ให้แสดงขีด - สีเทา)
-        let onTimeBadge = stat.onTime > 0
-            ? `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-sm font-bold border border-emerald-200">${stat.onTime}</span>`
-            : `<span class="text-slate-300">-</span>`;
-
-        let lateBadge = stat.late > 0 
-            ? `<span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-lg text-sm font-bold border border-rose-200">${stat.late}</span>`
-            : `<span class="text-slate-300">-</span>`;
-
-        tr.innerHTML = `
-            <td class="px-4 py-3 font-bold text-slate-700">${stat.name}</td>
-            <td class="px-4 py-3 text-center">${onTimeBadge}</td>
-            <td class="px-4 py-3 text-center">${lateBadge}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-
-    // 5. เปิดหน้าต่าง Modal ขึ้นมาให้ผู้ใช้ดู
     document.getElementById('checkinSummaryModal').classList.remove('hidden');
-    if(window.lucide) lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
 };
 
-// ฟังก์ชันสำหรับปิด Modal
 window.closeCheckinSummary = function() {
     document.getElementById('checkinSummaryModal').classList.add('hidden');
 };
