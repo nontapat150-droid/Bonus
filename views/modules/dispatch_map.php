@@ -439,6 +439,10 @@ $tabCount = ($canViewOffice ? 1 : 0) + ($canViewMa ? 1 : 0) + ($canViewOffice ? 
                     <input type="date" name="plan_arrival_date" required class="input !py-2 !px-3 text-sm font-bold w-full">
                 </div>
                 <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">เวลาเข้าทำ (Time)</label>
+                    <input type="time" name="job_time" class="input !py-2 !px-3 text-sm font-bold w-full">
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Order.No</label>
                     <input type="text" name="order_no" class="input !py-2 !px-3 text-sm font-bold w-full" placeholder="เลขที่ออเดอร์">
                 </div>

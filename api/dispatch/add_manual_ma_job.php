@@ -29,11 +29,11 @@ try {
         INSERT INTO ma_jobs (
             access_no, customer, phone, address, sub_district, district, plan_arrival_date, 
             remark, symptoms, lat, lng, order_no, 
-            assigned_user_id, area_provider, price, status
+            assigned_user_id, area_provider, price, job_time, status
         ) VALUES (
             ?, ?, ?, ?, ?, ?, ?, 
             ?, ?, ?, ?, ?, 
-            ?, ?, ?, 'pending'
+            ?, ?, ?, ?, 'pending'
         )
     ");
 
@@ -58,7 +58,8 @@ try {
         trim($input['order_no'] ?? ''),
         $assigned_user_id,
         $area_provider,
-        $price
+        $price,
+        trim($input['job_time'] ?? null) ?: null
     ]);
 
     $job_id = $pdo->lastInsertId();

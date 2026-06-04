@@ -1920,8 +1920,10 @@ function processMAExcel(file) {
                             planDate = datePart;
                         }
 
-                        if (parts.length > 1) {
-                            jobTime = parts[1].substring(0, 5); // เอาแค่ HH:mm
+                        // ค้นหาเวลาจากข้อความ (HH:mm หรือ HH:mm:ss)
+                        const timeMatch = dtValue.match(/(\d{1,2}):(\d{2})/);
+                        if (timeMatch) {
+                            jobTime = timeMatch[1].padStart(2, '0') + ':' + timeMatch[2];
                         }
                     }
                 }
