@@ -37,6 +37,16 @@ function sendOneSignalPush($pdo, $title, $message, $type = 'all', $team_id = nul
         } else {
             return false;
         }
+    } elseif ($type === 'admin_only' && $pdo) {
+        $stmtAdmin = $pdo->query("SELECT id FROM users WHERE role IN ('admin', 'super_admin')");
+        $admins = $stmtAdmin->fetchAll(PDO::FETCH_COLUMN);
+        if (!empty($admins)) {
+            $externalIds = array_map('strval', $admins);
+            $fields['include_aliases'] = array("external_id" => $externalIds);
+            $fields['target_channel'] = "push";
+        } else {
+            return false;
+        }
     } else {
         $fields['included_segments'] = array('Total Subscriptions');
     }
