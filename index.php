@@ -25,8 +25,6 @@ if ($page === 'home') {
         $page = 'checkin';
     } elseif (function_exists('isInternOnly') && isInternOnly()) {
         $page = 'work_records';
-    } elseif (function_exists('isMaTechnicianOnly') && isMaTechnicianOnly()) {
-        $page = 'checkin';
     }
 }
 
@@ -487,9 +485,11 @@ if ($page === 'home') {
 
             .bottom-tabs {
                 position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: rgba(255,255,255,0.95); backdrop-filter: blur(16px); border-top: 1px solid var(--c-border); box-shadow: 0 -4px 20px rgba(10,10,30, 0.07); display: flex; z-index: 30; padding-bottom: env(safe-area-inset-bottom);
+                justify-content: flex-start; overflow-x: auto; scrollbar-width: none;
             }
+            .bottom-tabs::-webkit-scrollbar { display: none; }
             .tab-item {
-                flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--c-text-3); transition: color var(--dur-fast) ease; position: relative; text-decoration: none;
+                flex: 1 0 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--c-text-3); transition: color var(--dur-fast) ease; position: relative; text-decoration: none;
             }
             .tab-item.active { color: var(--c-primary); }
             .tab-item.active::before { content: ''; position: absolute; top: 0; width: 32px; height: 3px; background: var(--c-primary); border-radius: 0 0 4px 4px; }
