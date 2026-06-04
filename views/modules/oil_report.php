@@ -271,7 +271,7 @@ if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรง
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">วันที่บันทึก <span class="text-rose-500">*</span></label>
-                    <input type="datetime-local" id="manage_date_recorded" class="input w-full">
+                    <input type="date" id="manage_date_recorded" class="input w-full">
                 </div>
                 <div>
                     <label class="block text-xs font-black uppercase text-slate-500 tracking-widest mb-2">ชื่อผู้เติม (ช่างเทคนิค) <span class="text-rose-500">*</span></label>

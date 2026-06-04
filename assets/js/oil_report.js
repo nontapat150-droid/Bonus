@@ -450,7 +450,7 @@ function renderTable(records) {
     }
     records.forEach((row, index) => {
         const dateObj = new Date(row.date_recorded);
-        const formattedDate = dateObj.toLocaleDateString('th-TH') + ' ' + dateObj.toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'});
+        const formattedDate = dateObj.toLocaleDateString('th-TH');
         const teamBadge = row.team_name ? `<span class="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-lg text-xs font-bold">🚗 ${row.team_name}</span>` : `<span class="bg-slate-100 text-slate-800 border border-slate-200 px-3 py-1 rounded-lg text-xs font-bold">${row.license_plate}</span>`;
         const fillerLine = row.filler_name ? `<p class="text-[10px] text-slate-400 mt-1">ผู้บันทึก: ${row.filler_name}</p>` : '';
         const tr = document.createElement('tr');
@@ -503,7 +503,7 @@ window.openAddOilModal = function() {
     document.getElementById('manage_record_id').value = '';
     const now = new Date();
     const tzOffset = now.getTimezoneOffset() * 60000;
-    document.getElementById('manage_date_recorded').value = (new Date(now - tzOffset)).toISOString().slice(0,16);
+    document.getElementById('manage_date_recorded').value = (new Date(now - tzOffset)).toISOString().slice(0,10);
     
     const selTech = document.getElementById('manage_tech_id');
     const selPlate = document.getElementById('manage_license_plate');
@@ -560,7 +560,7 @@ window.openManageOilModal = function(index) {
     document.getElementById('manage_record_id').value = record.id;
     const d = new Date(record.date_recorded);
     const tzOffset = d.getTimezoneOffset() * 60000;
-    document.getElementById('manage_date_recorded').value = (new Date(d - tzOffset)).toISOString().slice(0,16);
+    document.getElementById('manage_date_recorded').value = (new Date(d - tzOffset)).toISOString().slice(0,10);
     document.getElementById('manage_mileage').value = record.mileage;
     document.getElementById('manage_liters').value = record.liters;
     document.getElementById('manage_price_per_liter').value = record.price_per_liter;
