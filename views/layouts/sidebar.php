@@ -102,6 +102,13 @@
             <span class="nav-label">สรุปงาน MA</span>
         </a>
         <?php endif; ?>
+
+        <?php if (hasRole(['admin', 'super_admin'])): ?>
+        <a href="index.php?page=leave_requests" class="nav-item <?= $page === 'leave_requests' ? 'active' : '' ?>" data-label="จัดการลางาน">
+            <div class="icon"><i data-lucide="calendar-x"></i></div>
+            <span class="nav-label">จัดการลางาน</span>
+        </a>
+        <?php endif; ?>
     </nav>
 
     <div class="mt-auto px-2 pb-4 flex flex-col gap-1">
@@ -245,6 +252,13 @@
             <span class="nav-label">สรุปงาน MA</span>
         </a>
         <?php endif; ?>
+
+        <?php if (hasRole(['admin', 'super_admin'])): ?>
+        <a href="index.php?page=leave_requests" class="nav-item <?= $page === 'leave_requests' ? 'active' : '' ?>">
+            <div class="icon"><i data-lucide="calendar-x"></i></div>
+            <span class="nav-label">จัดการลางาน</span>
+        </a>
+        <?php endif; ?>
     </nav>
     
     <div class="p-4 border-t border-[var(--c-border)] flex flex-col gap-2">
@@ -341,6 +355,12 @@
     <a href="index.php?page=ma_summary" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'ma_summary' ? 'active' : '' ?>">
         <div class="tab-icon"><i data-lucide="bar-chart-3" class="w-6 h-6"></i></div>
         <span class="tab-label">สรุป MA</span>
+    </a>
+    <?php endif; ?>
+    <?php if (hasRole(['admin', 'super_admin'])): ?>
+    <a href="index.php?page=leave_requests" class="tab-item flex-shrink-0 min-w-[72px] <?= $page === 'leave_requests' ? 'active' : '' ?>">
+        <div class="tab-icon"><i data-lucide="calendar-x" class="w-6 h-6"></i></div>
+        <span class="tab-label">ลางาน</span>
     </a>
     <?php endif; ?>
 </nav>
