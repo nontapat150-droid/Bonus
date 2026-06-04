@@ -502,6 +502,17 @@ if ($page === 'home') {
                 <button id="openIssueReportBtnMobile" class="p-2 text-rose-500 hover:bg-rose-50 rounded-full transition-colors sm:hidden">
                     <i data-lucide="alert-circle" class="w-5 h-5"></i>
                 </button>
+                <?php if (!hasRole('intern')): ?>
+                <!-- ปุ่มลางาน Desktop -->
+                <button id="openLeaveModalBtn" class="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-full transition-colors">
+                    <i data-lucide="calendar-off" class="w-4 h-4"></i>
+                    <span>ลางาน</span>
+                </button>
+                <!-- ปุ่มลางาน Mobile icon-only -->
+                <button id="openLeaveModalBtnMobile" class="p-2 text-indigo-500 hover:bg-indigo-50 rounded-full transition-colors sm:hidden">
+                    <i data-lucide="calendar-off" class="w-5 h-5"></i>
+                </button>
+                <?php endif; ?>
             </div>
 
             <div class="flex items-center gap-3 ml-auto">
@@ -581,11 +592,89 @@ if ($page === 'home') {
             </div>
         </div>
 
+        <?php if (!hasRole('intern')): ?>
+        <!-- ========== LEAVE REQUEST MODAL ========== -->
+        <div id="leaveRequestModal" class="hidden fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <div class="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate__animated animate__slideInUp sm:animate__zoomIn flex flex-col max-h-[92dvh]">
+                <!-- Header -->
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-indigo-100 flex items-center justify-center">
+                            <i data-lucide="calendar-off" class="w-5 h-5 text-indigo-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-lg">ยื่นคำขอลางาน</h3>
+                            <p class="text-xs text-slate-400">กรอกข้อมูลและยืนยันเพื่อส่งคำขอ</p>
+                        </div>
+                    </div>
+                    <button id="closeLeaveModal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition text-xl font-bold">&times;</button>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex border-b border-slate-100 shrink-0 px-2 pt-1 gap-1">
+                    <button id="leaveTabRequest" onclick="switchLeaveTab('request')" class="px-4 py-2.5 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 rounded-t-lg transition whitespace-nowrap">📝 ยื่นคำขอ</button>
+                    <button id="leaveTabHistory" onclick="switchLeaveTab('history')" class="px-4 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent rounded-t-lg transition whitespace-nowrap">📋 ประวัติของฉัน</button>
+                </div>
+
+                <!-- Tab: ยื่นคำขอ -->
+                <div id="leavePanelRequest" class="p-6 space-y-4 overflow-y-auto flex-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5">
+                                วันที่เริ่มลา <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" id="leaveStartDate" class="w-full border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-0 outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5">
+                                วันที่สิ้นสุดลา <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" id="leaveEndDate" class="w-full border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-0 outline-none transition">
+                        </div>
+                    </div>
+
+                    <!-- Days Count Display -->
+                    <div id="leaveDaysDisplay" class="hidden bg-indigo-50 border border-indigo-200 rounded-2xl px-5 py-3 flex items-center gap-3">
+                        <i data-lucide="calendar-check" class="w-5 h-5 text-indigo-500 shrink-0"></i>
+                        <div>
+                            <p class="text-xs text-indigo-500 font-semibold">จำนวนวันที่ลา</p>
+                            <p class="text-2xl font-black text-indigo-700"><span id="leaveDaysCount">0</span> <span class="text-base font-semibold">วัน</span></p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1.5">
+                            เหตุผลในการลา <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="leaveReason" rows="4" placeholder="ระบุเหตุผลการลา เช่น ลาป่วย, ลากิจ, ลาพักร้อน..." class="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-0 outline-none transition resize-none"></textarea>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                        <button id="cancelLeaveBtn" class="flex-1 px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">ยกเลิก</button>
+                        <button id="submitLeaveBtn" class="flex-1 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-lg flex items-center justify-center gap-2">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                            ยืนยันคำขอลา
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab: ประวัติ -->
+                <div id="leavePanelHistory" class="hidden p-4 overflow-y-auto flex-1">
+                    <div id="myLeaveHistoryList" class="space-y-3">
+                        <div class="text-center py-8 text-slate-400 text-sm">กำลังโหลด...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+
         <?php if ($popupAnnouncement): ?>
         <div id="siteAnnouncementModal" class="hidden fixed inset-0 z-[100] bg-black/50 px-4 py-8 flex items-center justify-center">
             <div class="max-w-3xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl ring-1 ring-slate-900/10">
                 <div class="relative pb-4">
                     <button id="closeAnnouncementBtn" class="absolute right-4 top-4 text-slate-600 hover:text-slate-900 text-2xl font-bold">&times;</button>
+
                     <?php if (!empty($popupAnnouncement['image_url'])): ?>
                     <img src="<?= htmlspecialchars($popupAnnouncement['image_url']) ?>" alt="ประกาศ" class="w-full h-72 object-cover">
                     <?php endif; ?>
@@ -754,7 +843,8 @@ if ($page === 'home') {
                     'users' => 'views/modules/user_settings.php',
                     'checkin' => 'views/modules/checkin.php',
                     'issues' => 'views/modules/issues.php',
-                    'work_records' => 'views/modules/work_records.php'
+                    'work_records' => 'views/modules/work_records.php',
+                    'leave_requests' => 'views/modules/leave_requests.php',
                 ];
 
                 $accessDenied = false;
@@ -763,7 +853,7 @@ if ($page === 'home') {
                 if (in_array($page, ['oil', 'dispatch', 'start_day'], true) && hasRole('sales')) {
                     $accessDenied = true;
                 }
-                // ช่าง MA เฉพาะงาน MA — เข้าได้แค่ dispatch และ checkin
+                // ช่าง MA เฉพาะงาน MA — เข้าได้แค่ dispatch, checkin และ leave_requests สำหรับ admin
                 if (isMaTechnicianOnly() && !in_array($page, ['dispatch', 'checkin'], true)) {
                     $accessDenied = true;
                 }
@@ -787,6 +877,9 @@ if ($page === 'home') {
                     $accessDenied = true;
                 }
                 if ($page === 'work_records' && !hasRole('intern')) {
+                    $accessDenied = true;
+                }
+                if ($page === 'leave_requests' && !hasRole(['admin', 'super_admin'])) {
                     $accessDenied = true;
                 }
 
@@ -934,9 +1027,192 @@ if ($page === 'home') {
     <script src="assets/js/common.js"></script>
     <script src="assets/js/datepicker.js"></script>
     <script src="assets/js/notifications.js"></script>
-    
+
+    <?php if (!hasRole('intern')): ?>
+    <script>
+    // ========== LEAVE MODAL LOGIC ==========
+    (function() {
+        const modal   = document.getElementById('leaveRequestModal');
+        if (!modal) return;
+
+        const openBtns = [
+            document.getElementById('openLeaveModalBtn'),
+            document.getElementById('openLeaveModalBtnMobile')
+        ];
+        const closeBtn  = document.getElementById('closeLeaveModal');
+        const cancelBtn = document.getElementById('cancelLeaveBtn');
+        const submitBtn = document.getElementById('submitLeaveBtn');
+        const startInput = document.getElementById('leaveStartDate');
+        const endInput   = document.getElementById('leaveEndDate');
+        const daysDisplay = document.getElementById('leaveDaysDisplay');
+        const daysCount   = document.getElementById('leaveDaysCount');
+        const reasonInput = document.getElementById('leaveReason');
+
+        // Set default date to today
+        const today = new Date().toISOString().slice(0, 10);
+
+        function openLeaveModal() {
+            startInput.value = today;
+            endInput.value   = today;
+            reasonInput.value = '';
+            updateDaysCount();
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeLeaveModal() {
+            modal.classList.add('hidden');
+        }
+
+        openBtns.forEach(btn => btn?.addEventListener('click', openLeaveModal));
+        closeBtn?.addEventListener('click', closeLeaveModal);
+        cancelBtn?.addEventListener('click', closeLeaveModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeLeaveModal(); });
+
+        function updateDaysCount() {
+            const s = startInput.value;
+            const e = endInput.value;
+            if (s && e && e >= s) {
+                const start = new Date(s);
+                const end   = new Date(e);
+                const diff  = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                daysCount.textContent = diff;
+                daysDisplay.classList.remove('hidden');
+            } else {
+                daysDisplay.classList.add('hidden');
+            }
+        }
+
+        startInput?.addEventListener('change', () => {
+            if (endInput.value < startInput.value) endInput.value = startInput.value;
+            updateDaysCount();
+        });
+        endInput?.addEventListener('change', updateDaysCount);
+
+        // Submit leave request
+        submitBtn?.addEventListener('click', async () => {
+            const start  = startInput.value;
+            const end    = endInput.value;
+            const reason = reasonInput.value.trim();
+
+            if (!start || !end) {
+                if(window.Toast) Toast.error('กรุณาเลือกวันที่ลา');
+                else alert('กรุณาเลือกวันที่ลา');
+                return;
+            }
+            if (!reason) {
+                if(window.Toast) Toast.error('กรุณาระบุเหตุผลการลา');
+                else alert('กรุณาระบุเหตุผลการลา');
+                reasonInput.focus();
+                return;
+            }
+            if (end < start) {
+                if(window.Toast) Toast.error('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มต้น');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<svg class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> กำลังส่ง...';
+
+            try {
+                const res = await fetch('api/leave/submit.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_date: start, end_date: end, reason })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    closeLeaveModal();
+                    if(window.Toast) Toast.success(`✅ ส่งคำขอลา ${data.days} วัน เรียบร้อยแล้ว!`);
+                    else alert(`ส่งคำขอลา ${data.days} วัน เรียบร้อยแล้ว!`);
+                } else {
+                    if(window.Toast) Toast.error(data.error || 'เกิดข้อผิดพลาด');
+                    else alert(data.error);
+                }
+            } catch (e) {
+                if(window.Toast) Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> ยืนยันคำขอลา';
+            }
+        });
+    })();
+
+    function switchLeaveTab(tab) {
+        const panels = ['request', 'history'];
+        panels.forEach(p => {
+            document.getElementById(`leavePanel${p.charAt(0).toUpperCase()+p.slice(1)}`)?.classList.add('hidden');
+            const tabEl = document.getElementById(`leaveTab${p.charAt(0).toUpperCase()+p.slice(1)}`);
+            if (tabEl) {
+                tabEl.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600', 'font-bold');
+                tabEl.classList.add('text-slate-500', 'border-transparent', 'font-medium');
+            }
+        });
+        document.getElementById(`leavePanel${tab.charAt(0).toUpperCase()+tab.slice(1)}`)?.classList.remove('hidden');
+        const activeTab = document.getElementById(`leaveTab${tab.charAt(0).toUpperCase()+tab.slice(1)}`);
+        if (activeTab) {
+            activeTab.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600', 'font-bold');
+            activeTab.classList.remove('text-slate-500', 'border-transparent', 'font-medium');
+        }
+        if (tab === 'history') loadMyLeaveHistory();
+    }
+
+    async function loadMyLeaveHistory() {
+        const container = document.getElementById('myLeaveHistoryList');
+        if (!container) return;
+        container.innerHTML = '<div class="text-center py-8 text-slate-400 text-sm">กำลังโหลด...</div>';
+
+        try {
+            const res = await fetch('api/leave/get_my_leaves.php');
+            const data = await res.json();
+
+            if (!data.success || data.data.length === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-slate-400 italic text-sm">ยังไม่มีประวัติการลา</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            data.data.forEach(row => {
+                const startDate = new Date(row.start_date).toLocaleDateString('th-TH');
+                const endDate   = new Date(row.end_date).toLocaleDateString('th-TH');
+                const dateRange = row.start_date === row.end_date ? startDate : `${startDate} – ${endDate}`;
+
+                let statusBadge = '';
+                if (row.status === 'pending') {
+                    statusBadge = '<span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-bold rounded-full">⏳ รอดำเนินการ</span>';
+                } else if (row.status === 'approved') {
+                    statusBadge = '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">✅ อนุมัติ</span>';
+                } else {
+                    statusBadge = '<span class="px-2 py-0.5 bg-rose-100 text-rose-700 text-xs font-bold rounded-full">❌ ปฏิเสธ</span>';
+                }
+
+                const card = document.createElement('div');
+                card.className = 'bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="font-semibold text-slate-800 text-sm">${dateRange}</div>
+                        ${statusBadge}
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-slate-500">
+                        <span class="bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">${row.days} วัน</span>
+                        ${row.reviewed_by_name ? `<span>· ตรวจสอบโดย ${row.reviewed_by_name}</span>` : ''}
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed">${row.reason}</p>
+                `;
+                container.appendChild(card);
+            });
+        } catch(e) {
+            container.innerHTML = '<div class="text-center py-8 text-red-400 text-sm">โหลดข้อมูลไม่ได้</div>';
+        }
+    }
+    </script>
+    <?php endif; ?>
+
     <script>
     (function() {
+
+
         // ─── Guide Modal: Role-Based ───
         const GUIDE_FILE = <?= json_encode($guideInfo['file']) ?>;
 
