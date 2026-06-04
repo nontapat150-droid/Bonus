@@ -464,7 +464,13 @@ window.checkScanReady = function() {
         scanInput.disabled = false;
         scanInput.classList.replace('border-gray-300', 'border-emerald-500');
         scanInput.placeholder = 'พร้อมสแกนบาร์โค้ด...';
-        scanInput.focus();
+        // เพิ่ม focus เฉพาะเมื่อ model input ไม่ได้ focused
+        const activeEl = document.activeElement;
+        const modelInput = document.getElementById('mainModelInput');
+        const productInput = document.getElementById('mainProductInput');
+        if (activeEl !== modelInput && activeEl !== productInput) {
+            scanInput.focus();
+        }
     } else {
         scanInput.disabled = true;
         scanInput.classList.replace('border-emerald-500', 'border-gray-300');
@@ -481,12 +487,27 @@ document.getElementById('mainProductInput')?.addEventListener('input', function(
     checkScanReady();
 });
 
+// mainModelInput: แสดง dropdown ขณะพิมพ์ แต่ confirmModel เฉพาะกด ENTER
 document.getElementById('mainModelInput')?.addEventListener('focus', function(e) {
     renderModelDropdown(this.value.trim());
 });
 document.getElementById('mainModelInput')?.addEventListener('input', function(e) {
+    // แสดง dropdown ขณะพิมพ์ เพื่อให้เลือกจาก list ได้
     renderModelDropdown(this.value.trim());
-    checkScanReady();
+    // ยังไม่ checkScanReady — รอ ENTER
+});
+document.getElementById('mainModelInput')?.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = this.value.trim();
+        if (val) {
+            // ปิด dropdown และยืนยัน model
+            document.getElementById('modelDropdown')?.classList.add('hidden');
+            handleMainModelChange();
+        }
+    } else if (e.key === 'Escape') {
+        document.getElementById('modelDropdown')?.classList.add('hidden');
+    }
 });
 
 document.getElementById('scanInput')?.addEventListener('input', function(e) {
@@ -825,6 +846,54 @@ function downloadTemplate() {
     
     Toast.success('ดาวน์โหลด Template สำเร็จ! ใช้ Excel เปิดและกรอกข้อมูล');
 }
+
+// ====================================================
+// Export สินค้าที่นำเข้าวันนี้
+// ====================================================
+window.exportTodayInbound = async function() {
+    try {
+        Loader.show();
+        const today = new Date().toISOString().slice(0, 10);
+        const res = await fetch(`api/inventory/get_today_inbound.php?date=${today}`);
+        const data = await res.json();
+        Loader.hide();
+
+        if (!data.success || !data.data || data.data.length === 0) {
+            Toast.error('ไม่พบรายการนำเข้าสินค้าในวันนี้');
+            return;
+        }
+
+        // สร้างข้อมูลสำหรับ Excel
+        const headers = ['วันที่/เวลา', 'ชื่อสินค้า', 'รุ่น (Model)', 'Serial Number (SN)', 'ผู้นำเข้า', 'จำนวน', 'หมายเหตุ'];
+        const rows = data.data.map(row => [
+            row.created_at || '',
+            row.product_name || '',
+            row.model_name || '-',
+            row.sn || '-',
+            row.user_name || '',
+            row.qty ? `${row.qty} ${row.unit || 'ชิ้น'}` : '1 ชิ้น',
+            row.remark || ''
+        ]);
+
+        const ws_data = [headers, ...rows];
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+        // ปรับความกว้างคอลัมน์
+        ws['!cols'] = [{ wch: 22 }, { wch: 25 }, { wch: 20 }, { wch: 25 }, { wch: 18 }, { wch: 12 }, { wch: 20 }];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'นำเข้าวันนี้');
+
+        const fileName = `inbound_today_${today}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+        Toast.success(`ส่งออกสำเร็จ! พบ ${data.data.length} รายการนำเข้าวันนี้`);
+    } catch(e) {
+        Loader.hide();
+        console.error(e);
+        Toast.error('ไม่สามารถส่งออกได้: ' + e.message);
+    }
+};
+
 
 
 

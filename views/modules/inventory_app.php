@@ -89,7 +89,15 @@ $isAdmin = true;
 
     <div id="view-inbound" class="inv-view hidden space-y-6">
         <div class="card border-t-4 border-t-emerald-500">
-            <h3 class="font-bold text-gray-700 text-lg flex items-center mb-6"><span class="text-emerald-500 mr-2"><i data-lucide="download" class="w-5 h-5 inline-block"></i></span> นำเข้าสินค้าด้วยการสแกน (ทีละรายการ)</h3>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                <h3 class="font-bold text-gray-700 text-lg flex items-center">
+                    <span class="text-emerald-500 mr-2"><i data-lucide="download" class="w-5 h-5 inline-block"></i></span> นำเข้าสินค้าด้วยการสแกน (ทีละรายการ)
+                </h3>
+                <button onclick="exportTodayInbound()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-4 py-2 rounded-xl shadow transition-all whitespace-nowrap">
+                    <i data-lucide="file-down" class="w-4 h-4"></i>
+                    Export สินค้านำเข้าวันนี้
+                </button>
+            </div>
             
             <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-5">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
