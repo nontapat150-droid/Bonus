@@ -24,9 +24,9 @@ $isAdmin = hasRole(['admin', 'super_admin']);
         </div>
         
         <?php if ($isAdmin): ?>
-        <div class="w-full md:w-auto flex items-center gap-2">
+        <div class="w-full md:w-auto flex flex-col sm:flex-row items-start sm:items-center gap-2">
             <label class="text-sm font-bold text-slate-700 whitespace-nowrap">ดูข้อมูลของ:</label>
-            <select id="adminViewTechSelect" class="w-full md:w-64 border-gray-300 rounded-lg py-2 pl-3 pr-8 focus:ring-yellow-500 focus:border-yellow-500 text-sm">
+            <select id="adminViewTechSelect" class="w-full sm:w-64 border-gray-300 rounded-lg py-2.5 pl-3 pr-8 focus:ring-yellow-500 focus:border-yellow-500 text-sm">
                 <option value="">-- กำลังโหลดรายชื่อช่าง --</option>
             </select>
         </div>
@@ -34,13 +34,15 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     </div>
 
     <!-- Tabs -->
-    <div class="flex overflow-x-auto bg-white rounded-xl shadow-sm p-2 space-x-2 border border-slate-100">
-        <button onclick="switchTechTab('bag')" id="tab-bag" class="tech-tab active px-6 py-2.5 rounded-lg text-sm font-bold bg-yellow-100 text-yellow-700 transition-colors whitespace-nowrap flex items-center">
-            <i data-lucide="package" class="w-5 h-5 mr-2"></i> ของในกระเป๋า
+    <div class="flex overflow-x-auto bg-white rounded-xl shadow-sm p-2 gap-2 border border-slate-100">
+        <button onclick="switchTechTab('bag')" id="tab-bag" class="tech-tab active flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-lg text-sm font-bold bg-yellow-100 text-yellow-700 transition-colors whitespace-nowrap flex items-center justify-center">
+            <i data-lucide="package" class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5"></i>
+            <span>ของในกระเป๋า</span>
             <span id="bagCountBadge" class="ml-2 bg-yellow-500 text-white text-xs rounded-full px-2 py-0.5 hidden">0</span>
         </button>
-        <button onclick="switchTechTab('history')" id="tab-history" class="tech-tab px-6 py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-50 transition-colors whitespace-nowrap flex items-center">
-            <i data-lucide="clock" class="w-5 h-5 mr-2"></i> ประวัติของฉัน
+        <button onclick="switchTechTab('history')" id="tab-history" class="tech-tab flex-1 sm:flex-none px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-50 transition-colors whitespace-nowrap flex items-center justify-center">
+            <i data-lucide="clock" class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5"></i>
+            <span>ประวัติของฉัน</span>
         </button>
     </div>
 
@@ -48,14 +50,18 @@ $isAdmin = hasRole(['admin', 'super_admin']);
     <div id="view-bag" class="space-y-6">
         <!-- อุปกรณ์ที่มี SN -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="bg-slate-50 p-4 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="font-bold text-slate-700 flex items-center"><i data-lucide="cpu" class="w-5 h-5 mr-2 text-indigo-500"></i> อุปกรณ์ (มี SN)</h3>
-                <div class="space-x-2">
-                    <button onclick="useSelectedItems()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
-                        <i data-lucide="check-circle" class="w-4 h-4 inline-block mr-1"></i> ใช้งานที่เลือก
+            <div class="bg-slate-50 p-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <h3 class="font-bold text-slate-700 flex items-center">
+                    <i data-lucide="cpu" class="w-5 h-5 mr-2 text-indigo-500"></i> อุปกรณ์ (มี SN)
+                </h3>
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <button onclick="useSelectedItems()" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center justify-center gap-1.5">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                        <span>ใช้งานที่เลือก</span>
                     </button>
-                    <button onclick="openTransferModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
-                        <i data-lucide="refresh-cw" class="w-4 h-4 inline-block mr-1"></i> โอนย้าย
+                    <button onclick="openTransferModal()" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center justify-center gap-1.5">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        <span>โอนย้าย</span>
                     </button>
                 </div>
             </div>
