@@ -58,6 +58,18 @@ async function loadHistory(type) {
         const data = await res.json();
 
         if (data.success) {
+            // --- เพิ่มโค้ดส่วนนี้ ---
+            if (type === 'checkin') {
+                window.currentCheckinData = data.data; // จำข้อมูลไว้ใช้คำนวณสรุป
+                const btnSum = document.getElementById('btnCheckinSummary');
+                if(btnSum) btnSum.style.display = 'flex'; // โชว์ปุ่มสรุป
+            } else {
+                window.currentCheckinData = [];
+                const btnSum = document.getElementById('btnCheckinSummary');
+                if(btnSum) btnSum.style.display = 'none'; // ซ่อนปุ่มสรุปถ้าอยู่แท็บอื่น
+            }
+            // ---------------------
+
             renderTable(type, data.data, tHead, tBody);
             if(badge) badge.textContent = `${data.data.length} รายการ`;
         } else {
@@ -489,3 +501,71 @@ $(document).ready(function() {
         // $('#checkinSummaryModal').modal('show');
     });
 });
+
+
+// ==========================================
+// 🌟 ระบบสรุปการเช็คอิน (โชว์ Modal)
+// ==========================================
+window.showCheckinSummary = function() {
+    // เช็คว่ามีข้อมูลให้สรุปไหม
+    if (currentType !== 'checkin' || !window.currentCheckinData || window.currentCheckinData.length === 0) {
+        Swal.fire('ไม่มีข้อมูล', 'ไม่พบข้อมูลการเช็คอินในช่วงเวลานี้', 'info');
+        return;
+    }
+
+    // 1. คำนวณนับจำนวนครั้งของแต่ละคน
+    const summary = {};
+    window.currentCheckinData.forEach(item => {
+        const name = item.full_name;
+        if (!summary[name]) {
+            summary[name] = { onTime: 0, late: 0 };
+        }
+        
+        if (item.status_code === 'late') {
+            summary[name].late++;
+        } else {
+            summary[name].onTime++;
+        }
+    });
+
+    // 2. แปลงข้อมูลและเรียงลำดับตัวอักษรชื่อ
+    const sortedSummary = Object.keys(summary).map(name => ({
+        name: name,
+        onTime: summary[name].onTime,
+        late: summary[name].late
+    })).sort((a, b) => a.name.localeCompare(b.name, 'th'));
+
+    // 3. วาดข้อมูลลงในตาราง
+    const tbody = document.getElementById('checkinSummaryBody');
+    tbody.innerHTML = '';
+    
+    sortedSummary.forEach(stat => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-colors bg-white";
+        
+        // ตกแต่งป้ายแจ้งเตือนจำนวนครั้ง
+        let lateBadge = stat.late > 0 
+            ? `<span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-lg text-sm font-bold border border-rose-200">${stat.late}</span>`
+            : `<span class="text-slate-300">-</span>`;
+
+        let onTimeBadge = stat.onTime > 0
+            ? `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-sm font-bold border border-emerald-200">${stat.onTime}</span>`
+            : `<span class="text-slate-300">-</span>`;
+
+        tr.innerHTML = `
+            <td class="px-4 py-3 font-bold text-slate-700">${stat.name}</td>
+            <td class="px-4 py-3 text-center">${onTimeBadge}</td>
+            <td class="px-4 py-3 text-center">${lateBadge}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // 4. เปิด Modal และโหลดไอคอน
+    document.getElementById('checkinSummaryModal').classList.remove('hidden');
+    if(window.lucide) lucide.createIcons();
+};
+
+// ฟังก์ชันปิด Modal
+window.closeCheckinSummary = function() {
+    document.getElementById('checkinSummaryModal').classList.add('hidden');
+};
