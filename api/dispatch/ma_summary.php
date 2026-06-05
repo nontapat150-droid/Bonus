@@ -7,8 +7,8 @@ require_once '../../config/ma_job.php';
 header('Content-Type: application/json');
 requireLogin();
 
-if (!hasRole('super_admin')) {
-    echo json_encode(['success' => false, 'error' => 'เฉพาะผู้ดูแลระบบเท่านั้น']);
+if (!hasRole(['admin', 'super_admin', 'viewer'])) {
+    echo json_encode(['success' => false, 'error' => 'เฉพาะผู้ดูแลระบบและผู้ที่มีสิทธิ์เท่านั้น']);
     exit;
 }
 

@@ -112,12 +112,12 @@ function isInternOnly() {
 /** ดู/จัดการงาน Office (ติดตั้ง) — แยกจาก MA */
 function canViewDispatchOffice() {
     if (isMaTechnicianOnly()) return false;
-    return hasRole(['admin', 'super_admin', 'technician']);
+    return hasRole(['admin', 'super_admin', 'technician', 'viewer']);
 }
 
 /** ดู/จัดการงาน MA — แยกจาก Office */
 function canViewDispatchMA() {
-    return hasRole(['admin', 'super_admin', 'ma_technician']);
+    return hasRole(['admin', 'super_admin', 'ma_technician', 'viewer']);
 }
 
 function hasBothDispatchRoles() {

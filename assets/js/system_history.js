@@ -105,12 +105,15 @@ function renderTable(type, records, tHead, tBody) {
     tBody.innerHTML = '';
 
     if (type === 'checkin') {
+        const role = window.USER_ROLE;
+        const isAdmin = (role === 'admin' || role === 'super_admin');
+
         tHead.innerHTML = `<tr><th class="px-4 py-3">วัน-เวลา</th><th class="px-4 py-3">พนักงาน</th><th class="px-4 py-3">ทีม</th><th class="px-4 py-3 text-center">สถานะ</th><th class="px-4 py-3 text-center">รูปภาพ</th><th class="px-4 py-3 text-center">จัดการ</th></tr>`;
         records.forEach(item => {
             const date = new Date(item.checkin_time).toLocaleString('th-TH');
             const badge = item.status_code === 'late' ? `<span class="bg-orange-100 text-orange-700 px-2 py-1 rounded-lg text-xs font-bold border border-orange-200">มาสาย</span>` : `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-xs font-bold border border-emerald-200">ตรงเวลา</span>`;
             const img = item.image_path ? `<a href="assets/uploads/checkins/${item.image_path}" target="_blank"><img src="assets/uploads/checkins/${item.image_path}" class="w-10 h-10 object-cover rounded-xl shadow-sm border border-slate-200 md:mx-auto"></a>` : '-';
-            const deleteBtn = `<button type="button" onclick="deleteHistoryRecord('checkin', ${item.id})" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>`;
+            const deleteBtn = isAdmin ? `<button type="button" onclick="deleteHistoryRecord('checkin', ${item.id})" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>` : '';
 
             tBody.innerHTML += `
                 <tr class="block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50 rounded-xl md:rounded-none shadow-sm md:shadow-none">
@@ -163,11 +166,14 @@ function renderTable(type, records, tHead, tBody) {
         });
     }
     else if (type === 'oil') {
+        const role = window.USER_ROLE;
+        const isAdmin = (role === 'admin' || role === 'super_admin');
+
         tHead.innerHTML = `<tr><th class="px-4 py-3">วันที่บิล</th><th class="px-4 py-3">ผู้บันทึก</th><th class="px-4 py-3">ทะเบียนรถ</th><th class="px-4 py-3">ลิตร/ราคา</th><th class="px-4 py-3 text-right">ยอดรวม</th><th class="px-4 py-3 text-center">บิล</th><th class="px-4 py-3 text-center">จัดการ</th></tr>`;
         records.forEach(item => {
             const date = new Date(item.date_recorded).toLocaleString('th-TH');
             const img = item.evidence_image ? `<a href="assets/uploads/oil_receipts/${item.evidence_image}" target="_blank"><img src="assets/uploads/oil_receipts/${item.evidence_image}" class="w-10 h-10 object-cover rounded-xl shadow-sm border border-slate-200 md:mx-auto"></a>` : '-';
-            const deleteBtn = `<button type="button" onclick="deleteHistoryRecord('oil', ${item.id})" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>`;
+            const deleteBtn = isAdmin ? `<button type="button" onclick="deleteHistoryRecord('oil', ${item.id})" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>` : '';
 
             tBody.innerHTML += `
                 <tr class="block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50 rounded-xl md:rounded-none shadow-sm md:shadow-none">
@@ -182,6 +188,9 @@ function renderTable(type, records, tHead, tBody) {
         });
     }
     else if (type === 'job_close') {
+        const role = window.USER_ROLE;
+        const isAdmin = (role === 'admin' || role === 'super_admin');
+
         tHead.innerHTML = `<tr>
             <th class="px-4 py-3">วันที่ปิด</th>
             <th class="px-4 py-3">ช่าง</th>
@@ -196,10 +205,10 @@ function renderTable(type, records, tHead, tBody) {
             const provider = item.install_provider === 'AIS'
                 ? '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-bold">AIS</span>'
                 : '<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs font-bold">3BB</span>';
-            const editBtn = item.can_edit
+            const editBtn = (item.can_edit && isAdmin)
                 ? `<button type="button" onclick="openEditJobCloseModal(${item.id})" class="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-lg">แก้ไข</button>`
                 : '';
-            const deleteBtn = `<button type="button" onclick="deleteJobCloseRecord(${item.id})" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>`;
+            const deleteBtn = isAdmin ? `<button type="button" onclick="deleteJobCloseRecord(${item.id})" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>` : '';
             const actions = `<div class="flex flex-wrap gap-1 justify-center">${editBtn}${deleteBtn}</div>`;
             tBody.innerHTML += `
                 <tr class="block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50">
@@ -214,6 +223,9 @@ function renderTable(type, records, tHead, tBody) {
         });
     }
     else if (type === 'inventory') {
+        const role = window.USER_ROLE;
+        const isAdmin = (role === 'admin' || role === 'super_admin');
+
         tHead.innerHTML = `<tr><th class="px-4 py-3">เวลา</th><th class="px-4 py-3">ผู้ทำรายการ</th><th class="px-4 py-3 text-center">แอคชั่น</th><th class="px-4 py-3">สินค้า (SN)</th><th class="px-4 py-3">เป้าหมาย (รับ)</th><th class="px-4 py-3 text-center">จัดการ</th></tr>`;
         records.forEach(item => {
             const date = new Date(item.timestamp).toLocaleString('th-TH');
@@ -227,7 +239,7 @@ function renderTable(type, records, tHead, tBody) {
             const isConsumable = (item.sn === '-' && item.product_name && !item.target_name && !item.receiver_name); // simplistic check or backend must return type.
             // จริงๆ backend ต้องส่ง type มาให้ด้วย (item.is_consumable) ให้ชัวร์ ตอนนี้ส่งไปทั้ง id และ type ใน api
             const delType = item.type || 'item'; // 'item' or 'consumable'
-            const deleteBtn = `<button type="button" onclick="deleteHistoryRecord('inventory', ${item.id}, '${delType}')" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>`;
+            const deleteBtn = isAdmin ? `<button type="button" onclick="deleteHistoryRecord('inventory', ${item.id}, '${delType}')" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>` : '';
 
             tBody.innerHTML += `
                 <tr class="block md:table-row bg-white md:bg-transparent border-b border-slate-100 mb-4 md:mb-0 p-4 md:p-0 hover:bg-slate-50 rounded-xl md:rounded-none shadow-sm md:shadow-none">

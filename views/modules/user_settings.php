@@ -46,6 +46,7 @@ if (!hasRole(['admin', 'super_admin'])) {
                     <option value="ma_technician">ช่าง MA</option>
                     <option value="sales">เซล</option>
                     <option value="intern">เด็กฝึกงาน</option>
+                    <option value="viewer">ผู้เฝ้าดู (ดูเท่านั้น)</option>
                 </select>
                 <div class="relative w-full sm:w-64">
                     <input type="text" id="searchUser" placeholder="ค้นหาชื่อ หรือ Username..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm">
@@ -171,6 +172,10 @@ if (!hasRole(['admin', 'super_admin'])) {
                         <label class="group relative flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all hover:bg-white hover:shadow-sm">
                             <input type="checkbox" name="roles[]" value="sales" class="role-cb w-4 h-4 text-indigo-600 bg-white border-slate-300 rounded focus:ring-indigo-600 focus:ring-2">
                             <span class="text-sm font-bold text-slate-700 group-hover:text-indigo-700 transition-colors">เซล</span>
+                        </label>
+                        <label class="group relative flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all hover:bg-white hover:shadow-sm">
+                            <input type="checkbox" name="roles[]" value="viewer" class="role-cb w-4 h-4 text-indigo-600 bg-white border-slate-300 rounded focus:ring-indigo-600 focus:ring-2">
+                            <span class="text-sm font-bold text-slate-700 group-hover:text-indigo-700 transition-colors">ผู้เฝ้าดู</span>
                         </label>
                     </div>
                     <select id="role" name="role" class="hidden">
@@ -517,7 +522,8 @@ async function loadPendingUsers() {
                 'technician': '<span class="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-full font-bold text-[10px] border border-slate-100">ช่าง Office</span>',
                 'ma_technician': '<span class="px-2 py-0.5 bg-violet-50 text-violet-600 rounded-full font-bold text-[10px] border border-violet-100">ช่าง MA</span>',
                 'sales': '<span class="px-2 py-0.5 bg-green-50 text-green-600 rounded-full font-bold text-[10px] border border-green-100">เซล</span>',
-                'intern': '<span class="px-2 py-0.5 bg-cyan-50 text-cyan-600 rounded-full font-bold text-[10px] border border-cyan-100">เด็กฝึกงาน</span>'
+                'intern': '<span class="px-2 py-0.5 bg-cyan-50 text-cyan-600 rounded-full font-bold text-[10px] border border-cyan-100">เด็กฝึกงาน</span>',
+                'viewer': '<span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-bold text-[10px] border border-slate-200">ผู้เฝ้าดู</span>'
             };
 
             tbody.innerHTML = data.data.map(user => {

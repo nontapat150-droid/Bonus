@@ -1,7 +1,7 @@
 <?php
 // views/modules/system_history.php
 if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรงไม่ได้');
-if (!hasRole(['admin', 'super_admin'])) exit('ไม่มีสิทธิ์เข้าถึงหน้านี้');
+if (!hasRole(['admin', 'super_admin', 'viewer'])) exit('ไม่มีสิทธิ์เข้าถึงหน้านี้');
 ?>
 
 <div class="max-w-6xl mx-auto space-y-6 animate__animated animate__fadeIn">
@@ -45,9 +45,11 @@ if (!hasRole(['admin', 'super_admin'])) exit('ไม่มีสิทธิ์�
                 <i data-lucide="search" class="w-4 h-4"></i> ค้นหา
             </button>
             <!-- 2. ปุ่มล้างประวัติ (ปุ่มเดิม เอากลับมาแล้วครับ!) -->
+            <?php if (hasRole(['admin', 'super_admin'])): ?>
             <button onclick="clearHistory()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold border border-rose-200 py-2 px-6 rounded-xl w-full sm:w-auto text-sm shadow-sm transition-all flex items-center justify-center gap-2">
                 <i data-lucide="trash-2" class="w-4 h-4"></i> ล้างประวัติทั้งหมด
             </button>
+            <?php endif; ?>
 
             <!-- 3. 🟢 ปุ่มสรุปการเช็คอิน (ปุ่มใหม่ ให้มาต่อท้ายอยู่ข้างหลังสุด) -->
             <button onclick="showCheckinSummary()" id="btnCheckinSummary" style="display: none;" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold border border-indigo-200 py-2 px-6 rounded-xl w-full sm:w-auto text-sm shadow-sm transition-all flex items-center justify-center gap-2">

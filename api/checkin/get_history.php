@@ -25,13 +25,13 @@ try {
 
 $sql = "SELECT c.id, c.user_id, c.checkin_time, c.image_path, c.lat, c.lng, c.checkout_time, c.checkout_image, c.checkout_lat, c.checkout_lng, c.is_edited_image, c.admin_status, c.admin_edited, u.full_name, u.allow_late_time, t.team_name, TIME(c.checkin_time) as time_only
         FROM checkins c
-        JOIN users u ON c.user_id = u.id
+        LEFT JOIN users u ON c.user_id = u.id
         LEFT JOIN teams t ON u.team_id = t.id
         WHERE 1=1";
 $params = [];
 
 // ถ้าไม่ใช่แอดมิน ให้ดูได้แค่ของตัวเอง
-if (!hasRole(['admin', 'super_admin'])) {
+if (!hasRole(['admin', 'super_admin', 'viewer'])) {
     $sql .= " AND c.user_id = ?";
     $params[] = $user_id;
 }
@@ -108,7 +108,7 @@ if (!$filter_month || $filter_date) {
 
     foreach ($off_users as $ou) {
         // หากไม่ใช่แอดมิน และข้อมูลไม่ใช่ของตัวเอง ข้ามไป
-        if (!hasRole(['admin', 'super_admin']) && $ou['id'] != $user_id) continue;
+        if (!hasRole(['admin', 'super_admin', 'viewer']) && $ou['id'] != $user_id) continue;
         
         // หากเช็คอินไปแล้ว ข้ามไป
         if (in_array($ou['id'], $checked_in_user_ids)) continue;

@@ -1,7 +1,7 @@
 <?php
 // views/modules/customer_info.php
 if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรงไม่ได้');
-requireRole(['admin', 'super_admin']);
+requireRole(['admin', 'super_admin', 'viewer']);
 ?>
 
 <div class="max-w-7xl mx-auto space-y-6 animate__animated animate__fadeIn">
@@ -239,7 +239,10 @@ requireRole(['admin', 'super_admin']);
             card.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer group relative';
             card.onclick = function() { ciOpenDetail(idx); };
             
-            var delBtnHTML = '<button type="button" onclick="event.stopPropagation(); ciDeleteCustomer(\'' + ciEscape(c.id) + '\')" class="absolute top-3 right-3 p-2 bg-white hover:bg-rose-100 text-slate-300 hover:text-rose-500 rounded-lg transition-colors opacity-0 group-hover:opacity-100 shadow-sm z-10" title="ลบข้อมูลลูกค้านี้ทั้งหมด"><i data-lucide="trash-2" class="w-4 h-4"></i></button>';
+            const role = window.USER_ROLE;
+            const isAdmin = (role === 'admin' || role === 'super_admin');
+            
+            var delBtnHTML = isAdmin ? '<button type="button" onclick="event.stopPropagation(); ciDeleteCustomer(\'' + ciEscape(c.id) + '\')" class="absolute top-3 right-3 p-2 bg-white hover:bg-rose-100 text-slate-300 hover:text-rose-500 rounded-lg transition-colors opacity-0 group-hover:opacity-100 shadow-sm z-10" title="ลบข้อมูลลูกค้านี้ทั้งหมด"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '';
             
             card.innerHTML = delBtnHTML + '<div class="flex justify-between items-start mb-4">'
                 + '<div class="flex items-center gap-3">'
@@ -377,10 +380,14 @@ requireRole(['admin', 'super_admin']);
             modal.classList.add('flex');
         }
 
+        const role = window.USER_ROLE;
+        const isAdmin = (role === 'admin' || role === 'super_admin');
         var delBtn = document.getElementById('ciDeleteBtn');
-        if (delBtn) {
+        if (delBtn && isAdmin) {
             delBtn.classList.remove('hidden');
             delBtn.onclick = function() { ciDeleteCustomer(c.id); };
+        } else if (delBtn) {
+            delBtn.classList.add('hidden');
         }
 
         if (window.lucide) lucide.createIcons();

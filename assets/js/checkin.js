@@ -12,11 +12,11 @@ window.switchHistoryMode = function(mode) {
     
     if (tabCheckin && tabCheckout) {
         if (mode === 'checkin') {
-            tabCheckin.className = "flex-1 py-1.5 rounded-lg text-xs font-black transition-all bg-white text-indigo-600 shadow-sm";
-            tabCheckout.className = "flex-1 py-1.5 rounded-lg text-xs font-black transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
+            tabCheckin.className = "flex-1 py-2 rounded-xl text-sm font-black transition-all bg-indigo-600 text-white";
+            tabCheckout.className = "flex-1 py-2 rounded-xl text-sm font-black transition-all text-slate-500 hover:bg-slate-50";
         } else {
-            tabCheckout.className = "flex-1 py-1.5 rounded-lg text-xs font-black transition-all bg-white text-rose-600 shadow-sm";
-            tabCheckin.className = "flex-1 py-1.5 rounded-lg text-xs font-black transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
+            tabCheckout.className = "flex-1 py-2 rounded-xl text-sm font-black transition-all bg-indigo-600 text-white";
+            tabCheckin.className = "flex-1 py-2 rounded-xl text-sm font-black transition-all text-slate-500 hover:bg-slate-50";
         }
     }
     
