@@ -187,9 +187,15 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
 
         <div class="bg-white rounded-[2rem] shadow-xl p-6 border border-gray-50 flex-1 flex flex-col">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                <h3 class="font-bold text-gray-800 mb-4 flex items-center">
-                🕒 <span id="historyTitle">ประวัติเช็คอิน</span>
-            </h3>
+                <div>
+                    <h3 class="font-bold text-gray-800 mb-2 flex items-center">
+                        🕒 <span id="historyTitle">ประวัติเช็คอิน</span>
+                    </h3>
+                    <div class="flex gap-2 p-1 bg-slate-100 rounded-xl max-w-[240px]">
+                        <button type="button" id="histTabCheckin" onclick="switchHistoryMode('checkin')" class="flex-1 py-1.5 rounded-lg text-xs font-black transition-all bg-white text-indigo-600 shadow-sm">เข้างาน</button>
+                        <button type="button" id="histTabCheckout" onclick="switchHistoryMode('checkout')" class="flex-1 py-1.5 rounded-lg text-xs font-black transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50">เลิกงาน</button>
+                    </div>
+                </div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <input type="date" id="filterDate" class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                     <span class="text-sm text-gray-400 hidden md:inline">หรือ</span>
