@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 requireLogin();
 
 // ให้สิทธิ์เฉพาะแอดมินดูได้
-if (!hasRole(['admin', 'super_admin', 'viewer'])) {
+if (!hasRole(['admin', 'super_admin'])) {
     echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
 }

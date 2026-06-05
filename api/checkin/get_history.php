@@ -31,7 +31,7 @@ $sql = "SELECT c.id, c.user_id, c.checkin_time, c.image_path, c.lat, c.lng, c.ch
 $params = [];
 
 // ถ้าไม่ใช่แอดมิน ให้ดูได้แค่ของตัวเอง
-if (!hasRole(['admin', 'super_admin', 'viewer'])) {
+if (!hasRole(['admin', 'super_admin'])) {
     $sql .= " AND c.user_id = ?";
     $params[] = $user_id;
 }
@@ -108,7 +108,7 @@ if (!$filter_month || $filter_date) {
 
     foreach ($off_users as $ou) {
         // หากไม่ใช่แอดมิน และข้อมูลไม่ใช่ของตัวเอง ข้ามไป
-        if (!hasRole(['admin', 'super_admin', 'viewer']) && $ou['id'] != $user_id) continue;
+        if (!hasRole(['admin', 'super_admin']) && $ou['id'] != $user_id) continue;
         
         // หากเช็คอินไปแล้ว ข้ามไป
         if (in_array($ou['id'], $checked_in_user_ids)) continue;

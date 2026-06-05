@@ -32,7 +32,7 @@ $sql = "SELECT c.id, c.user_id, c.checkin_time, c.image_path, c.lat, c.lng, c.ch
         WHERE 1=1";
 $params = [];
 
-if (!hasRole(['admin', 'super_admin', 'viewer'])) {
+if (!hasRole(['admin', 'super_admin'])) {
     $sql .= " AND c.user_id = ?";
     $params[] = $user_id;
 }
@@ -107,7 +107,7 @@ if (!$filter_month || $filter_date) {
     $off_users = $stmt_off->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($off_users as $ou) {
-        if (!hasRole(['admin', 'super_admin', 'viewer']) && $ou['id'] != $user_id) continue;
+        if (!hasRole(['admin', 'super_admin']) && $ou['id'] != $user_id) continue;
         if (in_array($ou['id'], $checked_in_user_ids)) continue;
         
         $team_name = '';

@@ -51,7 +51,7 @@ try {
             echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์ดูงาน MA']);
             exit;
         }
-        if (!hasRole(['admin', 'super_admin', 'viewer']) && !hasRole('ma_technician')) {
+        if (!hasRole(['admin', 'super_admin']) && !hasRole('ma_technician')) {
             echo json_encode(['success' => false, 'error' => 'บัญชีนี้ไม่มีบทบาทช่าง MA']);
             exit;
         }
@@ -60,7 +60,7 @@ try {
             echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์ดูงาน Office']);
             exit;
         }
-        if (!hasRole(['admin', 'super_admin', 'viewer']) && !hasRole('technician')) {
+        if (!hasRole(['admin', 'super_admin']) && !hasRole('technician')) {
             echo json_encode(['success' => false, 'error' => 'บัญชีนี้ไม่มีบทบาทช่าง Office']);
             exit;
         }
@@ -82,7 +82,7 @@ try {
     }
     $params = [];
 
-    if (!hasRole(['admin', 'super_admin', 'viewer'])) {
+    if (!hasRole(['admin', 'super_admin'])) {
         if ($isMa && hasRole('ma_technician')) {
             if ($team_id) {
                 $sql .= " AND (j.team_id = ? OR t.team_name = ? OR j.assigned_user_id = ?)";
@@ -186,7 +186,7 @@ try {
     $teams = [];
     $office_techs = [];
     $ma_techs = [];
-    if (hasRole(['admin', 'super_admin', 'viewer'])) {
+    if (hasRole(['admin', 'super_admin'])) {
         $stmtTeams = $pdo->query("SELECT * FROM teams");
         $teams = $stmtTeams->fetchAll(PDO::FETCH_ASSOC);
 

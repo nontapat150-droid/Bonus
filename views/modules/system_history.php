@@ -1,7 +1,7 @@
 <?php
 // views/modules/system_history.php
 if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรงไม่ได้');
-if (!hasRole(['admin', 'super_admin', 'viewer'])) exit('ไม่มีสิทธิ์เข้าถึงหน้านี้');
+if (!hasRole(['admin', 'super_admin'])) exit('ไม่มีสิทธิ์เข้าถึงหน้านี้');
 ?>
 
 <div class="max-w-6xl mx-auto space-y-6 animate__animated animate__fadeIn">

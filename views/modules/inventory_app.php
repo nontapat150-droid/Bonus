@@ -3,7 +3,7 @@
 if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรงไม่ได้');
 
 // Protection: Admin, Super Admin, Viewer
-if (!hasRole(['admin', 'super_admin', 'viewer'])) {
+if (!hasRole(['admin', 'super_admin'])) {
     echo "<div class='p-8 text-center text-red-600 font-bold text-xl'>ไม่มีสิทธิ์เข้าถึงหน้านี้</div>";
     exit;
 }

@@ -7,7 +7,7 @@ function ensureMaJobSchema(PDO $pdo) {
     $done = true;
 
     try {
-        $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('super_admin','admin','technician','ma_technician','sales','intern','viewer') NOT NULL DEFAULT 'technician'");
+        $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('super_admin','admin','technician','ma_technician','sales','intern') NOT NULL DEFAULT 'technician'");
     } catch (Exception $e) {}
 
     $tables = [

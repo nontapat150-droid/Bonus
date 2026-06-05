@@ -112,12 +112,12 @@ function isInternOnly() {
 /** ดู/จัดการงาน Office (ติดตั้ง) — แยกจาก MA */
 function canViewDispatchOffice() {
     if (isMaTechnicianOnly()) return false;
-    return hasRole(['admin', 'super_admin', 'technician', 'viewer']);
+    return hasRole(['admin', 'super_admin', 'technician']);
 }
 
 /** ดู/จัดการงาน MA — แยกจาก Office */
 function canViewDispatchMA() {
-    return hasRole(['admin', 'super_admin', 'ma_technician', 'viewer']);
+    return hasRole(['admin', 'super_admin', 'ma_technician']);
 }
 
 function hasBothDispatchRoles() {
@@ -152,7 +152,7 @@ function getCurrentUser() {
 }
 
 function saveUserRoles(PDO $pdo, $userId, array $roles) {
-    $valid = ['super_admin', 'admin', 'technician', 'ma_technician', 'sales', 'intern', 'viewer'];
+    $valid = ['super_admin', 'admin', 'technician', 'ma_technician', 'sales', 'intern'];
     $roles = array_values(array_unique(array_intersect($roles, $valid)));
     if (empty($roles)) {
         $roles = ['technician'];
@@ -168,7 +168,7 @@ function saveUserRoles(PDO $pdo, $userId, array $roles) {
         // fallback: ใช้ users.role เท่านั้น
     }
 
-    $priority = ['super_admin', 'admin', 'technician', 'ma_technician', 'sales', 'intern', 'viewer'];
+    $priority = ['super_admin', 'admin', 'technician', 'ma_technician', 'sales', 'intern'];
     $primary = 'technician';
     foreach ($priority as $p) {
         if (in_array($p, $roles, true)) {

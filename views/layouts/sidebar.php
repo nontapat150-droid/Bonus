@@ -69,7 +69,7 @@
         </a>
         <?php endif; ?>
 
-        <?php if (hasRole(['admin', 'super_admin', 'viewer'])): ?>
+        <?php if (hasRole(['admin', 'super_admin'])): ?>
         <a href="index.php?page=inventory" class="nav-item <?= $page === 'inventory' ? 'active' : '' ?>" data-label="ระบบคลังสินค้า">
             <div class="icon"><i data-lucide="package"></i></div>
             <span class="nav-label">ระบบคลังสินค้า</span>
@@ -80,7 +80,7 @@
         </a>
         <?php endif; ?>
 
-        <?php if (hasRole(['admin', 'super_admin', 'viewer'])): ?>
+        <?php if (hasRole(['admin', 'super_admin'])): ?>
         <div class="nav-label px-3 py-2 text-[10px] font-bold text-[var(--c-text-3)] uppercase tracking-widest mt-2 whitespace-nowrap">ตั้งค่าระบบ</div>
         <a href="index.php?page=system_history" class="nav-item <?= $page === 'system_history' ? 'active' : '' ?>" data-label="ประวัติรวมทั้งหมด">
             <div class="icon"><i data-lucide="database"></i></div>
@@ -96,7 +96,7 @@
         </a>
         <?php endif; ?>
 
-        <?php if (hasRole(['super_admin', 'viewer'])): ?>
+        <?php if (hasRole(['super_admin'])): ?>
         <a href="index.php?page=ma_summary" class="nav-item <?= $page === 'ma_summary' ? 'active' : '' ?>" data-label="สรุปงาน MA">
             <div class="icon"><i data-lucide="bar-chart-3"></i></div>
             <span class="nav-label">สรุปงาน MA</span>
