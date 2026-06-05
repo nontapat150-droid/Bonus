@@ -86,8 +86,8 @@ if ($page === 'home') {
             $stats['admin_total_stock'] = $stmt->fetchColumn();
         }
 
-        // --- 4. Stats สำหรับ Super Admin ---
-        if (hasRole('super_admin')) {
+        // --- 4. Stats สำหรับ Super Admin และ Viewer ---
+        if (hasRole(['super_admin', 'viewer'])) {
             $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE last_active >= NOW() - INTERVAL 1 MINUTE");
             $stats['super_online_users'] = $stmt->fetchColumn();
 
@@ -207,8 +207,8 @@ if ($page === 'home') {
         } catch (Exception $e) { }
 
         try {
-            // อัปเดต ENUM ของ users ให้รองรับ intern
-            $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('super_admin', 'admin', 'technician', 'sales', 'intern') NOT NULL DEFAULT 'technician'");
+            // อัปเดต ENUM ของ users ให้รองรับ intern และ viewer
+            $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('super_admin', 'admin', 'technician', 'sales', 'intern', 'viewer') NOT NULL DEFAULT 'technician'");
         } catch (Exception $e) { }
 
         // 1. ลบประกาศที่หมดอายุอัตโนมัติ
@@ -902,8 +902,8 @@ if ($page === 'home') {
                     </div>
 
                     <div class="kpi-grid">
-                        <?php if (hasRole('super_admin')): ?>
-                            <!-- Super Admin KPIs -->
+                        <?php if (hasRole(['super_admin', 'viewer'])): ?>
+                            <!-- Super Admin / Viewer KPIs -->
                             <div class="card relative group">
                                 <div class="flex justify-between items-start mb-4">
                                     <div class="icon-box-primary group-hover:scale-110 transition-transform var(--dur-spring) !bg-[var(--c-info-bg)] !text-[var(--c-info)]"><i data-lucide="radio" class="w-5 h-5"></i></div>
@@ -1034,7 +1034,7 @@ if ($page === 'home') {
                         </a>
                         <?php endif; ?>
 
-                        <?php if (hasRole(['admin', 'super_admin'])): ?>
+                        <?php if (hasRole(['admin', 'super_admin', 'viewer'])): ?>
                         <a href="index.php?page=inventory" class="card flex flex-col justify-between hover:border-[var(--c-success)] transition-colors group text-inherit no-underline">
                             <div class="flex items-start justify-between">
                                 <div class="w-12 h-12 rounded-xl bg-[var(--c-success)] text-white flex items-center justify-center shadow-btn group-hover:scale-105 transition-transform" style="--shadow-btn: 0 4px 14px rgba(16,185,129, 0.40);"><i data-lucide="box"></i></div>
@@ -1070,7 +1070,7 @@ if ($page === 'home') {
                         <?php endif; ?>
                     </div>
 
-                    <?php if (hasRole('super_admin') && !empty($realtimeFeed)): ?>
+                    <?php if (hasRole(['super_admin', 'viewer']) && !empty($realtimeFeed)): ?>
                     <div class="mt-8">
                         <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
                             <span class="relative flex h-3 w-3">

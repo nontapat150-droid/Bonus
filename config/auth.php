@@ -152,7 +152,7 @@ function getCurrentUser() {
 }
 
 function saveUserRoles(PDO $pdo, $userId, array $roles) {
-    $valid = ['super_admin', 'admin', 'technician', 'ma_technician', 'sales', 'intern'];
+    $valid = ['super_admin', 'admin', 'technician', 'ma_technician', 'sales', 'intern', 'viewer'];
     $roles = array_values(array_unique(array_intersect($roles, $valid)));
     if (empty($roles)) {
         $roles = ['technician'];
@@ -168,7 +168,7 @@ function saveUserRoles(PDO $pdo, $userId, array $roles) {
         // fallback: ใช้ users.role เท่านั้น
     }
 
-    $priority = ['super_admin', 'admin', 'technician', 'ma_technician', 'sales', 'intern'];
+    $priority = ['super_admin', 'admin', 'technician', 'ma_technician', 'sales', 'intern', 'viewer'];
     $primary = 'technician';
     foreach ($priority as $p) {
         if (in_array($p, $roles, true)) {
