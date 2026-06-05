@@ -24,7 +24,9 @@ function sendOneSignalPush($pdo, $title, $message, $type = 'all', $team_id = nul
         'priority' => 10,
         'ios_interruption_level' => 'active',
         'ios_sound' => 'default',
-        'enable_frequency_cap' => false
+        'enable_frequency_cap' => false,
+        'throttle_rate_per_minute' => 0,
+        'ttl' => 2419200
     );
 
     if ($type === 'user' && $target_user_id) {
@@ -58,7 +60,7 @@ function sendOneSignalPush($pdo, $title, $message, $type = 'all', $team_id = nul
 
     $fields = json_encode($fields);
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "https://api.onesignal.com/notifications");
+    curl_setopt($ch, CURLOPT_URL, "https://api.onesignal.com/notifications?c=push");
     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
         'Content-Type: application/json; charset=utf-8',
         'Authorization: Key ' . ONESIGNAL_REST_API_KEY

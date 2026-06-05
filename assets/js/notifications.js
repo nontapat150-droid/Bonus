@@ -21,8 +21,19 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const isAdmin = window.NOTIFICATIONS_CONFIG?.isAdmin === true;
     let previousUnreadCount = 0;
+    const mobileFallbackStorageKey = 'bonusMobileFallbackNotificationIds';
+    let mobileFallbackIds = readStoredNotificationIds();
+    let mobileFallbackSeeded = false;
+    let alertAudioContext = null;
+    let alertAudioUnlocked = false;
 
     if (!bellButton || !notificationModal) return;
+
+    ensureBrowserNotificationPermission();
+    document.addEventListener('click', () => {
+        ensureBrowserNotificationPermission();
+        unlockAlertAudio();
+    }, { once: true, passive: true });
 
     // โหลดแจ้งเตือนเบื้องหลังทันทีที่เปิดหน้าเว็บ
     loadNotifications(true);
@@ -35,6 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 15000);
 
     bellButton.addEventListener('click', async () => {
+        ensureBrowserNotificationPermission();
+        unlockAlertAudio();
         notificationModal.classList.remove('hidden');
         await loadNotifications(false);
     });
@@ -189,6 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // อัปเดตตัวเลขแจ้งเตือน
+            handleMobileFallbackAlerts(data.notifications, isBackground);
             notificationCount.textContent = unreadCount;
             if (unreadCount > 0) {
                 unreadDot.textContent = unreadCount > 99 ? '99+' : unreadCount;
@@ -273,6 +287,131 @@ document.addEventListener('DOMContentLoaded', () => {
     async function markNotificationRead(notificationId) {
         try {
             await fetch('api/notifications/mark_read.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `notification_id=${encodeURIComponent(notificationId)}` });
+        } catch (error) {}
+    }
+
+    function handleMobileFallbackAlerts(notifications, isBackground) {
+        const unreadNotifications = notifications.filter(n => n && n.is_read == 0);
+
+        if (!mobileFallbackSeeded) {
+            unreadNotifications.forEach(n => mobileFallbackIds.add(getNotificationKey(n)));
+            mobileFallbackSeeded = true;
+            saveStoredNotificationIds();
+            return;
+        }
+
+        const newNotifications = unreadNotifications.filter(n => {
+            const key = getNotificationKey(n);
+            if (mobileFallbackIds.has(key)) return false;
+            mobileFallbackIds.add(key);
+            return true;
+        });
+
+        if (!newNotifications.length) return;
+
+        saveStoredNotificationIds();
+        vibrateDevice();
+        playAlertSound();
+
+        if (isBackground || document.visibilityState !== 'visible') {
+            showDeviceNotification(newNotifications[0], newNotifications.length);
+        }
+    }
+
+    function getNotificationKey(notification) {
+        return String(notification.id || `${notification.title}-${notification.created_at}`);
+    }
+
+    function readStoredNotificationIds() {
+        try {
+            const values = JSON.parse(localStorage.getItem(mobileFallbackStorageKey) || '[]');
+            return new Set(Array.isArray(values) ? values : []);
+        } catch (error) {
+            return new Set();
+        }
+    }
+
+    function saveStoredNotificationIds() {
+        try {
+            const values = Array.from(mobileFallbackIds).slice(-300);
+            mobileFallbackIds = new Set(values);
+            localStorage.setItem(mobileFallbackStorageKey, JSON.stringify(values));
+        } catch (error) {}
+    }
+
+    async function ensureBrowserNotificationPermission() {
+        if (!('Notification' in window) || Notification.permission !== 'default') return;
+        try {
+            await Notification.requestPermission();
+        } catch (error) {}
+    }
+
+    async function showDeviceNotification(notification, total) {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+        const title = total > 1 ? `${notification.title} (+${total - 1})` : notification.title;
+        const options = {
+            body: notification.message || '',
+            tag: `bonus-${getNotificationKey(notification)}-${Date.now()}`,
+            renotify: true,
+            requireInteraction: true,
+            vibrate: [300, 120, 300, 120, 300],
+            data: { url: window.location.href }
+        };
+
+        try {
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.ready;
+                await registration.showNotification(title, options);
+            } else {
+                const localNotification = new Notification(title, options);
+                localNotification.onclick = () => window.focus();
+            }
+        } catch (error) {
+            try {
+                const localNotification = new Notification(title, options);
+                localNotification.onclick = () => window.focus();
+            } catch (fallbackError) {}
+        }
+    }
+
+    function vibrateDevice() {
+        try {
+            if ('vibrate' in navigator) navigator.vibrate([300, 120, 300, 120, 300]);
+        } catch (error) {}
+    }
+
+    function unlockAlertAudio() {
+        if (alertAudioUnlocked || !('AudioContext' in window || 'webkitAudioContext' in window)) return;
+        try {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            alertAudioContext = new AudioContextClass();
+            const oscillator = alertAudioContext.createOscillator();
+            const gain = alertAudioContext.createGain();
+            gain.gain.value = 0.001;
+            oscillator.connect(gain);
+            gain.connect(alertAudioContext.destination);
+            oscillator.start();
+            oscillator.stop(alertAudioContext.currentTime + 0.02);
+            alertAudioUnlocked = true;
+        } catch (error) {}
+    }
+
+    function playAlertSound() {
+        if (!alertAudioContext || !alertAudioUnlocked) return;
+        try {
+            const oscillator = alertAudioContext.createOscillator();
+            const gain = alertAudioContext.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, alertAudioContext.currentTime);
+            oscillator.frequency.setValueAtTime(1175, alertAudioContext.currentTime + 0.12);
+            gain.gain.setValueAtTime(0.001, alertAudioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.18, alertAudioContext.currentTime + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.001, alertAudioContext.currentTime + 0.28);
+            oscillator.connect(gain);
+            gain.connect(alertAudioContext.destination);
+            oscillator.start(alertAudioContext.currentTime);
+            oscillator.stop(alertAudioContext.currentTime + 0.3);
         } catch (error) {}
     }
 

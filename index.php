@@ -242,16 +242,34 @@ if ($page === 'home') {
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "a125af04-6897-44e7-9925-7d5b67631d12",
+        try {
+          await OneSignal.init({
+            appId: "a125af04-6897-44e7-9925-7d5b67631d12",
+            serviceWorkerPath: "OneSignalSDKWorker.js"
           });
 
-          OneSignal.Slidedown.promptPush();
-        
-        // ผูก OneSignal ID กับ User ID ในฐานข้อมูล เพื่อให้ส่งรายบุคคลได้
-        <?php if(isset($user['id'])): ?>
-            OneSignal.login("<?= $user['id'] ?>");
-        <?php endif; ?>
+          // ผูก OneSignal ID กับ User ID ในฐานข้อมูล เพื่อให้ส่งรายบุคคลได้
+          <?php if(isset($user['id'])): ?>
+              await OneSignal.login("<?= $user['id'] ?>");
+          <?php endif; ?>
+
+          if (OneSignal.Notifications.isPushSupported()) {
+            OneSignal.Notifications.addEventListener("permissionChange", function(permission) {
+              if (permission) {
+                OneSignal.User.PushSubscription.optIn();
+              }
+            });
+
+            if (!OneSignal.Notifications.permission) {
+              OneSignal.Slidedown.promptPush();
+              OneSignal.Notifications.requestPermission();
+            }
+
+            OneSignal.User.PushSubscription.optIn();
+          }
+        } catch (error) {
+          console.warn("OneSignal setup failed", error);
+        }
       });
     </script>
     
