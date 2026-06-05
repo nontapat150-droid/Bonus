@@ -535,16 +535,18 @@ async function validateAndSaveSN(sn) {
     const pName = document.getElementById('mainProductInput')?.value.trim() || '';
     const mName = document.getElementById('mainModelInput')?.value.trim() || '';
 
+    if (scannedInboundSession.some(item => item.type === 'SN' && item.sn === sn)) {
+        Toast.warning(`SN: ${sn} ถูกสแกนและอยู่ในคิวแล้ว!`);
+        setTimeout(() => scanInput.focus(), 50);
+        return;
+    }
+
     try {
-        const res = await fetch('api/inventory/add_sn_fast.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ product_name: pName, model_name: mName, sn: sn })
-        });
+        const res = await fetch(`api/inventory/check_sn.php?sn=${encodeURIComponent(sn)}`);
         const data = await res.json();
         
         if (data.success) {
-            Toast.success(`เพิ่ม SN: ${sn} สำเร็จ!`);
+            Toast.success(`สแกน SN: ${sn} สำเร็จ!`);
             
             // เพิ่มลงในตาราง Real-time
             scannedInboundSession.unshift({
@@ -555,9 +557,6 @@ async function validateAndSaveSN(sn) {
                 time: new Date().toLocaleTimeString('th-TH')
             });
             renderRealtimeScanTable();
-
-            loadMasterOptions(pName, mName);
-            loadStockOverview();
         } else if (data.status === 'duplicate') {
             Toast.error(`SN: ${sn} ซ้ำในระบบ!`);
         } else {
@@ -570,38 +569,30 @@ async function validateAndSaveSN(sn) {
 
 window.saveInboundQty = async function() {
     const pName = document.getElementById('mainProductInput')?.value.trim() || '';
-    const qty = document.getElementById('inboundQty').value;
+    const qty = parseFloat(document.getElementById('inboundQty').value);
     const unit = document.getElementById('inboundUnit').value || 'ชิ้น';
 
-    if (!pName || !qty || qty <= 0) return Toast.error('ระบุข้อมูลให้ครบถ้วน');
+    if (!pName || isNaN(qty) || qty <= 0) return Toast.error('ระบุข้อมูลให้ครบถ้วน');
 
-    try {
-        const res = await fetch('api/inventory/add_qty.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ name: pName, qty: qty, unit: unit })
+    const existingIdx = scannedInboundSession.findIndex(item => item.type === 'QTY' && item.productName === pName);
+    
+    if (existingIdx !== -1) {
+        scannedInboundSession[existingIdx].qty += qty;
+        Toast.success(`อัปเดตจำนวน ${pName} ในคิวสำเร็จ!`);
+    } else {
+        Toast.success(`เพิ่ม ${pName} จำนวน ${qty} ${unit} ลงในคิวสำเร็จ!`);
+        scannedInboundSession.unshift({
+            type: 'QTY',
+            productName: pName,
+            modelName: 'วัสดุสิ้นเปลือง',
+            qty: qty,
+            unit: unit,
+            time: new Date().toLocaleTimeString('th-TH')
         });
-        const data = await res.json();
-        
-        if (data.success) {
-            Toast.success(`เพิ่ม ${pName} จำนวน ${qty} ${unit} สำเร็จ!`);
-            
-            // เพิ่มลงในตาราง Real-time
-            scannedInboundSession.unshift({
-                type: 'QTY',
-                productName: pName,
-                modelName: 'วัสดุสิ้นเปลือง',
-                qty: qty,
-                unit: unit,
-                time: new Date().toLocaleTimeString('th-TH')
-            });
-            renderRealtimeScanTable();
-
-            document.getElementById('inboundQty').value = '';
-            loadMasterOptions(pName);
-            loadStockOverview();
-        } else { Toast.error(data.error); }
-    } catch (e) { Toast.error('การเชื่อมต่อล้มเหลว'); }
+    }
+    
+    renderRealtimeScanTable();
+    document.getElementById('inboundQty').value = '';
 };
 
 // --- นำเข้า Excel ---
@@ -613,14 +604,18 @@ let excelDataPayload = [];
 window.renderRealtimeScanTable = function() {
     const section = document.getElementById('realtimeScanSection');
     const tbody = document.getElementById('realtimeScanBody');
+    const confirmBtn = document.getElementById('confirmInboundSessionBtn');
+    
     if (!section || !tbody) return;
 
     if (scannedInboundSession.length === 0) {
         section.classList.add('hidden');
+        if (confirmBtn) confirmBtn.innerHTML = 'ยืนยันนำเข้าคลัง (0 รายการ)';
         return;
     }
 
     section.classList.remove('hidden');
+    if (confirmBtn) confirmBtn.innerHTML = `ยืนยันนำเข้าคลัง (${scannedInboundSession.length} รายการ)`;
     tbody.innerHTML = '';
 
     scannedInboundSession.forEach((item, index) => {
@@ -659,50 +654,47 @@ window.undoScannedItem = async function(index) {
     const item = scannedInboundSession[index];
     if (!item) return;
 
-    const confirmMsg = item.type === 'SN' 
-        ? `คุณต้องการยกเลิกการรับเข้า SN: ${item.sn} ใช่หรือไม่?`
-        : `ฟังก์ชันนี้ยังไม่รองรับการยกเลิกจำนวนรับเข้าผ่านหน้าจอ (กรุณาไปที่ตารางคลังสินค้าหลัก)`;
+    scannedInboundSession.splice(index, 1);
+    Toast.info(`ลบรายการออกจากคิวเรียบร้อย`);
+    renderRealtimeScanTable();
+};
 
-    if (item.type !== 'SN') {
-        Toast.info(confirmMsg);
-        return;
-    }
+window.submitInboundSession = async function() {
+    if (scannedInboundSession.length === 0) return;
 
     Swal.fire({
-        title: 'ยืนยันการยกเลิก?',
-        text: confirmMsg,
-        icon: 'warning',
+        title: 'ยืนยันการนำเข้า?',
+        text: `คุณต้องการนำเข้าข้อมูลทั้งหมด ${scannedInboundSession.length} รายการ ลงในคลังใช่หรือไม่?`,
+        icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#ef4444',
+        confirmButtonColor: '#10b981',
         cancelButtonColor: '#94a3b8',
-        confirmButtonText: 'ใช่, ยกเลิกรับเข้า',
+        confirmButtonText: 'ใช่, นำเข้าเลย',
         cancelButtonText: 'ปิด'
     }).then(async (result) => {
         if (result.isConfirmed) {
             Loader.show();
             try {
-                // สำหรับ SN เราสามารถใช้ delete_sn.php
-                const res = await fetch('api/inventory/delete_sn.php', {
+                const res = await fetch('api/inventory/confirm_inbound_session.php', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        product_name: item.productName,
-                        model_name: item.modelName,
-                        sn: item.sn
-                    })
+                    body: JSON.stringify({ items: scannedInboundSession })
                 });
                 const data = await res.json();
                 Loader.hide();
 
                 if (data.success) {
-                    Toast.success(`ยกเลิกรับเข้า SN: ${item.sn} สำเร็จ`);
-                    // เอาออกจาก array
-                    scannedInboundSession.splice(index, 1);
+                    Toast.success(`นำเข้าสำเร็จ ${data.processed_sn + data.processed_qty} รายการ`);
+                    if (data.errors && data.errors.length > 0) {
+                        console.warn('Errors:', data.errors);
+                        Swal.fire('มีข้อผิดพลาดบางส่วน', data.errors.join('<br>'), 'warning');
+                    }
+                    scannedInboundSession = [];
                     renderRealtimeScanTable();
                     loadStockOverview();
-                    loadMasterOptions(item.productName, item.modelName);
+                    loadMasterOptions(); // Update Dropdowns
                 } else {
-                    Toast.error('ไม่สามารถยกเลิกได้: ' + data.error);
+                    Toast.error('ไม่สามารถนำเข้าได้: ' + data.error);
                 }
             } catch (e) {
                 Loader.hide();
