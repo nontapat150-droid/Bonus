@@ -382,9 +382,9 @@ if (!hasRole(['admin', 'super_admin'])) {
             </button>
         </div>
         
-        <div class="flex flex-1 overflow-hidden">
+        <div class="flex flex-1 overflow-hidden min-h-0">
             <!-- Sidebar list of users -->
-            <div class="w-full md:w-1/3 lg:w-1/4 bg-slate-50 border-r border-slate-200 flex flex-col h-full">
+            <div class="w-full md:w-1/3 lg:w-1/4 bg-slate-50 border-r border-slate-200 flex flex-col min-h-0">
                 <div class="p-4 border-b border-slate-200 shrink-0">
                     <div class="relative">
                         <input type="text" id="individualSearchUser" placeholder="ค้นหาชื่อ..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:border-sky-500 focus:ring-2 transition-all shadow-sm" onkeyup="filterIndividualUsers()">
@@ -397,7 +397,7 @@ if (!hasRole(['admin', 'super_admin'])) {
             </div>
             
             <!-- Dashboard details -->
-            <div class="hidden md:flex flex-1 flex-col overflow-hidden bg-slate-50/30" id="individualDashboardArea">
+            <div class="hidden md:flex flex-1 flex-col overflow-hidden bg-slate-50/30 min-h-0" id="individualDashboardArea">
                 <div class="flex-1 flex items-center justify-center text-slate-400 font-bold flex-col gap-3" id="individualEmptyState">
                     <i data-lucide="users" class="w-16 h-16 text-slate-200"></i>
                     <p>กรุณาเลือกพนักงานจากเมนูด้านซ้ายเพื่อดูสถิติ</p>

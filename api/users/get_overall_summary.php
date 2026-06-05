@@ -31,10 +31,20 @@ try {
     $stmtMaCheckins->execute([$start_date, $end_date]);
     $ma_checkins = $stmtMaCheckins->fetchAll(PDO::FETCH_ASSOC);
 
-    // 4. Get oil records (count by tech_id)
+    // 4. Get oil records (count by tech_id and team_id)
     $stmtOil = $pdo->prepare("SELECT tech_id, COUNT(*) as cnt FROM oil_records WHERE date_recorded BETWEEN ? AND ? GROUP BY tech_id");
     $stmtOil->execute([$start_date, $end_date]);
     $oil_counts = $stmtOil->fetchAll(PDO::FETCH_KEY_PAIR);
+
+    $stmtOilTeam = $pdo->prepare("
+        SELECT u.team_id, COUNT(*) as cnt 
+        FROM oil_records o
+        JOIN users u ON o.tech_id = u.id
+        WHERE o.date_recorded BETWEEN ? AND ? AND u.team_id IS NOT NULL 
+        GROUP BY u.team_id
+    ");
+    $stmtOilTeam->execute([$start_date, $end_date]);
+    $oil_counts_by_team = $stmtOilTeam->fetchAll(PDO::FETCH_KEY_PAIR);
 
     // 5. Get start day records
     $stmtStartDay = $pdo->prepare("SELECT user_id, COUNT(*) as cnt FROM start_day_records WHERE DATE(created_at) BETWEEN ? AND ? GROUP BY user_id");
@@ -87,6 +97,7 @@ try {
         $team_id = $u['team_id'];
         $ma_jobs = ($ma_job_counts[$uid] ?? 0) + ($team_id ? ($ma_job_counts_by_team[$team_id] ?? 0) : 0);
         $install_jobs = $team_id ? ($install_job_counts[$team_id] ?? 0) : 0;
+        $oil_count = $team_id ? ($oil_counts_by_team[$team_id] ?? 0) : ($oil_counts[$uid] ?? 0);
 
         $stats = [
             'id' => $uid,
@@ -95,7 +106,7 @@ try {
             'on_time' => 0,
             'late' => 0,
             'day_off' => 0,
-            'oil_count' => $oil_counts[$uid] ?? 0,
+            'oil_count' => $oil_count,
             'start_day_count' => $start_day_counts[$uid] ?? 0,
             'ma_job_count' => $ma_jobs,
             'install_job_count' => $install_jobs,
