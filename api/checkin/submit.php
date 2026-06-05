@@ -22,7 +22,9 @@ if (!is_dir($upload_dir)) {
 try {
     // Add columns dynamically if not exist
     try {
-        $pdo->exec("ALTER TABLE checkins ADD COLUMN lat VARCHAR(50) DEFAULT NULL, ADD COLUMN lng VARCHAR(50) DEFAULT NULL");
+        $existingCols = $pdo->query("SHOW COLUMNS FROM checkins")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('lat', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN lat VARCHAR(50) DEFAULT NULL");
+        if (!in_array('lng', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN lng VARCHAR(50) DEFAULT NULL");
     } catch (PDOException $e) { }
 
     $pdo->beginTransaction();
