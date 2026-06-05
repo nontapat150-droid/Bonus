@@ -39,6 +39,25 @@ function getSelectedRoles() {
     return Array.from(document.querySelectorAll('.role-cb:checked')).map(cb => cb.value);
 }
 
+function getSelectedDaysOff() {
+    return Array.from(document.querySelectorAll('.dayoff-cb:checked')).map(cb => cb.value);
+}
+
+function setDaysOffChecked(daysOffJson) {
+    let days = [];
+    try {
+        if (typeof daysOffJson === 'string') {
+            days = JSON.parse(daysOffJson || '[]');
+        } else if (Array.isArray(daysOffJson)) {
+            days = daysOffJson;
+        }
+    } catch(e) {}
+    const set = new Set(days);
+    document.querySelectorAll('.dayoff-cb').forEach(cb => {
+        cb.checked = set.has(cb.value);
+    });
+}
+
 async function loadUsers() {
     try {
         const res = await fetch('api/users/get_users.php');
@@ -159,6 +178,7 @@ function openUserModal(isEdit = false) {
     form.reset();
     document.getElementById('userId').value = '';
     setUserRolesChecked(['technician']);
+    setDaysOffChecked('[]');
     
     if (isEdit) {
         title.innerText = 'แก้ไขข้อมูลพนักงาน';
@@ -191,6 +211,7 @@ function editUser(index) {
     document.getElementById('full_name').value = u.full_name;
     document.getElementById('username_field').value = u.username;
     setUserRolesChecked(u.roles || [u.role]);
+    setDaysOffChecked(u.days_off);
     
     if (u.allow_late_time) {
         document.getElementById('allow_late_time').value = u.allow_late_time.substring(0, 5);
@@ -203,9 +224,15 @@ function editUser(index) {
 function toggleLateTimeField() {
     const roles = getSelectedRoles();
     const field = document.getElementById('lateTimeField');
-    if (!field) return;
-    const show = roles.some(r => ['sales', 'technician', 'ma_technician', 'intern'].includes(r));
-    field.classList.toggle('hidden', !show);
+    const daysOffField = document.getElementById('daysOffField');
+    if (field) {
+        const show = roles.some(r => ['sales', 'technician', 'ma_technician', 'intern'].includes(r));
+        field.classList.toggle('hidden', !show);
+    }
+    if (daysOffField) {
+        const showDaysOff = roles.some(r => ['admin', 'super_admin', 'technician', 'ma_technician'].includes(r));
+        daysOffField.classList.toggle('hidden', !showDaysOff);
+    }
 }
 
 async function handleSaveUser(e) {
@@ -213,6 +240,7 @@ async function handleSaveUser(e) {
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData.entries());
     payload.roles = getSelectedRoles();
+    payload.days_off = getSelectedDaysOff();
     if (payload.roles.length === 0) {
         Toast.error('กรุณาเลือกอย่างน้อย 1 ตำแหน่ง');
         return;

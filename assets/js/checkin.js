@@ -352,14 +352,16 @@ function renderTable(records) {
         
         const badge = item.status_code === 'late' 
             ? `<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-bold border border-orange-200">มาสาย</span>`
-            : `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">ตรงเวลา</span>`;
+            : (item.status_code === 'day_off' 
+                ? `<span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-xs font-bold border border-slate-200">วันหยุด</span>`
+                : `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">ตรงเวลา</span>`);
 
         const imageCell = item.image_path
             ? `<a href="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence"></a>`
-            : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`;
+            : (item.status_code === 'day_off' ? `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] text-slate-400">วันหยุด</div>` : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`);
 
-        const canEdit = activeCheckinTab !== 'ma' && ['super_admin', 'admin', 'technician', 'sales'].includes(window.USER_ROLE);
-        const canDelete = activeCheckinTab !== 'ma' && window.USER_ROLE === 'super_admin';
+        const canEdit = item.status_code !== 'day_off' && activeCheckinTab !== 'ma' && ['super_admin', 'admin', 'technician', 'sales'].includes(window.USER_ROLE);
+        const canDelete = item.status_code !== 'day_off' && activeCheckinTab !== 'ma' && window.USER_ROLE === 'super_admin';
 
         let actionHtml = `<div class="flex justify-end md:justify-center gap-2">`;
         if (canEdit) {
