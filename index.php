@@ -237,114 +237,6 @@ if ($page === 'home') {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- OneSignal Web Push SDK -->
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        try {
-          await OneSignal.init({
-            appId: "a125af04-6897-44e7-9925-7d5b67631d12",
-            serviceWorkerPath: "OneSignalSDKWorker.js"
-          });
-
-          // ผูก OneSignal ID กับ User ID ในฐานข้อมูล เพื่อให้ส่งรายบุคคลได้
-          <?php if(isset($user['id'])): ?>
-              await OneSignal.login("<?= $user['id'] ?>");
-          <?php endif; ?>
-
-          if (OneSignal.Notifications.isPushSupported()) {
-            OneSignal.Notifications.addEventListener("permissionChange", function(permission) {
-              if (permission) {
-                OneSignal.User.PushSubscription.optIn();
-              }
-            });
-
-            if (!OneSignal.Notifications.permission) {
-              OneSignal.Slidedown.promptPush();
-              OneSignal.Notifications.requestPermission();
-            }
-
-            OneSignal.User.PushSubscription.optIn();
-          }
-        } catch (error) {
-          console.warn("OneSignal setup failed", error);
-        }
-      });
-    </script>
-
-    <!-- Firebase Web Push SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
-    <script>
-      // ==========================================
-      // 🚨 TODO: ให้นำค่าจาก Firebase Console มาใส่ที่นี่
-      // ==========================================
-      const firebaseConfig = {
-  apiKey: "AIzaSyDha27EeFxPmyoTD2o1WhMzjyxiSGe9Kw8",
-  authDomain: "apis-1cd5e.firebaseapp.com",
-  projectId: "apis-1cd5e",
-  storageBucket: "apis-1cd5e.firebasestorage.app",
-  messagingSenderId: "718694613926",
-  appId: "1:718694613926:web:abc7ae0077ddda732d8567",
-  measurementId: "G-R26KN2WVMB" // <--- เปลี่ยนตรงนี้
-      };
-      
-      firebase.initializeApp(firebaseConfig);
-      const messaging = firebase.messaging();
-
-      async function requestFirebasePermission() {
-        try {
-          const permission = await Notification.requestPermission();
-          if (permission === 'granted') {
-            console.log('Firebase Notification permission granted.');
-            // 🚨 TODO: เพิ่ม VAPID Key (Web Push certificate) จากเมนู Cloud Messaging ใน Firebase Console
-            const token = await messaging.getToken({ 
-                vapidKey: 'BNYGUmcn9irxmIZ7sHknEB4qZyK7h_eXFTga4h2Y-rTNjurEyU5v5zGA5BbHvehLEOoodaA72NgxoZkmx9H5fBg' 
-            });
-            if (token) {
-              console.log('FCM Token generated successfully.');
-              // ส่ง Token ไปผูกกับ Topic ที่ Backend
-              await fetch('api/notifications/subscribe_topic.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: token })
-              });
-            }
-          }
-        } catch (error) {
-          console.warn('Firebase push setup skipped or failed:', error);
-        }
-      }
-
-      // ขอสิทธิ์เมื่อเข้าสู่ระบบเรียบร้อย
-      <?php if(isset($user['id'])): ?>
-      document.addEventListener('DOMContentLoaded', () => {
-          setTimeout(requestFirebasePermission, 2500); // ดีเลย์เล็กน้อยไม่ให้รบกวน UI หลัก
-      });
-      <?php endif; ?>
-
-      messaging.onMessage((payload) => {
-        console.log('Firebase Message received in foreground: ', payload);
-        const title = payload.notification?.title || 'แจ้งเตือนใหม่';
-        const body = payload.notification?.body || '';
-        
-        // แสดง Toast ถ้ามี
-        if (typeof Toast !== 'undefined' && Toast.info) {
-             Toast.info(`<b>${title}</b><br>${body}`);
-        } else if (typeof Swal !== 'undefined') {
-             Swal.fire({ title: title, text: body, icon: 'info', position: 'top-end', toast: true, timer: 4000, showConfirmButton: false });
-        }
-        
-        // อัปเดตจุดแดงกระดิ่ง
-        const dot = document.getElementById('notificationUnreadDot');
-        if (dot) {
-            dot.classList.remove('hidden');
-            let current = parseInt(dot.innerText) || 0;
-            dot.innerText = current + 1;
-        }
-      });
-    </script>
     
     <style>
         /* === 1. COLOR SYSTEM === */
@@ -687,78 +579,13 @@ if ($page === 'home') {
                 <button id="guideModalBtn" class="p-2 text-[var(--c-text-2)] hover:bg-[var(--c-surface-2)] rounded-full transition-colors" title="คู่มือการใช้งาน">
                     <i data-lucide="book-open" class="w-6 h-6"></i>
                 </button>
-                <button id="notificationBell" class="relative p-2 text-[var(--c-text-2)] hover:bg-[var(--c-surface-2)] rounded-full transition-colors">
-                    <i data-lucide="bell" class="w-6 h-6"></i>
-                    <span id="notificationUnreadDot" class="hidden absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[9px] font-black rounded-full border-2 border-white shadow-sm">0</span>
-                </button>
+
             </div>
         </header>
 
         <?php include 'views/components/user_manual.php'; ?>
 
-        <div id="notificationModal" class="hidden fixed inset-0 z-50 bg-black/40 p-4 backdrop-blur-sm flex justify-center items-center">
-            <div class="w-full max-w-3xl rounded-[32px] bg-white shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
-                <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-200 shrink-0 bg-white z-10">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-900">แจ้งเตือนจากระบบ</h2>
-                        <p class="text-slate-500 text-sm">ข้อความระบบและจากแอดมินให้ทีมของคุณ</p>
-                    </div>
-                    <button id="closeNotificationModal" class="text-slate-400 hover:text-slate-700 text-xl font-bold">&times;</button>
-                </div>
 
-                <div class="px-5 py-4 space-y-5 overflow-y-auto custom-scrollbar flex-1 relative">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
-                        <div class="text-slate-600 text-sm">แจ้งเตือนใหม่: <span id="notificationCount" class="font-semibold">0</span></div>
-                        <?php if (hasRole(['admin', 'super_admin'])): ?>
-                        <button id="openNotificationCreate" class="inline-flex items-center justify-center rounded-2xl bg-sky-600 text-white px-4 py-2 text-sm font-bold hover:bg-sky-700 transition">เพิ่มการแจ้งเตือน</button>
-                        <?php endif; ?>
-                    </div>
-
-                    <?php if (hasRole(['admin', 'super_admin'])): ?>
-                    <div id="notificationCreateCard" class="hidden rounded-3xl bg-slate-50 border border-slate-200 p-5 space-y-4 shrink-0">
-                        <div class="space-y-2">
-                            <label class="text-sm font-semibold text-slate-700">หัวเรื่อง</label>
-                            <input id="notificationTitle" type="text" placeholder="กรอกหัวเรื่อง" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none" />
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-sm font-semibold text-slate-700">ข้อความ</label>
-                            <textarea id="notificationMessage" rows="4" placeholder="กรอกข้อความแจ้งเตือน" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none"></textarea>
-                        </div>
-                        
-                        <div class="space-y-2">
-                            <label class="text-sm font-semibold text-slate-700">รูปแบบการส่ง</label>
-                            <select id="notificationType" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none font-bold text-sky-700">
-                                <option value="all">📢 ส่งให้ทุกคน</option>
-                                <option value="team">🚗 ส่งเป็นทีม</option>
-                                <option value="user">👤 ส่งรายบุคคล</option>
-                            </select>
-                        </div>
-
-                        <div id="notificationTeamContainer" class="space-y-2 hidden">
-                            <label class="text-sm font-semibold text-slate-700">ส่งถึงทีม</label>
-                            <select id="notificationTeam" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none">
-                                <option value="">กำลังโหลด...</option>
-                            </select>
-                        </div>
-
-                        <div id="notificationUserContainer" class="space-y-2 hidden">
-                            <label class="text-sm font-semibold text-slate-700">ส่งถึงพนักงาน</label>
-                            <select id="notificationUser" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none">
-                                <option value="">กำลังโหลด...</option>
-                            </select>
-                        </div>
-
-                        <div class="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
-                            <button id="cancelNotificationCreate" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition">ยกเลิก</button>
-                            <button id="sendNotificationBtn" class="rounded-2xl bg-sky-600 text-white px-4 py-3 text-sm font-bold hover:bg-sky-700 transition shadow-md">เพิ่มการแจ้งเตือน</button>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-
-                    <div id="notificationList" class="space-y-3 pb-4"></div>
-                </div>
-            </div>
-        </div>
 
         <?php if (!hasRole('intern')): ?>
         <!-- ========== LEAVE REQUEST MODAL ========== -->
