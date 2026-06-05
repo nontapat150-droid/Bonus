@@ -14,10 +14,13 @@ $filter_month = $_GET['month'] ?? '';
 try {
     $existingCols = $pdo->query("SHOW COLUMNS FROM checkins")->fetchAll(PDO::FETCH_COLUMN);
     if (!in_array('lat', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN lat VARCHAR(50) DEFAULT NULL");
-    if (!in_array('lng', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN lng VARCHAR(50) DEFAULT NULL");
+    if (!in_array('checkout_time', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN checkout_time DATETIME DEFAULT NULL");
+    if (!in_array('checkout_image', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN checkout_image VARCHAR(255) DEFAULT NULL");
+    if (!in_array('checkout_lat', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN checkout_lat VARCHAR(50) DEFAULT NULL");
+    if (!in_array('checkout_lng', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN checkout_lng VARCHAR(50) DEFAULT NULL");
 } catch (Exception $e) {}
 
-$sql = "SELECT c.id, c.checkin_time, c.image_path, c.lat, c.lng, u.full_name, u.allow_late_time, t.team_name, TIME(c.checkin_time) as time_only
+$sql = "SELECT c.id, c.checkin_time, c.image_path, c.lat, c.lng, c.checkout_time, c.checkout_image, c.checkout_lat, c.checkout_lng, u.full_name, u.allow_late_time, t.team_name, TIME(c.checkin_time) as time_only
         FROM checkins c
         JOIN users u ON c.user_id = u.id
         LEFT JOIN teams t ON u.team_id = t.id

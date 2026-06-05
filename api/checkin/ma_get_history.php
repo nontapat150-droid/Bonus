@@ -14,7 +14,15 @@ $filter_month = $_GET['month'] ?? '';
 
 $deadline = getMaCheckinLateTime($pdo);
 
-$sql = "SELECT c.id, c.user_id, c.checkin_time, c.image_path, c.is_late, c.lat, c.lng, u.full_name, t.team_name, TIME(c.checkin_time) AS time_only
+try {
+    $existingCols = $pdo->query("SHOW COLUMNS FROM ma_checkins")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('checkout_time', $existingCols, true)) $pdo->exec("ALTER TABLE ma_checkins ADD COLUMN checkout_time DATETIME DEFAULT NULL");
+    if (!in_array('checkout_image', $existingCols, true)) $pdo->exec("ALTER TABLE ma_checkins ADD COLUMN checkout_image VARCHAR(255) DEFAULT NULL");
+    if (!in_array('checkout_lat', $existingCols, true)) $pdo->exec("ALTER TABLE ma_checkins ADD COLUMN checkout_lat VARCHAR(50) DEFAULT NULL");
+    if (!in_array('checkout_lng', $existingCols, true)) $pdo->exec("ALTER TABLE ma_checkins ADD COLUMN checkout_lng VARCHAR(50) DEFAULT NULL");
+} catch (Exception $e) {}
+
+$sql = "SELECT c.id, c.user_id, c.checkin_time, c.image_path, c.is_late, c.lat, c.lng, c.checkout_time, c.checkout_image, c.checkout_lat, c.checkout_lng, u.full_name, t.team_name, TIME(c.checkin_time) AS time_only
         FROM ma_checkins c
         JOIN users u ON c.user_id = u.id
         LEFT JOIN teams t ON u.team_id = t.id
