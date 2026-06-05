@@ -12,17 +12,19 @@ function getFirebaseAccessToken($jsonPath) {
         'kid' => $keyData['private_key_id']
     ]);
     
-    // Fetch real UTC time to fix clock skew (System clock may be off)
-    $chTime = curl_init('https://google.com');
+    // Fetch real UTC time to fix clock skew
+    $chTime = curl_init('http://worldtimeapi.org/api/timezone/Etc/UTC');
     curl_setopt($chTime, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($chTime, CURLOPT_HEADER, true);
-    curl_setopt($chTime, CURLOPT_NOBODY, true);
+    curl_setopt($chTime, CURLOPT_TIMEOUT, 5);
     $resTime = curl_exec($chTime);
     curl_close($chTime);
 
     $now = time();
-    if (preg_match('/^Date:\s+(.*)$/mi', $resTime, $matches)) {
-        $now = strtotime(trim($matches[1]));
+    if ($resTime) {
+        $timeData = json_decode($resTime, true);
+        if (isset($timeData['unixtime'])) {
+            $now = $timeData['unixtime'];
+        }
     }
     
     $exp = $now + 3600;
@@ -31,8 +33,8 @@ function getFirebaseAccessToken($jsonPath) {
         'iss' => $keyData['client_email'],
         'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
         'aud' => $keyData['token_uri'],
-        'exp' => $exp,
-        'iat' => $now
+        'exp' => $now + 3600,
+        'iat' => $now - 60
     ], JSON_UNESCAPED_SLASHES);
 
     $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
@@ -58,6 +60,9 @@ function getFirebaseAccessToken($jsonPath) {
     curl_close($ch);
 
     $responseData = json_decode($response, true);
+    if (!isset($responseData['access_token'])) {
+        error_log("Token Fetch Error: " . $response);
+    }
     return $responseData['access_token'] ?? null;
 }
 
