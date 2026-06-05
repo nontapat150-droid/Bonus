@@ -52,11 +52,16 @@ try {
     $lng = $_POST['lng'] ?? null;
 
     // หา record ล่าสุดของวันนี้สำหรับ user_id นี้
-    $stmt = $pdo->prepare("SELECT id FROM $table WHERE user_id = ? AND DATE(checkin_time) = CURDATE() ORDER BY id DESC LIMIT 1");
+    $stmt = $pdo->prepare("SELECT id, checkout_time FROM $table WHERE user_id = ? AND DATE(checkin_time) = CURDATE() ORDER BY id DESC LIMIT 1");
     $stmt->execute([$user_id]);
-    $checkin_id = $stmt->fetchColumn();
+    $checkinRow = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($checkin_id) {
+    if ($checkinRow) {
+        if (!empty($checkinRow['checkout_time'])) {
+            throw new Exception("คุณได้ทำการลงเวลาเลิกงานของวันนี้ไปแล้ว");
+        }
+        $checkin_id = $checkinRow['id'];
+        
         // อัปเดต record เดิม
         $updateStmt = $pdo->prepare("UPDATE $table SET checkout_time = NOW(), checkout_image = ?, checkout_lat = ?, checkout_lng = ? WHERE id = ?");
         $updateStmt->execute([$filename, $lat, $lng, $checkin_id]);

@@ -255,6 +255,45 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
     </div>
 </div>
 
+<!-- Admin Edit Modal -->
+<div id="adminEditModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-[95%] md:max-w-sm overflow-hidden shadow-2xl animate__animated animate__zoomIn">
+        <div class="bg-amber-600 p-4 flex justify-between items-center text-white">
+            <h3 class="font-bold">🔧 จัดการข้อมูลเช็คอิน (Admin)</h3>
+            <button onclick="closeAdminEditModal()" class="text-white hover:text-amber-300 font-black text-xl">&times;</button>
+        </div>
+        <div class="p-6">
+            <input type="hidden" id="admin_edit_id">
+            
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">เวลาเข้างาน</label>
+                <input type="datetime-local" id="admin_edit_checkin_time" step="1" class="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">เวลาเลิกงาน</label>
+                <input type="datetime-local" id="admin_edit_checkout_time" step="1" class="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500">
+                <p class="text-[10px] text-slate-400 mt-1">ปล่อยว่างหากยังไม่ได้เลิกงาน</p>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">ปรับสถานะบังคับ</label>
+                <select id="admin_edit_status" class="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500">
+                    <option value="">(คำนวณอัตโนมัติจากเวลา)</option>
+                    <option value="on_time">มาตรงเวลา</option>
+                    <option value="late">มาสาย</option>
+                    <option value="leave">ลา</option>
+                </select>
+                <p class="text-[10px] text-slate-400 mt-1">สถานะที่เลือกที่นี่จะแทนที่การคำนวณจากเวลา</p>
+            </div>
+        </div>
+        <div class="p-4 bg-slate-50 border-t flex justify-end gap-2">
+            <button onclick="closeAdminEditModal()" class="px-4 py-2 bg-white text-slate-600 rounded-xl font-bold border border-slate-200">ยกเลิก</button>
+            <button onclick="saveAdminEdit()" class="px-4 py-2 bg-amber-600 text-white rounded-xl font-bold shadow-md hover:bg-amber-700">บันทึกข้อมูล</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="assets/js/common.js?v=<?= filemtime('assets/js/common.js') ?>"></script>
 <script src="assets/js/checkin.js?v=<?= filemtime('assets/js/checkin.js') ?>"></script>

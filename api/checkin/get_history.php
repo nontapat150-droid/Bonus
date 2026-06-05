@@ -18,9 +18,12 @@ try {
     if (!in_array('checkout_image', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN checkout_image VARCHAR(255) DEFAULT NULL");
     if (!in_array('checkout_lat', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN checkout_lat VARCHAR(50) DEFAULT NULL");
     if (!in_array('checkout_lng', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN checkout_lng VARCHAR(50) DEFAULT NULL");
+    if (!in_array('is_edited_image', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN is_edited_image TINYINT(1) DEFAULT 0");
+    if (!in_array('admin_status', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN admin_status VARCHAR(20) DEFAULT NULL");
+    if (!in_array('admin_edited', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN admin_edited TINYINT(1) DEFAULT 0");
 } catch (Exception $e) {}
 
-$sql = "SELECT c.id, c.checkin_time, c.image_path, c.lat, c.lng, c.checkout_time, c.checkout_image, c.checkout_lat, c.checkout_lng, u.full_name, u.allow_late_time, t.team_name, TIME(c.checkin_time) as time_only
+$sql = "SELECT c.id, c.user_id, c.checkin_time, c.image_path, c.lat, c.lng, c.checkout_time, c.checkout_image, c.checkout_lat, c.checkout_lng, c.is_edited_image, c.admin_status, c.admin_edited, u.full_name, u.allow_late_time, t.team_name, TIME(c.checkin_time) as time_only
         FROM checkins c
         JOIN users u ON c.user_id = u.id
         LEFT JOIN teams t ON u.team_id = t.id
@@ -52,7 +55,7 @@ try {
 }
 
 // คำนวณ Dashboard โดยใช้ allow_late_time ของแต่ละผู้ใช้
-$dashboard = ['total' => 0, 'on_time' => 0, 'late' => 0];
+$dashboard = ['total' => 0, 'on_time' => 0, 'late' => 0, 'leave' => 0];
 $checked_in_user_ids = [];
 $target_date = $filter_date ?: date('Y-m-d');
 
@@ -60,14 +63,30 @@ foreach($records as &$r) {
     // ใช้ allow_late_time ของผู้ใช้นั้น ๆ เป็นเกณฑ์
     $user_late_time = $r['allow_late_time'] ?: '08:30:00';
     
-    if ($r['time_only'] > $user_late_time) {
-        $r['status_code'] = 'late';
-        $r['status_text'] = 'มาสาย';
-        $dashboard['late']++;
+    if (!empty($r['admin_status'])) {
+        if ($r['admin_status'] === 'leave') {
+            $r['status_code'] = 'leave';
+            $r['status_text'] = 'ลา';
+            $dashboard['leave']++;
+        } elseif ($r['admin_status'] === 'on_time') {
+            $r['status_code'] = 'on_time';
+            $r['status_text'] = 'มาตรงเวลา';
+            $dashboard['on_time']++;
+        } elseif ($r['admin_status'] === 'late') {
+            $r['status_code'] = 'late';
+            $r['status_text'] = 'มาสาย';
+            $dashboard['late']++;
+        }
     } else {
-        $r['status_code'] = 'on_time';
-        $r['status_text'] = 'มาตรงเวลา';
-        $dashboard['on_time']++;
+        if ($r['time_only'] > $user_late_time) {
+            $r['status_code'] = 'late';
+            $r['status_text'] = 'มาสาย';
+            $dashboard['late']++;
+        } else {
+            $r['status_code'] = 'on_time';
+            $r['status_text'] = 'มาตรงเวลา';
+            $dashboard['on_time']++;
+        }
     }
     $dashboard['total']++;
     

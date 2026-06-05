@@ -421,6 +421,7 @@ function renderTable(records) {
 
         const canEdit = item.status_code !== 'day_off' && activeCheckinTab !== 'ma' && ['super_admin', 'admin', 'technician', 'sales'].includes(window.USER_ROLE);
         const canDelete = item.status_code !== 'day_off' && activeCheckinTab !== 'ma' && window.USER_ROLE === 'super_admin';
+        const canAdminManage = item.status_code !== 'day_off' && window.USER_ROLE === 'super_admin';
 
         let imageCell = '';
         let timeHtml = '';
@@ -428,14 +429,18 @@ function renderTable(records) {
         let folder = activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins';
 
         if (activeHistoryMode === 'checkin') {
-            timeHtml = `<span class="text-xs text-indigo-600 font-mono bg-indigo-50 px-2 py-0.5 rounded-md md:ml-2 ml-1 font-bold" title="เวลาเข้างาน">${dateObj.toLocaleTimeString('th-TH')}</span>`;
+            let editedTag = parseInt(item.is_edited_image) === 1 ? `<span class="text-[10px] text-amber-600 font-bold ml-1">(แก้ไขรูป)</span>` : '';
+            timeHtml = `<span class="text-xs text-indigo-600 font-mono bg-indigo-50 px-2 py-0.5 rounded-md md:ml-2 ml-1 font-bold" title="เวลาเข้างาน">${dateObj.toLocaleTimeString('th-TH')}</span>${editedTag}`;
+            
             imageCell = item.image_path
                 ? `<a href="assets/uploads/${folder}/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/${folder}/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence" title="รูปเข้างาน"></a>`
                 : (item.status_code === 'day_off' ? `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] text-slate-400">วันหยุด</div>` : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`);
 
-            if (canEdit) actionHtml += `<button type="button" onclick="openEditCheckin('${item.id}')" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">🖼️ แก้ไข</button>`;
+            if (canEdit) actionHtml += `<button type="button" onclick="openEditCheckin('${item.id}')" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">🖼️ แก้ไขรูป</button>`;
+            if (canAdminManage) actionHtml += `<button type="button" onclick="openAdminEdit('${item.id}')" class="px-3 py-1.5 bg-amber-50 text-amber-600 font-bold hover:bg-amber-100 rounded-lg transition-all text-xs border border-amber-100">🔧 จัดการ</button>`;
             if (canDelete) actionHtml += `<button type="button" onclick="deleteCheckin('${item.id}')" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบ</button>`;
-            if (!canEdit && !canDelete) actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
+            
+            if (!canEdit && !canDelete && !canAdminManage) actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
             if (item.lat && item.lng) actionHtml += `<a href="https://maps.google.com/?q=${item.lat},${item.lng}" target="_blank" class="px-3 py-1.5 bg-sky-50 text-sky-600 font-bold hover:bg-sky-100 rounded-lg transition-all text-xs border border-sky-100 ml-1" title="พิกัดเข้างาน">📍 แผนที่</a>`;
         } else {
             // Checkout mode
@@ -454,8 +459,10 @@ function renderTable(records) {
                     : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`;
             }
 
+            if (canAdminManage) actionHtml += `<button type="button" onclick="openAdminEdit('${item.id}')" class="px-3 py-1.5 bg-amber-50 text-amber-600 font-bold hover:bg-amber-100 rounded-lg transition-all text-xs border border-amber-100">🔧 จัดการ</button>`;
             if (canDelete) actionHtml += `<button type="button" onclick="deleteCheckin('${item.id}')" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบ</button>`;
-            if (!canDelete) actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
+            
+            if (!canAdminManage && !canDelete) actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
             if (item.checkout_lat && item.checkout_lng) actionHtml += `<a href="https://maps.google.com/?q=${item.checkout_lat},${item.checkout_lng}" target="_blank" class="px-3 py-1.5 bg-purple-50 text-purple-600 font-bold hover:bg-purple-100 rounded-lg transition-all text-xs border border-purple-100 ml-1" title="พิกัดเลิกงาน">📍 แผนที่</a>`;
         }
         actionHtml += `</div>`;
@@ -584,6 +591,7 @@ window.saveEditCheckin = async function() {
     const formData = new FormData();
     formData.append('id', idInput.value);
     formData.append('checkin_image', editInput.files[0]);
+    formData.append('type', activeCheckinTab);
 
     Loader.show();
     try {
@@ -607,6 +615,81 @@ window.saveEditCheckin = async function() {
                 }
             });
             closeEditCheckinModal();
+            loadCheckinHistory(); 
+        } else {
+            Toast.error(data.error);
+        }
+    } catch(e) {
+        Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+    } finally {
+        Loader.hide();
+    }
+};
+
+window.openAdminEdit = function(id) {
+    try {
+        const item = checkinData.find(r => r.id == id);
+        if(!item) {
+            Toast.error('ไม่พบข้อมูล กรุณารีเฟรชหน้าเว็บ');
+            return;
+        }
+
+        document.getElementById('admin_edit_id').value = item.id;
+        document.getElementById('admin_edit_checkin_time').value = item.checkin_time || '';
+        document.getElementById('admin_edit_checkout_time').value = item.checkout_time || '';
+        document.getElementById('admin_edit_status').value = item.admin_status || '';
+
+        const modal = document.getElementById('adminEditModal');
+        if(modal) modal.classList.remove('hidden');
+    } catch (err) {
+        console.error("Error admin modal:", err);
+        alert('เกิดข้อผิดพลาดในการเปิดหน้าต่างจัดการแอดมิน');
+    }
+};
+
+window.closeAdminEditModal = function() {
+    const modal = document.getElementById('adminEditModal');
+    if(modal) modal.classList.add('hidden');
+};
+
+window.saveAdminEdit = async function() {
+    const id = document.getElementById('admin_edit_id').value;
+    const checkin_time = document.getElementById('admin_edit_checkin_time').value;
+    const checkout_time = document.getElementById('admin_edit_checkout_time').value;
+    const admin_status = document.getElementById('admin_edit_status').value;
+
+    if (!id || !checkin_time) {
+        return Toast.error('กรุณาระบุเวลาเข้างานให้ครบถ้วน');
+    }
+
+    const formData = new FormData();
+    formData.append('id', id);
+    formData.append('type', activeCheckinTab);
+    formData.append('checkin_time', checkin_time);
+    formData.append('checkout_time', checkout_time);
+    formData.append('admin_status', admin_status);
+
+    Loader.show();
+    try {
+        const res = await fetch('api/checkin/admin_edit.php', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        
+        if(data.success) {
+            Swal.fire({
+                title: 'สำเร็จ!',
+                text: 'อัปเดตข้อมูลแอดมินเรียบร้อยแล้ว',
+                icon: 'success',
+                confirmButtonText: 'ตกลง',
+                confirmButtonColor: '#4f46e5',
+                customClass: {
+                    popup: 'rounded-3xl',
+                    confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md'
+                }
+            });
+            closeAdminEditModal();
             loadCheckinHistory(); 
         } else {
             Toast.error(data.error);

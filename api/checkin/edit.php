@@ -22,8 +22,11 @@ if (!$id) {
 }
 
 try {
+    $type = $_POST['type'] ?? 'regular';
+    $table = ($type === 'ma') ? 'ma_checkins' : 'checkins';
+
     // เช็คสิทธิ์ความเป็นเจ้าของ
-    $stmt = $pdo->prepare("SELECT user_id FROM checkins WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT user_id FROM $table WHERE id = ?");
     $stmt->execute([$id]);
     $owner_id = $stmt->fetchColumn();
     
@@ -54,7 +57,7 @@ try {
         }
 
         // ดึงรูปเก่ามาลบทิ้งเพื่อประหยัดพื้นที่
-        $stmt = $pdo->prepare("SELECT image_path FROM checkins WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT image_path FROM $table WHERE id = ?");
         $stmt->execute([$id]);
         $oldImage = $stmt->fetchColumn();
         if ($oldImage) {
@@ -64,8 +67,19 @@ try {
             }
         }
 
-        // อัปเดตเฉพาะรูปภาพในฐานข้อมูล (ลบเรื่องการอัปเดตเวลาออกแล้ว)
-        $sql = 'UPDATE checkins SET image_path = ? WHERE id = ?';
+        $type = $_POST['type'] ?? 'regular';
+        $table = ($type === 'ma') ? 'ma_checkins' : 'checkins';
+
+        // ตรวจสอบและสร้างคอลัมน์ is_edited_image หากยังไม่มี
+        try {
+            $existingCols = $pdo->query("SHOW COLUMNS FROM $table")->fetchAll(PDO::FETCH_COLUMN);
+            if (!in_array('is_edited_image', $existingCols, true)) {
+                $pdo->exec("ALTER TABLE $table ADD COLUMN is_edited_image TINYINT(1) DEFAULT 0");
+            }
+        } catch (PDOException $e) { }
+
+        // อัปเดตเฉพาะรูปภาพในฐานข้อมูลและตั้งค่าว่าแก้ไขแล้ว
+        $sql = "UPDATE $table SET image_path = ?, is_edited_image = 1 WHERE id = ?";
         $pdo->prepare($sql)->execute([$filename, $id]);
 
         echo json_encode(['success' => true, 'message' => 'อัปเดตข้อมูลสำเร็จ']);
