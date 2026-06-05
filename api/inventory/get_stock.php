@@ -6,7 +6,7 @@ require_once '../../config/auth.php';
 header('Content-Type: application/json');
 requireLogin();
 
-if (!hasRole(['admin', 'super_admin'])) {
+if (!hasRole(['admin', 'super_admin', 'viewer'])) {
     echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึง']);
     exit;
 }

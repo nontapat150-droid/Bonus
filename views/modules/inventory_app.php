@@ -2,13 +2,13 @@
 // views/modules/inventory_app.php
 if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรงไม่ได้');
 
-// Protection: Admin, Super Admin
-if (!hasRole(['admin', 'super_admin'])) {
+// Protection: Admin, Super Admin, Viewer
+if (!hasRole(['admin', 'super_admin', 'viewer'])) {
     echo "<div class='p-8 text-center text-red-600 font-bold text-xl'>ไม่มีสิทธิ์เข้าถึงหน้านี้</div>";
     exit;
 }
 
-$isAdmin = true;
+$isAdmin = hasRole(['admin', 'super_admin']);
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -39,6 +39,7 @@ $isAdmin = true;
         <button onclick="invTab('overview')" id="tab-overview" class="inv-tab active px-6 py-2 rounded-lg text-sm font-bold bg-purple-100 text-purple-700 transition-colors whitespace-nowrap">
             <i data-lucide="bar-chart-2" class="w-5 h-5 inline-block"></i> คลังสินค้า
         </button>
+        <?php if ($isAdmin): ?>
         <button onclick="invTab('inbound')" id="tab-inbound" class="inv-tab px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors whitespace-nowrap">
             <i data-lucide="download" class="w-5 h-5 inline-block"></i> นำเข้า
         </button>
@@ -46,20 +47,25 @@ $isAdmin = true;
             <i data-lucide="upload" class="w-5 h-5 inline-block"></i> เบิกออก
             <span id="outboundBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
         </button>
+        <button onclick="invTab('transfer')" id="tab-transfer" class="inv-tab px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors whitespace-nowrap">
+            <i data-lucide="refresh-cw" class="w-5 h-5 inline-block"></i> โอนย้าย
+        </button>
+        <?php endif; ?>
         <button onclick="invTab('history')" id="tab-history" class="inv-tab px-6 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors whitespace-nowrap">
             <i data-lucide="clock" class="w-5 h-5 inline-block"></i> ประวัติ
         </button>
     </div>
 
-    <?php if ($isAdmin): ?>
     <div id="view-overview" class="inv-view block space-y-4">
         <div class="card overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-3">
                     <h3 class="font-bold text-gray-700">รายการสินค้าคงเหลือ</h3>
+                    <?php if ($isAdmin): ?>
                     <button onclick="deleteAllInventory()" class="text-xs bg-red-50 hover:bg-red-600 hover:text-white text-red-600 border border-red-200 font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center shadow-sm">
                         <span class="mr-1"><i data-lucide="trash-2" class="w-5 h-5 inline-block"></i></span> ล้างคลังทั้งหมด
                     </button>
+                    <?php endif; ?>
                 </div>
                 <div class="relative w-full sm:w-64">
                     <input type="text" id="searchStock" placeholder="ค้นหาสินค้า หรือ รุ่น..." class="w-full pl-10 pr-4 py-2 input">
@@ -85,8 +91,8 @@ $isAdmin = true;
             </div>
         </div>
     </div>
-    <?php endif; ?>
 
+    <?php if ($isAdmin): ?>
     <div id="view-inbound" class="inv-view hidden space-y-6">
         <div class="card border-t-4 border-t-emerald-500">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
@@ -329,8 +335,9 @@ $isAdmin = true;
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
-    <div id="view-history" class="inv-view <?php echo !$isAdmin ? 'block' : 'hidden'; ?> space-y-4">
+    <div id="view-history" class="inv-view hidden space-y-4">
         <div class="card overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center flex-wrap gap-4">       
                 <h3 class="font-bold text-gray-700">ประวัติการรับเข้า - เบิกออก</h3>

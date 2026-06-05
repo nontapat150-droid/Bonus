@@ -27,12 +27,12 @@ try {
 
 $sql = "SELECT c.id, c.user_id, c.checkin_time, c.image_path, c.lat, c.lng, c.checkout_time, c.checkout_image, c.checkout_lat, c.checkout_lng, c.is_edited_image, c.admin_status, c.admin_edited, u.full_name, u.allow_late_time, t.team_name, TIME(c.checkin_time) as time_only
         FROM ma_checkins c
-        JOIN users u ON c.user_id = u.id
+        LEFT JOIN users u ON c.user_id = u.id
         LEFT JOIN teams t ON u.team_id = t.id
         WHERE 1=1";
 $params = [];
 
-if (!hasRole(['admin', 'super_admin'])) {
+if (!hasRole(['admin', 'super_admin', 'viewer'])) {
     $sql .= " AND c.user_id = ?";
     $params[] = $user_id;
 }
@@ -107,7 +107,7 @@ if (!$filter_month || $filter_date) {
     $off_users = $stmt_off->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($off_users as $ou) {
-        if (!hasRole(['admin', 'super_admin']) && $ou['id'] != $user_id) continue;
+        if (!hasRole(['admin', 'super_admin', 'viewer']) && $ou['id'] != $user_id) continue;
         if (in_array($ou['id'], $checked_in_user_ids)) continue;
         
         $team_name = '';

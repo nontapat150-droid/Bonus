@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 requireLogin();
 
 $user = getCurrentUser();
-$isAdmin = hasRole(['admin', 'super_admin']);
+$isAdmin = hasRole(['admin', 'super_admin', 'viewer']);
 $filter_date = $_GET['date'] ?? '';
 $filter_month = $_GET['month'] ?? '';
 

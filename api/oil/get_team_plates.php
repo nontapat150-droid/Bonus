@@ -29,7 +29,7 @@ try {
     $currentUser = $stmtUser->fetch(PDO::FETCH_ASSOC);
     $myTeamId = $currentUser ? ($currentUser['team_id'] ?? null) : null;
 
-    $isAdmin = hasRole(['admin', 'super_admin']);
+    $isAdmin = hasRole(['admin', 'super_admin', 'viewer']);
 
     // เคสงาน = เฉพาะปิดงานสำเร็จ (จบงาน) ในเดือนนี้ ไม่นับงานที่ยังไม่จบ
     $baseSql = "
