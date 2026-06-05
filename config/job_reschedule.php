@@ -116,5 +116,13 @@ function notifyAdminJobRescheduled(
         }
     }
 
+    // Send push notification to all admins via Firebase
+    if (file_exists(__DIR__ . '/firebase.php')) {
+        require_once __DIR__ . '/firebase.php';
+        if (function_exists('sendFirebasePush')) {
+            sendFirebasePush($title, $message, 'admin_only');
+        }
+    }
+
     return $notifId;
 }

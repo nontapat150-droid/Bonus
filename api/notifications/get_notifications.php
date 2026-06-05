@@ -110,6 +110,12 @@ try {
                     sendOneSignalPush($pdo, $alertTitle, $alertMsg, 'user', null, $user_id);
                 }
             }
+            if (file_exists('../../config/firebase.php')) {
+                require_once '../../config/firebase.php';
+                if (function_exists('sendFirebasePush')) {
+                    sendFirebasePush($alertTitle, $alertMsg, 'user', null, $user_id);
+                }
+            }
         }
     }
 
@@ -144,6 +150,12 @@ try {
                     require_once '../../config/onesignal.php';
                     if (function_exists('sendOneSignalPush')) {
                         sendOneSignalPush($pdo, $alertTitle, $alertMsg, 'team', $team_id);
+                    }
+                }
+                if (file_exists('../../config/firebase.php')) {
+                    require_once '../../config/firebase.php';
+                    if (function_exists('sendFirebasePush')) {
+                        sendFirebasePush($alertTitle, $alertMsg, 'team', $team_id);
                     }
                 }
             }
