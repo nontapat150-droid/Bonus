@@ -1,6 +1,31 @@
 // assets/js/checkin.js
 let checkinData = [];
 let activeCheckinTab = window.SHOW_REGULAR ? 'regular' : 'ma';
+window.activeHistoryMode = 'checkin';
+
+window.switchHistoryMode = function(mode) {
+    if (activeHistoryMode === mode) return;
+    activeHistoryMode = mode;
+    
+    const tabCheckin = document.getElementById('histTabCheckin');
+    const tabCheckout = document.getElementById('histTabCheckout');
+    
+    if (tabCheckin && tabCheckout) {
+        if (mode === 'checkin') {
+            tabCheckin.className = "flex-1 py-1.5 rounded-lg text-xs font-black transition-all bg-white text-indigo-600 shadow-sm";
+            tabCheckout.className = "flex-1 py-1.5 rounded-lg text-xs font-black transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
+        } else {
+            tabCheckout.className = "flex-1 py-1.5 rounded-lg text-xs font-black transition-all bg-white text-rose-600 shadow-sm";
+            tabCheckin.className = "flex-1 py-1.5 rounded-lg text-xs font-black transition-all text-slate-500 hover:text-slate-700 hover:bg-slate-200/50";
+        }
+    }
+    
+    const tbody = document.getElementById('historyTableBody');
+    if (tbody) {
+        tbody.innerHTML = '';
+        renderTable(checkinData);
+    }
+};
 
 window.switchCheckinTab = function(tab) {
     activeCheckinTab = tab;
@@ -385,14 +410,7 @@ function renderTable(records) {
     records.forEach((item) => {
         const dateObj = new Date(item.checkin_time);
         
-        let checkoutTimeHtml = `<span class="text-xs text-slate-400 italic md:ml-2 ml-1">ยังไม่เลิกงาน</span>`;
-        if (item.checkout_time) {
-            const coDateObj = new Date(item.checkout_time);
-            checkoutTimeHtml = `<span class="text-xs text-rose-600 font-mono bg-rose-50 px-2 py-0.5 rounded-md md:ml-2 ml-1 font-bold" title="เวลาเลิกงาน">${coDateObj.toLocaleTimeString('th-TH')}</span>`;
-        }
-
         const tr = document.createElement('tr');
-        
         tr.className = 'block md:table-row bg-white border border-slate-100 md:border-b md:border-x-0 md:border-t-0 rounded-[1.5rem] md:rounded-none shadow-sm md:shadow-none mb-4 md:mb-0 hover:bg-slate-50 transition-all p-4 md:p-0';
         
         const badge = item.status_code === 'late' 
@@ -401,32 +419,44 @@ function renderTable(records) {
                 ? `<span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-xs font-bold border border-slate-200">วันหยุด</span>`
                 : `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">ตรงเวลา</span>`);
 
-        let imageCell = item.image_path
-            ? `<a href="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence" title="รูปเข้างาน"></a>`
-            : (item.status_code === 'day_off' ? `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] text-slate-400">วันหยุด</div>` : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`);
-
-        if (item.checkout_image) {
-            imageCell += `<a href="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.checkout_image}" target="_blank" class="inline-block hover:scale-105 transition-transform ml-1"><img src="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.checkout_image}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-rose-200" alt="Checkout Evidence" title="รูปเลิกงาน"></a>`;
-        }
-
         const canEdit = item.status_code !== 'day_off' && activeCheckinTab !== 'ma' && ['super_admin', 'admin', 'technician', 'sales'].includes(window.USER_ROLE);
         const canDelete = item.status_code !== 'day_off' && activeCheckinTab !== 'ma' && window.USER_ROLE === 'super_admin';
 
+        let imageCell = '';
+        let timeHtml = '';
         let actionHtml = `<div class="flex justify-end md:justify-center gap-2">`;
-        if (canEdit) {
-            actionHtml += `<button type="button" onclick="openEditCheckin('${item.id}')" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">🖼️ แก้ไขรูป</button>`;
-        }
-        if (canDelete) {
-            actionHtml += `<button type="button" onclick="deleteCheckin('${item.id}')" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบข้อมูล</button>`;
-        }
-        if (!canEdit && !canDelete) {
-            actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
-        }
-        if (item.lat && item.lng) {
-            actionHtml += `<a href="https://maps.google.com/?q=${item.lat},${item.lng}" target="_blank" class="px-3 py-1.5 bg-sky-50 text-sky-600 font-bold hover:bg-sky-100 rounded-lg transition-all text-xs border border-sky-100 ml-1" title="พิกัดเข้างาน">📍 เข้างาน</a>`;
-        }
-        if (item.checkout_lat && item.checkout_lng) {
-            actionHtml += `<a href="https://maps.google.com/?q=${item.checkout_lat},${item.checkout_lng}" target="_blank" class="px-3 py-1.5 bg-purple-50 text-purple-600 font-bold hover:bg-purple-100 rounded-lg transition-all text-xs border border-purple-100 ml-1" title="พิกัดเลิกงาน">📍 เลิกงาน</a>`;
+        let folder = activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins';
+
+        if (activeHistoryMode === 'checkin') {
+            timeHtml = `<span class="text-xs text-indigo-600 font-mono bg-indigo-50 px-2 py-0.5 rounded-md md:ml-2 ml-1 font-bold" title="เวลาเข้างาน">${dateObj.toLocaleTimeString('th-TH')}</span>`;
+            imageCell = item.image_path
+                ? `<a href="assets/uploads/${folder}/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/${folder}/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence" title="รูปเข้างาน"></a>`
+                : (item.status_code === 'day_off' ? `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] text-slate-400">วันหยุด</div>` : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`);
+
+            if (canEdit) actionHtml += `<button type="button" onclick="openEditCheckin('${item.id}')" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">🖼️ แก้ไข</button>`;
+            if (canDelete) actionHtml += `<button type="button" onclick="deleteCheckin('${item.id}')" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบ</button>`;
+            if (!canEdit && !canDelete) actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
+            if (item.lat && item.lng) actionHtml += `<a href="https://maps.google.com/?q=${item.lat},${item.lng}" target="_blank" class="px-3 py-1.5 bg-sky-50 text-sky-600 font-bold hover:bg-sky-100 rounded-lg transition-all text-xs border border-sky-100 ml-1" title="พิกัดเข้างาน">📍 แผนที่</a>`;
+        } else {
+            // Checkout mode
+            if (item.checkout_time) {
+                const coDateObj = new Date(item.checkout_time);
+                timeHtml = `<span class="text-xs text-rose-600 font-mono bg-rose-50 px-2 py-0.5 rounded-md md:ml-2 ml-1 font-bold" title="เวลาเลิกงาน">${coDateObj.toLocaleTimeString('th-TH')}</span>`;
+            } else {
+                timeHtml = `<span class="text-xs text-slate-400 italic md:ml-2 ml-1">ยังไม่เลิกงาน</span>`;
+            }
+
+            if (item.checkout_image) {
+                imageCell = `<a href="assets/uploads/${folder}/${item.checkout_image}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/${folder}/${item.checkout_image}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-rose-200" alt="Checkout Evidence" title="รูปเลิกงาน"></a>`;
+            } else {
+                imageCell = (item.status_code === 'day_off') 
+                    ? `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] text-slate-400">วันหยุด</div>` 
+                    : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`;
+            }
+
+            if (canDelete) actionHtml += `<button type="button" onclick="deleteCheckin('${item.id}')" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบ</button>`;
+            if (!canDelete) actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
+            if (item.checkout_lat && item.checkout_lng) actionHtml += `<a href="https://maps.google.com/?q=${item.checkout_lat},${item.checkout_lng}" target="_blank" class="px-3 py-1.5 bg-purple-50 text-purple-600 font-bold hover:bg-purple-100 rounded-lg transition-all text-xs border border-purple-100 ml-1" title="พิกัดเลิกงาน">📍 แผนที่</a>`;
         }
         actionHtml += `</div>`;
 
@@ -436,8 +466,7 @@ function renderTable(records) {
                 <div class="text-right md:text-left">
                     <span class="text-slate-800 font-bold">${dateObj.toLocaleDateString('th-TH')}</span>
                     <div class="mt-1 md:mt-0 md:inline-block">
-                        <span class="text-xs text-indigo-600 font-mono bg-indigo-50 px-2 py-0.5 rounded-md md:ml-2 ml-1 font-bold" title="เวลาเข้างาน">${dateObj.toLocaleTimeString('th-TH')}</span>
-                        ${checkoutTimeHtml}
+                        ${timeHtml}
                     </div>
                 </div>
             </td>
