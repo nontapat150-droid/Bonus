@@ -29,6 +29,13 @@ try {
 
     $pdo->beginTransaction();
 
+    // ตรวจสอบว่าเช็คอินไปแล้วหรือยังในวันนี้
+    $stmtCheck = $pdo->prepare("SELECT id FROM checkins WHERE user_id = ? AND DATE(checkin_time) = CURDATE()");
+    $stmtCheck->execute([$user_id]);
+    if ($stmtCheck->fetchColumn()) {
+        throw new Exception("คุณได้ทำการเช็คอินเข้างานของวันนี้ไปแล้ว");
+    }
+
     if (!isset($_FILES['checkin_image']) || $_FILES['checkin_image']['error'] !== UPLOAD_ERR_OK) {
         throw new Exception("กรุณาอัปโหลดรูปภาพสำหรับการเช็คอิน");
     }

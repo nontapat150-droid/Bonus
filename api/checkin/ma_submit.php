@@ -28,6 +28,13 @@ if (!is_dir($upload_dir)) {
 try {
     $pdo->beginTransaction();
 
+    // ตรวจสอบว่าเช็คอิน MA ไปแล้วหรือยังในวันนี้
+    $stmtCheck = $pdo->prepare("SELECT id FROM ma_checkins WHERE user_id = ? AND DATE(checkin_time) = CURDATE()");
+    $stmtCheck->execute([$user_id]);
+    if ($stmtCheck->fetchColumn()) {
+        throw new Exception("คุณได้ทำการเช็คอิน MA ของวันนี้ไปแล้ว");
+    }
+
     if (!isset($_FILES['checkin_image']) || $_FILES['checkin_image']['error'] !== UPLOAD_ERR_OK) {
         throw new Exception('กรุณาอัปโหลดรูปภาพสำหรับการเช็คอิน MA');
     }
