@@ -50,7 +50,7 @@ if (empty($username) || empty($full_name)) {
 
 try {
     try {
-        $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('super_admin', 'admin', 'technician', 'ma_technician', 'sales', 'intern', 'viewer') NOT NULL DEFAULT 'technician'");
+        $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('super_admin', 'admin', 'technician', 'ma_technician', 'sales', 'intern') NOT NULL DEFAULT 'technician'");
         // แก้ไข Collation ให้แยกแยะวรรณยุกต์ (เช่น ปอ กับ ป๋อ จะถือว่าเป็นคนละชื่อ)
         $pdo->exec("ALTER TABLE users MODIFY COLUMN username VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL");
         $pdo->exec("ALTER TABLE users MODIFY COLUMN full_name VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL");

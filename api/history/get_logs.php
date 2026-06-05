@@ -8,7 +8,7 @@ header('Content-Type: application/json');
 requireLogin();
 
 // อนุญาตเฉพาะแอดมินหรือผู้ที่กำหนดให้ดูข้อมูลทั้งหมดได้ (รวมถึง viewer)
-if (!hasRole(['admin', 'super_admin', 'viewer'])) {
+if (!hasRole(['admin', 'super_admin'])) {
     echo json_encode(['success' => false, 'error' => 'ไม่มีสิทธิ์เข้าถึงข้อมูลประวัติรวม']);
     exit;
 }

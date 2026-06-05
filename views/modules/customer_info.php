@@ -1,7 +1,7 @@
 <?php
 // views/modules/customer_info.php
 if (!defined('PDO::ATTR_ERRMODE')) exit('เข้าถึงโดยตรงไม่ได้');
-requireRole(['admin', 'super_admin', 'viewer']);
+requireRole(['admin', 'super_admin']);
 ?>
 
 <div class="max-w-7xl mx-auto space-y-6 animate__animated animate__fadeIn">
