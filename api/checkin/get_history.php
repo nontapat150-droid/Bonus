@@ -39,6 +39,9 @@ $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // คำนวณ Dashboard โดยใช้ allow_late_time ของแต่ละผู้ใช้
 $dashboard = ['total' => 0, 'on_time' => 0, 'late' => 0];
+$checked_in_user_ids = [];
+$target_date = $filter_date ?: date('Y-m-d');
+
 foreach($records as &$r) {
     // ใช้ allow_late_time ของผู้ใช้นั้น ๆ เป็นเกณฑ์
     $user_late_time = $r['allow_late_time'] ?: '08:30:00';
@@ -53,6 +56,59 @@ foreach($records as &$r) {
         $dashboard['on_time']++;
     }
     $dashboard['total']++;
+    
+    if (strpos($r['checkin_time'], $target_date) === 0) {
+        $checked_in_user_ids[] = $r['user_id'];
+    }
+}
+unset($r);
+
+// หากมีการดึงข้อมูลของวันใดวันหนึ่ง (หรือวันนี้) ให้เช็คและเพิ่ม record วันหยุด (Day Off)
+if (!$filter_month || $filter_date) {
+    $day_name = date('l', strtotime($target_date));
+    
+    // หาพนักงานที่มีวันหยุดตรงกับวันนี้
+    $users_sql = "SELECT id, full_name, team_id, days_off FROM users WHERE days_off LIKE ?";
+    $stmt_off = $pdo->prepare($users_sql);
+    $stmt_off->execute(['%"' . $day_name . '"%']);
+    $off_users = $stmt_off->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($off_users as $ou) {
+        // หากไม่ใช่แอดมิน และข้อมูลไม่ใช่ของตัวเอง ข้ามไป
+        if (!hasRole(['admin', 'super_admin']) && $ou['id'] != $user_id) continue;
+        
+        // หากเช็คอินไปแล้ว ข้ามไป
+        if (in_array($ou['id'], $checked_in_user_ids)) continue;
+        
+        // หาชื่อทีม
+        $team_name = '';
+        if ($ou['team_id']) {
+            $stmt_t = $pdo->prepare("SELECT team_name FROM teams WHERE id = ?");
+            $stmt_t->execute([$ou['team_id']]);
+            $team_name = $stmt_t->fetchColumn();
+        }
+        
+        // สร้างข้อมูลจำลองสำหรับตาราง
+        $dummy = [
+            'id' => 'day_off_' . $ou['id'],
+            'user_id' => $ou['id'],
+            'checkin_time' => $target_date . ' 00:00:00',
+            'image_path' => null,
+            'full_name' => $ou['full_name'],
+            'allow_late_time' => '00:00:00',
+            'team_name' => $team_name,
+            'time_only' => '00:00:00',
+            'status_code' => 'day_off',
+            'status_text' => 'วันหยุด',
+            'is_day_off' => true
+        ];
+        $records[] = $dummy;
+    }
+
+    // เรียงข้อมูลใหม่ตามเวลาจากใหม่ไปเก่า
+    usort($records, function($a, $b) {
+        return strcmp($b['checkin_time'], $a['checkin_time']);
+    });
 }
 
 echo json_encode([

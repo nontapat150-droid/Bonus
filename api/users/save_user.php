@@ -23,6 +23,8 @@ $roles = $input['roles'] ?? null;
 $password = $input['password'] ?? '';
 $team_id = $input['team_id'] ?? null;
 $allow_late_time = $input['allow_late_time'] ?? '08:30';
+$days_off = $input['days_off'] ?? [];
+$days_off_json = json_encode($days_off);
 
 if (is_array($roles) && !empty($roles)) {
     $role = $roles[0];
@@ -53,17 +55,21 @@ try {
         $pdo->exec("ALTER TABLE users MODIFY COLUMN username VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL");
         $pdo->exec("ALTER TABLE users MODIFY COLUMN full_name VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL");
     } catch (Exception $e) {}
+    
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN days_off VARCHAR(255) DEFAULT NULL AFTER allow_late_time");
+    } catch (Exception $e) {}
 
     if ($id) {
         $primaryRole = saveUserRoles($pdo, (int)$id, $roles);
 
         if (!empty($password)) {
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("UPDATE users SET username = ?, full_name = ?, role = ?, password_hash = ?, team_id = ?, allow_late_time = ? WHERE id = ?");
-            $stmt->execute([$username, $full_name, $primaryRole, $hash, $team_id, $allow_late_time, $id]);
+            $stmt = $pdo->prepare("UPDATE users SET username = ?, full_name = ?, role = ?, password_hash = ?, team_id = ?, allow_late_time = ?, days_off = ? WHERE id = ?");
+            $stmt->execute([$username, $full_name, $primaryRole, $hash, $team_id, $allow_late_time, $days_off_json, $id]);
         } else {
-            $stmt = $pdo->prepare("UPDATE users SET username = ?, full_name = ?, role = ?, team_id = ?, allow_late_time = ? WHERE id = ?");
-            $stmt->execute([$username, $full_name, $primaryRole, $team_id, $allow_late_time, $id]);
+            $stmt = $pdo->prepare("UPDATE users SET username = ?, full_name = ?, role = ?, team_id = ?, allow_late_time = ?, days_off = ? WHERE id = ?");
+            $stmt->execute([$username, $full_name, $primaryRole, $team_id, $allow_late_time, $days_off_json, $id]);
         }
         echo json_encode(['success' => true, 'message' => 'ปรับปรุงข้อมูลผู้ใช้สำเร็จ']);
     } else {
@@ -74,8 +80,8 @@ try {
 
         $primaryRole = $roles[0] ?? 'technician';
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("INSERT INTO users (username, full_name, role, password_hash, team_id, allow_late_time) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$username, $full_name, $primaryRole, $hash, $team_id, $allow_late_time]);
+        $stmt = $pdo->prepare("INSERT INTO users (username, full_name, role, password_hash, team_id, allow_late_time, days_off) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$username, $full_name, $primaryRole, $hash, $team_id, $allow_late_time, $days_off_json]);
         $newId = (int)$pdo->lastInsertId();
         saveUserRoles($pdo, $newId, $roles);
         echo json_encode(['success' => true, 'message' => 'เพิ่มผู้ใช้ใหม่สำเร็จ']);

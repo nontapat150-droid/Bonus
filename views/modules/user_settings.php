@@ -17,13 +17,19 @@ if (!hasRole(['admin', 'super_admin'])) {
             </h2>
             <p class="text-[var(--c-text-3)] text-sm mt-1 font-medium">เพิ่ม แก้ไข และกำหนดสิทธิ์การใช้งานของพนักงาน</p>
         </div>
-        <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
-            <button onclick="loadPendingUsers()" class="btn-primary relative flex items-center justify-center w-full sm:w-auto" style="background: var(--c-warning); box-shadow: 0 4px 14px rgba(245,158,11, 0.40);">
-                <span class="mr-2"><i data-lucide="hourglass" class="w-4 h-4"></i></span> รออนุมัติ
-                <span id="pendingCountBadge" class="absolute -top-2 -right-2 bg-rose-500 text-white text-xs font-black px-2 py-0.5 rounded-full shadow-md hidden animate__animated animate__bounceIn">0</span>
+        <div class="mt-4 md:mt-0 flex flex-wrap gap-2 justify-end">
+            <button onclick="openIndividualSummaryModal()" class="px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-xl font-bold text-sm shadow-[0_4px_10px_-2px_rgba(14,165,233,0.4)] transition-all flex items-center justify-center">
+                <i data-lucide="pie-chart" class="w-4 h-4 mr-2"></i> สรุปรายบุคคล
             </button>
-            <button onclick="openUserModal()" class="btn-primary flex items-center justify-center w-full sm:w-auto">
-                <span class="mr-2 text-lg">+</span> เพิ่มพนักงานใหม่
+            <button onclick="openOverallSummaryModal()" class="px-4 py-2 bg-gradient-to-r from-fuchsia-500 to-purple-600 hover:from-fuchsia-400 hover:to-purple-500 text-white rounded-xl font-bold text-sm shadow-[0_4px_10px_-2px_rgba(217,70,239,0.4)] transition-all flex items-center justify-center">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 mr-2"></i> สรุปการมาทั้งหมด
+            </button>
+            <button onclick="loadPendingUsers()" class="px-4 py-2 relative flex items-center justify-center text-sm font-bold text-white rounded-xl transition-all" style="background: var(--c-warning); box-shadow: 0 4px 14px rgba(245,158,11, 0.40);">
+                <span class="mr-2"><i data-lucide="hourglass" class="w-4 h-4"></i></span> รออนุมัติ
+                <span id="pendingCountBadge" class="absolute -top-2 -right-2 bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-md hidden animate__animated animate__bounceIn">0</span>
+            </button>
+            <button onclick="openUserModal()" class="px-4 py-2 bg-[var(--c-primary)] hover:bg-[var(--c-primary-hover)] text-white rounded-xl font-bold text-sm shadow-[0_4px_14px_-2px_var(--c-primary)] transition-all flex items-center justify-center">
+                <span class="mr-2 text-lg leading-none">+</span> เพิ่มพนักงาน
             </button>
         </div>
     </div>
@@ -181,6 +187,42 @@ if (!hasRole(['admin', 'super_admin'])) {
                     <p class="text-[11px] text-slate-500 font-medium ml-1">ระบบจะถือว่าเข้างานตรงเวลา หากเช็คอินก่อนเวลาที่กำหนด</p>
                 </div>
 
+                <div id="daysOffField" class="hidden space-y-2 pt-1">
+                    <label class="flex items-center gap-2 text-xs font-bold text-slate-700 ml-1">
+                        <i data-lucide="calendar-x" class="w-4 h-4 text-rose-500"></i> วันหยุดประจำสัปดาห์
+                    </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-slate-100/80 rounded-2xl border border-slate-200/60" id="daysOffCheckboxes">
+                        <label class="group relative flex items-center gap-2 p-2 rounded-xl cursor-pointer transition-all hover:bg-white hover:shadow-sm">
+                            <input type="checkbox" name="days_off[]" value="Monday" class="dayoff-cb w-4 h-4 text-rose-600 bg-white border-slate-300 rounded focus:ring-rose-600 focus:ring-2">
+                            <span class="text-xs font-bold text-slate-700 group-hover:text-rose-700 transition-colors">วันจันทร์</span>
+                        </label>
+                        <label class="group relative flex items-center gap-2 p-2 rounded-xl cursor-pointer transition-all hover:bg-white hover:shadow-sm">
+                            <input type="checkbox" name="days_off[]" value="Tuesday" class="dayoff-cb w-4 h-4 text-rose-600 bg-white border-slate-300 rounded focus:ring-rose-600 focus:ring-2">
+                            <span class="text-xs font-bold text-slate-700 group-hover:text-rose-700 transition-colors">วันอังคาร</span>
+                        </label>
+                        <label class="group relative flex items-center gap-2 p-2 rounded-xl cursor-pointer transition-all hover:bg-white hover:shadow-sm">
+                            <input type="checkbox" name="days_off[]" value="Wednesday" class="dayoff-cb w-4 h-4 text-rose-600 bg-white border-slate-300 rounded focus:ring-rose-600 focus:ring-2">
+                            <span class="text-xs font-bold text-slate-700 group-hover:text-rose-700 transition-colors">วันพุธ</span>
+                        </label>
+                        <label class="group relative flex items-center gap-2 p-2 rounded-xl cursor-pointer transition-all hover:bg-white hover:shadow-sm">
+                            <input type="checkbox" name="days_off[]" value="Thursday" class="dayoff-cb w-4 h-4 text-rose-600 bg-white border-slate-300 rounded focus:ring-rose-600 focus:ring-2">
+                            <span class="text-xs font-bold text-slate-700 group-hover:text-rose-700 transition-colors">วันพฤหัสบดี</span>
+                        </label>
+                        <label class="group relative flex items-center gap-2 p-2 rounded-xl cursor-pointer transition-all hover:bg-white hover:shadow-sm">
+                            <input type="checkbox" name="days_off[]" value="Friday" class="dayoff-cb w-4 h-4 text-rose-600 bg-white border-slate-300 rounded focus:ring-rose-600 focus:ring-2">
+                            <span class="text-xs font-bold text-slate-700 group-hover:text-rose-700 transition-colors">วันศุกร์</span>
+                        </label>
+                        <label class="group relative flex items-center gap-2 p-2 rounded-xl cursor-pointer transition-all hover:bg-white hover:shadow-sm">
+                            <input type="checkbox" name="days_off[]" value="Saturday" class="dayoff-cb w-4 h-4 text-rose-600 bg-white border-slate-300 rounded focus:ring-rose-600 focus:ring-2">
+                            <span class="text-xs font-bold text-slate-700 group-hover:text-rose-700 transition-colors">วันเสาร์</span>
+                        </label>
+                        <label class="group relative flex items-center gap-2 p-2 rounded-xl cursor-pointer transition-all hover:bg-white hover:shadow-sm">
+                            <input type="checkbox" name="days_off[]" value="Sunday" class="dayoff-cb w-4 h-4 text-rose-600 bg-white border-slate-300 rounded focus:ring-rose-600 focus:ring-2">
+                            <span class="text-xs font-bold text-slate-700 group-hover:text-rose-700 transition-colors">วันอาทิตย์</span>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="space-y-2 pt-1">
                     <label class="flex items-center gap-2 text-xs font-bold text-slate-700 ml-1">
                         <i data-lucide="car" class="w-4 h-4 text-sky-500"></i> กำหนดทีม / ป้ายทะเบียน
@@ -231,7 +273,209 @@ if (!hasRole(['admin', 'super_admin'])) {
     </div>
 </div>
 
+<!-- Overall Summary Modal -->
+<div id="overallSummaryModal" class="fixed inset-0 z-[80] hidden bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-4">
+    <div class="bg-white rounded-[24px] w-full max-w-[95%] md:max-w-5xl flex flex-col max-h-[92vh] overflow-hidden animate__animated animate__zoomIn animate__faster z-[90] shadow-2xl border border-white/20">
+        
+        <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-fuchsia-500/10 rounded-full blur-2xl"></div>
+            <div class="flex items-center gap-4 relative z-10 w-full">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-fuchsia-50 to-purple-50 border border-fuchsia-100/50 flex items-center justify-center text-fuchsia-600 shadow-sm">
+                    <i data-lucide="bar-chart-2" class="w-6 h-6"></i>
+                </div>
+                <div class="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800 tracking-tight">สรุปการเข้างานทั้งหมด</h3>
+                        <p class="text-xs font-medium text-slate-500 mt-0.5">ตารางเปรียบเทียบสถิติการมาตรง/มาสายของพนักงานทุกคน</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="month" id="overallSummaryMonth" class="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/10 transition-all shadow-sm" onchange="loadOverallSummary()">
+                    </div>
+                </div>
+            </div>
+            <button type="button" onclick="closeOverallSummaryModal()" class="relative z-10 w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors ml-4 shrink-0">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        
+        <div class="p-6 overflow-y-auto flex-1 bg-slate-50/50">
+            <!-- Summary Boxes -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl -mr-4 -mt-4"></div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="check-circle" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">มาตรงเวลา (รวม)</p>
+                        <p id="totalOnTimeBadge" class="text-2xl font-black text-slate-800">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-16 h-16 bg-rose-500/10 rounded-full blur-xl -mr-4 -mt-4"></div>
+                    <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="clock" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">มาสาย (รวม)</p>
+                        <p id="totalLateBadge" class="text-2xl font-black text-slate-800">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-16 h-16 bg-amber-500/10 rounded-full blur-xl -mr-4 -mt-4"></div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="calendar-off" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">การลา (รวมวัน)</p>
+                        <p id="totalLeavesBadge" class="text-2xl font-black text-slate-800">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-600 whitespace-nowrap">
+                        <thead class="text-xs text-slate-500 uppercase tracking-wider font-black bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="px-6 py-4">อันดับ</th>
+                                <th class="px-6 py-4">รายชื่อพนักงาน</th>
+                                <th class="px-6 py-4 text-center">ตำแหน่ง</th>
+                                <th class="px-6 py-4 text-center text-emerald-600">มาตรงเวลา</th>
+                                <th class="px-6 py-4 text-center text-rose-600">มาสาย</th>
+                                <th class="px-6 py-4 text-center text-slate-500">วันหยุด</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overallSummaryTableBody" class="divide-y divide-slate-100">
+                            <!-- JS will populate -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Individual Summary List Modal -->
+<div id="individualSummaryModal" class="fixed inset-0 z-[80] hidden bg-slate-900/60 backdrop-blur-md flex justify-center items-center p-4">
+    <div class="bg-white rounded-[24px] w-full max-w-[95%] md:max-w-6xl flex flex-col max-h-[92vh] overflow-hidden animate__animated animate__zoomIn animate__faster z-[90] shadow-2xl border border-white/20">
+        
+        <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0 relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl"></div>
+            <div class="flex items-center gap-4 relative z-10 w-full">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50 border border-sky-100/50 flex items-center justify-center text-sky-600 shadow-sm">
+                    <i data-lucide="pie-chart" class="w-6 h-6"></i>
+                </div>
+                <div class="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800 tracking-tight">สรุปสถิติรายบุคคล</h3>
+                        <p class="text-xs font-medium text-slate-500 mt-0.5" id="individualSubtitle">เลือกพนักงานเพื่อดูรายละเอียด หรือเปลี่ยนเดือน</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="month" id="individualSummaryMonth" class="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all shadow-sm" onchange="loadIndividualSummaryData()">
+                    </div>
+                </div>
+            </div>
+            <button type="button" onclick="closeIndividualSummaryModal()" class="relative z-10 w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors ml-4 shrink-0">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar list of users -->
+            <div class="w-full md:w-1/3 lg:w-1/4 bg-slate-50 border-r border-slate-200 flex flex-col h-full">
+                <div class="p-4 border-b border-slate-200 shrink-0">
+                    <div class="relative">
+                        <input type="text" id="individualSearchUser" placeholder="ค้นหาชื่อ..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:border-sky-500 focus:ring-2 transition-all shadow-sm" onkeyup="filterIndividualUsers()">
+                        <span class="absolute left-3 top-2.5 text-slate-400"><i data-lucide="search" class="w-4 h-4"></i></span>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar" id="individualUserList">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+            <!-- Dashboard details -->
+            <div class="hidden md:flex flex-1 flex-col overflow-hidden bg-slate-50/30" id="individualDashboardArea">
+                <div class="flex-1 flex items-center justify-center text-slate-400 font-bold flex-col gap-3" id="individualEmptyState">
+                    <i data-lucide="users" class="w-16 h-16 text-slate-200"></i>
+                    <p>กรุณาเลือกพนักงานจากเมนูด้านซ้ายเพื่อดูสถิติ</p>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-6 hidden" id="individualContentState">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-100 to-sky-100 border-2 border-white shadow-md flex items-center justify-center text-indigo-500 font-black text-2xl uppercase" id="indAvatar">U</div>
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-800" id="indName">ชื่อ-นามสกุล</h2>
+                            <p class="text-sm font-bold text-sky-600 mt-1" id="indRole">ตำแหน่ง</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-xs font-bold text-slate-500 mb-1">มาตรงเวลา (ครั้ง)</p>
+                            <p class="text-2xl font-black text-emerald-600" id="indOnTime">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-xs font-bold text-slate-500 mb-1">มาสาย (ครั้ง)</p>
+                            <p class="text-2xl font-black text-rose-600" id="indLate">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-xs font-bold text-slate-500 mb-1">วันหยุด (ครั้ง)</p>
+                            <p class="text-2xl font-black text-slate-600" id="indDayOff">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-xs font-bold text-slate-500 mb-1">ลางาน (วัน)</p>
+                            <p class="text-2xl font-black text-amber-600" id="indLeaves">0</p>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-xs font-bold text-slate-500 mb-1">งาน MA สำเร็จ</p>
+                            <p class="text-2xl font-black text-indigo-600" id="indMaJobs">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-xs font-bold text-slate-500 mb-1">งานติดตั้งสำเร็จ</p>
+                            <p class="text-2xl font-black text-blue-600" id="indInstallJobs">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-xs font-bold text-slate-500 mb-1">เติมน้ำมัน (ครั้ง)</p>
+                            <p class="text-2xl font-black text-teal-600" id="indOil">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-xs font-bold text-slate-500 mb-1">เบิกค่าแรกเข้า (ครั้ง)</p>
+                            <p class="text-2xl font-black text-fuchsia-600" id="indStartDay">0</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Calendar / History Table -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                        <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
+                            <h4 class="font-black text-slate-700">ประวัติการเข้างานเดือนที่เลือก</h4>
+                        </div>
+                        <div class="overflow-y-auto max-h-[300px]">
+                            <table class="w-full text-sm text-left text-slate-600 whitespace-nowrap">
+                                <thead class="text-[10px] text-slate-500 uppercase tracking-wider font-black bg-white sticky top-0 border-b border-slate-200 shadow-sm">
+                                    <tr>
+                                        <th class="px-5 py-3">วันที่</th>
+                                        <th class="px-5 py-3">สถานะ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="indHistoryTableBody" class="divide-y divide-slate-100">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="assets/js/admin_summary.js"></script>
 <script>
 async function updatePendingBadge() {
     try {
