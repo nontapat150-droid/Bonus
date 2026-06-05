@@ -384,6 +384,13 @@ function renderTable(records) {
 
     records.forEach((item) => {
         const dateObj = new Date(item.checkin_time);
+        
+        let checkoutTimeHtml = `<span class="text-xs text-slate-400 italic md:ml-2 ml-1">ยังไม่เลิกงาน</span>`;
+        if (item.checkout_time) {
+            const coDateObj = new Date(item.checkout_time);
+            checkoutTimeHtml = `<span class="text-xs text-rose-600 font-mono bg-rose-50 px-2 py-0.5 rounded-md md:ml-2 ml-1 font-bold" title="เวลาเลิกงาน">${coDateObj.toLocaleTimeString('th-TH')}</span>`;
+        }
+
         const tr = document.createElement('tr');
         
         tr.className = 'block md:table-row bg-white border border-slate-100 md:border-b md:border-x-0 md:border-t-0 rounded-[1.5rem] md:rounded-none shadow-sm md:shadow-none mb-4 md:mb-0 hover:bg-slate-50 transition-all p-4 md:p-0';
@@ -394,9 +401,13 @@ function renderTable(records) {
                 ? `<span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-xs font-bold border border-slate-200">วันหยุด</span>`
                 : `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold border border-emerald-200">ตรงเวลา</span>`);
 
-        const imageCell = item.image_path
-            ? `<a href="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence"></a>`
+        let imageCell = item.image_path
+            ? `<a href="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence" title="รูปเข้างาน"></a>`
             : (item.status_code === 'day_off' ? `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] text-slate-400">วันหยุด</div>` : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`);
+
+        if (item.checkout_image) {
+            imageCell += `<a href="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.checkout_image}" target="_blank" class="inline-block hover:scale-105 transition-transform ml-1"><img src="assets/uploads/${activeCheckinTab === 'ma' ? 'ma_checkins' : 'checkins'}/${item.checkout_image}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-rose-200" alt="Checkout Evidence" title="รูปเลิกงาน"></a>`;
+        }
 
         const canEdit = item.status_code !== 'day_off' && activeCheckinTab !== 'ma' && ['super_admin', 'admin', 'technician', 'sales'].includes(window.USER_ROLE);
         const canDelete = item.status_code !== 'day_off' && activeCheckinTab !== 'ma' && window.USER_ROLE === 'super_admin';
@@ -412,7 +423,10 @@ function renderTable(records) {
             actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
         }
         if (item.lat && item.lng) {
-            actionHtml += `<a href="https://maps.google.com/?q=${item.lat},${item.lng}" target="_blank" class="px-3 py-1.5 bg-sky-50 text-sky-600 font-bold hover:bg-sky-100 rounded-lg transition-all text-xs border border-sky-100 ml-1">📍 แผนที่</a>`;
+            actionHtml += `<a href="https://maps.google.com/?q=${item.lat},${item.lng}" target="_blank" class="px-3 py-1.5 bg-sky-50 text-sky-600 font-bold hover:bg-sky-100 rounded-lg transition-all text-xs border border-sky-100 ml-1" title="พิกัดเข้างาน">📍 เข้างาน</a>`;
+        }
+        if (item.checkout_lat && item.checkout_lng) {
+            actionHtml += `<a href="https://maps.google.com/?q=${item.checkout_lat},${item.checkout_lng}" target="_blank" class="px-3 py-1.5 bg-purple-50 text-purple-600 font-bold hover:bg-purple-100 rounded-lg transition-all text-xs border border-purple-100 ml-1" title="พิกัดเลิกงาน">📍 เลิกงาน</a>`;
         }
         actionHtml += `</div>`;
 
@@ -421,12 +435,17 @@ function renderTable(records) {
                 <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">วันที่/เวลา</span>
                 <div class="text-right md:text-left">
                     <span class="text-slate-800 font-bold">${dateObj.toLocaleDateString('th-TH')}</span>
-                    <span class="text-xs text-indigo-600 font-mono bg-indigo-50 px-2 py-0.5 rounded-md md:ml-2 ml-1 font-bold">${dateObj.toLocaleTimeString('th-TH')}</span>
+                    <div class="mt-1 md:mt-0 md:inline-block">
+                        <span class="text-xs text-indigo-600 font-mono bg-indigo-50 px-2 py-0.5 rounded-md md:ml-2 ml-1 font-bold" title="เวลาเข้างาน">${dateObj.toLocaleTimeString('th-TH')}</span>
+                        ${checkoutTimeHtml}
+                    </div>
                 </div>
             </td>
             <td class="flex justify-between items-center md:table-cell px-2 md:px-4 py-3 border-b border-dashed border-slate-100 md:border-none md:text-center">
                 <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">รูปถ่าย</span>
-                ${imageCell}
+                <div class="flex items-center justify-end md:justify-center">
+                    ${imageCell}
+                </div>
             </td>
             <td class="flex justify-between items-center md:table-cell px-2 md:px-4 py-3 border-b border-dashed border-slate-100 md:border-none">
                 <span class="md:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest">พนักงาน</span>
@@ -765,14 +784,23 @@ window.exportCheckin = function() {
     
     const exportArr = checkinData.map((r, i) => {
         const d = new Date(r.checkin_time);
+        let checkoutTime = 'ยังไม่เลิกงาน';
+        if (r.checkout_time) {
+            const coDate = new Date(r.checkout_time);
+            checkoutTime = coDate.toLocaleTimeString('th-TH');
+        }
         return {
             "ลำดับ": i + 1,
             "วันที่": d.toLocaleDateString('th-TH'),
-            "เวลา": d.toLocaleTimeString('th-TH'),
+            "เวลาเข้างาน": d.toLocaleTimeString('th-TH'),
+            "พิกัดเข้างาน": r.lat && r.lng ? `${r.lat}, ${r.lng}` : '-',
+            "เวลาเลิกงาน": checkoutTime,
+            "พิกัดเลิกงาน": r.checkout_lat && r.checkout_lng ? `${r.checkout_lat}, ${r.checkout_lng}` : '-',
             "สถานะ": r.status_text,
             "ชื่อ-นามสกุล": r.full_name,
             "สังกัด/ทีม": r.team_name || '-',
-            "ไฟล์หลักฐาน": r.image_path
+            "รูปเข้างาน": r.image_path || 'ไม่มีรูป',
+            "รูปเลิกงาน": r.checkout_image || 'ไม่มีรูป'
         };
     });
 
