@@ -15,6 +15,13 @@ if (!hasRole('super_admin')) {
 try {
     ensureMaJobSchema($pdo);
 
+    // Ensure days_off column exists
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN days_off JSON DEFAULT NULL");
+    } catch (PDOException $e) {
+        // Ignore if exists
+    }
+
     $stmt = $pdo->query("
         SELECT u.id, u.username, u.role, u.full_name, u.created_at, u.team_id, u.allow_late_time, u.days_off, t.team_name 
         FROM users u 
