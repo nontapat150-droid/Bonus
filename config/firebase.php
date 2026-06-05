@@ -6,8 +6,25 @@ function getFirebaseAccessToken($jsonPath) {
     $keyData = json_decode(file_get_contents($jsonPath), true);
     if (!$keyData) return null;
 
-    $header = json_encode(['alg' => 'RS256', 'typ' => 'JWT']);
+    $header = json_encode([
+        'alg' => 'RS256', 
+        'typ' => 'JWT',
+        'kid' => $keyData['private_key_id']
+    ]);
+    
+    // Fetch real UTC time to fix clock skew (System clock may be off)
+    $chTime = curl_init('https://google.com');
+    curl_setopt($chTime, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($chTime, CURLOPT_HEADER, true);
+    curl_setopt($chTime, CURLOPT_NOBODY, true);
+    $resTime = curl_exec($chTime);
+    curl_close($chTime);
+
     $now = time();
+    if (preg_match('/^Date:\s+(.*)$/mi', $resTime, $matches)) {
+        $now = strtotime(trim($matches[1]));
+    }
+    
     $exp = $now + 3600;
 
     $claim = json_encode([
@@ -16,14 +33,14 @@ function getFirebaseAccessToken($jsonPath) {
         'aud' => $keyData['token_uri'],
         'exp' => $exp,
         'iat' => $now
-    ]);
+    ], JSON_UNESCAPED_SLASHES);
 
     $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
     $base64UrlClaim = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($claim));
 
     $signatureInput = $base64UrlHeader . '.' . $base64UrlClaim;
     $signature = '';
-    openssl_sign($signatureInput, $signature, $keyData['private_key'], 'sha256WithRSAEncryption');
+    openssl_sign($signatureInput, $signature, $keyData['private_key'], OPENSSL_ALGO_SHA256);
     $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
 
     $jwt = $signatureInput . '.' . $base64UrlSignature;

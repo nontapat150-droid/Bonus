@@ -298,8 +298,10 @@ if ($page === 'home') {
           const permission = await Notification.requestPermission();
           if (permission === 'granted') {
             console.log('Firebase Notification permission granted.');
-            // หากคุณมี VAPID Key สำหรับ Web Push สามารถระบุได้ใน getToken({ vapidKey: '...' })
-            const token = await messaging.getToken();
+            // 🚨 TODO: เพิ่ม VAPID Key (Web Push certificate) จากเมนู Cloud Messaging ใน Firebase Console
+            const token = await messaging.getToken({ 
+                vapidKey: 'BNYGUmcn9irxmIZ7sHknEB4qZyK7h_eXFTga4h2Y-rTNjurEyU5v5zGA5BbHvehLEOoodaA72NgxoZkmx9H5fBg' 
+            });
             if (token) {
               console.log('FCM Token generated successfully.');
               // ส่ง Token ไปผูกกับ Topic ที่ Backend
