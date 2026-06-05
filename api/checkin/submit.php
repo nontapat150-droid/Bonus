@@ -20,6 +20,11 @@ if (!is_dir($upload_dir)) {
 }
 
 try {
+    // Add columns dynamically if not exist
+    try {
+        $pdo->exec("ALTER TABLE checkins ADD COLUMN lat VARCHAR(50) DEFAULT NULL, ADD COLUMN lng VARCHAR(50) DEFAULT NULL");
+    } catch (PDOException $e) { }
+
     $pdo->beginTransaction();
 
     if (!isset($_FILES['checkin_image']) || $_FILES['checkin_image']['error'] !== UPLOAD_ERR_OK) {
@@ -62,9 +67,12 @@ try {
         $current_time = date('H:i:s');
         $is_late = ($current_time > $allow_late_time) ? 1 : 0;
 
-        // 3. บันทึกลงฐานข้อมูล (เพิ่ม is_late)
-        $stmt = $pdo->prepare("INSERT INTO checkins (user_id, image_path, is_late) VALUES (?, ?, ?)");
-        $stmt->execute([$user_id, $filename, $is_late]);
+        $lat = $_POST['lat'] ?? null;
+        $lng = $_POST['lng'] ?? null;
+
+        // 3. บันทึกลงฐานข้อมูล (เพิ่ม is_late, lat, lng)
+        $stmt = $pdo->prepare("INSERT INTO checkins (user_id, image_path, is_late, lat, lng) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$user_id, $filename, $is_late, $lat, $lng]);
     } else {
         throw new Exception("เกิดข้อผิดพลาดในการบันทึกไฟล์รูปภาพ");
     }

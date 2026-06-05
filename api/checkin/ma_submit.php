@@ -74,8 +74,11 @@ try {
     $current_time = date('H:i:s');
     $is_late = ($current_time > $allow_late_time) ? 1 : 0;
 
-    $stmt = $pdo->prepare("INSERT INTO ma_checkins (user_id, image_path, is_late) VALUES (?, ?, ?)");
-    $stmt->execute([$user_id, $filename, $is_late]);
+    $lat = $_POST['lat'] ?? null;
+    $lng = $_POST['lng'] ?? null;
+
+    $stmt = $pdo->prepare("INSERT INTO ma_checkins (user_id, image_path, is_late, lat, lng) VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute([$user_id, $filename, $is_late, $lat, $lng]);
 
     $pdo->commit();
 

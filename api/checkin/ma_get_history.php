@@ -14,7 +14,7 @@ $filter_month = $_GET['month'] ?? '';
 
 $deadline = getMaCheckinLateTime($pdo);
 
-$sql = "SELECT c.id, c.user_id, c.checkin_time, c.image_path, c.is_late, u.full_name, t.team_name, TIME(c.checkin_time) AS time_only
+$sql = "SELECT c.id, c.user_id, c.checkin_time, c.image_path, c.is_late, c.lat, c.lng, u.full_name, t.team_name, TIME(c.checkin_time) AS time_only
         FROM ma_checkins c
         JOIN users u ON c.user_id = u.id
         LEFT JOIN teams t ON u.team_id = t.id

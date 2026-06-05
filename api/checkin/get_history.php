@@ -11,7 +11,7 @@ $filter_date = $_GET['date'] ?? '';
 $filter_month = $_GET['month'] ?? ''; 
 
 // ดึงข้อมูลเช็คอิน พร้อมกับ allow_late_time ของแต่ละผู้ใช้
-$sql = "SELECT c.id, c.checkin_time, c.image_path, u.full_name, u.allow_late_time, t.team_name, TIME(c.checkin_time) as time_only
+$sql = "SELECT c.id, c.checkin_time, c.image_path, c.lat, c.lng, u.full_name, u.allow_late_time, t.team_name, TIME(c.checkin_time) as time_only
         FROM checkins c
         JOIN users u ON c.user_id = u.id
         LEFT JOIN teams t ON u.team_id = t.id
