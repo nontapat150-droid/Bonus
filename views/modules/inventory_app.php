@@ -147,7 +147,7 @@ $isAdmin = true;
             <!-- Real-time Scanned Session Table -->
             <div id="realtimeScanSection" class="mt-6 hidden">
                 <h3 class="font-bold text-gray-700 text-md mb-3 flex items-center">
-                    <span class="text-emerald-500 mr-2"><i data-lucide="list-checks" class="w-5 h-5 inline-block"></i></span> รายการที่เพิ่งสแกนนำเข้า
+                    <span class="text-emerald-500 mr-2"><i data-lucide="list-checks" class="w-5 h-5 inline-block"></i></span> รายการที่เพิ่งสแกนนำเข้า (รอการยืนยัน)
                 </h3>
                 <div class="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-sm">
                     <table class="w-full text-left border-collapse">
@@ -165,6 +165,11 @@ $isAdmin = true;
                             <!-- JS will populate -->
                         </tbody>
                     </table>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button id="confirmInboundSessionBtn" onclick="submitInboundSession()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                        ยืนยันนำเข้าคลัง (0 รายการ)
+                    </button>
                 </div>
             </div>
         </div>
