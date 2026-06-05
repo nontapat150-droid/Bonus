@@ -42,13 +42,16 @@ try {
     $start_day_counts = $stmtStartDay->fetchAll(PDO::FETCH_KEY_PAIR);
 
     // 6. Get MA Jobs completed
-    // MA Jobs can be assigned via assigned_user_id
     $stmtMaJobs = $pdo->prepare("SELECT assigned_user_id, COUNT(*) as cnt FROM ma_jobs WHERE status = 'completed' AND DATE(updated_at) BETWEEN ? AND ? AND assigned_user_id IS NOT NULL GROUP BY assigned_user_id");
     $stmtMaJobs->execute([$start_date, $end_date]);
     $ma_job_counts = $stmtMaJobs->fetchAll(PDO::FETCH_KEY_PAIR);
 
-    // 7. Get Install Jobs completed
-    $stmtInstallJobs = $pdo->prepare("SELECT assigned_user_id, COUNT(*) as cnt FROM jobs WHERE status = 'completed' AND DATE(updated_at) BETWEEN ? AND ? AND assigned_user_id IS NOT NULL GROUP BY assigned_user_id");
+    $stmtMaJobsByTeam = $pdo->prepare("SELECT team_id, COUNT(*) as cnt FROM ma_jobs WHERE status = 'completed' AND DATE(updated_at) BETWEEN ? AND ? AND team_id IS NOT NULL AND assigned_user_id IS NULL GROUP BY team_id");
+    $stmtMaJobsByTeam->execute([$start_date, $end_date]);
+    $ma_job_counts_by_team = $stmtMaJobsByTeam->fetchAll(PDO::FETCH_KEY_PAIR);
+
+    // 7. Get Install Jobs completed (jobs table uses team_id, not assigned_user_id)
+    $stmtInstallJobs = $pdo->prepare("SELECT team_id, COUNT(*) as cnt FROM jobs WHERE status = 'completed' AND DATE(updated_at) BETWEEN ? AND ? AND team_id IS NOT NULL GROUP BY team_id");
     $stmtInstallJobs->execute([$start_date, $end_date]);
     $install_job_counts = $stmtInstallJobs->fetchAll(PDO::FETCH_KEY_PAIR);
 
@@ -81,6 +84,10 @@ try {
         $days_off = json_decode($u['days_off'] ?: '[]', true) ?: [];
         $allow_late = $u['allow_late_time'] ?: '08:30:00';
         
+        $team_id = $u['team_id'];
+        $ma_jobs = ($ma_job_counts[$uid] ?? 0) + ($team_id ? ($ma_job_counts_by_team[$team_id] ?? 0) : 0);
+        $install_jobs = $team_id ? ($install_job_counts[$team_id] ?? 0) : 0;
+
         $stats = [
             'id' => $uid,
             'full_name' => $u['full_name'],
@@ -90,8 +97,8 @@ try {
             'day_off' => 0,
             'oil_count' => $oil_counts[$uid] ?? 0,
             'start_day_count' => $start_day_counts[$uid] ?? 0,
-            'ma_job_count' => $ma_job_counts[$uid] ?? 0,
-            'install_job_count' => $install_job_counts[$uid] ?? 0,
+            'ma_job_count' => $ma_jobs,
+            'install_job_count' => $install_jobs,
             'leave_count' => $leave_counts[$uid] ?? 0,
             'history' => []
         ];
@@ -169,5 +176,6 @@ try {
     ]);
 
 } catch (PDOException $e) {
+    file_put_contents('debug.txt', date('Y-m-d H:i:s') . " - " . $e->getMessage() . "\n", FILE_APPEND);
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
