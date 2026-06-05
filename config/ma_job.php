@@ -283,10 +283,17 @@ function ensureMaCheckinSchema(PDO $pdo) {
             image_path VARCHAR(255) NOT NULL,
             checkin_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             is_late TINYINT(1) NOT NULL DEFAULT 0,
+            lat VARCHAR(50) DEFAULT NULL,
+            lng VARCHAR(50) DEFAULT NULL,
             KEY idx_ma_checkin_user (user_id),
             KEY idx_ma_checkin_time (checkin_time),
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // Add dynamically if table already exists but lacks columns
+        $existingCols = $pdo->query("SHOW COLUMNS FROM ma_checkins")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('lat', $existingCols, true)) $pdo->exec("ALTER TABLE ma_checkins ADD COLUMN lat VARCHAR(50) DEFAULT NULL");
+        if (!in_array('lng', $existingCols, true)) $pdo->exec("ALTER TABLE ma_checkins ADD COLUMN lng VARCHAR(50) DEFAULT NULL");
     } catch (Exception $e) {}
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS system_settings (

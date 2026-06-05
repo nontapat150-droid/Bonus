@@ -98,8 +98,27 @@ function initRegularCheckin() {
 
             Loader.show();
             submitBtn.disabled = true;
+            submitBtn.innerHTML = 'กำลังขอตำแหน่ง...';
+            
+            let lat = null, lng = null;
+            try {
+                const pos = await new Promise((resolve, reject) => {
+                    if (!navigator.geolocation) reject("Browser no geoloc");
+                    else navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: true, timeout: 10000});
+                });
+                lat = pos.coords.latitude;
+                lng = pos.coords.longitude;
+            } catch(e) {
+                console.warn("Location error:", e);
+                // ข้ามไปถ้าขอตำแหน่งไม่ได้
+            }
+
             submitBtn.innerHTML = 'กำลังบันทึก...';
             const formData = new FormData(form);
+            if (lat && lng) {
+                formData.append('lat', lat);
+                formData.append('lng', lng);
+            }
 
             try {
                 const response = await fetch('api/checkin/submit.php', { method: 'POST', body: formData });
@@ -206,10 +225,29 @@ function initMaCheckin() {
 
             Loader.show();
             submitBtn.disabled = true;
+            submitBtn.innerHTML = 'กำลังขอตำแหน่ง...';
+
+            let lat = null, lng = null;
+            try {
+                const pos = await new Promise((resolve, reject) => {
+                    if (!navigator.geolocation) reject("Browser no geoloc");
+                    else navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: true, timeout: 10000});
+                });
+                lat = pos.coords.latitude;
+                lng = pos.coords.longitude;
+            } catch(e) {
+                console.warn("Location error:", e);
+            }
+
             submitBtn.innerHTML = 'กำลังบันทึก...';
+            const formData = new FormData(form);
+            if (lat && lng) {
+                formData.append('lat', lat);
+                formData.append('lng', lng);
+            }
 
             try {
-                const response = await fetch('api/checkin/ma_submit.php', { method: 'POST', body: new FormData(form) });
+                const response = await fetch('api/checkin/ma_submit.php', { method: 'POST', body: formData });
                 const result = await response.json();
 
                 if (result.success) {
@@ -372,6 +410,9 @@ function renderTable(records) {
         }
         if (!canEdit && !canDelete) {
             actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
+        }
+        if (item.lat && item.lng) {
+            actionHtml += `<a href="https://maps.google.com/?q=${item.lat},${item.lng}" target="_blank" class="px-3 py-1.5 bg-sky-50 text-sky-600 font-bold hover:bg-sky-100 rounded-lg transition-all text-xs border border-sky-100 ml-1">📍 แผนที่</a>`;
         }
         actionHtml += `</div>`;
 
@@ -763,7 +804,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ฟังก์ชันหลักสำหรับส่งข้อมูลเลิกงาน
-    function processCheckout(imageFile, type) {
+    async function processCheckout(imageFile, type) {
         if (!imageFile) {
             Swal.fire({
                 icon: 'warning',
@@ -773,7 +814,24 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // สามารถเพิ่มการดึง GPS แบบเดียวกับตอนเช็คอินได้ที่นี่
+        Swal.fire({
+            title: 'กำลังขอตำแหน่ง...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        let lat = null, lng = null;
+        try {
+            const pos = await new Promise((resolve, reject) => {
+                if (!navigator.geolocation) reject("Browser no geoloc");
+                else navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: true, timeout: 10000});
+            });
+            lat = pos.coords.latitude;
+            lng = pos.coords.longitude;
+        } catch(e) {
+            console.warn("Location error:", e);
+        }
+
         Swal.fire({
             title: 'กำลังบันทึกการเลิกงาน...',
             allowOutsideClick: false,
@@ -783,6 +841,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData();
         formData.append('checkout_image', imageFile);
         formData.append('type', type); // 'regular' หรือ 'ma'
+        if (lat && lng) {
+            formData.append('lat', lat);
+            formData.append('lng', lng);
+        }
 
         // เรียกใช้งาน API สำหรับ Checkout (ต้องมั่นใจว่ามีไฟล์ API รองรับ)
         fetch('api/checkin/checkout.php', {
