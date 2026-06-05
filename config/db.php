@@ -1,5 +1,7 @@
 <?php
 // config/db.php
+// ปิดการแสดงข้อผิดพลาดทางหน้าจอ เพื่อไม่ให้ข้อความไปรบกวน JSON
+ini_set('display_errors', 0);
 
 date_default_timezone_set('Asia/Bangkok');
 
