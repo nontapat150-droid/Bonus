@@ -96,23 +96,7 @@ try {
             $pdo->prepare("INSERT INTO notifications (title, message, target_user_id, created_by) VALUES (?, ?, ?, ?)")
                 ->execute([$title, $message, $target_user_id, $current_user_id]);
                 
-            // Send push notification to Admins via OneSignal
-            if (file_exists('../../config/onesignal.php')) {
-                require_once '../../config/onesignal.php';
-                if (function_exists('sendOneSignalPush')) {
-                    sendOneSignalPush($pdo, $title, $message, 'admin_only');
-                    sendOneSignalPush($pdo, $title, $message, 'user', null, $target_user_id);
-                }
-            }
 
-            // Send push notification to Admins via Firebase
-            if (file_exists('../../config/firebase.php')) {
-                require_once '../../config/firebase.php';
-                if (function_exists('sendFirebasePush')) {
-                    sendFirebasePush($title, $message, 'admin_only');
-                    sendFirebasePush($title, $message, 'user', null, $target_user_id);
-                }
-            }
         } catch (Exception $e) {} // ignore notification errors
     }
 

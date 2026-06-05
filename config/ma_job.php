@@ -245,21 +245,7 @@ function notifyMaJobAssignment(PDO $pdo, $teamId, $title, $message, $createdBy) 
         $ins->execute([$title, $message, $teamId, null, $createdBy]);
     }
     
-    // Send push notification via OneSignal
-    if (file_exists(__DIR__ . '/onesignal.php')) {
-        require_once __DIR__ . '/onesignal.php';
-        if (function_exists('sendOneSignalPush')) {
-            sendOneSignalPush($pdo, $title, $message, 'team', $teamId);
-        }
-    }
 
-    // Send push notification via Firebase
-    if (file_exists(__DIR__ . '/firebase.php')) {
-        require_once __DIR__ . '/firebase.php';
-        if (function_exists('sendFirebasePush')) {
-            sendFirebasePush($title, $message, 'team', $teamId);
-        }
-    }
 }
 
 function getRoleLabel($role) {
