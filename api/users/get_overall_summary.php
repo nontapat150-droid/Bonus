@@ -10,6 +10,13 @@ $start_date = $month . '-01';
 $end_date = date('Y-m-t', strtotime($start_date));
 
 try {
+    // Ensure days_off column exists
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN days_off JSON DEFAULT NULL");
+    } catch (PDOException $e) {
+        // Ignore if exists
+    }
+
     // 1. Get all active users
     $stmtUsers = $pdo->query("SELECT id, full_name, role, team_id, allow_late_time, days_off FROM users WHERE status = 'approved'");
     $users = $stmtUsers->fetchAll(PDO::FETCH_ASSOC);
