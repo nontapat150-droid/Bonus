@@ -52,7 +52,19 @@ try {
     // ==========================================
     if (file_exists('../../config/onesignal.php')) {
         require_once '../../config/onesignal.php';
-        sendOneSignalPush($pdo, $title, $message, $type, $final_team_id, $final_target_user_id);
+        if (function_exists('sendOneSignalPush')) {
+            sendOneSignalPush($pdo, $title, $message, $type, $final_team_id, $final_target_user_id);
+        }
+    }
+
+    // ==========================================
+    // 🚀 ส่ง Push Notification ผ่าน Firebase
+    // ==========================================
+    if (file_exists('../../config/firebase.php')) {
+        require_once '../../config/firebase.php';
+        if (function_exists('sendFirebasePush')) {
+            sendFirebasePush($title, $message, $type, $final_team_id, $final_target_user_id);
+        }
     }
     // ==========================================
 

@@ -76,6 +76,15 @@ try {
                     sendOneSignalPush($pdo, $title, $message, 'user', null, $target_user_id);
                 }
             }
+
+            // Send push notification to Admins via Firebase
+            if (file_exists('../../config/firebase.php')) {
+                require_once '../../config/firebase.php';
+                if (function_exists('sendFirebasePush')) {
+                    sendFirebasePush($title, $message, 'admin_only');
+                    sendFirebasePush($title, $message, 'user', null, $target_user_id);
+                }
+            }
         } catch (Exception $e) {} // ignore notification errors
     }
 

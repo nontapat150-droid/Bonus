@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // index.php (Ultimate SaaS Dashboard)
 require_once 'config/db.php';
 require_once 'config/auth.php';
@@ -269,6 +269,77 @@ if ($page === 'home') {
           }
         } catch (error) {
           console.warn("OneSignal setup failed", error);
+        }
+      });
+    </script>
+
+    <!-- Firebase Web Push SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+    <script>
+      // ==========================================
+      // 🚨 TODO: ให้นำค่าจาก Firebase Console มาใส่ที่นี่
+      // ==========================================
+      const firebaseConfig = {
+  apiKey: "AIzaSyDha27EeFxPmyoTD2o1WhMzjyxiSGe9Kw8",
+  authDomain: "apis-1cd5e.firebaseapp.com",
+  projectId: "apis-1cd5e",
+  storageBucket: "apis-1cd5e.firebasestorage.app",
+  messagingSenderId: "718694613926",
+  appId: "1:718694613926:web:abc7ae0077ddda732d8567",
+  measurementId: "G-R26KN2WVMB" // <--- เปลี่ยนตรงนี้
+      };
+      
+      firebase.initializeApp(firebaseConfig);
+      const messaging = firebase.messaging();
+
+      async function requestFirebasePermission() {
+        try {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            console.log('Firebase Notification permission granted.');
+            // หากคุณมี VAPID Key สำหรับ Web Push สามารถระบุได้ใน getToken({ vapidKey: '...' })
+            const token = await messaging.getToken();
+            if (token) {
+              console.log('FCM Token generated successfully.');
+              // ส่ง Token ไปผูกกับ Topic ที่ Backend
+              await fetch('api/notifications/subscribe_topic.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: token })
+              });
+            }
+          }
+        } catch (error) {
+          console.warn('Firebase push setup skipped or failed:', error);
+        }
+      }
+
+      // ขอสิทธิ์เมื่อเข้าสู่ระบบเรียบร้อย
+      <?php if(isset($user['id'])): ?>
+      document.addEventListener('DOMContentLoaded', () => {
+          setTimeout(requestFirebasePermission, 2500); // ดีเลย์เล็กน้อยไม่ให้รบกวน UI หลัก
+      });
+      <?php endif; ?>
+
+      messaging.onMessage((payload) => {
+        console.log('Firebase Message received in foreground: ', payload);
+        const title = payload.notification?.title || 'แจ้งเตือนใหม่';
+        const body = payload.notification?.body || '';
+        
+        // แสดง Toast ถ้ามี
+        if (typeof Toast !== 'undefined' && Toast.info) {
+             Toast.info(`<b>${title}</b><br>${body}`);
+        } else if (typeof Swal !== 'undefined') {
+             Swal.fire({ title: title, text: body, icon: 'info', position: 'top-end', toast: true, timer: 4000, showConfirmButton: false });
+        }
+        
+        // อัปเดตจุดแดงกระดิ่ง
+        const dot = document.getElementById('notificationUnreadDot');
+        if (dot) {
+            dot.classList.remove('hidden');
+            let current = parseInt(dot.innerText) || 0;
+            dot.innerText = current + 1;
         }
       });
     </script>
