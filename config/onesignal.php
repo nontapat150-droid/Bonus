@@ -17,9 +17,14 @@ function sendOneSignalPush($pdo, $title, $message, $type = 'all', $team_id = nul
 
     $fields = array(
         'app_id' => ONESIGNAL_APP_ID,
+        'target_channel' => 'push',
         'contents' => $content,
         'headings' => $headings,
-        'url' => 'https://bonus2026.infinityfreeapp.com/'
+        'url' => 'https://bonus2026.infinityfreeapp.com/',
+        'priority' => 10,
+        'ios_interruption_level' => 'active',
+        'ios_sound' => 'default',
+        'enable_frequency_cap' => false
     );
 
     if ($type === 'user' && $target_user_id) {
@@ -56,7 +61,7 @@ function sendOneSignalPush($pdo, $title, $message, $type = 'all', $team_id = nul
     curl_setopt($ch, CURLOPT_URL, "https://api.onesignal.com/notifications");
     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
         'Content-Type: application/json; charset=utf-8',
-        'Authorization: Basic ' . ONESIGNAL_REST_API_KEY
+        'Authorization: Key ' . ONESIGNAL_REST_API_KEY
     ));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($ch, CURLOPT_HEADER, FALSE);
