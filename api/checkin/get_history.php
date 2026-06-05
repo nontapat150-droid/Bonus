@@ -11,6 +11,12 @@ $filter_date = $_GET['date'] ?? '';
 $filter_month = $_GET['month'] ?? ''; 
 
 // ดึงข้อมูลเช็คอิน พร้อมกับ allow_late_time ของแต่ละผู้ใช้
+try {
+    $existingCols = $pdo->query("SHOW COLUMNS FROM checkins")->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('lat', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN lat VARCHAR(50) DEFAULT NULL");
+    if (!in_array('lng', $existingCols, true)) $pdo->exec("ALTER TABLE checkins ADD COLUMN lng VARCHAR(50) DEFAULT NULL");
+} catch (Exception $e) {}
+
 $sql = "SELECT c.id, c.checkin_time, c.image_path, c.lat, c.lng, u.full_name, u.allow_late_time, t.team_name, TIME(c.checkin_time) as time_only
         FROM checkins c
         JOIN users u ON c.user_id = u.id
@@ -32,10 +38,15 @@ if ($filter_date) {
     $params[] = $filter_month;
 }
 
-$sql .= " ORDER BY c.checkin_time DESC";
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $sql .= " ORDER BY c.checkin_time DESC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    exit;
+}
 
 // คำนวณ Dashboard โดยใช้ allow_late_time ของแต่ละผู้ใช้
 $dashboard = ['total' => 0, 'on_time' => 0, 'late' => 0];

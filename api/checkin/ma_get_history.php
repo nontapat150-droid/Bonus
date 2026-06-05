@@ -34,10 +34,15 @@ if ($filter_date) {
     $params[] = $filter_month;
 }
 
-$sql .= " ORDER BY c.checkin_time DESC";
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $sql .= " ORDER BY c.checkin_time DESC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    echo json_encode(['success' => false, 'error' => 'Database error: ' . $e->getMessage()]);
+    exit;
+}
 
 $dashboard = ['total' => 0, 'on_time' => 0, 'late' => 0, 'work_days' => 0];
 $distinctDays = [];
