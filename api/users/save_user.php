@@ -61,7 +61,11 @@ try {
     } catch (Exception $e) {}
 
     try {
-        $pdo->exec("ALTER TABLE users MODIFY COLUMN id INT NOT NULL AUTO_INCREMENT");
+        // ลองเพิ่ม PRIMARY KEY ให้ id ก่อน (ถ้ามันเป็น PK อยู่แล้วจะข้ามไปเพราะติด catch)
+        $pdo->exec("ALTER TABLE users ADD PRIMARY KEY (id)");
+    } catch (Exception $e) {}
+    try {
+        $pdo->exec("ALTER TABLE users MODIFY COLUMN id INT(11) NOT NULL AUTO_INCREMENT");
     } catch (Exception $e) {}
 
     if ($id) {
