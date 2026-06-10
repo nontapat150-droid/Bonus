@@ -60,6 +60,10 @@ try {
         $pdo->exec("ALTER TABLE users ADD COLUMN days_off VARCHAR(255) DEFAULT NULL AFTER allow_late_time");
     } catch (Exception $e) {}
 
+    try {
+        $pdo->exec("ALTER TABLE users MODIFY COLUMN id INT NOT NULL AUTO_INCREMENT");
+    } catch (Exception $e) {}
+
     if ($id) {
         $primaryRole = saveUserRoles($pdo, (int)$id, $roles);
 
