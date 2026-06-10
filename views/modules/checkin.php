@@ -903,6 +903,106 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   font-weight: 600;
 }
 
+/* ==================== HISTORY SUMMARY ROW ==================== */
+.hist-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.hist-summary-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.hist-page-info {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* ==================== PAGINATION ==================== */
+.pagination-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-top: 18px;
+  flex-wrap: wrap;
+}
+
+.pg-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pg-btn {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pg-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-bg);
+}
+
+.pg-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pg-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(79,70,229,0.30);
+}
+
+.pg-btn.pg-ellipsis {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+  color: var(--text-muted);
+  font-size: 15px;
+  width: 28px;
+}
+
+.pg-btn.pg-ellipsis:hover {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+@media (max-width: 400px) {
+  .pg-btn { width: 32px; height: 32px; font-size: 12px; }
+  .pagination-wrap { gap: 4px; }
+  .pg-numbers { gap: 3px; }
+}
+
 /* ==================== NO MA ROLE ==================== */
 .no-role-state {
   text-align: center;
@@ -1168,8 +1268,9 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
     <!-- ========== HISTORY TABLE ========== -->
     <div class="card" style="flex:1;">
       <div class="card-body">
+
         <!-- Header row -->
-        <div class="section-header">
+        <div class="section-header" style="margin-bottom:14px;">
           <div class="section-title">
             <div class="icon">🕒</div>
             <span id="historyTitle">ประวัติเช็คอิน</span>
@@ -1188,10 +1289,16 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
           <input type="date" id="filterDate" class="filter-input">
           <span class="filter-sep">หรือ</span>
           <input type="month" id="filterMonth" class="filter-input">
-          <button onclick="loadCheckinHistory()" class="btn-filter search">🔍 ค้นหา</button>
+          <button onclick="loadCheckinHistoryAndReset()" class="btn-filter search">🔍 ค้นหา</button>
           <?php if($isAdmin): ?>
           <button onclick="exportCheckin()" class="btn-filter excel">📥 Excel</button>
           <?php endif; ?>
+        </div>
+
+        <!-- Summary row -->
+        <div id="histSummaryRow" class="hist-summary-row" style="display:none;">
+          <span id="histSummaryText" class="hist-summary-text"></span>
+          <span id="histPageInfo" class="hist-page-info"></span>
         </div>
 
         <!-- Table -->
@@ -1217,6 +1324,21 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Pagination -->
+        <div id="paginationWrap" class="pagination-wrap" style="display:none;">
+          <button id="pgPrev" class="pg-btn pg-prev" onclick="goHistoryPage(window._histPage - 1)">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+          <div id="pgNumbers" class="pg-numbers"></div>
+          <button id="pgNext" class="pg-btn pg-next" onclick="goHistoryPage(window._histPage + 1)">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
         </div>
 
       </div>
@@ -1387,4 +1509,230 @@ document.addEventListener('click', function(e) {
     if (modal && e.target === modal) closeModal(id);
   });
 });
+
+/* ============================================================
+   PAGINATION ENGINE
+   ============================================================
+   Strategy: intercept the data that checkin.js feeds into
+   #historyTableBody, slice it into pages of ROWS_PER_PAGE,
+   and render page-tab controls below the table.
+
+   We patch window.loadCheckinHistory so our engine runs right
+   after the original function populates the table, then slices
+   the rendered rows into pages.
+   ============================================================ */
+
+(function initPagination() {
+
+  const ROWS_PER_PAGE = 10;      // rows shown per page
+  const MAX_VISIBLE  = 5;        // page buttons visible at once (excluding prev/next)
+
+  /* --- state --- */
+  window._histAllRows = [];      // NodeList clone of all <tr> in tbody
+  window._histPage    = 1;       // current page (1-based)
+  window._histTotal   = 0;       // total rows
+
+  /* ----------------------------------------------------------
+     renderPage(page) — show only the rows for that page
+  ---------------------------------------------------------- */
+  function renderPage(page) {
+    const total   = window._histAllRows.length;
+    const pages   = Math.ceil(total / ROWS_PER_PAGE) || 1;
+    page          = Math.max(1, Math.min(page, pages));
+    window._histPage = page;
+
+    const tbody = document.getElementById('historyTableBody');
+    if (!tbody) return;
+
+    /* show / hide rows */
+    const start = (page - 1) * ROWS_PER_PAGE;
+    const end   = start + ROWS_PER_PAGE;
+
+    tbody.innerHTML = '';
+    const slice = window._histAllRows.slice(start, end);
+
+    if (slice.length === 0) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="5">
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <div class="empty-state-text">ไม่พบข้อมูลในหน้านี้</div>
+        </div></td>`;
+      tbody.appendChild(tr);
+    } else {
+      slice.forEach(tr => tbody.appendChild(tr.cloneNode(true)));
+    }
+
+    /* summary */
+    const summaryRow = document.getElementById('histSummaryRow');
+    const summaryTxt = document.getElementById('histSummaryText');
+    const pageInfo   = document.getElementById('histPageInfo');
+    if (total > 0) {
+      summaryRow.style.display = 'flex';
+      const realEnd = Math.min(end, total);
+      summaryTxt.textContent  = `แสดง ${start + 1}–${realEnd} จาก ${total} รายการ`;
+      pageInfo.textContent    = `หน้า ${page} / ${pages}`;
+    } else {
+      summaryRow.style.display = 'none';
+    }
+
+    /* pagination controls */
+    renderPaginationControls(page, pages);
+  }
+
+  /* ----------------------------------------------------------
+     renderPaginationControls(current, total)
+  ---------------------------------------------------------- */
+  function renderPaginationControls(current, pages) {
+    const wrap    = document.getElementById('paginationWrap');
+    const numbers = document.getElementById('pgNumbers');
+    const pgPrev  = document.getElementById('pgPrev');
+    const pgNext  = document.getElementById('pgNext');
+
+    if (!wrap) return;
+
+    if (pages <= 1) {
+      wrap.style.display = 'none';
+      return;
+    }
+
+    wrap.style.display = 'flex';
+    pgPrev.disabled = (current === 1);
+    pgNext.disabled = (current === pages);
+
+    /* build page number buttons with smart ellipsis */
+    numbers.innerHTML = '';
+
+    const pageNums = getPageRange(current, pages, MAX_VISIBLE);
+
+    pageNums.forEach(p => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      if (p === '...') {
+        btn.className = 'pg-btn pg-ellipsis';
+        btn.textContent = '···';
+        btn.disabled = true;
+      } else {
+        btn.className = 'pg-btn' + (p === current ? ' active' : '');
+        btn.textContent = p;
+        btn.onclick = () => goHistoryPage(p);
+      }
+      numbers.appendChild(btn);
+    });
+  }
+
+  /* ----------------------------------------------------------
+     getPageRange — returns array like [1,'...',4,5,6,'...',20]
+  ---------------------------------------------------------- */
+  function getPageRange(current, total, maxVisible) {
+    if (total <= maxVisible + 2) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    const half  = Math.floor(maxVisible / 2);
+    let start   = Math.max(2, current - half);
+    let end     = Math.min(total - 1, current + half);
+
+    if (current - half <= 2)  end   = Math.min(total - 1, 1 + maxVisible);
+    if (current + half >= total - 1) start = Math.max(2, total - maxVisible);
+
+    const range = [];
+    range.push(1);
+    if (start > 2)           range.push('...');
+    for (let i = start; i <= end; i++) range.push(i);
+    if (end < total - 1)     range.push('...');
+    range.push(total);
+    return range;
+  }
+
+  /* ----------------------------------------------------------
+     goHistoryPage — public, called from HTML onclick
+  ---------------------------------------------------------- */
+  window.goHistoryPage = function(page) {
+    renderPage(page);
+    /* scroll table into view smoothly on mobile */
+    const card = document.getElementById('historyTableBody');
+    if (card) {
+      const wrap = card.closest('.card');
+      if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  /* ----------------------------------------------------------
+     captureRows — call right after tbody is populated
+  ---------------------------------------------------------- */
+  function captureRows() {
+    const tbody = document.getElementById('historyTableBody');
+    if (!tbody) return;
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    /* filter out the empty-state placeholder */
+    window._histAllRows = rows.filter(tr => !tr.querySelector('.empty-state'));
+    window._histTotal   = window._histAllRows.length;
+    renderPage(1);
+  }
+
+  /* ----------------------------------------------------------
+     Patch window.loadCheckinHistory
+     Run captureRows after the original call settles.
+     We watch for DOM mutations on tbody as a reliable trigger.
+  ---------------------------------------------------------- */
+  function hookTableBody() {
+    const tbody = document.getElementById('historyTableBody');
+    if (!tbody) return;
+
+    let debounce = null;
+    const observer = new MutationObserver(() => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        /* Only re-capture if NOT already paginated
+           (i.e. the mutation came from checkin.js, not from us) */
+        if (window._paginationRendering) return;
+        captureRows();
+      }, 60);
+    });
+
+    observer.observe(tbody, { childList: true, subtree: true });
+  }
+
+  /* ----------------------------------------------------------
+     loadCheckinHistoryAndReset — called by our Search button
+  ---------------------------------------------------------- */
+  window.loadCheckinHistoryAndReset = function() {
+    window._histAllRows = [];
+    window._histPage    = 1;
+    const summaryRow = document.getElementById('histSummaryRow');
+    const paginationWrap = document.getElementById('paginationWrap');
+    if (summaryRow) summaryRow.style.display = 'none';
+    if (paginationWrap) paginationWrap.style.display = 'none';
+
+    if (typeof window.loadCheckinHistory === 'function') {
+      window.loadCheckinHistory();
+    }
+  };
+
+  /* flag used to prevent re-entrant mutation triggers */
+  const _origRenderPage = renderPage;
+  window._paginationRendering = false;
+  window._renderHistPage = function(page) {
+    window._paginationRendering = true;
+    _origRenderPage(page);
+    window._paginationRendering = false;
+  };
+  window.goHistoryPage = function(page) {
+    window._renderHistPage(page);
+    const tbody = document.getElementById('historyTableBody');
+    if (tbody) {
+      const wrap = tbody.closest('.card');
+      if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
+
+  /* Start observing after DOM ready */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hookTableBody);
+  } else {
+    hookTableBody();
+  }
+
+})();
 </script>
