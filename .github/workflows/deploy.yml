@@ -1,9 +1,9 @@
-name: Deploy to z.com via FTP
+name: Deploy to File Manager
 
 on:
   push:
     branches:
-      - main # หากคุณใช้ branch ชื่อ master ให้เปลี่ยนตรงนี้
+      - main # หรือ master
 
 jobs:
   deploy:
@@ -12,10 +12,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Sync files via FTP
+      - name: Deploy directly to File Manager
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /public_html/ # เปลี่ยนเป็นโฟลเดอร์ปลายทางที่คุณต้องการบน z.com เช่น /public_html/
+          server-dir: / # ใช้เครื่องหมาย / ได้เลย เพราะเราตั้ง FTP ให้ชี้ตรงเข้าโฟลเดอร์ปลายทางแล้ว
+          exclude: |
+            **/.git*
+            **/.git*/**
+            config/db.php
