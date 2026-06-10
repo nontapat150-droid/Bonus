@@ -120,25 +120,52 @@ try {
     $upload_dir = '../../assets/uploads/oil_receipts/';
     if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
 
-    if (isset($_FILES['oil_images'])) {
+    $uploadedCount = 0;
+    $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
+
+    if (isset($_FILES['oil_images']) && !empty($_FILES['oil_images']['name'][0])) {
         $files = $_FILES['oil_images'];
         $count = count($files['name']);
         if ($count > 10) throw new Exception("อัปโหลดได้สูงสุด 10 รูปเท่านั้น");
 
         $stmtImage = $pdo->prepare("INSERT INTO oil_images (record_id, image_path) VALUES (?, ?)");
         for ($i = 0; $i < $count; $i++) {
-            if ($files['error'][$i] === UPLOAD_ERR_OK) {
-                $ext = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
-                if (!in_array($ext, ['jpg', 'jpeg', 'png'])) throw new Exception("อนุญาตเฉพาะไฟล์รูปภาพ JPG หรือ PNG เท่านั้น");
+            if ($files['error'][$i] !== UPLOAD_ERR_OK) continue; // ข้ามไฟล์ที่มีปัญหา
 
-                $filename = uniqid('oil_', true) . '.' . $ext;
-                if (move_uploaded_file($files['tmp_name'][$i], $upload_dir . $filename)) {
-                    $stmtImage->execute([$record_id, $filename]);
+            $ext = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
+
+            // ถ้า extension ไม่รู้จัก ให้ตรวจสอบ MIME type แทน
+            if (!in_array($ext, $allowedExts)) {
+                $mime = mime_content_type($files['tmp_name'][$i]);
+                $mimeToExt = [
+                    'image/jpeg' => 'jpg', 'image/png' => 'png',
+                    'image/gif'  => 'gif', 'image/webp' => 'webp',
+                    'image/heic' => 'heic', 'image/heif' => 'heif',
+                ];
+                if (isset($mimeToExt[$mime])) {
+                    $ext = $mimeToExt[$mime];
+                } else {
+                    continue; // ข้ามไฟล์ที่ไม่ใช่รูปภาพ
                 }
             }
+
+            // ถ้าเป็น HEIC/HEIF ให้บันทึกเป็น jpg (แปลงไม่ได้บนเซิร์ฟเวอร์ แต่เก็บ original ไว้)
+            $filename = uniqid('oil_', true) . '.' . $ext;
+            if (move_uploaded_file($files['tmp_name'][$i], $upload_dir . $filename)) {
+                $stmtImage->execute([$record_id, $filename]);
+                $uploadedCount++;
+            }
+        }
+
+        if ($uploadedCount === 0 && !$isAdmin) {
+            throw new Exception("ไม่สามารถอัปโหลดรูปภาพได้ กรุณาตรวจสอบประเภทและขนาดไฟล์ (รองรับ JPG, PNG, WEBP)");
         }
     } else {
-         if (!$isAdmin) throw new Exception("กรุณาอัปโหลดรูปภาพหลักฐานอย่างน้อย 1 รูป");
+        // ตรวจสอบว่า POST ถูก truncate เพราะ post_max_size หรือเปล่า
+        if ($_SERVER['CONTENT_LENGTH'] > 0 && empty($_POST) && empty($_FILES)) {
+            throw new Exception("ข้อมูลที่ส่งมีขนาดใหญ่เกินไป กรุณาลดขนาดรูปภาพลงแล้วลองใหม่อีกครั้ง");
+        }
+        if (!$isAdmin) throw new Exception("กรุณาอัปโหลดรูปภาพหลักฐานอย่างน้อย 1 รูป");
     }
 
     $pdo->commit();
