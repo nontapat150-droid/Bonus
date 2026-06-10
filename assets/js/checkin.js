@@ -6,6 +6,8 @@ window.activeHistoryMode = 'checkin';
 // เก็บไฟล์รูปที่ stamp GPS แล้วไว้ในตัวแปร global
 let _regularStampedFile = null;
 let _maStampedFile = null;
+let _processingPhoto = false;
+let _processingMaPhoto = false;
 
 /**
  * วาด rounded rect แบบ cross-browser (ไม่ใช้ roundRect ที่ไม่รองรับใน Android เก่า)
@@ -259,7 +261,6 @@ function initRegularCheckin() {
     const uploadPrompt = document.getElementById('uploadPrompt');
     const timeDisplay = document.getElementById('currentTime');
     const submitBtn = document.getElementById('submitBtn');
-    let _processingPhoto = false; // ป้องกัน race condition
 
     if (!form) return;
 
@@ -423,7 +424,6 @@ function initMaCheckin() {
     const uploadPrompt = document.getElementById('maUploadPrompt');
     const timeDisplay = document.getElementById('maCurrentTime');
     const submitBtn = document.getElementById('maSubmitBtn');
-    let _processingMaPhoto = false;
 
     if (timeDisplay) {
         setInterval(() => {
@@ -1188,8 +1188,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const checkoutBtn = document.getElementById('checkoutBtn');
     if (checkoutBtn) {
         checkoutBtn.addEventListener('click', function () {
+            if (_processingPhoto) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'กรุณารอสักครู่',
+                    text: 'ระบบกำลังประมวลผลรูปภาพ...',
+                    customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                });
+                return;
+            }
             const fileInput = document.getElementById('checkin_image');
-            processCheckout(fileInput.files[0], 'regular');
+            const sendFile = _regularStampedFile || fileInput.files[0];
+            processCheckout(sendFile, 'regular');
         });
     }
 
@@ -1197,8 +1207,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const maCheckoutBtn = document.getElementById('maCheckoutBtn');
     if (maCheckoutBtn) {
         maCheckoutBtn.addEventListener('click', function () {
+            if (_processingMaPhoto) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'กรุณารอสักครู่',
+                    text: 'ระบบกำลังประมวลผลรูปภาพ...',
+                    customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                });
+                return;
+            }
             const fileInput = document.getElementById('ma_checkin_image');
-            processCheckout(fileInput.files[0], 'ma');
+            const sendFile = _maStampedFile || fileInput.files[0];
+            processCheckout(sendFile, 'ma');
         });
     }
 
