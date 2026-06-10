@@ -40,3 +40,4 @@ jobs:
             **/.git*/**
             **/.github/**
             config/db.php
+            node_modules/** #
