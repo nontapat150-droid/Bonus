@@ -362,11 +362,23 @@ function initRegularCheckin() {
                 if (uploadPrompt) uploadPrompt.classList.remove('hidden');
                 loadCheckinHistory();
             } else {
-                Toast.error(result.error || 'เกิดข้อผิดพลาด');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เช็คอินไม่สำเร็จ',
+                    text: result.error || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์',
+                    confirmButtonText: 'ตกลง',
+                    customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                });
             }
         } catch (err) {
             console.error('Checkin submit error:', err);
-            Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว กรุณาลองใหม่');
+            Swal.fire({
+                icon: 'error',
+                title: 'ข้อผิดพลาดระบบ',
+                text: 'การเช็คอินล้มเหลว: ' + (err.message || String(err)),
+                confirmButtonText: 'ตกลง',
+                customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+            });
         } finally {
             Loader.hide();
             submitBtn.disabled = false;
@@ -509,11 +521,23 @@ function initMaCheckin() {
                     if (uploadPrompt) uploadPrompt.classList.remove('hidden');
                     loadCheckinHistory();
                 } else {
-                    Toast.error(result.error || 'เกิดข้อผิดพลาด');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เช็คอิน MA ไม่สำเร็จ',
+                        text: result.error || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์',
+                        confirmButtonText: 'ตกลง',
+                        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                    });
                 }
             } catch (err) {
                 console.error('MA Checkin submit error:', err);
-                Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว กรุณาลองใหม่');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ข้อผิดพลาดระบบ (MA)',
+                    text: 'การเช็คอินล้มเหลว: ' + (err.message || String(err)),
+                    confirmButtonText: 'ตกลง',
+                    customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                });
             } finally {
                 Loader.hide();
                 submitBtn.disabled = false;
@@ -1221,27 +1245,46 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('lng', lng);
         }
 
-        // เรียกใช้งาน API สำหรับ Checkout (ต้องมั่นใจว่ามีไฟล์ API รองรับ)
+        // เรียกใช้งาน API สำหรับ Checkout
         fetch('api/checkin/checkout.php', {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(async response => {
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (err) {
+                throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด: ' + text.substring(0, 100));
+            }
+        })
         .then(data => {
             if (data.success) {
                 Swal.fire({
                     icon: 'success',
                     title: 'บันทึกการเลิกงานสำเร็จ',
-                    text: 'เวลาเลิกงานของคุณถูกบันทึกเรียบร้อยแล้ว'
+                    text: 'เวลาเลิกงานของคุณถูกบันทึกเรียบร้อยแล้ว',
+                    customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
                 }).then(() => {
                     location.reload(); // รีเฟรชหน้าเพื่ออัปเดตสถานะและประวัติ
                 });
             } else {
-                Swal.fire('ข้อผิดพลาด', data.error || 'ไม่สามารถบันทึกการเลิกงานได้', 'error');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เลิกงานไม่สำเร็จ',
+                    text: data.error || 'ไม่สามารถบันทึกการเลิกงานได้',
+                    customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                });
             }
         })
         .catch(error => {
-            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้', 'error');
+            console.error("Checkout error:", error);
+            Swal.fire({
+                icon: 'error',
+                title: 'ข้อผิดพลาดระบบ',
+                text: 'การเลิกงานล้มเหลว: ' + (error.message || String(error)),
+                customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+            });
         });
     }
 });
