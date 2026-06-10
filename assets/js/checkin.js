@@ -3,89 +3,170 @@ let checkinData = [];
 let activeCheckinTab = window.SHOW_REGULAR ? 'regular' : 'ma';
 window.activeHistoryMode = 'checkin';
 
+// เก็บไฟล์รูปที่ stamp GPS แล้วไว้ในตัวแปร global
+let _regularStampedFile = null;
+let _maStampedFile = null;
+
 /**
- * stampGpsOnImage - วาด GPS Overlay ลงบนรูปภาพโดยใช้ Canvas
- * @param {File} originalFile - ไฟล์รูปภาพต้นฉบับ
- * @param {number|null} lat - ละติจูด
- * @param {number|null} lng - ลองจิจูด
- * @returns {Promise<File>} - ไฟล์รูปภาพที่มี GPS stamp แล้ว
+ * วาด rounded rect แบบ cross-browser (ไม่ใช้ roundRect ที่ไม่รองรับใน Android เก่า)
+ */
+function _roundedRect(ctx, x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+}
+
+/**
+ * stampGpsOnImage - วาด GPS Watermark ลงบนรูปภาพโดยใช้ Canvas
+ * รองรับทุก browser รวมถึง Android WebView เก่า
  */
 async function stampGpsOnImage(originalFile, lat, lng) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width  = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
+    return new Promise((resolve) => {
+        try {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        // จำกัดขนาดสูงสุดเพื่อไม่ให้ canvas ใหญ่เกินไปบนมือถือ
+                        const MAX_DIM = 2048;
+                        let W = img.width, H = img.height;
+                        if (W > MAX_DIM || H > MAX_DIM) {
+                            const ratio = Math.min(MAX_DIM / W, MAX_DIM / H);
+                            W = Math.round(W * ratio);
+                            H = Math.round(H * ratio);
+                        }
+                        canvas.width  = W;
+                        canvas.height = H;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, W, H);
 
-                // วาดรูปต้นฉบับก่อน
-                ctx.drawImage(img, 0, 0);
+                        if (lat !== null && lat !== undefined && lng !== null && lng !== undefined) {
+                            const now = new Date();
+                            // ใช้รูปแบบวันที่ที่กระชับ
+                            const pad2 = (n) => String(n).padStart(2, '0');
+                            const dateStr = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
+                            const timeStr = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+                            const latStr  = `Lat: ${parseFloat(lat).toFixed(6)}`;
+                            const lngStr  = `Lng: ${parseFloat(lng).toFixed(6)}`;
 
-                if (lat !== null && lng !== null) {
-                    const now = new Date();
-                    const dateStr = now.toLocaleDateString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit' });
-                    const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    const latStr  = `Lat: ${parseFloat(lat).toFixed(6)}`;
-                    const lngStr  = `Lng: ${parseFloat(lng).toFixed(6)}`;
-                    const mapLink = `maps.google.com/?q=${lat},${lng}`;
+                            const lines = [`${dateStr} ${timeStr}`, latStr, lngStr];
 
-                    // ---- คำนวณขนาด Font ตามความกว้างรูป ----
-                    const baseFontSize = Math.max(14, Math.round(img.width * 0.028));
-                    ctx.font = `bold ${baseFontSize}px 'Courier New', monospace`;
+                            // ขนาด font สัดส่วนกับรูป
+                            const fontSize = Math.max(16, Math.round(W * 0.032));
+                            ctx.font = `bold ${fontSize}px Courier, monospace`;
 
-                    const lines = [dateStr + ' ' + timeStr, latStr, lngStr, mapLink];
-                    const lineH  = baseFontSize * 1.5;
-                    const pad    = baseFontSize * 0.7;
-                    const maxW   = lines.reduce((m, l) => Math.max(m, ctx.measureText(l).width), 0);
-                    const boxW   = maxW + pad * 2;
-                    const boxH   = lines.length * lineH + pad * 1.5;
-                    const boxX   = img.width  - boxW - 16;
-                    const boxY   = img.height - boxH - 16;
+                            const lineH = fontSize * 1.65;
+                            const padX  = fontSize * 0.8;
+                            const padY  = fontSize * 0.6;
 
-                    // พื้นหลังกึ่งโปร่งใส
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.62)';
-                    ctx.beginPath();
-                    ctx.roundRect(boxX, boxY, boxW, boxH, baseFontSize * 0.5);
-                    ctx.fill();
+                            // วัดความกว้างสูงสุดของข้อความ
+                            let maxTextW = 0;
+                            lines.forEach(l => {
+                                const w = ctx.measureText(l).width;
+                                if (w > maxTextW) maxTextW = w;
+                            });
 
-                    // เส้นขอบสี GPS
-                    ctx.strokeStyle = 'rgba(0, 200, 100, 0.9)';
-                    ctx.lineWidth = Math.max(1.5, img.width * 0.002);
-                    ctx.stroke();
+                            const boxW = maxTextW + padX * 2;
+                            const boxH = lines.length * lineH + padY * 1.4;
+                            const margin = 14;
+                            const boxX  = W - boxW - margin;
+                            const boxY  = H - boxH - margin;
+                            const radius = fontSize * 0.45;
 
-                    // เขียนข้อความ
-                    ctx.font = `bold ${baseFontSize}px 'Courier New', monospace`;
-                    lines.forEach((line, i) => {
-                        const yPos = boxY + pad + (i + 0.85) * lineH;
-                        // เงา
-                        ctx.fillStyle = 'rgba(0,0,0,0.7)';
-                        ctx.fillText(line, boxX + pad + 1, yPos + 1);
-                        // ข้อความหลัก
-                        ctx.fillStyle = (i === 0) ? '#FBBF24' : '#6EE7B7';
-                        ctx.fillText(line, boxX + pad, yPos);
-                    });
-                }
+                            // พื้นหลังทึบแบบ camera-stamp
+                            ctx.fillStyle = 'rgba(0,0,0,0.68)';
+                            _roundedRect(ctx, boxX, boxY, boxW, boxH, radius);
+                            ctx.fill();
 
-                // แปลง canvas เป็น Blob -> File
-                canvas.toBlob((blob) => {
-                    if (!blob) { resolve(originalFile); return; }
-                    const ext  = originalFile.name.replace(/\.[^/.]+$/, '');
-                    const newFile = new File([blob], `${ext}_gps.jpg`, { type: 'image/jpeg', lastModified: Date.now() });
-                    resolve(newFile);
-                }, 'image/jpeg', 0.92);
+                            // เส้นขอบสีเขียว GPS
+                            ctx.strokeStyle = 'rgba(52, 211, 153, 0.95)';
+                            ctx.lineWidth = Math.max(2, W * 0.0018);
+                            _roundedRect(ctx, boxX, boxY, boxW, boxH, radius);
+                            ctx.stroke();
+
+                            // วาดข้อความ
+                            lines.forEach((line, i) => {
+                                const x = boxX + padX;
+                                const y = boxY + padY + (i + 0.82) * lineH;
+                                // เงา
+                                ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                                ctx.font = `bold ${fontSize}px Courier, monospace`;
+                                ctx.fillText(line, x + 1.5, y + 1.5);
+                                // ข้อความ
+                                ctx.fillStyle = i === 0 ? '#FCD34D' : '#6EE7B7';
+                                ctx.fillText(line, x, y);
+                            });
+                        }
+
+                        canvas.toBlob((blob) => {
+                            if (!blob) { resolve(originalFile); return; }
+                            const baseName = (originalFile.name || 'photo').replace(/\.[^/.]+$/, '');
+                            resolve(new File([blob], `${baseName}_gps.jpg`, { type: 'image/jpeg', lastModified: Date.now() }));
+                        }, 'image/jpeg', 0.92);
+
+                    } catch(err) {
+                        console.warn('stampGpsOnImage canvas error:', err);
+                        resolve(originalFile);
+                    }
+                };
+                img.onerror = () => resolve(originalFile);
+                img.src = ev.target.result;
             };
-            img.onerror = () => resolve(originalFile);
-            img.src = ev.target.result;
-        };
-        reader.onerror = () => resolve(originalFile);
-        reader.readAsDataURL(originalFile);
+            reader.onerror = () => resolve(originalFile);
+            reader.readAsDataURL(originalFile);
+        } catch(err) {
+            console.warn('stampGpsOnImage outer error:', err);
+            resolve(originalFile);
+        }
     });
 }
 
-window.switchHistoryMode = function(mode) {
+/**
+ * ดึง GPS แล้ว stamp บนรูปทันที เมื่อผู้ใช้เลือก/ถ่ายรูป
+ * คืนค่า { stampedFile, lat, lng }
+ */
+async function processCheckinPhoto(file, previewEl, promptEl) {
+    // แสดง preview รูปเดิมก่อน (UX ดีกว่ารอ)
+    const rawUrl = URL.createObjectURL(file);
+    previewEl.src = rawUrl;
+    previewEl.classList.remove('hidden');
+    if (promptEl) promptEl.classList.add('hidden');
+
+    // ดึง GPS
+    let lat = null, lng = null;
+    try {
+        const pos = await new Promise((res, rej) => {
+            if (!navigator.geolocation) return rej('no geoloc');
+            navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 8000 });
+        });
+        lat = pos.coords.latitude;
+        lng = pos.coords.longitude;
+    } catch (e) {
+        console.warn('GPS unavailable:', e);
+    }
+
+    // Stamp GPS บนรูป
+    const stampedFile = await stampGpsOnImage(file, lat, lng);
+
+    // อัปเดต preview เป็นรูปที่ stamp แล้ว
+    const stampedUrl = URL.createObjectURL(stampedFile);
+    previewEl.src = stampedUrl;
+
+    return { stampedFile, lat, lng };
+}
+
+
     if (activeHistoryMode === mode) return;
     activeHistoryMode = mode;
     
@@ -181,93 +262,74 @@ function initRegularCheckin() {
     }
 
     if (fileInput) {
-        fileInput.addEventListener('change', (e) => {
+        fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
-            if (file) {
-                if (!file.type.startsWith('image/')) {
-                    Toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
-                    fileInput.value = ''; return;
-                }
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    imagePreview.src = ev.target.result;
-                    imagePreview.classList.remove('hidden');
-                    uploadPrompt.classList.add('hidden');
-                };
-                reader.readAsDataURL(file);
+            if (!file) return;
+            if (!file.type.startsWith('image/') && !['heic','heif'].includes(file.name.split('.').pop().toLowerCase())) {
+                Toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+                fileInput.value = ''; return;
             }
+            // Stamp GPS ทันทีที่ถ่ายรูป และแสดง preview
+            const result = await processCheckinPhoto(file, imagePreview, uploadPrompt);
+            _regularStampedFile = result.stampedFile;
         });
     }
 
     form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!fileInput.files[0]) return Toast.error('กรุณาถ่ายรูปเช็คอิน');
+        e.preventDefault();
 
-            Loader.show();
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = 'กำลังขอตำแหน่ง GPS...';
-            
-            let lat = null, lng = null;
-            try {
-                const pos = await new Promise((resolve, reject) => {
-                    if (!navigator.geolocation) reject("Browser no geoloc");
-                    else navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: true, timeout: 10000});
+        const fileToSend = _regularStampedFile || fileInput.files[0];
+        if (!fileToSend) return Toast.error('กรุณาถ่ายรูปเช็คอินก่อนกดยืนยัน');
+
+        Loader.show();
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'กำลังบันทึก...';
+
+        // ถ้ายังไม่มี stamped file (เช่น GPS denied แล้วใช้ original) ให้ stamp แบบไม่มี lat/lng
+        const sendFile = _regularStampedFile || await stampGpsOnImage(fileInput.files[0], null, null);
+
+        const formData = new FormData();
+        formData.append('checkin_image', sendFile);
+        // ดึง lat/lng จาก preview img title ที่เก็บไว้ หรือ re-fetch GPS
+        try {
+            const pos = await new Promise((res, rej) => {
+                if (!navigator.geolocation) return rej();
+                navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 });
+            });
+            formData.append('lat', pos.coords.latitude);
+            formData.append('lng', pos.coords.longitude);
+        } catch(_) {}
+
+        try {
+            const response = await fetch('api/checkin/submit.php', { method: 'POST', body: formData });
+            const result = await response.json();
+
+            if (result.success) {
+                Swal.fire({
+                    title: 'สำเร็จ!',
+                    text: result.message,
+                    icon: 'success',
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#4f46e5',
+                    customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
                 });
-                lat = pos.coords.latitude;
-                lng = pos.coords.longitude;
-            } catch(e) {
-                console.warn("Location error:", e);
+                form.reset();
+                _regularStampedFile = null;
+                imagePreview.src = '';
+                imagePreview.classList.add('hidden');
+                uploadPrompt.classList.remove('hidden');
+                loadCheckinHistory();
+            } else {
+                Toast.error(result.error);
             }
-
-            // --- Stamp GPS coordinates onto the image ---
-            submitBtn.innerHTML = 'กำลังประมวลผลรูป...';
-            const originalFile = fileInput.files[0];
-            const stampedFile  = await stampGpsOnImage(originalFile, lat, lng);
-
-            // อัปเดต preview เป็นรูปที่มี GPS stamp แล้ว
-            const stampedUrl = URL.createObjectURL(stampedFile);
-            imagePreview.src = stampedUrl;
-
-            submitBtn.innerHTML = 'กำลังบันทึก...';
-            const formData = new FormData();
-            formData.append('checkin_image', stampedFile);
-            if (lat !== null && lng !== null) {
-                formData.append('lat', lat);
-                formData.append('lng', lng);
-            }
-
-            try {
-                const response = await fetch('api/checkin/submit.php', { method: 'POST', body: formData });
-                const result = await response.json();
-
-                if (result.success) {
-                    Swal.fire({
-                        title: 'สำเร็จ!',
-                        text: result.message,
-                        icon: 'success',
-                        confirmButtonText: 'ตกลง',
-                        confirmButtonColor: '#4f46e5',
-                        customClass: {
-                            popup: 'rounded-3xl',
-                            confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md'
-                        }
-                    });
-                    form.reset();
-                    imagePreview.src = '';
-                    imagePreview.classList.add('hidden');
-                    uploadPrompt.classList.remove('hidden');
-                    loadCheckinHistory();
-                } else {
-                    Toast.error(result.error);
-                }
-            } catch (error) {
-                Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว');
-            } finally {
-                Loader.hide();
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '✅ ยืนยันการเช็คอิน';
-            }
-        });
+        } catch (error) {
+            Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว');
+        } finally {
+            Loader.hide();
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '✅ ยืนยันการเช็คอิน';
+        }
+    });
 
     const editImageInput = document.getElementById('edit_checkin_image');
     if (editImageInput) {
@@ -314,63 +376,42 @@ function initMaCheckin() {
     }
 
     if(fileInput) {
-        fileInput.addEventListener('change', (e) => {
+        fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
-            if (file) {
-                if (!file.type.startsWith('image/')) {
-                    Toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
-                    fileInput.value = ''; return;
-                }
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    imagePreview.src = ev.target.result;
-                    imagePreview.classList.remove('hidden');
-                    uploadPrompt.classList.add('hidden');
-                };
-                reader.readAsDataURL(file);
+            if (!file) return;
+            if (!file.type.startsWith('image/') && !['heic','heif'].includes(file.name.split('.').pop().toLowerCase())) {
+                Toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+                fileInput.value = ''; return;
             }
+            // Stamp GPS ทันทีที่ถ่ายรูป
+            const result = await processCheckinPhoto(file, imagePreview, uploadPrompt);
+            _maStampedFile = result.stampedFile;
         });
     }
 
     if(form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!fileInput.files[0]) return Toast.error('กรุณาถ่ายรูปเช็คอิน MA');
+
+            const fileToSend = _maStampedFile || fileInput.files[0];
+            if (!fileToSend) return Toast.error('กรุณาถ่ายรูปเช็คอิน MA ก่อนกดยืนยัน');
 
             Loader.show();
             submitBtn.disabled = true;
-            submitBtn.innerHTML = 'กำลังขอตำแหน่ง GPS...';
-
-            let lat = null, lng = null;
-            try {
-                const pos = await new Promise((resolve, reject) => {
-                    if (!navigator.geolocation) reject("Browser no geoloc");
-                    else navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: true, timeout: 10000});
-                });
-                lat = pos.coords.latitude;
-                lng = pos.coords.longitude;
-            } catch(e) {
-                console.warn("Location error:", e);
-            }
-
-            // --- Stamp GPS coordinates onto the MA checkin image ---
-            submitBtn.innerHTML = 'กำลังประมวลผลรูป...';
-            const originalFile = fileInput.files[0];
-            const stampedFile  = await stampGpsOnImage(originalFile, lat, lng);
-
-            // อัปเดต preview เป็นรูปที่มี GPS stamp แล้ว
-            const stampedUrl = URL.createObjectURL(stampedFile);
-            imagePreview.src = stampedUrl;
-            imagePreview.classList.remove('hidden');
-            if(uploadPrompt) uploadPrompt.classList.add('hidden');
-
             submitBtn.innerHTML = 'กำลังบันทึก...';
+
+            const sendFile = _maStampedFile || await stampGpsOnImage(fileInput.files[0], null, null);
+
             const formData = new FormData();
-            formData.append('ma_checkin_image', stampedFile);
-            if (lat !== null && lng !== null) {
-                formData.append('lat', lat);
-                formData.append('lng', lng);
-            }
+            formData.append('ma_checkin_image', sendFile);
+            try {
+                const pos = await new Promise((res, rej) => {
+                    if (!navigator.geolocation) return rej();
+                    navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 });
+                });
+                formData.append('lat', pos.coords.latitude);
+                formData.append('lng', pos.coords.longitude);
+            } catch(_) {}
 
             try {
                 const response = await fetch('api/checkin/ma_submit.php', { method: 'POST', body: formData });
@@ -386,6 +427,7 @@ function initMaCheckin() {
                         customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
                     });
                     form.reset();
+                    _maStampedFile = null;
                     imagePreview.src = '';
                     imagePreview.classList.add('hidden');
                     uploadPrompt.classList.remove('hidden');
