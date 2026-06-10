@@ -35,14 +35,27 @@ try {
         throw new Exception("คุณได้ทำการเช็คอิน MA ของวันนี้ไปแล้ว");
     }
 
-    if (!isset($_FILES['checkin_image']) || $_FILES['checkin_image']['error'] !== UPLOAD_ERR_OK) {
+    // รับได้ทั้ง 'ma_checkin_image' (จาก JS ใหม่) และ 'checkin_image' (เดิม)
+    $fileKey = isset($_FILES['ma_checkin_image']) ? 'ma_checkin_image' : 'checkin_image';
+    if (!isset($_FILES[$fileKey]) || $_FILES[$fileKey]['error'] !== UPLOAD_ERR_OK) {
         throw new Exception('กรุณาอัปโหลดรูปภาพสำหรับการเช็คอิน MA');
     }
 
-    $file = $_FILES['checkin_image'];
+    $file = $_FILES[$fileKey];
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
-        throw new Exception('อนุญาตเฉพาะไฟล์รูปภาพ JPG, PNG หรือ WebP');
+    $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
+    if (!in_array($ext, $allowedExts)) {
+        $mime = mime_content_type($file['tmp_name']);
+        $mimeToExt = [
+            'image/jpeg' => 'jpg', 'image/png' => 'png',
+            'image/gif'  => 'gif', 'image/webp' => 'webp',
+            'image/heic' => 'heic', 'image/heif' => 'heif',
+        ];
+        if (isset($mimeToExt[$mime])) {
+            $ext = $mimeToExt[$mime];
+        } else {
+            throw new Exception('ไฟล์นี้ไม่ใช่รูปภาพ กรุณาถ่ายรูปใหม่อีกครั้ง');
+        }
     }
 
     $filename = 'ma_checkin_' . $user_id . '_' . time() . '_' . uniqid() . '.' . $ext;
@@ -97,12 +110,16 @@ try {
         $message = "เช็คอิน MA สำเร็จเวลา {$timeDisplay} (ตรงเวลา)";
     }
 
+    $image_url = 'assets/uploads/ma_checkins/' . $filename;
     echo json_encode([
         'success' => true,
         'message' => $message,
         'is_late' => (bool)$is_late,
         'checkin_time' => $timeDisplay,
-        'deadline_time' => $lateTimeDisplay
+        'deadline_time' => $lateTimeDisplay,
+        'image_url' => $image_url,
+        'lat' => $lat,
+        'lng' => $lng
     ]);
 
 } catch (Exception $e) {

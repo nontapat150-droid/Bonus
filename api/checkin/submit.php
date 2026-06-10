@@ -43,9 +43,20 @@ try {
     $file = $_FILES['checkin_image'];
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     
-    // ตรวจสอบนามสกุลไฟล์
-    if (!in_array($ext, ['jpg', 'jpeg', 'png'])) {
-        throw new Exception("อนุญาตเฉพาะไฟล์รูปภาพ JPG หรือ PNG เท่านั้น");
+    // ตรวจสอบนามสกุลไฟล์ หรือ fallback ไปใช้ MIME type สำหรับมือถือ
+    $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'];
+    if (!in_array($ext, $allowedExts)) {
+        $mime = mime_content_type($file['tmp_name']);
+        $mimeToExt = [
+            'image/jpeg' => 'jpg', 'image/png' => 'png',
+            'image/gif'  => 'gif', 'image/webp' => 'webp',
+            'image/heic' => 'heic', 'image/heif' => 'heif',
+        ];
+        if (isset($mimeToExt[$mime])) {
+            $ext = $mimeToExt[$mime];
+        } else {
+            throw new Exception("ไฟล์นี้ไม่ใช่รูปภาพ กรุณาถ่ายรูปใหม่อีกครั้ง");
+        }
     }
 
     // ตั้งชื่อไฟล์ใหม่ให้ไม่ซ้ำกัน
@@ -87,8 +98,8 @@ try {
     }
 
     $pdo->commit();
-    echo json_encode(['success' => true, 'message' => 'เช็คอินสำเร็จเวลา ' . date('H:i')]);
-
+    $image_url = 'assets/uploads/checkins/' . $filename;
+    echo json_encode(['success' => true, 'message' => 'เช็คอินสำเร็จเวลา ' . date('H:i'), 'image_url' => $image_url, 'lat' => $lat, 'lng' => $lng]);
 } catch (Exception $e) {
     $pdo->rollBack();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
