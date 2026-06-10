@@ -1,31 +1,21 @@
-name: Deploy PHP App to InfinityFree
+name: Deploy to z.com via FTP
 
 on:
   push:
     branches:
-      - main  # หรือเปลี่ยนเป็น master ถ้า branch หลักของคุณชื่อ master
+      - main # หากคุณใช้ branch ชื่อ master ให้เปลี่ยนตรงนี้
 
 jobs:
-  web-deploy:
-    name: Deploy to FTP
+  deploy:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-    - name: Get latest code
-      uses: actions/checkout@v6
-      
-    - name: Sync files to InfinityFree
-      uses: SamKirkland/FTP-Deploy-Action@v4.4.0
-      with:
-        server: ${{ secrets.FTP_SERVER }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        server-dir: /htdocs/  # บังคับอัปโหลดไปที่โฟลเดอร์ htdocs ของ InfinityFree
-        timeout: 60000
-        exclude: |
-          **/.git*
-          **/.git*/**
-          .github/**
-          sql/** # ไม่ต้องอัปโหลดไฟล์โครงสร้างฐานข้อมูลขึ้นไป
-          README.md
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Sync files via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /public_html/ # เปลี่ยนเป็นโฟลเดอร์ปลายทางที่คุณต้องการบน z.com เช่น /public_html/
