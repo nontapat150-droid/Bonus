@@ -112,7 +112,8 @@ function renderTable(type, records, tHead, tBody) {
         records.forEach(item => {
             const date = new Date(item.checkin_time).toLocaleString('th-TH');
             const badge = item.status_code === 'late' ? `<span class="bg-orange-100 text-orange-700 px-2 py-1 rounded-lg text-xs font-bold border border-orange-200">มาสาย</span>` : `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-xs font-bold border border-emerald-200">ตรงเวลา</span>`;
-            const img = item.image_path ? `<a href="assets/uploads/checkins/${item.image_path}" target="_blank"><img src="assets/uploads/checkins/${item.image_path}" class="w-10 h-10 object-cover rounded-xl shadow-sm border border-slate-200 md:mx-auto"></a>` : '-';
+            let imgUrl = item.image_path ? (item.image_path.startsWith('http') ? item.image_path : `assets/uploads/checkins/${item.image_path}`) : '';
+            const img = item.image_path ? `<a href="${imgUrl}" target="_blank"><img src="${imgUrl}" class="w-10 h-10 object-cover rounded-xl shadow-sm border border-slate-200 md:mx-auto"></a>` : '-';
             const deleteBtn = isAdmin ? `<button type="button" onclick="deleteHistoryRecord('checkin', ${item.id})" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>` : '';
 
             tBody.innerHTML += `
@@ -140,7 +141,8 @@ function renderTable(type, records, tHead, tBody) {
             let status = '<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded-lg text-xs font-bold border border-rose-200">❌ ไม่มี</span>';
             if(item.has_initial_fee == 1) status = '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-xs font-bold border border-emerald-200">✅ มีค่าแรกเข้า</span>';
             if(item.has_initial_fee == 2) status = '<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg text-xs font-bold border border-amber-200">💵 หน้างาน</span>';
-            const img = item.evidence_image ? `<a href="assets/uploads/start_day/${item.evidence_image}" target="_blank"><img src="assets/uploads/start_day/${item.evidence_image}" class="w-10 h-10 object-cover rounded-xl shadow-sm border border-slate-200 md:mx-auto"></a>` : '-';
+            let imgUrl = item.evidence_image ? (item.evidence_image.startsWith('http') ? item.evidence_image : `assets/uploads/start_day/${item.evidence_image}`) : '';
+            const img = item.evidence_image ? `<a href="${imgUrl}" target="_blank"><img src="${imgUrl}" class="w-10 h-10 object-cover rounded-xl shadow-sm border border-slate-200 md:mx-auto"></a>` : '-';
             
             // 🌟 2. ปุ่มจัดการ สำหรับกดแก้ไข/ลบ
             let deleteBtn = isAdmin ? `<button type="button" onclick="deleteStartDayRecordGlobal(${item.id})" class="px-2 py-1 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100 shadow-sm inline-flex items-center justify-center">ลบ</button>` : '';
@@ -172,7 +174,8 @@ function renderTable(type, records, tHead, tBody) {
         tHead.innerHTML = `<tr><th class="px-4 py-3">วันที่บิล</th><th class="px-4 py-3">ผู้บันทึก</th><th class="px-4 py-3">ทะเบียนรถ</th><th class="px-4 py-3">ลิตร/ราคา</th><th class="px-4 py-3 text-right">ยอดรวม</th><th class="px-4 py-3 text-center">บิล</th><th class="px-4 py-3 text-center">จัดการ</th></tr>`;
         records.forEach(item => {
             const date = new Date(item.date_recorded).toLocaleString('th-TH');
-            const img = item.evidence_image ? `<a href="assets/uploads/oil_receipts/${item.evidence_image}" target="_blank"><img src="assets/uploads/oil_receipts/${item.evidence_image}" class="w-10 h-10 object-cover rounded-xl shadow-sm border border-slate-200 md:mx-auto"></a>` : '-';
+            let imgUrl = item.evidence_image ? (item.evidence_image.startsWith('http') ? item.evidence_image : `assets/uploads/oil_receipts/${item.evidence_image}`) : '';
+            const img = item.evidence_image ? `<a href="${imgUrl}" target="_blank"><img src="${imgUrl}" class="w-10 h-10 object-cover rounded-xl shadow-sm border border-slate-200 md:mx-auto"></a>` : '-';
             const deleteBtn = isAdmin ? `<button type="button" onclick="deleteHistoryRecord('oil', ${item.id})" class="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-lg">ลบ</button>` : '';
 
             tBody.innerHTML += `

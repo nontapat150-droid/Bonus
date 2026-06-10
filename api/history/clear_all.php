@@ -40,7 +40,8 @@ try {
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $row) {
                 if ($row['image_path']) {
-                    $path = '../../assets/uploads/checkins/' . $row['image_path'];
+                    $filename = basename(parse_url($row['image_path'], PHP_URL_PATH));
+                    $path = '../../assets/uploads/checkins/' . $filename;
                     if (file_exists($path) && is_file($path)) @unlink($path);
                 }
             }
@@ -65,7 +66,8 @@ try {
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $row) {
                 if ($row['image_path']) {
-                    $path = '../../assets/uploads/start_day/' . $row['image_path'];
+                    $filename = basename(parse_url($row['image_path'], PHP_URL_PATH));
+                    $path = '../../assets/uploads/start_day/' . $filename;
                     if (file_exists($path) && is_file($path)) @unlink($path);
                 }
             }
@@ -90,7 +92,8 @@ try {
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $row) {
                 if ($row['image_path']) {
-                    $path = '../../assets/uploads/oil_receipts/' . $row['image_path'];
+                    $filename = basename(parse_url($row['image_path'], PHP_URL_PATH));
+                    $path = '../../assets/uploads/oil_receipts/' . $filename;
                     if (file_exists($path) && is_file($path)) @unlink($path);
                 }
             }

@@ -63,8 +63,10 @@ try {
         $checkin_id = $checkinRow['id'];
         
         // อัปเดต record เดิม
+        $folder = ($type === 'ma') ? 'ma_checkins' : 'checkins';
+        $full_url = getBaseUrl() . "/assets/uploads/$folder/" . $filename;
         $updateStmt = $pdo->prepare("UPDATE $table SET checkout_time = NOW(), checkout_image = ?, checkout_lat = ?, checkout_lng = ? WHERE id = ?");
-        $updateStmt->execute([$filename, $lat, $lng, $checkin_id]);
+        $updateStmt->execute([$full_url, $lat, $lng, $checkin_id]);
     } else {
         throw new Exception('ไม่พบข้อมูลการเข้างานของวันนี้ (กรุณาเข้างานก่อนลงเวลาเลิกงาน)');
     }

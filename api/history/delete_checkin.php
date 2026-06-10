@@ -21,7 +21,8 @@ try {
     $imgPath = $stmt->fetchColumn();
 
     if ($imgPath) {
-        $path = '../../assets/uploads/checkins/' . $imgPath;
+        $filename = basename(parse_url($imgPath, PHP_URL_PATH));
+        $path = '../../assets/uploads/checkins/' . $filename;
         if (file_exists($path) && is_file($path)) @unlink($path);
     }
 

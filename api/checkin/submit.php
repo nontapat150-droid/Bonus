@@ -91,15 +91,15 @@ try {
         $lng = $_POST['lng'] ?? null;
 
         // 3. บันทึกลงฐานข้อมูล (เพิ่ม is_late, lat, lng)
+        $full_url = getBaseUrl() . '/assets/uploads/checkins/' . $filename;
         $stmt = $pdo->prepare("INSERT INTO checkins (user_id, image_path, is_late, lat, lng) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$user_id, $filename, $is_late, $lat, $lng]);
+        $stmt->execute([$user_id, $full_url, $is_late, $lat, $lng]);
     } else {
         throw new Exception("เกิดข้อผิดพลาดในการบันทึกไฟล์รูปภาพ");
     }
 
     $pdo->commit();
-    $image_url = 'assets/uploads/checkins/' . $filename;
-    echo json_encode(['success' => true, 'message' => 'เช็คอินสำเร็จเวลา ' . date('H:i'), 'image_url' => $image_url, 'lat' => $lat, 'lng' => $lng]);
+    echo json_encode(['success' => true, 'message' => 'เช็คอินสำเร็จเวลา ' . date('H:i'), 'image_url' => $full_url, 'lat' => $lat, 'lng' => $lng]);
 } catch (Exception $e) {
     $pdo->rollBack();
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);

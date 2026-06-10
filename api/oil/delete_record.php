@@ -32,7 +32,8 @@ try {
     $stmtImg->execute([$id]);
     $images = $stmtImg->fetchAll(PDO::FETCH_ASSOC);
     foreach ($images as $img) {
-        $filePath = '../../assets/uploads/oil_receipts/' . $img['image_path'];
+        $filename = basename(parse_url($img['image_path'], PHP_URL_PATH));
+        $filePath = '../../assets/uploads/oil_receipts/' . $filename;
         if (file_exists($filePath)) {
             unlink($filePath);
         }

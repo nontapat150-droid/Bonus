@@ -31,7 +31,8 @@ try {
 
     // ลบไฟล์รูปภาพออกจาก Server
     if ($imgPath) {
-        $file = '../../assets/uploads/checkins/' . $imgPath;
+        $filename = basename(parse_url($imgPath, PHP_URL_PATH));
+        $file = '../../assets/uploads/checkins/' . $filename;
         if (file_exists($file)) {
             @unlink($file);
         }

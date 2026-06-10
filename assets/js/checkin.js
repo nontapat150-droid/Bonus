@@ -299,7 +299,7 @@ function initRegularCheckin() {
                 _processingPhoto = false;
                 if (submitBtn) {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '✅ ยืนยันการเช็คอิน';
+                    submitBtn.innerHTML = '✅ เข้างาน';
                 }
             }
         });
@@ -352,16 +352,12 @@ function initRegularCheckin() {
                     title: 'สำเร็จ!',
                     text: result.message,
                     icon: 'success',
-                    timer: 500,
-                    showConfirmButton: false,
-                    customClass: { popup: 'rounded-3xl' }
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#4f46e5',
+                    customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                }).then(() => {
+                    location.reload();
                 });
-                form.reset();
-                _regularStampedFile = null;
-                imagePreview.src = '';
-                imagePreview.classList.add('hidden');
-                if (uploadPrompt) uploadPrompt.classList.remove('hidden');
-                loadCheckinHistory();
             } else {
                 Swal.fire({
                     icon: 'error',
@@ -383,7 +379,7 @@ function initRegularCheckin() {
         } finally {
             Loader.hide();
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '✅ ยืนยันการเช็คอิน';
+            submitBtn.innerHTML = '✅ เข้างาน';
         }
     });
 
@@ -459,7 +455,7 @@ function initMaCheckin() {
                 _processingMaPhoto = false;
                 if (submitBtn) {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '✅ ยืนยันเช็คอิน MA';
+                    submitBtn.innerHTML = '✅ เข้างาน MA';
                 }
             }
         });
@@ -510,16 +506,12 @@ function initMaCheckin() {
                         title: result.is_late ? 'เช็คอินแล้ว (มาสาย)' : 'เช็คอินสำเร็จ!',
                         text: result.message,
                         icon: result.is_late ? 'warning' : 'success',
-                        timer: 500,
-                        showConfirmButton: false,
-                        customClass: { popup: 'rounded-3xl' }
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: result.is_late ? '#f59e0b' : '#7c3aed',
+                        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                    }).then(() => {
+                        location.reload();
                     });
-                    form.reset();
-                    _maStampedFile = null;
-                    imagePreview.src = '';
-                    imagePreview.classList.add('hidden');
-                    if (uploadPrompt) uploadPrompt.classList.remove('hidden');
-                    loadCheckinHistory();
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -541,7 +533,7 @@ function initMaCheckin() {
             } finally {
                 Loader.hide();
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '✅ ยืนยันเช็คอิน MA';
+                submitBtn.innerHTML = '✅ เข้างาน MA';
             }
         });
     }
@@ -691,8 +683,9 @@ function renderTable(records) {
             let editedTag = parseInt(item.is_edited_image) === 1 ? `<span class="text-[10px] text-amber-600 font-bold ml-1">(แก้ไขรูป)</span>` : '';
             timeHtml = `<span class="text-xs text-indigo-600 font-mono bg-indigo-50 px-2 py-0.5 rounded-md md:ml-2 ml-1 font-bold" title="เวลาเข้างาน">${dateObj.toLocaleTimeString('th-TH')}</span>${editedTag}`;
 
+            let srcUrl = item.image_path.startsWith('http') ? item.image_path : `assets/uploads/${folder}/${item.image_path}`;
             imageCell = item.image_path
-                ? `<a href="assets/uploads/${folder}/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/${folder}/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence" title="รูปเข้างาน"></a>`
+                ? `<a href="${srcUrl}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="${srcUrl}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence" title="รูปเข้างาน"></a>`
                 : (item.status_code === 'day_off' ? `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] text-slate-400">วันหยุด</div>` : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`);
 
             if (canEdit) actionHtml += `<button type="button" onclick="openEditCheckin('${item.id}')" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">🖼️ แก้ไขรูป</button>`;
@@ -711,7 +704,8 @@ function renderTable(records) {
             }
 
             if (item.checkout_image) {
-                imageCell = `<a href="assets/uploads/${folder}/${item.checkout_image}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/${folder}/${item.checkout_image}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-rose-200" alt="Checkout Evidence" title="รูปเลิกงาน"></a>`;
+                let srcOut = item.checkout_image.startsWith('http') ? item.checkout_image : `assets/uploads/${folder}/${item.checkout_image}`;
+                imageCell = `<a href="${srcOut}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="${srcOut}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-rose-200" alt="Checkout Evidence" title="รูปเลิกงาน"></a>`;
             } else {
                 imageCell = (item.status_code === 'day_off')
                     ? `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] text-slate-400">วันหยุด</div>`
@@ -786,7 +780,7 @@ window.openEditCheckin = function (id) {
 
         if (item.image_path) {
             if (preview) {
-                preview.src = `assets/uploads/checkins/${item.image_path}`;
+                preview.src = item.image_path.startsWith('http') ? item.image_path : `assets/uploads/checkins/${item.image_path}`;
                 preview.classList.remove('hidden');
             }
             if (placeholder) placeholder.classList.add('hidden');
@@ -1170,8 +1164,8 @@ window.exportCheckin = function () {
             "สถานะ": r.status_text,
             "ชื่อ-นามสกุล": r.full_name,
             "สังกัด/ทีม": r.team_name || '-',
-            "รูปเข้างาน": r.image_path || 'ไม่มีรูป',
-            "รูปเลิกงาน": r.checkout_image || 'ไม่มีรูป'
+            "รูปเข้างาน": r.image_path ? (r.image_path.startsWith('http') ? r.image_path : window.location.origin + '/assets/uploads/' + folder + '/' + r.image_path) : 'ไม่มีรูป',
+            "รูปเลิกงาน": r.checkout_image ? (r.checkout_image.startsWith('http') ? r.checkout_image : window.location.origin + '/assets/uploads/' + folder + '/' + r.checkout_image) : 'ไม่มีรูป'
         };
     });
 
@@ -1284,9 +1278,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         icon: 'success',
                         title: 'บันทึกการเลิกงานสำเร็จ',
                         text: 'เวลาเลิกงานของคุณถูกบันทึกเรียบร้อยแล้ว',
-                        timer: 500,
-                        showConfirmButton: false,
-                        customClass: { popup: 'rounded-3xl' }
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#10b981',
+                        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
                     }).then(() => {
                         location.reload(); // รีเฟรชหน้าเพื่ออัปเดตสถานะและประวัติ
                     });

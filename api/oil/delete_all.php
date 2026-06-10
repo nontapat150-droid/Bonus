@@ -22,7 +22,8 @@ try {
 
     // Remove files from disk after successful DB delete
     foreach ($paths as $p) {
-        $full = __DIR__ . '/../../' . ltrim($p, '/\\');
+        $filename = basename(parse_url($p, PHP_URL_PATH));
+        $full = __DIR__ . '/../../assets/uploads/oil_receipts/' . $filename;
         if (file_exists($full)) {
             @unlink($full);
         }
