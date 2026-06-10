@@ -167,6 +167,7 @@ async function processCheckinPhoto(file, previewEl, promptEl) {
 }
 
 
+window.switchHistoryMode = function(mode) {
     if (activeHistoryMode === mode) return;
     activeHistoryMode = mode;
     
