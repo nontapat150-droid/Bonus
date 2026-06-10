@@ -7,6 +7,88 @@ window.activeHistoryMode = 'checkin';
 let _regularStampedFile = null;
 let _maStampedFile = null;
 
+// ============================================================
+// ✨ CHECKIN DEBUG LOGGER
+// แสดง panel ด้านขวาแบบ floating เพื่อดูข้อผิดพลาดบนมือถือ
+// ============================================================
+const _CLog = (() => {
+    const logs = [];
+    let panel = null;
+    let logList = null;
+
+    function ensurePanel() {
+        if (panel) return;
+        panel = document.createElement('div');
+        panel.id = '_checkin_debug_panel';
+        panel.style.cssText = [
+            'position:fixed', 'bottom:0', 'left:0', 'right:0', 'z-index:99999',
+            'background:rgba(15,23,42,0.97)', 'color:#e2e8f0', 'font:12px/1.5 monospace',
+            'max-height:45vh', 'overflow:hidden', 'display:flex', 'flex-direction:column',
+            'border-top:2px solid #6366f1', 'transition:max-height 0.3s'
+        ].join(';');
+
+        const header = document.createElement('div');
+        header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#1e293b;flex-shrink:0;cursor:pointer';
+        header.innerHTML = '<span style="font-weight:bold;color:#818cf8">🐞 CHECKIN DEBUG LOG</span><div style="display:flex;gap:8px"><button id="_clog_clear" style="background:#ef4444;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer">Clear</button><button id="_clog_close" style="background:#334155;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer">✕ Close</button></div>';
+
+        logList = document.createElement('div');
+        logList.style.cssText = 'overflow-y:auto;flex:1;padding:6px 12px';
+
+        panel.appendChild(header);
+        panel.appendChild(logList);
+        document.body.appendChild(panel);
+
+        document.getElementById('_clog_close').onclick = () => { panel.style.maxHeight = '34px'; logList.style.display = 'none'; };
+        document.getElementById('_clog_clear').onclick = () => { logs.length = 0; logList.innerHTML = ''; };
+        header.onclick = (ev) => {
+            if (ev.target.tagName === 'BUTTON') return;
+            const collapsed = logList.style.display === 'none';
+            logList.style.display = collapsed ? 'block' : 'none';
+            panel.style.maxHeight = collapsed ? '45vh' : '34px';
+        };
+    }
+
+    function addEntry(level, msg, detail) {
+        ensurePanel();
+        const ts = new Date().toLocaleTimeString('th-TH');
+        const colors = { info: '#94a3b8', ok: '#34d399', warn: '#fbbf24', err: '#f87171', step: '#818cf8' };
+        const icons  = { info: 'ℹ️', ok: '✅', warn: '⚠️', err: '❌', step: '➤' };
+        const entry = { ts, level, msg, detail };
+        logs.push(entry);
+
+        const el = document.createElement('div');
+        el.style.cssText = `border-bottom:1px solid #1e293b;padding:3px 0;color:${colors[level]||'#e2e8f0'}`;
+        el.innerHTML = `<span style="color:#475569">[${ts}]</span> ${icons[level]||''} ${msg}` +
+            (detail ? `<br><span style="color:#64748b;font-size:11px;padding-left:16px">${detail}</span>` : '');
+        logList.appendChild(el);
+        logList.scrollTop = logList.scrollHeight;
+
+        // ให้ panel ขยายอัตโนมัติเมื่อมี error
+        if (level === 'err' || level === 'warn') {
+            panel.style.maxHeight = '45vh';
+            logList.style.display = 'block';
+        }
+    }
+
+    return {
+        step : (msg, detail) => addEntry('step', msg, detail),
+        info : (msg, detail) => addEntry('info', msg, detail),
+        ok   : (msg, detail) => addEntry('ok',   msg, detail),
+        warn : (msg, detail) => addEntry('warn', msg, detail),
+        err  : (msg, detail) => addEntry('err',  msg, detail),
+        show : () => { ensurePanel(); panel.style.maxHeight = '45vh'; if(logList) logList.style.display='block'; },
+        getLogs: () => logs,
+    };
+})();
+
+// ดักจับ Global JS Errors
+window.onerror = function(msg, src, line, col, err) {
+    _CLog.err('💥 JS Error: ' + msg, `${src}:${line}:${col}`);
+};
+window.addEventListener('unhandledrejection', function(ev) {
+    _CLog.err('💥 Unhandled Promise: ' + (ev.reason?.message || ev.reason || 'unknown'));
+});
+
 /**
  * วาด rounded rect แบบ cross-browser (ไม่ใช้ roundRect ที่ไม่รองรับใน Android เก่า)
  */
@@ -137,7 +219,9 @@ async function stampGpsOnImage(originalFile, lat, lng) {
  * คืนค่า { stampedFile, lat, lng }
  */
 async function processCheckinPhoto(file, previewEl, promptEl) {
-    // แสดง preview รูปเดิมก่อน (UX ดีกว่ารอ)
+    _CLog.step('📷 processCheckinPhoto เริ่มต้น', `file: ${file.name} (${(file.size/1024).toFixed(1)} KB, type: ${file.type})`);
+
+    // แสดง preview รูปเดิมก่อน (สำหรับกรณีที่นี่ถูกเรียกซ้ำ preview อาจถูก set ไว้แล้วจากภายนอก)
     const rawUrl = URL.createObjectURL(file);
     previewEl.src = rawUrl;
     previewEl.classList.remove('hidden');
@@ -145,24 +229,36 @@ async function processCheckinPhoto(file, previewEl, promptEl) {
 
     // ดึง GPS
     let lat = null, lng = null;
+    _CLog.step('📍 ขอ GPS...');
     try {
         const pos = await new Promise((res, rej) => {
-            if (!navigator.geolocation) return rej('no geoloc');
+            if (!navigator.geolocation) return rej(new Error('Browser ไม่รองรับ Geolocation'));
             navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 8000 });
         });
         lat = pos.coords.latitude;
         lng = pos.coords.longitude;
+        _CLog.ok(`📍 GPS ได้: ${lat.toFixed(6)}, ${lng.toFixed(6)}`, `accuracy: ${pos.coords.accuracy?.toFixed(0)}m`);
     } catch (e) {
-        console.warn('GPS unavailable:', e);
+        const errMsg = e.code ? (['', 'PERMISSION_DENIED', 'POSITION_UNAVAILABLE', 'TIMEOUT'][e.code] || 'GPS_ERR_'+e.code) : (e.message || String(e));
+        _CLog.warn('📍 GPS ไม่ได้ (รูปจะไม่มีลายน้ำ)', errMsg);
     }
 
     // Stamp GPS บนรูป
-    const stampedFile = await stampGpsOnImage(file, lat, lng);
+    _CLog.step('🎨 เริ่ม Canvas stamp...');
+    let stampedFile;
+    try {
+        stampedFile = await stampGpsOnImage(file, lat, lng);
+        _CLog.ok(`🎨 Stamp สำเร็จ`, `output: ${(stampedFile.size/1024).toFixed(1)} KB`);
+    } catch(err) {
+        _CLog.err('🎨 Canvas stamp ล้มเหลว', err?.message || String(err));
+        stampedFile = file; // fallback
+    }
 
     // อัปเดต preview เป็นรูปที่ stamp แล้ว
     const stampedUrl = URL.createObjectURL(stampedFile);
     previewEl.src = stampedUrl;
 
+    _CLog.ok('📷 processCheckinPhoto เสร็จสมบูรณ์');
     return { stampedFile, lat, lng };
 }
 
@@ -253,6 +349,7 @@ function initRegularCheckin() {
     const uploadPrompt = document.getElementById('uploadPrompt');
     const timeDisplay = document.getElementById('currentTime');
     const submitBtn = document.getElementById('submitBtn');
+    let _processingPhoto = false; // ป้องกัน race condition
 
     if (!form) return;
 
@@ -266,46 +363,91 @@ function initRegularCheckin() {
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            if (!file.type.startsWith('image/') && !['heic','heif'].includes(file.name.split('.').pop().toLowerCase())) {
-                Toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
-                fileInput.value = ''; return;
+
+            // แสดง preview รูปเดิมก่อนทันที
+            const rawUrl = URL.createObjectURL(file);
+            imagePreview.src = rawUrl;
+            imagePreview.classList.remove('hidden');
+            if (uploadPrompt) uploadPrompt.classList.add('hidden');
+
+            // ปิดปุ่มขณะกำลัง stamp GPS
+            _processingPhoto = true;
+            _regularStampedFile = null;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '⏳ กำลังประมวลผลรูป...';
             }
-            // Stamp GPS ทันทีที่ถ่ายรูป และแสดง preview
-            const result = await processCheckinPhoto(file, imagePreview, uploadPrompt);
-            _regularStampedFile = result.stampedFile;
+
+            try {
+                const result = await processCheckinPhoto(file, imagePreview, uploadPrompt);
+                _regularStampedFile = result.stampedFile;
+            } catch (err) {
+                console.warn('processCheckinPhoto error:', err);
+                _regularStampedFile = file; // fallback ใช้รูปเดิม
+            } finally {
+                _processingPhoto = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '✅ ยืนยันการเช็คอิน';
+                }
+            }
         });
     }
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        _CLog.step('🙋 กดปุ่มยืนยันเช็คอิน');
 
-        const fileToSend = _regularStampedFile || fileInput.files[0];
-        if (!fileToSend) return Toast.error('กรุณาถ่ายรูปเช็คอินก่อนกดยืนยัน');
+        if (_processingPhoto) {
+            _CLog.warn('ยัง process รูปอยู่ รอก่อน');
+            return Toast.error('กรุณารอสักครู่ ระบบกำลังประมวลผลรูปภาพ...');
+        }
+
+        const sendFile = _regularStampedFile || fileInput.files[0];
+        _CLog.info(`📤 sendFile: ${sendFile ? sendFile.name + ' (' + (sendFile.size/1024).toFixed(1) + ' KB)' : 'null'}`);
+        if (!sendFile) {
+            _CLog.err('ไม่มีไฟล์รูป');
+            return Toast.error('กรุณาถ่ายรูปเช็คอิน');
+        }
 
         Loader.show();
         submitBtn.disabled = true;
         submitBtn.innerHTML = 'กำลังบันทึก...';
 
-        // ถ้ายังไม่มี stamped file (เช่น GPS denied แล้วใช้ original) ให้ stamp แบบไม่มี lat/lng
-        const sendFile = _regularStampedFile || await stampGpsOnImage(fileInput.files[0], null, null);
-
-        const formData = new FormData();
-        formData.append('checkin_image', sendFile);
-        // ดึง lat/lng จาก preview img title ที่เก็บไว้ หรือ re-fetch GPS
         try {
-            const pos = await new Promise((res, rej) => {
-                if (!navigator.geolocation) return rej();
-                navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 });
-            });
-            formData.append('lat', pos.coords.latitude);
-            formData.append('lng', pos.coords.longitude);
-        } catch(_) {}
+            const formData = new FormData();
+            formData.append('checkin_image', sendFile);
 
-        try {
+            // ดึง GPS แบบ optional (timeout สั้น ไม่ block)
+            _CLog.step('📍 ขอ GPS (submit)...');
+            try {
+                const pos = await new Promise((res, rej) => {
+                    if (!navigator.geolocation) return rej('no geoloc');
+                    navigator.geolocation.getCurrentPosition(res, rej, { timeout: 4000, maximumAge: 60000 });
+                });
+                formData.append('lat', pos.coords.latitude);
+                formData.append('lng', pos.coords.longitude);
+                _CLog.ok(`📍 GPS submit: ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`);
+            } catch (gpsErr) {
+                _CLog.warn('📍 GPS submit failed (ok)', String(gpsErr?.message || gpsErr));
+            }
+
+            _CLog.step('🚀 fetch ส่งไปยัง api/checkin/submit.php...');
             const response = await fetch('api/checkin/submit.php', { method: 'POST', body: formData });
-            const result = await response.json();
+            _CLog.info(`📡 HTTP Status: ${response.status}`);
+
+            let result;
+            const rawText = await response.text();
+            _CLog.info('📥 Server response raw:', rawText.substring(0, 300));
+            try {
+                result = JSON.parse(rawText);
+            } catch(parseErr) {
+                _CLog.err('💥 JSON parse ล้มเหลว', rawText.substring(0, 200));
+                throw new Error('Server ตอบกลับมาไม่ใช่ JSON: ' + rawText.substring(0, 100));
+            }
 
             if (result.success) {
+                _CLog.ok('✅ เช็คอินสำเร็จ! ' + result.message);
                 Swal.fire({
                     title: 'สำเร็จ!',
                     text: result.message,
@@ -318,13 +460,15 @@ function initRegularCheckin() {
                 _regularStampedFile = null;
                 imagePreview.src = '';
                 imagePreview.classList.add('hidden');
-                uploadPrompt.classList.remove('hidden');
+                if (uploadPrompt) uploadPrompt.classList.remove('hidden');
                 loadCheckinHistory();
             } else {
-                Toast.error(result.error);
+                _CLog.err('❌ Server ตอบ error: ' + result.error);
+                Toast.error(result.error || 'เกิดข้อผิดพลาด');
             }
-        } catch (error) {
-            Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว');
+        } catch (err) {
+            _CLog.err('💥 Submit exception: ' + (err?.message || String(err)), err?.stack?.substring(0, 200));
+            Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว กรุณาลองใหม่');
         } finally {
             Loader.hide();
             submitBtn.disabled = false;
@@ -369,6 +513,7 @@ function initMaCheckin() {
     const uploadPrompt = document.getElementById('maUploadPrompt');
     const timeDisplay = document.getElementById('maCurrentTime');
     const submitBtn = document.getElementById('maSubmitBtn');
+    let _processingMaPhoto = false;
 
     if(timeDisplay) {
         setInterval(() => {
@@ -380,41 +525,71 @@ function initMaCheckin() {
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            if (!file.type.startsWith('image/') && !['heic','heif'].includes(file.name.split('.').pop().toLowerCase())) {
-                Toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
-                fileInput.value = ''; return;
+
+            // แสดง preview รูปเดิมก่อนทันที
+            const rawUrl = URL.createObjectURL(file);
+            imagePreview.src = rawUrl;
+            imagePreview.classList.remove('hidden');
+            if (uploadPrompt) uploadPrompt.classList.add('hidden');
+
+            _processingMaPhoto = true;
+            _maStampedFile = null;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '⏳ กำลังประมวลผลรูป...';
             }
-            // Stamp GPS ทันทีที่ถ่ายรูป
-            const result = await processCheckinPhoto(file, imagePreview, uploadPrompt);
-            _maStampedFile = result.stampedFile;
+
+            try {
+                const result = await processCheckinPhoto(file, imagePreview, uploadPrompt);
+                _maStampedFile = result.stampedFile;
+            } catch (err) {
+                console.warn('processCheckinPhoto MA error:', err);
+                _maStampedFile = file;
+            } finally {
+                _processingMaPhoto = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '✅ ยืนยันเช็คอิน MA';
+                }
+            }
         });
     }
 
     if(form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            _CLog.step('🙋 กดปุ่มยืนยันเช็คอิน MA');
 
-            const fileToSend = _maStampedFile || fileInput.files[0];
-            if (!fileToSend) return Toast.error('กรุณาถ่ายรูปเช็คอิน MA ก่อนกดยืนยัน');
+            if (_processingMaPhoto) {
+                _CLog.warn('ยัง process รูป MA อยู่ รอก่อน');
+                return Toast.error('กรุณารอสักครู่ ระบบกำลังประมวลผลรูปภาพ...');
+            }
+
+            const sendFile = _maStampedFile || fileInput.files[0];
+            _CLog.info(`📤 MA sendFile: ${sendFile ? sendFile.name + ' (' + (sendFile.size/1024).toFixed(1) + ' KB)' : 'null'}`);
+            if (!sendFile) {
+                _CLog.err('ไม่มีไฟล์รูป MA');
+                return Toast.error('กรุณาถ่ายรูปเช็คอิน MA');
+            }
 
             Loader.show();
             submitBtn.disabled = true;
             submitBtn.innerHTML = 'กำลังบันทึก...';
 
-            const sendFile = _maStampedFile || await stampGpsOnImage(fileInput.files[0], null, null);
-
-            const formData = new FormData();
-            formData.append('ma_checkin_image', sendFile);
             try {
-                const pos = await new Promise((res, rej) => {
-                    if (!navigator.geolocation) return rej();
-                    navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 });
-                });
-                formData.append('lat', pos.coords.latitude);
-                formData.append('lng', pos.coords.longitude);
-            } catch(_) {}
+                const formData = new FormData();
+                formData.append('ma_checkin_image', sendFile);
 
-            try {
+                _CLog.step('📍 ขอ GPS MA (submit)...');
+                try {
+                    const pos = await new Promise((res, rej) => {
+                        if (!navigator.geolocation) return rej('no geoloc');
+                        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 4000, maximumAge: 60000 });
+                    });
+                    formData.append('lat', pos.coords.latitude);
+                    formData.append('lng', pos.coords.longitude);
+                } catch (_) { /* GPS optional */ }
+
                 const response = await fetch('api/checkin/ma_submit.php', { method: 'POST', body: formData });
                 const result = await response.json();
 
@@ -431,13 +606,14 @@ function initMaCheckin() {
                     _maStampedFile = null;
                     imagePreview.src = '';
                     imagePreview.classList.add('hidden');
-                    uploadPrompt.classList.remove('hidden');
+                    if (uploadPrompt) uploadPrompt.classList.remove('hidden');
                     loadCheckinHistory();
                 } else {
-                    Toast.error(result.error);
+                    Toast.error(result.error || 'เกิดข้อผิดพลาด');
                 }
-            } catch (error) {
-                Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว');
+            } catch (err) {
+                console.error('MA Checkin submit error:', err);
+                Toast.error('เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว กรุณาลองใหม่');
             } finally {
                 Loader.hide();
                 submitBtn.disabled = false;
