@@ -1,13 +1,13 @@
-name: 🚀 Ultimate Auto Deploy to z.com
+name: 🚀 Fast Deploy PHP to z.com
 
 on:
   push:
     branches:
-      - main # หากระบบของคุณใช้ branch ชื่อ master ให้เปลี่ยนตรงนี้เป็น master
+      - main 
 
 jobs:
   deploy:
-    name: 🌐 Deploy via FTP
+    name: 🌐 Fast Deploy via FTP
     runs-on: ubuntu-latest
     steps:
       - name: 📦 Get latest code (Checkout)
@@ -16,28 +16,28 @@ jobs:
       - name: 📂 Sync files to File Manager
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          # 1. ดึงข้อมูลการเชื่อมต่อจาก GitHub Secrets
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           
-          # 2. แก้ปัญหาหาโฟลเดอร์ไม่เจอ (สมมติฐานว่า FTP Account ชี้ตรงเข้าโฟลเดอร์เป้าหมายแล้ว)
           server-dir: /public_html/ 
-          
-          # 3. แก้ปัญหา Timeout (control socket) โดยบังคับใช้ FTP มาตรฐานและพอร์ต 21
           protocol: ftp
           port: 21
           
-          # 4. แก้ปัญหา Error 553 โดยบังคับเขียนทับไฟล์ใหม่ลงไปเลย
-          dangerous-clean-slate: true 
+          # เปลี่ยนเป็น minimal เพื่อให้ Log อ่านง่าย ไม่รกจนเกินไป
+          log-level: minimal 
           
-          # 5. เปิดโหมดแสดง Log แบบละเอียดมาก (ถ้าพังอีก จะได้รู้ชัดเจนว่าติดที่จังหวะไหน)
-          log-level: verbose
-          
-          # 6. ยกเว้นไฟล์ระบบและไฟล์ฐานข้อมูล ไม่ให้ถูกโยนไปทับบนเซิร์ฟเวอร์
+          # 🛑 บล็อกไฟล์ขยะ โฟลเดอร์ระบบ และไฟล์ตั้งค่าฐานข้อมูล
           exclude: |
             **/.git*
             **/.git*/**
             **/.github/**
             config/db.php
-            node_modules/** #
+            node_modules/**
+            package.json
+            package-lock.json
+            .agents/**
+            sql/**
+            tools/**
+            *.md
+            *.py
