@@ -44,7 +44,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
                         <p class="text-sm font-bold text-indigo-600">แตะเพื่อถ่ายรูป</p>
                     </div>
                     <img id="imagePreview" class="absolute inset-0 w-full h-full object-cover hidden" src="" alt="Preview">
-                    <input id="checkin_image" name="checkin_image" type="file" class="hidden" accept="image/*" capture="environment" required />
+                    <input id="checkin_image" name="checkin_image" type="file" class="hidden" accept="image/*" capture="environment" />
                 </label>
                 
                 <!-- เพิ่ม Grid แบ่ง 2 ปุ่ม: เข้างาน และ เลิกงาน -->
@@ -82,7 +82,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
                         <p class="text-sm font-bold text-violet-600">แตะเพื่อถ่ายรูป MA</p>
                     </div>
                     <img id="maImagePreview" class="absolute inset-0 w-full h-full object-cover hidden" src="" alt="Preview">
-                    <input id="ma_checkin_image" name="checkin_image" type="file" class="hidden" accept="image/*" capture="environment" required />
+                    <input id="ma_checkin_image" name="ma_checkin_image" type="file" class="hidden" accept="image/*" capture="environment" />
                 </label>
                 
                 <!-- เพิ่ม Grid แบ่ง 2 ปุ่ม: เข้างาน MA และ เลิกงาน MA -->
