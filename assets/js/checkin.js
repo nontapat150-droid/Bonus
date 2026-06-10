@@ -46,7 +46,7 @@ async function stampGpsOnImage(originalFile, lat, lng) {
                             W = Math.round(W * ratio);
                             H = Math.round(H * ratio);
                         }
-                        canvas.width  = W;
+                        canvas.width = W;
                         canvas.height = H;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, W, H);
@@ -55,10 +55,10 @@ async function stampGpsOnImage(originalFile, lat, lng) {
                             const now = new Date();
                             // ใช้รูปแบบวันที่ที่กระชับ
                             const pad2 = (n) => String(n).padStart(2, '0');
-                            const dateStr = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
+                            const dateStr = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
                             const timeStr = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
-                            const latStr  = `Lat: ${parseFloat(lat).toFixed(6)}`;
-                            const lngStr  = `Lng: ${parseFloat(lng).toFixed(6)}`;
+                            const latStr = `Lat: ${parseFloat(lat).toFixed(6)}`;
+                            const lngStr = `Lng: ${parseFloat(lng).toFixed(6)}`;
 
                             const lines = [`${dateStr} ${timeStr}`, latStr, lngStr];
 
@@ -67,8 +67,8 @@ async function stampGpsOnImage(originalFile, lat, lng) {
                             ctx.font = `bold ${fontSize}px Courier, monospace`;
 
                             const lineH = fontSize * 1.65;
-                            const padX  = fontSize * 0.8;
-                            const padY  = fontSize * 0.6;
+                            const padX = fontSize * 0.8;
+                            const padY = fontSize * 0.6;
 
                             // วัดความกว้างสูงสุดของข้อความ
                             let maxTextW = 0;
@@ -80,8 +80,8 @@ async function stampGpsOnImage(originalFile, lat, lng) {
                             const boxW = maxTextW + padX * 2;
                             const boxH = lines.length * lineH + padY * 1.4;
                             const margin = 14;
-                            const boxX  = W - boxW - margin;
-                            const boxY  = H - boxH - margin;
+                            const boxX = W - boxW - margin;
+                            const boxY = H - boxH - margin;
                             const radius = fontSize * 0.45;
 
                             // พื้นหลังทึบแบบ camera-stamp
@@ -115,7 +115,7 @@ async function stampGpsOnImage(originalFile, lat, lng) {
                             resolve(new File([blob], `${baseName}_gps.jpg`, { type: 'image/jpeg', lastModified: Date.now() }));
                         }, 'image/jpeg', 0.92);
 
-                    } catch(err) {
+                    } catch (err) {
                         console.warn('stampGpsOnImage canvas error:', err);
                         resolve(originalFile);
                     }
@@ -125,7 +125,7 @@ async function stampGpsOnImage(originalFile, lat, lng) {
             };
             reader.onerror = () => resolve(originalFile);
             reader.readAsDataURL(originalFile);
-        } catch(err) {
+        } catch (err) {
             console.warn('stampGpsOnImage outer error:', err);
             resolve(originalFile);
         }
@@ -160,7 +160,7 @@ async function processCheckinPhoto(file, previewEl, promptEl) {
     let stampedFile;
     try {
         stampedFile = await stampGpsOnImage(file, lat, lng);
-    } catch(err) {
+    } catch (err) {
         console.warn('Canvas stamp error:', err);
         stampedFile = file; // fallback
     }
@@ -173,13 +173,13 @@ async function processCheckinPhoto(file, previewEl, promptEl) {
 }
 
 
-window.switchHistoryMode = function(mode) {
+window.switchHistoryMode = function (mode) {
     if (activeHistoryMode === mode) return;
     activeHistoryMode = mode;
-    
+
     const tabCheckin = document.getElementById('histTabCheckin');
     const tabCheckout = document.getElementById('histTabCheckout');
-    
+
     if (tabCheckin && tabCheckout) {
         if (mode === 'checkin') {
             tabCheckin.className = "flex-1 py-2 rounded-xl text-sm font-black transition-all bg-indigo-600 text-white";
@@ -189,7 +189,7 @@ window.switchHistoryMode = function(mode) {
             tabCheckin.className = "flex-1 py-2 rounded-xl text-sm font-black transition-all text-slate-500 hover:bg-slate-50";
         }
     }
-    
+
     const tbody = document.getElementById('historyTableBody');
     if (tbody) {
         tbody.innerHTML = '';
@@ -197,7 +197,7 @@ window.switchHistoryMode = function(mode) {
     }
 };
 
-window.switchCheckinTab = function(tab) {
+window.switchCheckinTab = function (tab) {
     activeCheckinTab = tab;
     const panelRegular = document.getElementById('panelRegular');
     const panelMa = document.getElementById('panelMa');
@@ -237,18 +237,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // ตั้งค่าเดือนปัจจุบัน
     const now = new Date();
     const currMonth = now.toISOString().slice(0, 7);
-    if(document.getElementById('filterMonth')) {
+    if (document.getElementById('filterMonth')) {
         document.getElementById('filterMonth').value = currMonth;
     }
 
     loadSettings();
     loadCheckinHistory();
 
-    if(document.getElementById('filterDate')) {
-        document.getElementById('filterDate').addEventListener('change', function() { document.getElementById('filterMonth').value = ''; });
+    if (document.getElementById('filterDate')) {
+        document.getElementById('filterDate').addEventListener('change', function () { document.getElementById('filterMonth').value = ''; });
     }
-    if(document.getElementById('filterMonth')) {
-        document.getElementById('filterMonth').addEventListener('change', function() { document.getElementById('filterDate').value = ''; });
+    if (document.getElementById('filterMonth')) {
+        document.getElementById('filterMonth').addEventListener('change', function () { document.getElementById('filterDate').value = ''; });
     }
 });
 
@@ -308,12 +308,12 @@ function initRegularCheckin() {
         e.preventDefault();
 
         if (_processingPhoto) {
-            return Toast.error('กรุณารอสักครู่ ระบบกำลังประมวลผลรูปภาพ...');
+            return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'กรุณารอสักครู่ ระบบกำลังประมวลผลรูปภาพ...', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
         }
 
         const sendFile = _regularStampedFile || fileInput.files[0];
         if (!sendFile) {
-            return Toast.error('กรุณาถ่ายรูปเช็คอิน');
+            return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'กรุณาถ่ายรูปเช็คอิน', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
         }
 
         Loader.show();
@@ -337,12 +337,12 @@ function initRegularCheckin() {
             }
 
             const response = await fetch('api/checkin/submit.php', { method: 'POST', body: formData });
-            
+
             let result;
             const rawText = await response.text();
             try {
                 result = JSON.parse(rawText);
-            } catch(parseErr) {
+            } catch (parseErr) {
                 throw new Error('Server ตอบกลับมาไม่ใช่ JSON: ' + rawText.substring(0, 100));
             }
 
@@ -394,22 +394,22 @@ function initRegularCheckin() {
             const placeholder = document.getElementById('editImagePlaceholder');
 
             if (!file) {
-                if(preview) { preview.src = ''; preview.classList.add('hidden'); }
-                if(placeholder) placeholder.classList.remove('hidden');
+                if (preview) { preview.src = ''; preview.classList.add('hidden'); }
+                if (placeholder) placeholder.classList.remove('hidden');
                 return;
             }
             if (!file.type.startsWith('image/')) {
-                Toast.error('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+                Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'กรุณาเลือกไฟล์รูปภาพเท่านั้น', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
                 editImageInput.value = '';
                 return;
             }
             const reader = new FileReader();
             reader.onload = (event) => {
-                if(preview) {
+                if (preview) {
                     preview.src = event.target.result;
                     preview.classList.remove('hidden');
                 }
-                if(placeholder) placeholder.classList.add('hidden');
+                if (placeholder) placeholder.classList.add('hidden');
             };
             reader.readAsDataURL(file);
         });
@@ -425,13 +425,13 @@ function initMaCheckin() {
     const submitBtn = document.getElementById('maSubmitBtn');
     let _processingMaPhoto = false;
 
-    if(timeDisplay) {
+    if (timeDisplay) {
         setInterval(() => {
             timeDisplay.textContent = new Date().toLocaleTimeString('th-TH');
         }, 1000);
     }
 
-    if(fileInput) {
+    if (fileInput) {
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -465,17 +465,17 @@ function initMaCheckin() {
         });
     }
 
-    if(form) {
+    if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             if (_processingMaPhoto) {
-                return Toast.error('กรุณารอสักครู่ ระบบกำลังประมวลผลรูปภาพ...');
+                return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'กรุณารอสักครู่ ระบบกำลังประมวลผลรูปภาพ...', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
             }
 
             const sendFile = _maStampedFile || fileInput.files[0];
             if (!sendFile) {
-                return Toast.error('กรุณาถ่ายรูปเช็คอิน MA');
+                return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'กรุณาถ่ายรูปเช็คอิน MA', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
             }
 
             Loader.show();
@@ -496,12 +496,12 @@ function initMaCheckin() {
                 } catch (_) { /* GPS optional */ }
 
                 const response = await fetch('api/checkin/ma_submit.php', { method: 'POST', body: formData });
-                
+
                 let result;
                 const rawText = await response.text();
                 try {
                     result = JSON.parse(rawText);
-                } catch(parseErr) {
+                } catch (parseErr) {
                     throw new Error('Server ตอบกลับมาไม่ใช่ JSON: ' + rawText.substring(0, 100));
                 }
 
@@ -555,13 +555,13 @@ async function loadMaSettings() {
         if (data.success) {
             const globalTime = data.late_time || '08:30';
             const personalTime = data.personal_late_time || globalTime;
-            
+
             const input = document.getElementById('maLateTimeInput');
             if (input) input.value = globalTime;
-            
+
             const displayRo = document.getElementById('maDeadlineDisplayRo');
             if (displayRo) displayRo.textContent = globalTime;
-            
+
             const displayEl = document.getElementById('maDeadlineDisplay');
             if (displayEl) {
                 displayEl.textContent = personalTime;
@@ -570,23 +570,23 @@ async function loadMaSettings() {
                     displayEl.title = 'คำนวณจากเวลาของงานแรกสุดของวันนี้';
                     // อัปเดตข้อความอธิบายให้ชัดเจนขึ้น
                     const parentP = displayEl.closest('p');
-                    if(parentP) parentP.innerHTML = `เวลาเข้างาน MA (ตามงานแรก): ไม่เกิน <span id="maDeadlineDisplay" class="font-black text-rose-600">${personalTime}</span> น.`;
+                    if (parentP) parentP.innerHTML = `เวลาเข้างาน MA (ตามงานแรก): ไม่เกิน <span id="maDeadlineDisplay" class="font-black text-rose-600">${personalTime}</span> น.`;
                 }
             }
         }
-    } catch (e) {}
+    } catch (e) { }
 }
 
-window.saveMaSettings = async function() {
-    if (!window.IS_SUPER_ADMIN) return Toast.error('เฉพาะผู้ดูแลระบบเท่านั้น');
+window.saveMaSettings = async function () {
+    if (!window.IS_SUPER_ADMIN) return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'เฉพาะผู้ดูแลระบบเท่านั้น', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
     const time = document.getElementById('maLateTimeInput')?.value;
-    if (!time) return Toast.error('กรุณาระบุเวลา');
+    if (!time) return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'กรุณาระบุเวลา', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
 
     Loader.show();
     try {
         const res = await fetch('api/checkin/ma_settings.php', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ late_time: time })
         });
         const data = await res.json();
@@ -599,7 +599,7 @@ window.saveMaSettings = async function() {
         }
     } catch (e) {
         Loader.hide();
-        Toast.error('เชื่อมต่อล้มเหลว');
+        Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'เชื่อมต่อล้มเหลว', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
     }
 };
 
@@ -607,17 +607,17 @@ window.saveMaSettings = async function() {
 async function loadCheckinHistory() {
     const fDate = document.getElementById('filterDate').value;
     const fMonth = document.getElementById('filterMonth').value;
-    
+
     const dashLabel = document.getElementById('dashLabel');
     const prefix = activeCheckinTab === 'ma' ? 'MA · ' : '';
-    if(fDate) dashLabel.textContent = `${prefix}วันที่ ${new Date(fDate).toLocaleDateString('th-TH')}`;
-    else if(fMonth) {
+    if (fDate) dashLabel.textContent = `${prefix}วันที่ ${new Date(fDate).toLocaleDateString('th-TH')}`;
+    else if (fMonth) {
         const d = new Date(fMonth + '-01');
-        dashLabel.textContent = `${prefix}เดือน ${d.toLocaleString('th-TH', {month:'long', year:'numeric'})}`;
+        dashLabel.textContent = `${prefix}เดือน ${d.toLocaleString('th-TH', { month: 'long', year: 'numeric' })}`;
     } else dashLabel.textContent = activeCheckinTab === 'ma' ? 'MA · ทั้งหมด' : 'ทั้งหมด';
 
     document.getElementById('historyTableBody').innerHTML = '<tr class="block md:table-row"><td colspan="5" class="text-center py-8 block md:table-cell">กำลังโหลดข้อมูล...</td></tr>';
-    
+
     const apiUrl = activeCheckinTab === 'ma'
         ? `api/checkin/ma_get_history.php?date=${fDate}&month=${fMonth}`
         : `api/checkin/get_history.php?date=${fDate}&month=${fMonth}`;
@@ -625,18 +625,18 @@ async function loadCheckinHistory() {
     try {
         const res = await fetch(apiUrl);
         const data = await res.json();
-        
-        if(data.success) {
+
+        if (data.success) {
             checkinData = data.records;
             renderTable(checkinData);
-            
+
             document.getElementById('dashTotal').textContent = data.dashboard.total;
             document.getElementById('dashOntime').textContent = data.dashboard.on_time;
             document.getElementById('dashLate').textContent = data.dashboard.late;
         } else {
-            Toast.error(data.error);
+            Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: data.error, confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
         }
-    } catch(e) {
+    } catch (e) {
         document.getElementById('historyTableBody').innerHTML = '<tr class="block md:table-row"><td colspan="5" class="text-center py-8 text-red-500 block md:table-cell">โหลดข้อมูลล้มเหลว</td></tr>';
     }
 }
@@ -645,23 +645,23 @@ async function loadCheckinHistory() {
 function renderTable(records) {
     const tbody = document.getElementById('historyTableBody');
     tbody.innerHTML = '';
-    
-    if(records.length === 0) {
+
+    if (records.length === 0) {
         tbody.innerHTML = '<tr class="block md:table-row"><td colspan="5" class="text-center py-8 text-gray-400 italic block md:table-cell">ไม่พบประวัติการเข้างานในช่วงเวลานี้</td></tr>';
         return;
     }
 
     records.forEach((item) => {
         const dateObj = new Date(item.checkin_time);
-        
+
         const tr = document.createElement('tr');
         tr.className = 'block md:table-row bg-white border border-slate-100 md:border-b md:border-x-0 md:border-t-0 rounded-[1.5rem] md:rounded-none shadow-sm md:shadow-none mb-4 md:mb-0 hover:bg-slate-50 transition-all p-4 md:p-0';
-        
+
         let badge = '';
         if (activeHistoryMode === 'checkin') {
-            badge = item.status_code === 'late' 
+            badge = item.status_code === 'late'
                 ? `<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-bold border border-orange-200">มาสาย</span>`
-                : (item.status_code === 'day_off' 
+                : (item.status_code === 'day_off'
                     ? `<span class="bg-slate-100 text-slate-500 px-3 py-1 rounded-lg text-xs font-bold border border-slate-200">วันหยุด</span>`
                     : (item.status_code === 'leave'
                         ? `<span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-lg text-xs font-bold border border-purple-200">ลา</span>`
@@ -690,7 +690,7 @@ function renderTable(records) {
         if (activeHistoryMode === 'checkin') {
             let editedTag = parseInt(item.is_edited_image) === 1 ? `<span class="text-[10px] text-amber-600 font-bold ml-1">(แก้ไขรูป)</span>` : '';
             timeHtml = `<span class="text-xs text-indigo-600 font-mono bg-indigo-50 px-2 py-0.5 rounded-md md:ml-2 ml-1 font-bold" title="เวลาเข้างาน">${dateObj.toLocaleTimeString('th-TH')}</span>${editedTag}`;
-            
+
             imageCell = item.image_path
                 ? `<a href="assets/uploads/${folder}/${item.image_path}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/${folder}/${item.image_path}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-slate-200" alt="Evidence" title="รูปเข้างาน"></a>`
                 : (item.status_code === 'day_off' ? `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] text-slate-400">วันหยุด</div>` : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`);
@@ -698,7 +698,7 @@ function renderTable(records) {
             if (canEdit) actionHtml += `<button type="button" onclick="openEditCheckin('${item.id}')" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 rounded-lg transition-all text-xs border border-indigo-100">🖼️ แก้ไขรูป</button>`;
             if (canAdminManage) actionHtml += `<button type="button" onclick="openAdminEdit('${item.id}')" class="px-3 py-1.5 bg-amber-50 text-amber-600 font-bold hover:bg-amber-100 rounded-lg transition-all text-xs border border-amber-100">🔧 จัดการ</button>`;
             if (canDelete) actionHtml += `<button type="button" onclick="deleteCheckin('${item.id}')" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบ</button>`;
-            
+
             if (!canEdit && !canDelete && !canAdminManage) actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
             if (item.lat && item.lng) actionHtml += `<a href="https://maps.google.com/?q=${item.lat},${item.lng}" target="_blank" class="px-3 py-1.5 bg-sky-50 text-sky-600 font-bold hover:bg-sky-100 rounded-lg transition-all text-xs border border-sky-100 ml-1" title="พิกัดเข้างาน">📍 แผนที่</a>`;
         } else {
@@ -713,14 +713,14 @@ function renderTable(records) {
             if (item.checkout_image) {
                 imageCell = `<a href="assets/uploads/${folder}/${item.checkout_image}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/${folder}/${item.checkout_image}" class="w-12 h-12 md:w-10 md:h-10 object-cover rounded-xl shadow-sm border border-rose-200" alt="Checkout Evidence" title="รูปเลิกงาน"></a>`;
             } else {
-                imageCell = (item.status_code === 'day_off') 
-                    ? `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] text-slate-400">วันหยุด</div>` 
+                imageCell = (item.status_code === 'day_off')
+                    ? `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[10px] text-slate-400">วันหยุด</div>`
                     : `<div class="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>`;
             }
 
             if (canAdminManage) actionHtml += `<button type="button" onclick="openAdminEdit('${item.id}')" class="px-3 py-1.5 bg-amber-50 text-amber-600 font-bold hover:bg-amber-100 rounded-lg transition-all text-xs border border-amber-100">🔧 จัดการ</button>`;
             if (canDelete) actionHtml += `<button type="button" onclick="deleteCheckin('${item.id}')" class="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 rounded-lg transition-all text-xs border border-rose-100">🗑️ ลบ</button>`;
-            
+
             if (!canAdminManage && !canDelete) actionHtml += `<span class="text-slate-300 text-xs italic">-</span>`;
             if (item.checkout_lat && item.checkout_lng) actionHtml += `<a href="https://maps.google.com/?q=${item.checkout_lat},${item.checkout_lng}" target="_blank" class="px-3 py-1.5 bg-purple-50 text-purple-600 font-bold hover:bg-purple-100 rounded-lg transition-all text-xs border border-purple-100 ml-1" title="พิกัดเลิกงาน">📍 แผนที่</a>`;
         }
@@ -765,12 +765,12 @@ function renderTable(records) {
 // ---------------- ระบบแก้ไข (สำหรับรูปภาพ) และ ลบ ----------------
 
 // เปิดหน้าต่าง Modal อย่างปลอดภัยด้วย ID
-window.openEditCheckin = function(id) {
+window.openEditCheckin = function (id) {
     try {
         const item = checkinData.find(r => r.id == id);
-        
-        if(!item) {
-            Toast.error('ไม่พบข้อมูล กรุณารีเฟรชหน้าเว็บ');
+
+        if (!item) {
+            Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'ไม่พบข้อมูล กรุณารีเฟรชหน้าเว็บ', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
             return;
         }
 
@@ -781,16 +781,16 @@ window.openEditCheckin = function(id) {
         const delBtn = document.getElementById('deleteImageBtn');
         const modal = document.getElementById('editCheckinModal');
 
-        if(idInput) idInput.value = item.id;
-        if(editInput) editInput.value = '';
+        if (idInput) idInput.value = item.id;
+        if (editInput) editInput.value = '';
 
         if (item.image_path) {
-            if(preview) {
+            if (preview) {
                 preview.src = `assets/uploads/checkins/${item.image_path}`;
                 preview.classList.remove('hidden');
             }
-            if(placeholder) placeholder.classList.add('hidden');
-            
+            if (placeholder) placeholder.classList.add('hidden');
+
             if (delBtn) {
                 if (window.USER_ROLE === 'super_admin') {
                     delBtn.classList.remove('hidden');
@@ -799,15 +799,15 @@ window.openEditCheckin = function(id) {
                 }
             }
         } else {
-            if(preview) {
+            if (preview) {
                 preview.src = '';
                 preview.classList.add('hidden');
             }
-            if(placeholder) placeholder.classList.remove('hidden');
-            if(delBtn) delBtn.classList.add('hidden');
+            if (placeholder) placeholder.classList.remove('hidden');
+            if (delBtn) delBtn.classList.add('hidden');
         }
 
-        if(modal) {
+        if (modal) {
             modal.classList.remove('hidden');
         }
     } catch (err) {
@@ -817,34 +817,34 @@ window.openEditCheckin = function(id) {
 };
 
 // ปิดหน้าต่าง Modal
-window.closeEditCheckinModal = function() {
+window.closeEditCheckinModal = function () {
     const modal = document.getElementById('editCheckinModal');
-    if(modal) modal.classList.add('hidden');
-    
+    if (modal) modal.classList.add('hidden');
+
     const preview = document.getElementById('editImagePreview');
     if (preview) { preview.src = ''; preview.classList.add('hidden'); }
-    
+
     const placeholder = document.getElementById('editImagePlaceholder');
     if (placeholder) placeholder.classList.remove('hidden');
-    
+
     const editInput = document.getElementById('edit_checkin_image');
     if (editInput) editInput.value = '';
-    
+
     const delBtn = document.getElementById('deleteImageBtn');
     if (delBtn) delBtn.classList.add('hidden');
 };
 
 // บันทึกการอัปเดตรูปภาพ
-window.saveEditCheckin = async function() {
+window.saveEditCheckin = async function () {
     const idInput = document.getElementById('edit_checkin_id');
     const editInput = document.getElementById('edit_checkin_image');
 
     if (!idInput || !idInput.value) {
-        return Toast.error('ไม่พบ ID ข้อมูล');
+        return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'ไม่พบ ID ข้อมูล', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
     }
 
     if (!editInput || !editInput.files || editInput.files.length === 0) {
-        return Toast.error('กรุณาเลือกรูปภาพใหม่ก่อนทำการบันทึก');
+        return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'กรุณาเลือกรูปภาพใหม่ก่อนทำการบันทึก', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
     }
 
     const formData = new FormData();
@@ -859,8 +859,8 @@ window.saveEditCheckin = async function() {
             body: formData
         });
         const data = await res.json();
-        
-        if(data.success) {
+
+        if (data.success) {
             // ป๊อปอัปแจ้งเตือนเมื่อแก้ไขรูปภาพสำเร็จ
             Swal.fire({
                 title: 'สำเร็จ!',
@@ -874,22 +874,22 @@ window.saveEditCheckin = async function() {
                 }
             });
             closeEditCheckinModal();
-            loadCheckinHistory(); 
+            loadCheckinHistory();
         } else {
-            Toast.error(data.error);
+            Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: data.error, confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
         }
-    } catch(e) {
-        Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+    } catch (e) {
+        Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
     } finally {
         Loader.hide();
     }
 };
 
-window.openAdminEdit = function(id) {
+window.openAdminEdit = function (id) {
     try {
         const item = checkinData.find(r => r.id == id);
-        if(!item) {
-            Toast.error('ไม่พบข้อมูล กรุณารีเฟรชหน้าเว็บ');
+        if (!item) {
+            Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'ไม่พบข้อมูล กรุณารีเฟรชหน้าเว็บ', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
             return;
         }
 
@@ -899,26 +899,26 @@ window.openAdminEdit = function(id) {
         document.getElementById('admin_edit_status').value = item.admin_status || '';
 
         const modal = document.getElementById('adminEditModal');
-        if(modal) modal.classList.remove('hidden');
+        if (modal) modal.classList.remove('hidden');
     } catch (err) {
         console.error("Error admin modal:", err);
         alert('เกิดข้อผิดพลาดในการเปิดหน้าต่างจัดการแอดมิน');
     }
 };
 
-window.closeAdminEditModal = function() {
+window.closeAdminEditModal = function () {
     const modal = document.getElementById('adminEditModal');
-    if(modal) modal.classList.add('hidden');
+    if (modal) modal.classList.add('hidden');
 };
 
-window.saveAdminEdit = async function() {
+window.saveAdminEdit = async function () {
     const id = document.getElementById('admin_edit_id').value;
     const checkin_time = document.getElementById('admin_edit_checkin_time').value;
     const checkout_time = document.getElementById('admin_edit_checkout_time').value;
     const admin_status = document.getElementById('admin_edit_status').value;
 
     if (!id || !checkin_time) {
-        return Toast.error('กรุณาระบุเวลาเข้างานให้ครบถ้วน');
+        return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'กรุณาระบุเวลาเข้างานให้ครบถ้วน', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
     }
 
     const formData = new FormData();
@@ -935,8 +935,8 @@ window.saveAdminEdit = async function() {
             body: formData
         });
         const data = await res.json();
-        
-        if(data.success) {
+
+        if (data.success) {
             Swal.fire({
                 title: 'สำเร็จ!',
                 text: 'อัปเดตข้อมูลแอดมินเรียบร้อยแล้ว',
@@ -949,21 +949,21 @@ window.saveAdminEdit = async function() {
                 }
             });
             closeAdminEditModal();
-            loadCheckinHistory(); 
+            loadCheckinHistory();
         } else {
-            Toast.error(data.error);
+            Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: data.error, confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
         }
-    } catch(e) {
-        Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+    } catch (e) {
+        Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
     } finally {
         Loader.hide();
     }
 };
 
 // ระบบลบเฉพาะรูปภาพอย่างเดียว
-window.deleteCheckinImage = async function() {
+window.deleteCheckinImage = async function () {
     const idInput = document.getElementById('edit_checkin_id');
-    if (!idInput || !idInput.value) return Toast.error('ไม่พบข้อมูลที่ต้องการลบรูป');
+    if (!idInput || !idInput.value) return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'ไม่พบข้อมูลที่ต้องการลบรูป', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
 
     Swal.fire({
         title: 'ยืนยันการลบรูปภาพ?',
@@ -980,7 +980,7 @@ window.deleteCheckinImage = async function() {
             try {
                 const res = await fetch('api/checkin/delete_image.php', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: idInput.value })
                 });
                 const data = await res.json();
@@ -1000,10 +1000,10 @@ window.deleteCheckinImage = async function() {
                     closeEditCheckinModal();
                     loadCheckinHistory();
                 } else {
-                    Toast.error(data.error);
+                    Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: data.error, confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
                 }
-            } catch(e) {
-                Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+            } catch (e) {
+                Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
             } finally {
                 Loader.hide();
             }
@@ -1012,7 +1012,7 @@ window.deleteCheckinImage = async function() {
 };
 
 // ระบบลบข้อมูลเช็คอินทั้งรายการ
-window.deleteCheckin = async function(id) {
+window.deleteCheckin = async function (id) {
     Swal.fire({
         title: 'ยืนยันการลบข้อมูล?',
         text: "ข้อมูลการเช็คอินนี้และรูปภาพจะถูกลบออกจากระบบอย่างถาวร!",
@@ -1028,11 +1028,11 @@ window.deleteCheckin = async function(id) {
             try {
                 const res = await fetch('api/checkin/delete.php', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: id })
                 });
                 const data = await res.json();
-                
+
                 if (data.success) {
                     // ป๊อปอัปแจ้งเตือนเมื่อลบรายการเช็คอินสำเร็จ
                     Swal.fire({
@@ -1048,10 +1048,10 @@ window.deleteCheckin = async function(id) {
                     });
                     loadCheckinHistory();
                 } else {
-                    Toast.error(data.error);
+                    Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: data.error, confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
                 }
-            } catch(e) {
-                Toast.error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+            } catch (e) {
+                Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
             } finally {
                 Loader.hide();
             }
@@ -1066,65 +1066,65 @@ async function loadSettings() {
     try {
         const res = await fetch('api/checkin/settings.php');
         const data = await res.json();
-        if(data.success && data.settings) {
+        if (data.success && data.settings) {
             currentRoleSettings = data.settings;
-            
+
             // จัดกลุ่มบทบาทตามเวลา
             const timeGroups = {};
             for (const [role, time] of Object.entries(data.settings)) {
                 if (!timeGroups[time]) timeGroups[time] = [];
                 timeGroups[time].push(role);
             }
-            
+
             const uniqueTimes = Object.keys(timeGroups).sort();
-            
+
             // รีเซ็ต Checkbox ทั้งหมดก่อน
             document.querySelectorAll('.role-cb-1, .role-cb-2').forEach(cb => cb.checked = false);
-            
+
             if (uniqueTimes.length > 0) {
                 const time1 = uniqueTimes[0];
                 const input1 = document.getElementById('lateTimeInput1');
-                if(input1) input1.value = time1;
+                if (input1) input1.value = time1;
                 timeGroups[time1].forEach(r => {
                     const cb = document.querySelector(`.role-cb-1[value="${r}"]`);
-                    if(cb) cb.checked = true;
+                    if (cb) cb.checked = true;
                 });
             }
             if (uniqueTimes.length > 1) {
                 const time2 = uniqueTimes[1];
                 const input2 = document.getElementById('lateTimeInput2');
-                if(input2) input2.value = time2;
+                if (input2) input2.value = time2;
                 timeGroups[time2].forEach(r => {
                     const cb = document.querySelector(`.role-cb-2[value="${r}"]`);
-                    if(cb) cb.checked = true;
+                    if (cb) cb.checked = true;
                 });
             }
         }
-    } catch(e) {}
+    } catch (e) { }
 }
 
-window.saveSettingsMulti = async function(rowNum) {
+window.saveSettingsMulti = async function (rowNum) {
     const timeInput = document.getElementById(`lateTimeInput${rowNum}`);
     const time = timeInput ? timeInput.value : '';
-    
+
     const checkedBoxes = document.querySelectorAll(`.role-cb-${rowNum}:checked`);
     const roles = Array.from(checkedBoxes).map(cb => cb.value);
-    
-    if(roles.length === 0) return Toast.error('กรุณาเลือกอย่างน้อย 1 บทบาท');
-    if(!time) return Toast.error('กรุณาระบุเวลา');
-    
+
+    if (roles.length === 0) return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'กรุณาเลือกอย่างน้อย 1 บทบาท', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
+    if (!time) return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'กรุณาระบุเวลา', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
+
     Loader.show();
     try {
         const res = await fetch('api/checkin/settings.php', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({late_time: time, roles: roles})
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ late_time: time, roles: roles })
         });
         const data = await res.json();
-        
+
         Loader.hide(); // ต้องซ่อน Loader ก่อนเรียก Swal เพื่อไม่ให้มันไปปิด Swal
-        
-        if(data.success) {
+
+        if (data.success) {
             // ป๊อปอัปแจ้งเตือนสวยๆ มีดีเลย์ก่อนหาย
             Swal.fire({
                 title: 'บันทึกสำเร็จ!',
@@ -1137,22 +1137,22 @@ window.saveSettingsMulti = async function(rowNum) {
                     popup: 'rounded-3xl'
                 }
             }).then(() => {
-                loadCheckinHistory(); 
+                loadCheckinHistory();
                 loadSettings(); // โหลดใหม่เพื่อจัดกลุ่มให้ตรง
             });
         } else {
             Swal.fire('ข้อผิดพลาด', data.error || 'เกิดข้อผิดพลาด', 'error');
         }
-    } catch(e) { 
+    } catch (e) {
         Loader.hide();
         Swal.fire('ล้มเหลว', 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error');
     }
 };
 
-window.exportCheckin = function() {
-    if(checkinData.length === 0) return Toast.error('ไม่มีข้อมูลให้ Export');
+window.exportCheckin = function () {
+    if (checkinData.length === 0) return Swal.fire({icon: 'error', title: 'ข้อผิดพลาด', text: 'ไม่มีข้อมูลให้ Export', confirmButtonText: 'ตกลง', customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }});
     Toast.info('กำลังสร้างไฟล์ Excel...');
-    
+
     const exportArr = checkinData.map((r, i) => {
         const d = new Date(r.checkin_time);
         let checkoutTime = 'ยังไม่เลิกงาน';
@@ -1182,12 +1182,12 @@ window.exportCheckin = function() {
     Toast.success('ดาวน์โหลดสำเร็จ');
 };
 
-document.addEventListener('DOMContentLoaded', function() {
-    
+document.addEventListener('DOMContentLoaded', function () {
+
     // จัดการปุ่มเลิกงาน (ระบบทั่วไป)
     const checkoutBtn = document.getElementById('checkoutBtn');
     if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', function() {
+        checkoutBtn.addEventListener('click', function () {
             const fileInput = document.getElementById('checkin_image');
             processCheckout(fileInput.files[0], 'regular');
         });
@@ -1196,7 +1196,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // จัดการปุ่มเลิกงาน (ระบบ MA)
     const maCheckoutBtn = document.getElementById('maCheckoutBtn');
     if (maCheckoutBtn) {
-        maCheckoutBtn.addEventListener('click', function() {
+        maCheckoutBtn.addEventListener('click', function () {
             const fileInput = document.getElementById('ma_checkin_image');
             processCheckout(fileInput.files[0], 'ma');
         });
@@ -1223,11 +1223,11 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const pos = await new Promise((resolve, reject) => {
                 if (!navigator.geolocation) reject("Browser no geoloc");
-                else navigator.geolocation.getCurrentPosition(resolve, reject, {enableHighAccuracy: true, timeout: 10000});
+                else navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 });
             });
             lat = pos.coords.latitude;
             lng = pos.coords.longitude;
-        } catch(e) {
+        } catch (e) {
             console.warn("Location error:", e);
         }
 
@@ -1250,41 +1250,41 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             body: formData
         })
-        .then(async response => {
-            const text = await response.text();
-            try {
-                return JSON.parse(text);
-            } catch (err) {
-                throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด: ' + text.substring(0, 100));
-            }
-        })
-        .then(data => {
-            if (data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'บันทึกการเลิกงานสำเร็จ',
-                    text: 'เวลาเลิกงานของคุณถูกบันทึกเรียบร้อยแล้ว',
-                    customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
-                }).then(() => {
-                    location.reload(); // รีเฟรชหน้าเพื่ออัปเดตสถานะและประวัติ
-                });
-            } else {
+            .then(async response => {
+                const text = await response.text();
+                try {
+                    return JSON.parse(text);
+                } catch (err) {
+                    throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด: ' + text.substring(0, 100));
+                }
+            })
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'บันทึกการเลิกงานสำเร็จ',
+                        text: 'เวลาเลิกงานของคุณถูกบันทึกเรียบร้อยแล้ว',
+                        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                    }).then(() => {
+                        location.reload(); // รีเฟรชหน้าเพื่ออัปเดตสถานะและประวัติ
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เลิกงานไม่สำเร็จ',
+                        text: data.error || 'ไม่สามารถบันทึกการเลิกงานได้',
+                        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Checkout error:", error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'เลิกงานไม่สำเร็จ',
-                    text: data.error || 'ไม่สามารถบันทึกการเลิกงานได้',
+                    title: 'ข้อผิดพลาดระบบ',
+                    text: 'การเลิกงานล้มเหลว: ' + (error.message || String(error)),
                     customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
                 });
-            }
-        })
-        .catch(error => {
-            console.error("Checkout error:", error);
-            Swal.fire({
-                icon: 'error',
-                title: 'ข้อผิดพลาดระบบ',
-                text: 'การเลิกงานล้มเหลว: ' + (error.message || String(error)),
-                customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
             });
-        });
     }
 });
