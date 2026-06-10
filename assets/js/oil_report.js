@@ -486,7 +486,7 @@ window.viewImages = function(recordIndex) {
     if(grid) {
         grid.innerHTML = '';
         images.forEach(img => {
-            const url = `assets/uploads/oil_receipts/${img}`;
+            const url = img.startsWith('http') ? img : `assets/uploads/oil_receipts/${img}`;
             grid.innerHTML += `<div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center aspect-square shadow-sm hover:shadow-md transition-shadow"><a href="${url}" target="_blank" title="คลิกเพื่อดูรูปขนาดเต็ม"><img src="${url}" class="w-full h-full object-contain hover:scale-105 transition-transform"></a></div>`;
         });
     }

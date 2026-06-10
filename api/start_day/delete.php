@@ -27,10 +27,11 @@ try {
     $images = $stmtImg->fetchAll(PDO::FETCH_COLUMN);
 
     foreach ($images as $img) {
-        $path = '../../assets/uploads/start_day/' . $img;
+        $filename = basename(parse_url($img, PHP_URL_PATH));
+        $path = '../../assets/uploads/start_day/' . $filename;
         if (file_exists($path) && is_file($path)) @unlink($path);
         // Fallback
-        $path2 = '../../' . $img;
+        $path2 = '../../' . $filename;
         if (file_exists($path2) && is_file($path2)) @unlink($path2);
     }
 

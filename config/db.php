@@ -5,6 +5,12 @@ ini_set('display_errors', 0);
 
 date_default_timezone_set('Asia/Bangkok');
 
+function getBaseUrl() {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+    $domainName = $_SERVER['HTTP_HOST'];
+    return $protocol . $domainName;
+}
+
 $host = 'localhost';
 $db   = 'zvucfpsz_Ro';
 $user = 'zvucfpsz_BO';

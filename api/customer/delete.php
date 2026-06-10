@@ -53,9 +53,10 @@ try {
             $images = $stmtImg->fetchAll(PDO::FETCH_COLUMN);
             
             foreach ($images as $img) {
-                $path = '../../assets/uploads/start_day/' . $img;
+                $filename = basename(parse_url($img, PHP_URL_PATH));
+                $path = '../../assets/uploads/start_day/' . $filename;
                 if (file_exists($path) && is_file($path)) @unlink($path);
-                $path2 = '../../' . $img; // Fallback
+                $path2 = '../../' . $filename; // Fallback
                 if (file_exists($path2) && is_file($path2)) @unlink($path2);
             }
 
@@ -82,9 +83,10 @@ try {
             $maImages = $stmtMaImg->fetchAll(PDO::FETCH_COLUMN);
             
             foreach ($maImages as $img) {
-                $path = '../../assets/uploads/ma_jobs/' . $img;
+                $filename = basename(parse_url($img, PHP_URL_PATH));
+                $path = '../../assets/uploads/ma_jobs/' . $filename;
                 if (file_exists($path) && is_file($path)) @unlink($path);
-                $path2 = '../../' . $img; // Fallback
+                $path2 = '../../' . $filename; // Fallback
                 if (file_exists($path2) && is_file($path2)) @unlink($path2);
             }
             

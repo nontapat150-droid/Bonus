@@ -23,7 +23,8 @@ try {
     $imgPath = $stmt->fetchColumn();
 
     if ($imgPath) {
-        $path = '../../assets/uploads/oil_receipts/' . $imgPath;
+        $filename = basename(parse_url($imgPath, PHP_URL_PATH));
+        $path = '../../assets/uploads/oil_receipts/' . $filename;
         if (file_exists($path) && is_file($path)) @unlink($path);
         
         $pdo->prepare("DELETE FROM oil_images WHERE record_id = ?")->execute([$id]);

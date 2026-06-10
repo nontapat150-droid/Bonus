@@ -88,7 +88,8 @@ try {
                 $target_file = $upload_dir . $filename;
 
                 if (move_uploaded_file($files['tmp_name'][$i], $target_file)) {
-                    $stmtImage->execute([$record_id, $filename]);
+                    $full_url = getBaseUrl() . '/assets/uploads/start_day/' . $filename;
+                    $stmtImage->execute([$record_id, $full_url]);
                 } else {
                     throw new Exception("เกิดข้อผิดพลาดในการบันทึกไฟล์รูปภาพ");
                 }

@@ -36,7 +36,8 @@ $newFileName = 'user_' . $userSession['id'] . '_' . time() . '.' . $fileExtensio
 $destPath = $uploadDir . $newFileName;
 
 if (move_uploaded_file($fileTmpPath, $destPath)) {
-    $imageUrl = 'uploads/profiles/' . $newFileName;
+    $full_url = getBaseUrl() . '/uploads/profiles/' . $newFileName;
+    $imageUrl = $full_url;
     
     try {
         // Fetch old image to delete it if exists
@@ -44,8 +45,11 @@ if (move_uploaded_file($fileTmpPath, $destPath)) {
         $stmt->execute([$userSession['id']]);
         $oldImage = $stmt->fetchColumn();
         
-        if ($oldImage && file_exists('../../' . $oldImage)) {
-            unlink('../../' . $oldImage);
+        if ($oldImage) {
+            $oldFilename = basename(parse_url($oldImage, PHP_URL_PATH));
+            if (file_exists('../../uploads/profiles/' . $oldFilename)) {
+                unlink('../../uploads/profiles/' . $oldFilename);
+            }
         }
 
         $updateStmt = $pdo->prepare("UPDATE users SET profile_image = ? WHERE id = ?");

@@ -78,7 +78,8 @@ try {
             $upload_dir = '../../assets/uploads/start_day/';
             
             foreach($oldImgs as $oldImg) {
-                if (file_exists($upload_dir . $oldImg)) unlink($upload_dir . $oldImg);
+                $oldFilename = basename(parse_url($oldImg, PHP_URL_PATH));
+                if (file_exists($upload_dir . $oldFilename)) unlink($upload_dir . $oldFilename);
             }
             $pdo->prepare("DELETE FROM start_day_images WHERE record_id = ?")->execute([$id]);
 
@@ -91,7 +92,8 @@ try {
                     
                     $filename = uniqid('sd_', true) . '.' . $ext;
                     if (move_uploaded_file($files['tmp_name'][$i], $upload_dir . $filename)) {
-                        $stmtImage->execute([$id, $filename]);
+                        $full_url = getBaseUrl() . '/assets/uploads/start_day/' . $filename;
+                        $stmtImage->execute([$id, $full_url]);
                     }
                 }
             }

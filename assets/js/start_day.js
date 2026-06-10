@@ -267,8 +267,9 @@ window.renderHistoryTable = function(records, isSuperAdmin = false) {
             statusHtml = '<span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-lg text-xs font-bold border border-rose-200">❌ ไม่มี</span>';
         }
 
-        let imgHtml = item.evidence_image
-            ? `<a href="assets/uploads/start_day/${item.evidence_image}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="assets/uploads/start_day/${item.evidence_image}" class="w-12 h-12 object-cover rounded-xl shadow-sm border border-slate-200"></a>`
+            let imgUrl = item.evidence_image ? (item.evidence_image.startsWith('http') ? item.evidence_image : `assets/uploads/start_day/${item.evidence_image}`) : '';
+            let imgHtml = item.evidence_image
+            ? `<a href="${imgUrl}" target="_blank" class="inline-block hover:scale-105 transition-transform"><img src="${imgUrl}" class="w-12 h-12 object-cover rounded-xl shadow-sm border border-slate-200"></a>`
             : '<div class="w-12 h-12 flex items-center justify-center mx-auto rounded-xl border border-slate-200 bg-slate-100 text-[10px] text-slate-400">ไม่มีรูป</div>';
 
         // 🌟 2. สร้างปุ่มลบ (เห็นเฉพาะแอดมิน) และปุ่มแก้ไข (เห็นทุกคน)

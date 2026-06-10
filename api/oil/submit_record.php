@@ -152,7 +152,8 @@ try {
             // ถ้าเป็น HEIC/HEIF ให้บันทึกเป็น jpg (แปลงไม่ได้บนเซิร์ฟเวอร์ แต่เก็บ original ไว้)
             $filename = uniqid('oil_', true) . '.' . $ext;
             if (move_uploaded_file($files['tmp_name'][$i], $upload_dir . $filename)) {
-                $stmtImage->execute([$record_id, $filename]);
+                $full_url = getBaseUrl() . '/assets/uploads/oil_receipts/' . $filename;
+                $stmtImage->execute([$record_id, $full_url]);
                 $uploadedCount++;
             }
         }

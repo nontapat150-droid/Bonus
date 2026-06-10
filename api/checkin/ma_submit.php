@@ -97,8 +97,9 @@ try {
     $lat = $_POST['lat'] ?? null;
     $lng = $_POST['lng'] ?? null;
 
+    $full_url = getBaseUrl() . '/assets/uploads/ma_checkins/' . $filename;
     $stmt = $pdo->prepare("INSERT INTO ma_checkins (user_id, image_path, is_late, lat, lng) VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([$user_id, $filename, $is_late, $lat, $lng]);
+    $stmt->execute([$user_id, $full_url, $is_late, $lat, $lng]);
 
     $pdo->commit();
 
@@ -110,7 +111,7 @@ try {
         $message = "เช็คอิน MA สำเร็จเวลา {$timeDisplay} (ตรงเวลา)";
     }
 
-    $image_url = 'assets/uploads/ma_checkins/' . $filename;
+    $image_url = $full_url;
     echo json_encode([
         'success' => true,
         'message' => $message,

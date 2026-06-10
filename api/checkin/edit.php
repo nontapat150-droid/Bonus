@@ -36,7 +36,8 @@ try {
         exit;
     }
 
-    $upload_dir = '../../assets/uploads/checkins/';
+    $folder = ($type === 'ma') ? 'ma_checkins/' : 'checkins/';
+    $upload_dir = '../../assets/uploads/' . $folder;
     if (!is_dir($upload_dir)) {
         mkdir($upload_dir, 0755, true);
     }
@@ -61,7 +62,8 @@ try {
         $stmt->execute([$id]);
         $oldImage = $stmt->fetchColumn();
         if ($oldImage) {
-            $oldFile = $upload_dir . $oldImage;
+            $oldFilename = basename(parse_url($oldImage, PHP_URL_PATH));
+            $oldFile = $upload_dir . $oldFilename;
             if (file_exists($oldFile)) {
                 @unlink($oldFile);
             }
@@ -79,8 +81,9 @@ try {
         } catch (PDOException $e) { }
 
         // อัปเดตเฉพาะรูปภาพในฐานข้อมูลและตั้งค่าว่าแก้ไขแล้ว
+        $full_url = getBaseUrl() . '/assets/uploads/' . $folder . $filename;
         $sql = "UPDATE $table SET image_path = ?, is_edited_image = 1 WHERE id = ?";
-        $pdo->prepare($sql)->execute([$filename, $id]);
+        $pdo->prepare($sql)->execute([$full_url, $id]);
 
         echo json_encode(['success' => true, 'message' => 'อัปเดตข้อมูลสำเร็จ']);
     } else {

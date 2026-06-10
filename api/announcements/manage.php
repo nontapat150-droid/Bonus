@@ -122,13 +122,14 @@ if ($action === 'save') {
             }
 
             if ($existingImage) {
-                $oldFile = __DIR__ . '/../../' . ltrim($existingImage, '/');
+                $oldFilename = basename(parse_url($existingImage, PHP_URL_PATH));
+                $oldFile = __DIR__ . '/../../uploads/announcements/' . $oldFilename;
                 if (file_exists($oldFile)) {
                     @unlink($oldFile);
                 }
             }
 
-            $imageUrl = 'uploads/announcements/' . $safeName;
+            $imageUrl = getBaseUrl() . '/uploads/announcements/' . $safeName;
         }
     } else {
         $imageUrl = null; // Marquee doesn't have an image
@@ -158,7 +159,8 @@ if ($action === 'save') {
             $stmt->execute([$type]);
             $current = $stmt->fetchColumn();
             if ($current) {
-                $oldFile = __DIR__ . '/../../' . ltrim($current, '/');
+                $oldFilename = basename(parse_url($current, PHP_URL_PATH));
+                $oldFile = __DIR__ . '/../../uploads/announcements/' . $oldFilename;
                 if (file_exists($oldFile)) {
                     @unlink($oldFile);
                 }

@@ -132,8 +132,9 @@ try {
 
             $filename = 'ma_' . $jobId . '_' . time() . '_' . uniqid() . '.' . $ext;
             if (move_uploaded_file($tmp, $uploadDir . $filename)) {
+                $full_url = getBaseUrl() . '/assets/uploads/ma_jobs/' . $filename;
                 $pdo->prepare("INSERT INTO ma_job_completion_images (ma_job_id, image_path, uploaded_by) VALUES (?, ?, ?)")
-                    ->execute([$jobId, 'assets/uploads/ma_jobs/' . $filename, $userId]);
+                    ->execute([$jobId, $full_url, $userId]);
                 $saved++;
             }
         }
