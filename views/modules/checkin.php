@@ -18,225 +18,261 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-/* ==================== CSS VARIABLES ==================== */
+/* ====================================================
+   CHECKIN MODULE — REDESIGNED 2025
+   Font: Sarabun (Thai) + system-ui
+   Palette: Indigo primary / Violet MA / Slate neutrals
+   ==================================================== */
+
 :root {
-  --primary: #4F46E5;
-  --primary-light: #6366F1;
-  --primary-dark: #3730A3;
-  --primary-bg: #EEF2FF;
-  --ma-primary: #7C3AED;
-  --ma-light: #8B5CF6;
-  --ma-bg: #F5F3FF;
-  --success: #059669;
-  --success-bg: #ECFDF5;
-  --danger: #E11D48;
-  --danger-bg: #FFF1F2;
-  --warning: #D97706;
-  --warning-bg: #FFFBEB;
-  --info: #0284C7;
-  --info-bg: #F0F9FF;
-  --surface: #FFFFFF;
-  --surface-2: #F8FAFC;
-  --surface-3: #F1F5F9;
-  --border: #E2E8F0;
-  --border-soft: #F1F5F9;
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-muted: #94A3B8;
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
-  --shadow-lg: 0 10px 30px rgba(0,0,0,0.10), 0 4px 10px rgba(0,0,0,0.06);
-  --shadow-xl: 0 20px 50px rgba(0,0,0,0.12), 0 8px 20px rgba(0,0,0,0.06);
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --c-primary:       #4F46E5;
+  --c-primary-h:     #3730A3;
+  --c-primary-tint:  #EEF2FF;
+  --c-primary-ring:  rgba(79,70,229,0.18);
+
+  --c-ma:            #7C3AED;
+  --c-ma-h:          #6D28D9;
+  --c-ma-tint:       #F5F3FF;
+  --c-ma-ring:       rgba(124,58,237,0.18);
+
+  --c-ok:            #059669;
+  --c-ok-tint:       #ECFDF5;
+  --c-ok-border:     #A7F3D0;
+
+  --c-danger:        #E11D48;
+  --c-danger-tint:   #FFF1F2;
+  --c-danger-border: #FECDD3;
+
+  --c-warn:          #D97706;
+  --c-warn-tint:     #FFFBEB;
+  --c-warn-border:   #FDE68A;
+
+  --c-info:          #0284C7;
+  --c-info-tint:     #F0F9FF;
+  --c-info-border:   #BAE6FD;
+
+  --c-bg:            #F8FAFC;
+  --c-surface:       #FFFFFF;
+  --c-surface-alt:   #F1F5F9;
+  --c-border:        #E2E8F0;
+  --c-border-faint:  #F1F5F9;
+
+  --c-ink:           #0F172A;
+  --c-ink-2:         #334155;
+  --c-ink-3:         #64748B;
+  --c-ink-4:         #94A3B8;
+
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 22px;
+
+  --sh-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --sh-md: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --sh-lg: 0 12px 36px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.05);
+  --sh-xl: 0 24px 56px rgba(0,0,0,0.13), 0 8px 20px rgba(0,0,0,0.06);
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --t: 0.18s var(--ease);
 }
 
-/* ==================== GLOBAL ==================== */
-.checkin-module * {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.checkin-module {
+/* ─── RESET ─────────────────────────────────────── */
+.ck * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+.ck {
   font-family: 'Sarabun', system-ui, -apple-system, sans-serif;
-  color: var(--text-primary);
-  padding: 0;
+  color: var(--c-ink);
+  font-size: 15px;
+  line-height: 1.5;
 }
 
-/* ==================== TAB SWITCHER ==================== */
-.tab-switcher {
+/* ─── MODULE-LEVEL TAB STRIP ─────────────────────── */
+.ck-tab-strip {
   display: flex;
-  background: var(--surface-3);
-  border-radius: var(--radius-md);
+  gap: 0;
+  background: var(--c-surface-alt);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
   padding: 4px;
-  max-width: 380px;
+  width: fit-content;
+  max-width: 100%;
   margin-bottom: 20px;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+  box-shadow: var(--sh-sm);
 }
 
 .tab-btn {
   flex: 1;
-  padding: 10px 16px;
+  min-width: 130px;
+  padding: 10px 20px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--r-lg);
   font-size: 14px;
+  font-family: inherit;
   font-weight: 700;
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--t);
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--c-ink-3);
   white-space: nowrap;
-  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .tab-btn.active {
-  background: var(--surface);
-  color: var(--primary);
-  box-shadow: var(--shadow-sm);
+  background: var(--c-surface);
+  color: var(--c-primary);
+  box-shadow: var(--sh-sm);
 }
 
-.tab-btn.active.ma {
-  color: var(--ma-primary);
-}
+.tab-btn.active.ma { color: var(--c-ma); }
 
-/* ==================== MAIN GRID ==================== */
-.checkin-grid {
+/* ─── MAIN LAYOUT GRID ───────────────────────────── */
+.ck-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
+  align-items: start;
 }
 
-@media (min-width: 1024px) {
-  .checkin-grid {
-    grid-template-columns: 380px 1fr;
+@media (min-width: 900px) {
+  .ck-grid {
+    grid-template-columns: 340px 1fr;
     gap: 20px;
-    align-items: start;
   }
 }
 
-/* ==================== CARD ==================== */
+@media (min-width: 1200px) {
+  .ck-grid { grid-template-columns: 360px 1fr; }
+}
+
+/* ─── CARD ───────────────────────────────────────── */
 .card {
-  background: var(--surface);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-soft);
+  background: var(--c-surface);
+  border-radius: var(--r-xl);
+  border: 1px solid var(--c-border-faint);
+  box-shadow: var(--sh-md);
   overflow: hidden;
 }
 
+/* ─── CARD HEADER ────────────────────────────────── */
 .card-header {
-  padding: 20px 24px;
+  padding: 18px 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .card-header.indigo {
-  background: linear-gradient(135deg, var(--primary) 0%, #6366F1 100%);
+  background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
 }
 
 .card-header.violet {
-  background: linear-gradient(135deg, var(--ma-primary) 0%, #8B5CF6 100%);
+  background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%);
 }
 
 .card-header-icon {
-  width: 44px;
-  height: 44px;
-  background: rgba(255,255,255,0.2);
-  border-radius: var(--radius-sm);
+  width: 46px;
+  height: 46px;
+  background: rgba(255,255,255,0.18);
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 22px;
   flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.15);
 }
 
 .card-header-text h2 {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
   color: #fff;
   margin: 0;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .card-header-text p {
   font-size: 12px;
-  color: rgba(255,255,255,0.72);
-  margin: 3px 0 0;
-  font-weight: 600;
+  color: rgba(255,255,255,0.70);
+  margin: 2px 0 0;
+  font-weight: 500;
 }
 
+/* ─── CARD BODY ──────────────────────────────────── */
 .card-body {
-  padding: 20px 24px;
+  padding: 20px;
 }
 
-/* ==================== TIME DISPLAY ==================== */
+@media (max-width: 479px) {
+  .card-body { padding: 16px; }
+  .card-header { padding: 14px 16px; }
+}
+
+/* ─── CLOCK BLOCK ────────────────────────────────── */
 .time-block {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 16px 20px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: 14px 20px;
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .time-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.08em;
+  color: var(--c-ink-4);
+  letter-spacing: 0.10em;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .time-value {
-  font-size: 38px;
+  font-size: 40px;
   font-weight: 900;
-  color: var(--primary);
+  color: var(--c-primary);
   letter-spacing: -0.04em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
-.time-value.violet {
-  color: var(--ma-primary);
-}
+.time-value.violet { color: var(--c-ma); }
+
+@media (max-width: 479px) { .time-value { font-size: 34px; } }
 
 .time-sublabel {
   font-size: 11px;
   font-weight: 600;
-  color: #7C3AED;
-  margin-top: 6px;
+  color: var(--c-ma);
+  margin-top: 5px;
 }
 
-.time-sublabel span {
-  font-weight: 800;
-}
+.time-sublabel span { font-weight: 800; }
 
-/* ==================== PHOTO UPLOAD ZONE ==================== */
+/* ─── PHOTO UPLOAD ZONE ──────────────────────────── */
 .photo-zone {
-  border: 2px dashed var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface-2);
+  display: block;
+  border: 2px dashed var(--c-border);
+  border-radius: var(--r-lg);
+  background: var(--c-bg);
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition: var(--transition);
-  height: 148px;
-  display: block;
+  transition: border-color var(--t), background var(--t);
+  height: 150px;
 }
 
-.photo-zone:hover {
-  border-color: var(--primary);
-  background: var(--primary-bg);
+.photo-zone:hover,
+.photo-zone:focus-within {
+  border-color: var(--c-primary);
+  background: var(--c-primary-tint);
 }
 
-.photo-zone.violet:hover {
-  border-color: var(--ma-light);
-  background: var(--ma-bg);
+.photo-zone.violet:hover,
+.photo-zone.violet:focus-within {
+  border-color: var(--c-ma);
+  background: var(--c-ma-tint);
 }
 
 .photo-zone-inner {
@@ -246,53 +282,36 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   pointer-events: none;
 }
 
 .photo-zone-icon {
-  width: 44px;
-  height: 44px;
-  background: var(--primary-bg);
+  width: 46px;
+  height: 46px;
+  background: var(--c-primary-tint);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition);
+  transition: transform var(--t);
 }
 
-.photo-zone:hover .photo-zone-icon {
-  transform: scale(1.1);
-}
+.photo-zone:hover .photo-zone-icon { transform: scale(1.08); }
 
-.photo-zone-icon svg {
-  width: 22px;
-  height: 22px;
-  color: var(--primary);
-}
+.photo-zone-icon svg { width: 22px; height: 22px; color: var(--c-primary); }
 
-.photo-zone-icon.violet-icon {
-  background: var(--ma-bg);
-}
-
-.photo-zone-icon.violet-icon svg {
-  color: var(--ma-light);
-}
+.photo-zone-icon.violet-icon { background: var(--c-ma-tint); }
+.photo-zone-icon.violet-icon svg { color: var(--c-ma); }
 
 .photo-zone-text {
   font-size: 13px;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--c-primary);
 }
 
-.photo-zone-text.violet {
-  color: var(--ma-light);
-}
-
-.photo-zone-subtext {
-  font-size: 11px;
-  color: var(--text-muted);
-}
+.photo-zone-text.violet { color: var(--c-ma); }
+.photo-zone-subtext { font-size: 11px; color: var(--c-ink-4); }
 
 .photo-preview {
   position: absolute;
@@ -302,76 +321,71 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   object-fit: cover;
 }
 
-/* ==================== ACTION BUTTONS ==================== */
+/* ─── ACTION BUTTONS ─────────────────────────────── */
 .btn-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .btn {
   padding: 13px 16px;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--r-md);
   font-size: 14px;
+  font-family: inherit;
   font-weight: 800;
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--t);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  letter-spacing: -0.01em;
-  position: relative;
-  overflow: hidden;
+  gap: 7px;
+  white-space: nowrap;
 }
 
-.btn:active {
-  transform: scale(0.96);
-}
-
-.btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none !important;
-}
+.btn:active { transform: scale(0.96); }
+.btn:disabled { opacity: 0.40; cursor: not-allowed; transform: none !important; }
 
 .btn-checkin {
-  background: var(--primary);
+  background: var(--c-primary);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(79,70,229,0.35);
+  box-shadow: 0 4px 14px rgba(79,70,229,0.32);
 }
 
 .btn-checkin:hover:not(:disabled) {
-  background: var(--primary-dark);
-  box-shadow: 0 6px 20px rgba(79,70,229,0.45);
+  background: var(--c-primary-h);
+  box-shadow: 0 6px 20px rgba(79,70,229,0.44);
+  transform: translateY(-1px);
 }
 
 .btn-checkin.violet {
-  background: var(--ma-primary);
-  box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+  background: var(--c-ma);
+  box-shadow: 0 4px 14px rgba(124,58,237,0.32);
 }
 
 .btn-checkin.violet:hover:not(:disabled) {
-  background: #6D28D9;
-  box-shadow: 0 6px 20px rgba(124,58,237,0.45);
+  background: var(--c-ma-h);
+  box-shadow: 0 6px 20px rgba(124,58,237,0.44);
+  transform: translateY(-1px);
 }
 
 .btn-checkout {
-  background: var(--danger-bg);
-  color: var(--danger);
-  border: 1.5px solid #FECDD3;
+  background: var(--c-danger-tint);
+  color: var(--c-danger);
+  border: 1.5px solid var(--c-danger-border);
 }
 
 .btn-checkout:hover:not(:disabled) {
-  background: var(--danger);
+  background: var(--c-danger);
   color: #fff;
-  border-color: var(--danger);
-  box-shadow: 0 4px 14px rgba(225,29,72,0.30);
+  border-color: var(--c-danger);
+  box-shadow: 0 4px 14px rgba(225,29,72,0.28);
+  transform: translateY(-1px);
 }
 
-/* ==================== STATS CARDS ==================== */
+/* ─── STATS GRID ─────────────────────────────────── */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -379,86 +393,90 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
 }
 
 .stat-card {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 14px 12px;
+  border-radius: var(--r-md);
+  padding: 14px 10px 12px;
   text-align: center;
+  border: 1px solid var(--c-border);
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
 .stat-value {
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 1.1;
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
 
-.stat-card.blue { background: var(--info-bg); border-color: #BAE6FD; }
-.stat-card.blue .stat-label { color: var(--info); }
-.stat-card.blue .stat-value { color: #0C4A6E; }
+@media (max-width: 479px) {
+  .stat-value { font-size: 26px; }
+  .stats-grid { gap: 8px; }
+}
 
-.stat-card.green { background: var(--success-bg); border-color: #A7F3D0; }
-.stat-card.green .stat-label { color: var(--success); }
+.stat-card.blue  { background: var(--c-info-tint);   border-color: var(--c-info-border); }
+.stat-card.blue .stat-label  { color: var(--c-info); }
+.stat-card.blue .stat-value  { color: #0C4A6E; }
+
+.stat-card.green { background: var(--c-ok-tint);     border-color: var(--c-ok-border); }
+.stat-card.green .stat-label { color: var(--c-ok); }
 .stat-card.green .stat-value { color: #064E3B; }
 
-.stat-card.orange { background: var(--warning-bg); border-color: #FDE68A; }
-.stat-card.orange .stat-label { color: var(--warning); }
-.stat-card.orange .stat-value { color: #78350F; }
+.stat-card.orange{ background: var(--c-warn-tint);   border-color: var(--c-warn-border); }
+.stat-card.orange .stat-label{ color: var(--c-warn); }
+.stat-card.orange .stat-value{ color: #78350F; }
 
-/* ==================== SECTION HEADER ==================== */
+/* ─── SECTION HEADER ─────────────────────────────── */
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .section-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
-  color: var(--text-primary);
+  color: var(--c-ink);
   display: flex;
   align-items: center;
   gap: 8px;
-  letter-spacing: -0.01em;
 }
 
 .section-title .icon {
-  width: 32px;
-  height: 32px;
-  background: var(--primary-bg);
+  width: 30px;
+  height: 30px;
+  background: var(--c-primary-tint);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 15px;
+  flex-shrink: 0;
 }
 
-/* ==================== SETTINGS PANEL ==================== */
+/* ─── SETTINGS PANEL ─────────────────────────────── */
 .settings-group {
-  padding: 16px;
-  background: var(--surface-2);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
+  padding: 14px 16px;
+  background: var(--c-bg);
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
   margin-bottom: 12px;
 }
 
 .settings-group-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  color: var(--c-ink-4);
   margin-bottom: 10px;
 }
 
@@ -469,35 +487,33 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   margin-bottom: 12px;
 }
 
-.role-chip label {
-  cursor: pointer;
-}
-
+.role-chip label { cursor: pointer; }
 .role-chip input { display: none; }
 
 .role-chip-label {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   padding: 6px 14px;
   border-radius: 99px;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--c-border);
   font-size: 13px;
   font-weight: 700;
-  color: var(--text-secondary);
-  background: var(--surface);
-  transition: var(--transition);
+  color: var(--c-ink-2);
+  background: var(--c-surface);
+  transition: var(--t);
   user-select: none;
   white-space: nowrap;
 }
 
 .role-chip input:checked + .role-chip-label {
-  background: var(--primary);
+  background: var(--c-primary);
   color: #fff;
-  border-color: var(--primary);
+  border-color: var(--c-primary);
 }
 
 .role-chip.green input:checked + .role-chip-label {
-  background: var(--success);
-  border-color: var(--success);
+  background: var(--c-ok);
+  border-color: var(--c-ok);
 }
 
 .settings-time-row {
@@ -511,151 +527,154 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   flex: 1;
   min-width: 120px;
   padding: 10px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-sm);
   font-size: 15px;
+  font-family: inherit;
   font-weight: 700;
-  color: var(--text-primary);
-  background: var(--surface);
+  color: var(--c-ink);
+  background: var(--c-surface);
   outline: none;
-  transition: var(--transition);
+  transition: var(--t);
   font-variant-numeric: tabular-nums;
 }
 
 .time-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px var(--c-primary-ring);
 }
 
 .btn-save {
   padding: 10px 20px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--r-sm);
   font-size: 13px;
+  font-family: inherit;
   font-weight: 800;
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--t);
   white-space: nowrap;
 }
 
 .btn-save.indigo {
-  background: var(--primary);
+  background: var(--c-primary);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(79,70,229,0.25);
+  box-shadow: 0 2px 8px rgba(79,70,229,0.22);
 }
-
-.btn-save.indigo:hover { background: var(--primary-dark); }
+.btn-save.indigo:hover { background: var(--c-primary-h); }
 
 .btn-save.green {
-  background: var(--success);
+  background: var(--c-ok);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(5,150,105,0.25);
+  box-shadow: 0 2px 8px rgba(5,150,105,0.22);
 }
-
 .btn-save.green:hover { background: #047857; }
 
-/* ==================== FILTER ROW ==================== */
+/* ─── FILTER ROW ─────────────────────────────────── */
 .filter-row {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  margin-bottom: 14px;
 }
 
 .filter-input {
-  padding: 8px 12px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-sm);
   font-size: 13px;
-  color: var(--text-primary);
+  font-family: inherit;
+  color: var(--c-ink);
   outline: none;
-  transition: var(--transition);
-  background: var(--surface);
+  transition: var(--t);
+  background: var(--c-surface);
+  flex: 1;
+  min-width: 130px;
 }
 
 .filter-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79,70,229,0.10);
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px var(--c-primary-ring);
 }
 
 .btn-filter {
-  padding: 8px 16px;
+  padding: 9px 18px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--r-sm);
   font-size: 13px;
+  font-family: inherit;
   font-weight: 700;
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--t);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .btn-filter.search {
-  background: var(--primary-bg);
-  color: var(--primary);
+  background: var(--c-primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(79,70,229,0.20);
 }
-
-.btn-filter.search:hover { background: #C7D2FE; }
+.btn-filter.search:hover { background: var(--c-primary-h); }
 
 .btn-filter.excel {
-  background: var(--success-bg);
-  color: var(--success);
-  border: 1.5px solid #A7F3D0;
+  background: var(--c-ok-tint);
+  color: var(--c-ok);
+  border: 1.5px solid var(--c-ok-border);
 }
-
 .btn-filter.excel:hover { background: #D1FAE5; }
 
 .filter-sep {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--c-ink-4);
   font-weight: 600;
   display: none;
 }
-
 @media (min-width: 540px) { .filter-sep { display: inline; } }
 
-/* ==================== HISTORY TABLE ==================== */
+/* ─── HISTORY TABLE ──────────────────────────────── */
 .history-table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  margin: 0 -4px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
 }
 
 .history-table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
   min-width: 480px;
 }
 
 .history-table thead th {
-  padding: 10px 14px;
+  padding: 11px 14px;
   font-size: 11px;
-  font-weight: 800;
-  color: var(--text-muted);
+  font-weight: 700;
+  color: var(--c-ink-4);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  background: var(--surface-3);
-  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.07em;
+  background: var(--c-bg);
+  border-bottom: 1px solid var(--c-border);
   white-space: nowrap;
 }
 
-.history-table thead th:first-child { border-radius: var(--radius-sm) 0 0 0; }
-.history-table thead th:last-child { border-radius: 0 var(--radius-sm) 0 0; }
+.history-table thead th:first-child { border-radius: var(--r-md) 0 0 0; }
+.history-table thead th:last-child  { border-radius: 0 var(--r-md) 0 0; }
 
-.history-table tbody tr {
-  transition: background 0.15s;
-}
-
-.history-table tbody tr:hover { background: var(--surface-2); }
+.history-table tbody tr { transition: background 0.12s; }
+.history-table tbody tr:last-child td { border-bottom: none; }
+.history-table tbody tr:hover { background: var(--c-bg); }
 
 .history-table tbody td {
-  padding: 11px 14px;
+  padding: 12px 14px;
   font-size: 13px;
-  border-bottom: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--c-border-faint);
   vertical-align: middle;
-  color: var(--text-secondary);
+  color: var(--c-ink-2);
 }
 
-/* ==================== BADGE ==================== */
+/* ─── BADGE ──────────────────────────────────────── */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -668,40 +687,38 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   letter-spacing: 0.02em;
 }
 
-.badge.on-time { background: var(--success-bg); color: var(--success); }
-.badge.late { background: var(--danger-bg); color: var(--danger); }
-.badge.leave { background: var(--warning-bg); color: var(--warning); }
-.badge.default { background: var(--surface-3); color: var(--text-muted); }
+.badge.on-time { background: var(--c-ok-tint);     color: var(--c-ok); }
+.badge.late    { background: var(--c-danger-tint);  color: var(--c-danger); }
+.badge.leave   { background: var(--c-warn-tint);    color: var(--c-warn); }
+.badge.default { background: var(--c-surface-alt);  color: var(--c-ink-4); }
 
-/* ==================== ACTION ICONS ==================== */
+/* ─── ACTION ICON BUTTONS ────────────────────────── */
 .action-btn {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition);
+  transition: var(--t);
   font-size: 15px;
   background: transparent;
 }
 
-.action-btn.edit { color: var(--primary); }
-.action-btn.edit:hover { background: var(--primary-bg); }
+.action-btn.edit  { color: var(--c-primary); }
+.action-btn.edit:hover  { background: var(--c-primary-tint); }
+.action-btn.admin { color: var(--c-warn); }
+.action-btn.admin:hover { background: var(--c-warn-tint); }
+.action-btn.delete{ color: var(--c-danger); }
+.action-btn.delete:hover{ background: var(--c-danger-tint); }
 
-.action-btn.admin { color: var(--warning); }
-.action-btn.admin:hover { background: var(--warning-bg); }
-
-.action-btn.delete { color: var(--danger); }
-.action-btn.delete:hover { background: var(--danger-bg); }
-
-/* ==================== MODAL ==================== */
+/* ─── MODAL ──────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15,23,42,0.55);
+  background: rgba(15,23,42,0.52);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   z-index: 9999;
@@ -709,27 +726,24 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  animation: fadeIn 0.18s ease;
+  animation: ckFadeIn 0.16s ease;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+@keyframes ckFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .modal-box {
-  background: var(--surface);
-  border-radius: var(--radius-xl);
+  background: var(--c-surface);
+  border-radius: var(--r-xl);
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   overflow: hidden;
-  box-shadow: var(--shadow-xl);
-  animation: slideUp 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: var(--sh-xl);
+  animation: ckSlideUp 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes ckSlideUp {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .modal-header {
@@ -737,7 +751,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--c-border-faint);
 }
 
 .modal-title {
@@ -746,39 +760,39 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   display: flex;
   align-items: center;
   gap: 8px;
-  letter-spacing: -0.01em;
 }
 
 .modal-close {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border: none;
-  background: var(--surface-3);
+  background: var(--c-surface-alt);
   border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  color: var(--text-muted);
-  transition: var(--transition);
+  color: var(--c-ink-4);
+  transition: var(--t);
   line-height: 1;
+  flex-shrink: 0;
 }
 
-.modal-close:hover { background: var(--danger-bg); color: var(--danger); }
+.modal-close:hover { background: var(--c-danger-tint); color: var(--c-danger); }
 
 .modal-body { padding: 20px; }
 
 .modal-footer {
   padding: 14px 20px;
-  background: var(--surface-2);
-  border-top: 1px solid var(--border-soft);
+  background: var(--c-bg);
+  border-top: 1px solid var(--c-border-faint);
   display: flex;
   justify-content: flex-end;
   gap: 8px;
 }
 
-/* ==================== FORM FIELDS ==================== */
+/* ─── FORM FIELDS ────────────────────────────────── */
 .form-group { margin-bottom: 16px; }
 .form-group:last-child { margin-bottom: 0; }
 
@@ -786,41 +800,42 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   display: block;
   font-size: 13px;
   font-weight: 700;
-  color: var(--text-secondary);
+  color: var(--c-ink-2);
   margin-bottom: 6px;
 }
 
 .form-input {
   width: 100%;
   padding: 10px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-sm);
   font-size: 14px;
-  color: var(--text-primary);
-  background: var(--surface);
+  font-family: inherit;
+  color: var(--c-ink);
+  background: var(--c-surface);
   outline: none;
-  transition: var(--transition);
+  transition: var(--t);
   appearance: none;
   -webkit-appearance: none;
 }
 
 .form-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79,70,229,0.10);
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px var(--c-primary-ring);
 }
 
 .form-hint {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--c-ink-4);
   margin-top: 4px;
 }
 
-/* ==================== EDIT IMAGE UPLOAD ==================== */
+/* ─── EDIT IMAGE UPLOAD ──────────────────────────── */
 .edit-photo-zone {
-  border-radius: var(--radius-md);
+  border-radius: var(--r-md);
   overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--surface-3);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface-alt);
   min-height: 160px;
   display: flex;
   align-items: center;
@@ -830,7 +845,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
 .edit-photo-placeholder {
   text-align: center;
   padding: 20px;
-  color: var(--text-muted);
+  color: var(--c-ink-4);
   font-size: 13px;
   font-weight: 600;
 }
@@ -842,68 +857,44 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   flex-wrap: wrap;
 }
 
+/* ─── SMALL BUTTONS ──────────────────────────────── */
 .btn-sm {
-  padding: 8px 16px;
+  padding: 9px 18px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--r-sm);
   font-size: 13px;
+  font-family: inherit;
   font-weight: 700;
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--t);
   display: inline-flex;
   align-items: center;
   gap: 5px;
 }
 
-.btn-sm.primary {
-  background: var(--primary);
-  color: #fff;
-}
+.btn-sm.primary { background: var(--c-primary); color: #fff; }
+.btn-sm.primary:hover { background: var(--c-primary-h); }
 
-.btn-sm.primary:hover { background: var(--primary-dark); }
+.btn-sm.danger { background: var(--c-danger-tint); color: var(--c-danger); border: 1px solid var(--c-danger-border); }
+.btn-sm.danger:hover { background: var(--c-danger); color: #fff; border-color: var(--c-danger); }
 
-.btn-sm.danger {
-  background: var(--danger-bg);
-  color: var(--danger);
-  border: 1px solid #FECDD3;
-}
+.btn-sm.neutral { background: var(--c-surface-alt); color: var(--c-ink-2); border: 1px solid var(--c-border); }
+.btn-sm.neutral:hover { color: var(--c-ink); border-color: var(--c-ink-3); }
 
-.btn-sm.danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
-
-.btn-sm.neutral {
-  background: var(--surface-3);
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
-}
-
-.btn-sm.neutral:hover { background: var(--surface-3); color: var(--text-primary); }
-
-.btn-sm.amber {
-  background: #FEF3C7;
-  color: #92400E;
-}
-
+.btn-sm.amber { background: #FEF3C7; color: #92400E; }
 .btn-sm.amber:hover { background: #FDE68A; }
 
-/* ==================== EMPTY STATE ==================== */
+/* ─── EMPTY STATE ────────────────────────────────── */
 .empty-state {
   text-align: center;
-  padding: 40px 20px;
-  color: var(--text-muted);
+  padding: 44px 20px;
+  color: var(--c-ink-4);
 }
 
-.empty-state-icon {
-  font-size: 36px;
-  margin-bottom: 10px;
-  opacity: 0.5;
-}
+.empty-state-icon { font-size: 34px; margin-bottom: 10px; opacity: 0.45; }
+.empty-state-text { font-size: 14px; font-weight: 600; }
 
-.empty-state-text {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-/* ==================== HISTORY SUMMARY ROW ==================== */
+/* ─── HISTORY SUMMARY ROW ────────────────────────── */
 .hist-summary-row {
   display: flex;
   align-items: center;
@@ -911,31 +902,22 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   flex-wrap: wrap;
   gap: 8px;
   padding: 8px 12px;
-  background: var(--surface-2);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
+  background: var(--c-bg);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-border);
   margin-bottom: 12px;
 }
 
-.hist-summary-text {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
+.hist-summary-text { font-size: 12px; font-weight: 700; color: var(--c-ink-2); }
+.hist-page-info    { font-size: 12px; font-weight: 700; color: var(--c-ink-4); }
 
-.hist-page-info {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-/* ==================== PAGINATION ==================== */
+/* ─── PAGINATION ─────────────────────────────────── */
 .pagination-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding-top: 18px;
+  gap: 5px;
+  padding-top: 16px;
   flex-wrap: wrap;
 }
 
@@ -948,99 +930,128 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
 }
 
 .pg-btn {
-  width: 36px;
-  height: 36px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text-secondary);
+  width: 38px;
+  height: 38px;
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-ink-2);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition);
+  transition: var(--t);
   font-size: 13px;
   font-weight: 700;
   flex-shrink: 0;
 }
 
 .pg-btn:hover:not(:disabled) {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: var(--primary-bg);
+  border-color: var(--c-primary);
+  color: var(--c-primary);
+  background: var(--c-primary-tint);
 }
 
-.pg-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
+.pg-btn:disabled { opacity: 0.30; cursor: not-allowed; }
 
 .pg-btn.active {
-  background: var(--primary);
-  border-color: var(--primary);
+  background: var(--c-primary);
+  border-color: var(--c-primary);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(79,70,229,0.30);
+  box-shadow: 0 2px 8px rgba(79,70,229,0.28);
 }
 
 .pg-btn.pg-ellipsis {
   border-color: transparent;
   background: transparent;
   cursor: default;
-  color: var(--text-muted);
+  color: var(--c-ink-4);
   font-size: 15px;
   width: 28px;
 }
 
-.pg-btn.pg-ellipsis:hover {
-  background: transparent;
-  border-color: transparent;
-  color: var(--text-muted);
-}
+.pg-btn.pg-ellipsis:hover { background: transparent; border-color: transparent; color: var(--c-ink-4); }
 
 @media (max-width: 400px) {
-  .pg-btn { width: 32px; height: 32px; font-size: 12px; }
-  .pagination-wrap { gap: 4px; }
-  .pg-numbers { gap: 3px; }
+  .pg-btn { width: 34px; height: 34px; font-size: 12px; }
+  .pagination-wrap { gap: 3px; }
 }
 
-/* ==================== NO MA ROLE ==================== */
-.no-role-state {
-  text-align: center;
-  padding: 32px 20px;
-}
+/* ─── NO MA ROLE ─────────────────────────────────── */
+.no-role-state { text-align: center; padding: 36px 20px; }
 
 .no-role-icon {
-  width: 52px;
-  height: 52px;
-  background: var(--surface-3);
+  width: 54px;
+  height: 54px;
+  background: var(--c-surface-alt);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
   margin: 0 auto 12px;
+  border: 1px solid var(--c-border);
 }
 
-.no-role-text {
-  font-size: 14px;
+.no-role-text { font-size: 14px; font-weight: 600; color: var(--c-ink-4); }
+
+/* ─── RIGHT-COLUMN STACK ─────────────────────────── */
+.ck-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ─── INLINE HISTORY TAB STRIP ───────────────────── */
+.hist-tab-strip {
+  display: flex;
+  background: var(--c-surface-alt);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: 3px;
+  gap: 0;
+}
+
+.hist-tab-strip .tab-btn {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
+/* ─── UTILITY ────────────────────────────────────── */
+.dash-label-pill {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-primary);
+  background: var(--c-primary-tint);
+  padding: 4px 12px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.settings-desc {
+  font-size: 12px;
+  color: var(--c-ink-4);
+  margin: 0 0 14px;
   font-weight: 600;
-  color: var(--text-muted);
 }
 
-/* ==================== RESPONSIVE ADJUSTMENTS ==================== */
-@media (max-width: 480px) {
-  .card-body { padding: 16px; }
-  .card-header { padding: 16px 18px; }
-  .time-value { font-size: 32px; }
-  .stats-grid { gap: 8px; }
-  .stat-value { font-size: 26px; }
-}
+.time-input-green { border-color: var(--c-ok); }
+.time-input-green:focus { border-color: var(--c-ok); box-shadow: 0 0 0 3px rgba(5,150,105,0.15); }
+
+.modal-title-indigo { color: var(--c-primary); }
+.modal-title-warn   { color: var(--c-warn); }
+
+.form-input-warn { accent-color: var(--c-warn); }
+
+.edit-image-preview { width: 100%; height: 180px; object-fit: cover; }
 </style>
 
 <!-- ==================== TAB SWITCHER ==================== -->
 <?php if ($showRegularCheckin && $showMaCheckin): ?>
-<div class="checkin-module">
-  <div class="tab-switcher">
+<div class="ck">
+  <div class="ck-tab-strip">
     <button type="button" id="tabRegular" onclick="switchCheckinTab('regular')"
       class="tab-btn active">
       📸 เช็คอินทั่วไป
@@ -1054,7 +1065,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
 <?php endif; ?>
 
 <!-- ==================== MAIN CONTENT ==================== -->
-<div class="checkin-module checkin-grid animate__animated animate__fadeIn">
+<div class="ck ck-grid animate__animated animate__fadeIn">
 
   <!-- ========== LEFT COLUMN: CHECK-IN PANELS ========== -->
 
@@ -1162,7 +1173,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
   </div>
 
   <!-- ========== RIGHT COLUMN ========== -->
-  <div style="display:flex; flex-direction:column; gap:16px;">
+  <div class="ck-right-col">
 
     <!-- ========== STATS CARD ========== -->
     <div class="card">
@@ -1172,9 +1183,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
             <div class="icon">📊</div>
             สรุปการเข้างาน
           </div>
-          <span id="dashLabel"
-            style="font-size:12px; font-weight:700; color:var(--primary);
-                   background:var(--primary-bg); padding:4px 12px; border-radius:99px;">–</span>
+          <span id="dashLabel" class="dash-label-pill">–</span>
         </div>
         <div class="stats-grid">
           <div class="stat-card blue">
@@ -1203,7 +1212,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
             ตั้งค่าเวลาเข้างาน
           </div>
         </div>
-        <p style="font-size:12px; color:var(--text-muted); margin:0 0 14px; font-weight:600;">
+        <p class="settings-desc">
           กำหนดเวลาที่ถือว่า "มาสาย" สามารถเลือกหลายบทบาทพร้อมกัน
         </p>
 
@@ -1256,7 +1265,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
             </div>
           </div>
           <div class="settings-time-row">
-            <input type="time" id="lateTimeInput2" class="time-input" style="border-color:var(--success);">
+            <input type="time" id="lateTimeInput2" class="time-input time-input-green">
             <button onclick="saveSettingsMulti(2)" class="btn-save green">บันทึก</button>
           </div>
         </div>
@@ -1266,26 +1275,26 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
     <?php endif; ?>
 
     <!-- ========== HISTORY TABLE ========== -->
-    <div class="card" style="flex:1;">
+    <div class="card">
       <div class="card-body">
 
         <!-- Header row -->
-        <div class="section-header" style="margin-bottom:14px;">
+        <div class="section-header">
           <div class="section-title">
             <div class="icon">🕒</div>
             <span id="historyTitle">ประวัติเช็คอิน</span>
           </div>
           <!-- Tab: checkin / checkout -->
-          <div class="tab-switcher" style="margin-bottom:0; max-width:220px;">
+          <div class="hist-tab-strip">
             <button type="button" id="histTabCheckin" onclick="switchHistoryMode('checkin')"
-              class="tab-btn active" style="font-size:13px; padding:7px 12px;">เข้างาน</button>
+              class="tab-btn active">เข้างาน</button>
             <button type="button" id="histTabCheckout" onclick="switchHistoryMode('checkout')"
-              class="tab-btn" style="font-size:13px; padding:7px 12px;">เลิกงาน</button>
+              class="tab-btn">เลิกงาน</button>
           </div>
         </div>
 
         <!-- Filters -->
-        <div class="filter-row" style="margin-bottom:16px;">
+        <div class="filter-row">
           <input type="date" id="filterDate" class="filter-input">
           <span class="filter-sep">หรือ</span>
           <input type="month" id="filterMonth" class="filter-input">
@@ -1345,14 +1354,14 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
     </div>
 
   </div><!-- end right column -->
-</div><!-- end checkin-grid -->
+</div><!-- end ck-grid -->
 
 
 <!-- ==================== MODAL: แก้ไขรูปภาพ ==================== -->
 <div id="editCheckinModal" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <div class="modal-header">
-      <div class="modal-title" style="color:var(--primary);">
+      <div class="modal-title modal-title-indigo">
         ✏️ แก้ไขรูปภาพเช็คอิน
       </div>
       <button onclick="closeEditCheckinModal()" class="modal-close">&times;</button>
@@ -1362,7 +1371,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
       <div class="form-group">
         <div class="form-label">รูปภาพปัจจุบัน / อัปโหลดใหม่</div>
         <div class="edit-photo-zone" id="editImagePreviewWrapper">
-          <img id="editImagePreview" style="width:100%; height:180px; object-fit:cover; display:none;" src="" alt="Preview">
+          <img id="editImagePreview" class="edit-image-preview" style="display:none;" src="" alt="Preview">
           <div id="editImagePlaceholder" class="edit-photo-placeholder">
             <div style="font-size:28px; margin-bottom:8px;">🖼️</div>
             ไม่มีรูปภาพแนบ<br>
@@ -1390,7 +1399,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
 <div id="adminEditModal" class="modal-overlay" style="display:none;">
   <div class="modal-box">
     <div class="modal-header">
-      <div class="modal-title" style="color:var(--warning);">
+      <div class="modal-title modal-title-warn">
         🔧 จัดการข้อมูลเช็คอิน (Admin)
       </div>
       <button onclick="closeAdminEditModal()" class="modal-close">&times;</button>
@@ -1400,8 +1409,7 @@ $showMaCheckin = $canMaCheckin || $isAdmin;
 
       <div class="form-group">
         <div class="form-label">เวลาเข้างาน</div>
-        <input type="datetime-local" id="admin_edit_checkin_time" step="1" class="form-input"
-          style="accent-color:var(--warning);">
+        <input type="datetime-local" id="admin_edit_checkin_time" step="1" class="form-input form-input-warn">
       </div>
 
       <div class="form-group">
