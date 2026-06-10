@@ -352,9 +352,9 @@ function initRegularCheckin() {
                     title: 'สำเร็จ!',
                     text: result.message,
                     icon: 'success',
-                    confirmButtonText: 'ตกลง',
-                    confirmButtonColor: '#4f46e5',
-                    customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                    timer: 500,
+                    showConfirmButton: false,
+                    customClass: { popup: 'rounded-3xl' }
                 });
                 form.reset();
                 _regularStampedFile = null;
@@ -510,9 +510,9 @@ function initMaCheckin() {
                         title: result.is_late ? 'เช็คอินแล้ว (มาสาย)' : 'เช็คอินสำเร็จ!',
                         text: result.message,
                         icon: result.is_late ? 'warning' : 'success',
-                        confirmButtonText: 'ตกลง',
-                        confirmButtonColor: result.is_late ? '#f59e0b' : '#7c3aed',
-                        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                        timer: 500,
+                        showConfirmButton: false,
+                        customClass: { popup: 'rounded-3xl' }
                     });
                     form.reset();
                     _maStampedFile = null;
@@ -1284,7 +1284,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         icon: 'success',
                         title: 'บันทึกการเลิกงานสำเร็จ',
                         text: 'เวลาเลิกงานของคุณถูกบันทึกเรียบร้อยแล้ว',
-                        customClass: { popup: 'rounded-3xl', confirmButton: 'rounded-xl px-6 py-2.5 font-bold shadow-md' }
+                        timer: 500,
+                        showConfirmButton: false,
+                        customClass: { popup: 'rounded-3xl' }
                     }).then(() => {
                         location.reload(); // รีเฟรชหน้าเพื่ออัปเดตสถานะและประวัติ
                     });
